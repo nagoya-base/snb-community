@@ -27,6 +27,7 @@
   </script>
 
   <!-- 共通スタイル -->
+  <link rel="stylesheet" href="../common.css">
   <link rel="stylesheet" href="style.css">
 
   <!-- このページ固有のスタイル -->
@@ -60,14 +61,14 @@
       transition: all 0.18s;
       margin: 0.25rem;
     }
-    .btn-primary { background: var(--green); color: #fff; }
-    .btn-primary:hover { background: var(--green-dark); transform: translateY(-2px); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-lt); transform: translateY(-2px); }
     .btn-outline {
       background: var(--bg-card);
-      border: 2px solid var(--green);
-      color: var(--green);
+      border: 2px solid var(--accent);
+      color: var(--accent);
     }
-    .btn-outline:hover { background: var(--bg-green); transform: translateY(-2px); }
+    .btn-outline:hover { background: var(--bg-tint); transform: translateY(-2px); }
 
     /* ── Hero Image ── */
     .hero-image {
@@ -84,11 +85,11 @@
     }
     .hero-image img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; display: block; }
     .hero-image-emoji { font-size: 4rem; line-height: 1; }
-    .hero-image-cap { font-size: 0.8rem; font-weight: 700; color: var(--green-dark); opacity: 0.75; }
+    .hero-image-cap { font-size: 0.8rem; font-weight: 700; color: var(--accent-lt); opacity: 0.75; }
 
     /* ── About ── */
     .about-lead { margin-bottom: 2rem; }
-    .about-lead strong { color: var(--green-dark); }
+    .about-lead strong { color: var(--accent-lt); }
     .cards-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -105,13 +106,13 @@
     .point-title {
       font-size: 1.02rem;
       font-weight: 800;
-      color: var(--green-dark);
+      color: var(--accent-lt);
       margin-bottom: 0.4rem;
     }
     .point-desc { font-size: 0.86rem; color: var(--text-muted); }
 
     /* ── Activity ── */
-    #activity { background: var(--bg-green); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    #activity { background: var(--bg-tint); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
     .activity-tags {
       display: flex;
       flex-wrap: wrap;
@@ -151,7 +152,7 @@
       width: 1.6rem;
       height: 1.6rem;
       border-radius: 50%;
-      background: var(--green);
+      background: var(--accent);
       color: #fff;
       font-weight: 800;
       font-size: 0.85rem;
@@ -159,7 +160,7 @@
       align-items: center;
       justify-content: center;
     }
-    .flow-list li strong { color: var(--green-dark); }
+    .flow-list li strong { color: var(--accent-lt); }
 
     /* ── History ── */
     .timeline { display: grid; gap: 0; position: relative; padding-left: 2rem; }
@@ -172,11 +173,11 @@
     .tl-item::before {
       content: ''; position: absolute; left: -1.65rem; top: 0.35rem;
       width: 0.75rem; height: 0.75rem; border-radius: 50%;
-      background: var(--green); border: 2px solid var(--bg);
+      background: var(--accent); border: 2px solid var(--bg);
     }
     .tl-date {
       font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em;
-      color: var(--green); margin-bottom: 0.25rem;
+      color: var(--accent); margin-bottom: 0.25rem;
     }
     .tl-body { font-size: 0.9rem; color: var(--text-muted); }
 
@@ -191,7 +192,7 @@
     .faq-list summary {
       font-weight: 800;
       font-size: 0.92rem;
-      color: var(--green-dark);
+      color: var(--accent-lt);
       cursor: pointer;
     }
     .faq-list p { margin-top: 0.6rem; font-size: 0.88rem; color: var(--text-muted); }
@@ -226,11 +227,11 @@
       padding: 1.2rem 1.5rem;
       font-weight: 800;
       font-size: 0.98rem;
-      color: var(--green-dark);
+      color: var(--accent-lt);
       text-decoration: none;
       transition: border-color 0.15s, transform 0.15s;
     }
-    .contact-link:hover { border-color: var(--green); transform: translateY(-2px); }
+    .contact-link:hover { border-color: var(--accent); transform: translateY(-2px); }
     .contact-note {
       display: block;
       font-weight: 400;
@@ -242,18 +243,26 @@
 </head>
 <body>
 
-<!-- ── Nav ── -->
-<nav>
-  <span class="nav-brand">⚾ 名古屋野球ユニ部</span>
-  <ul class="nav-links">
-    <li><a href="#about">About</a></li>
-    <li><a href="#history">軌跡</a></li>
-    <li><a href="#activity">活動内容</a></li>
-    <li><a href="#join">参加方法</a></li>
-    <li><a href="#schedule">次回開催</a></li>
-    <li><a href="#gallery">ギャラリー</a></li>
-    <li><a href="#contact">連絡先</a></li>
-  </ul>
+<!-- ── Site Nav ── -->
+<nav class="site-nav">
+  <a href="../" class="site-nav__brand">SNB Community</a>
+  <div class="site-nav__right">
+    <a href="../baseball/" class="site-nav__pillar site-nav__pillar--baseball" aria-current="page">⚾ 野球ユニ部</a>
+    <a href="../community/" class="site-nav__pillar site-nav__pillar--community">SNBコミュニティ</a>
+    <a href="../portrait/" class="site-nav__pillar site-nav__pillar--portrait">ポートレート</a>
+  </div>
+</nav>
+
+<!-- ── Pillar Sub-nav ── -->
+<nav class="pillar-subnav" style="border-bottom:1px solid var(--border); background:var(--bg-tint); padding:0.45rem 0;">
+  <div class="container" style="display:flex; gap:1.25rem; font-size:0.78rem; font-weight:700; color:var(--text-muted);">
+    <a href="#about" style="color:var(--text-muted);">About</a>
+    <a href="#activity" style="color:var(--text-muted);">活動内容</a>
+    <a href="#join" style="color:var(--text-muted);">参加方法</a>
+    <a href="#schedule" style="color:var(--text-muted);">次回開催</a>
+    <a href="#gallery" style="color:var(--text-muted);">ギャラリー</a>
+    <a href="#contact" style="color:var(--text-muted);">連絡先</a>
+  </div>
 </nav>
 
 <main>
@@ -509,20 +518,17 @@
 
 </main>
 
-<!-- ── Footer ── -->
-<footer>
-  <div class="container">
-    <div class="footer-brand">⚾ 名古屋野球ユニ部</div>
-    <p class="footer-note">
-      野球ユニフォームが好きな人たちの、ゆるいキャッチボールサークル。<br>
-      名古屋市内で不定期（主に土日）活動中。未経験・1人参加歓迎🏳️‍🌈
-    </p>
-    <p class="footer-links">
-      関連リンク：
-      <a href="../portrait/">ポートレート体験（撮影）</a> ／
-      <a href="https://nagoya-base.github.io/Studio-nagoya-base/">Studio Nagoya Base</a>
-    </p>
-    <p class="footer-copy">© 2022-2026 名古屋野球ユニ部. All rights reserved.</p>
+<!-- ── Site Footer ── -->
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <nav class="site-footer__pillars">
+      <a href="../baseball/" class="site-footer__link site-footer__link--baseball">⚾ 野球ユニ部</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="../community/" class="site-footer__link site-footer__link--community">SNBコミュニティ</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="../portrait/" class="site-footer__link site-footer__link--portrait">ポートレート</a>
+    </nav>
+    <p class="site-footer__copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
   </div>
 </footer>
 

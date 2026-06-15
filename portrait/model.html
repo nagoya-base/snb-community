@@ -28,6 +28,7 @@
     gtag('config', 'G-8K1TJG0S9Y');
   </script>
 
+  <link rel="stylesheet" href="../common.css">
   <link rel="stylesheet" href="style.css">
   <style>
     /* ── model.html 固有スタイル ── */
@@ -67,14 +68,14 @@
 </head>
 <body>
 
-<!-- ── Nav ── -->
-<nav>
-  <span class="nav-brand"><span>●</span> ATARU</span>
-  <ul class="nav-links-sub">
-    <li><a href="index.html">← メインページ</a></li>
-    <li><a href="photographer.html">撮影者向け</a></li>
-  </ul>
-  <a href="#contact" class="nav-cta">予約する</a>
+<!-- ── Site Nav ── -->
+<nav class="site-nav">
+  <a href="../" class="site-nav__brand">SNB Community</a>
+  <div class="site-nav__right">
+    <a href="../baseball/" class="site-nav__pillar site-nav__pillar--baseball">⚾ 野球ユニ部</a>
+    <a href="../community/" class="site-nav__pillar site-nav__pillar--community">SNBコミュニティ</a>
+    <a href="../portrait/" class="site-nav__pillar site-nav__pillar--portrait" aria-current="page">ポートレート</a>
+  </div>
 </nav>
 
 <!-- ── Header ── -->
@@ -89,6 +90,14 @@
     </div>
   </div>
 </header>
+
+<!-- ── Pillar Sub-nav ── -->
+<nav class="pillar-subnav">
+  <div class="container">
+    <a href="index.html">← ポートレート体験トップ</a>
+    <a href="photographer.html">撮影者向け →</a>
+  </div>
+</nav>
 
 <main>
   <div class="container">
@@ -170,12 +179,17 @@
   </div>
 </main>
 
-<footer>
-  <div>
-    <a href="index.html">メインページ</a> ／
-    <a href="photographer.html">撮影者向け</a>
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <nav class="site-footer__pillars">
+      <a href="../baseball/" class="site-footer__link site-footer__link--baseball">⚾ 野球ユニ部</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="../community/" class="site-footer__link site-footer__link--community">SNBコミュニティ</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="../portrait/" class="site-footer__link site-footer__link--portrait">ポートレート</a>
+    </nav>
+    <p class="site-footer__copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
   </div>
-  <p class="footer-copy">© 2026 アタル. All rights reserved.</p>
 </footer>
 
 </body>

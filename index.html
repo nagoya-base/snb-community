@@ -26,39 +26,19 @@
     gtag('config', 'G-8K1TJG0S9Y');
   </script>
 
+  <link rel="stylesheet" href="common.css">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg:         #FAF8F3;
-      --bg-card:    #FFFFFF;
-      --ink:        #23211C;
-      --ink-soft:   #5C564B;
-      --line:       #E4DFD3;
-      --rule:       #1C1A17;
-      /* 3本柱それぞれのアクセント（カードで使用） */
-      --uni:        #3A7D44;
-      --snbc:       #1D3557;
-      --portrait:   #C8102E;
+      --accent:    #1D3557;
+      --accent-lt: #457B9D;
     }
 
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg);
-      color: var(--ink);
-      font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
-      font-size: 15px;
-      line-height: 1.85;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .wrap { max-width: 760px; margin: 0 auto; padding: 0 1.5rem; }
+    .wrap { max-width: var(--max-w); margin: 0 auto; padding: 0 1.5rem; }
 
     /* ── Masthead ── */
     .masthead {
       padding: 3.5rem 0 2.5rem;
-      border-bottom: 2px solid var(--rule);
+      border-bottom: 2px solid var(--text);
       margin-bottom: 0.4rem;
     }
     .masthead-kicker {
@@ -66,7 +46,7 @@
       font-weight: 800;
       letter-spacing: 0.3em;
       text-transform: uppercase;
-      color: var(--ink-soft);
+      color: var(--text-muted);
       margin-bottom: 1rem;
     }
     .masthead-title {
@@ -78,7 +58,7 @@
     .masthead-sub {
       margin-top: 1.25rem;
       font-size: 0.92rem;
-      color: var(--ink-soft);
+      color: var(--text-muted);
       line-height: 1.95;
       max-width: 560px;
     }
@@ -87,7 +67,7 @@
       font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.06em;
-      color: var(--ink-soft);
+      color: var(--text-muted);
       text-align: right;
     }
 
@@ -97,42 +77,34 @@
       font-weight: 800;
       letter-spacing: 0.24em;
       text-transform: uppercase;
-      color: var(--ink-soft);
+      color: var(--text-muted);
       margin: 3rem 0 1.25rem;
     }
 
     /* ── Pillars ── */
-    .pillars {
-      display: grid;
-      gap: 1.1rem;
-    }
+    .pillars { display: grid; gap: 1.1rem; }
 
     .pillar {
       display: block;
       background: var(--bg-card);
-      border: 1px solid var(--line);
-      border-left: 4px solid var(--accent, var(--line));
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
       border-radius: 8px;
       padding: 1.6rem 1.75rem;
       text-decoration: none;
-      color: var(--ink);
-      transition: transform 0.16s, box-shadow 0.16s, border-color 0.16s;
+      color: var(--text);
+      transition: transform 0.16s, box-shadow 0.16s;
     }
     .pillar:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 22px rgba(0,0,0,0.07);
     }
 
-    .pillar--uni      { --accent: var(--uni); }
-    .pillar--snbc     { --accent: var(--snbc); }
-    .pillar--portrait { --accent: var(--portrait); }
+    .pillar--baseball { --accent: var(--color-baseball); }
+    .pillar--snbc     { --accent: var(--color-community); }
+    .pillar--portrait { --accent: var(--color-portrait); }
 
-    .pillar-top {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      margin-bottom: 0.5rem;
-    }
+    .pillar-top { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
     .pillar-tag {
       font-size: 0.66rem;
       font-weight: 800;
@@ -140,58 +112,31 @@
       text-transform: uppercase;
       color: var(--accent);
     }
-    .pillar-title {
-      font-size: 1.18rem;
-      font-weight: 800;
-      letter-spacing: 0.02em;
-      margin-bottom: 0.4rem;
-    }
-    .pillar-desc {
-      font-size: 0.87rem;
-      color: var(--ink-soft);
-      line-height: 1.85;
-    }
-    .pillar-arrow {
-      margin-top: 0.9rem;
-      font-size: 0.8rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      color: var(--accent);
-    }
+    .pillar-title { font-size: 1.18rem; font-weight: 800; letter-spacing: 0.02em; margin-bottom: 0.4rem; }
+    .pillar-desc { font-size: 0.87rem; color: var(--text-muted); line-height: 1.85; }
+    .pillar-arrow { margin-top: 0.9rem; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.08em; color: var(--accent); }
 
     /* ── About strip ── */
-    .about {
-      margin-top: 3.5rem;
-      padding-top: 2.5rem;
-      border-top: 1px solid var(--line);
-    }
-    .about p {
-      font-size: 0.87rem;
-      color: var(--ink-soft);
-      line-height: 1.95;
-    }
-
-    /* ── Footer ── */
-    .foot {
-      margin-top: 3rem;
-      padding: 2rem 0 3rem;
-      border-top: 2px solid var(--rule);
-      font-size: 0.76rem;
-      color: var(--ink-soft);
-      line-height: 1.8;
-    }
-    .foot a { color: var(--snbc); text-decoration: none; }
-    .foot a:hover { text-decoration: underline; }
+    .about { margin-top: 3.5rem; padding-top: 2.5rem; border-top: 1px solid var(--border); }
+    .about p { font-size: 0.87rem; color: var(--text-muted); line-height: 1.95; }
 
     @media (max-width: 480px) {
       .masthead { padding: 2.5rem 0 2rem; }
       .pillar { padding: 1.35rem 1.4rem; }
     }
-
-    :focus-visible { outline: 2px solid var(--snbc); outline-offset: 2px; }
   </style>
 </head>
 <body>
+
+<!-- ── Site Nav ── -->
+<nav class="site-nav">
+  <a href="./" class="site-nav__brand">SNB Community</a>
+  <div class="site-nav__right">
+    <a href="baseball/" class="site-nav__pillar site-nav__pillar--baseball">⚾ 野球ユニ部</a>
+    <a href="community/" class="site-nav__pillar site-nav__pillar--community">SNBコミュニティ</a>
+    <a href="portrait/" class="site-nav__pillar site-nav__pillar--portrait">ポートレート</a>
+  </div>
+</nav>
 
 <div class="wrap">
 
@@ -209,7 +154,7 @@
 
   <div class="pillars">
 
-    <a class="pillar pillar--uni" href="./baseball/">
+    <a class="pillar pillar--baseball" href="baseball/">
       <div class="pillar-top">
         <span class="pillar-tag">⚾ Catch Ball Circle</span>
       </div>
@@ -220,7 +165,7 @@
       <p class="pillar-arrow">活動を見る ›</p>
     </a>
 
-    <a class="pillar pillar--snbc" href="./community/">
+    <a class="pillar pillar--snbc" href="community/">
       <div class="pillar-top">
         <span class="pillar-tag">SNB Community</span>
       </div>
@@ -231,7 +176,7 @@
       <p class="pillar-arrow">詳しく見る ›</p>
     </a>
 
-    <a class="pillar pillar--portrait" href="./portrait/">
+    <a class="pillar pillar--portrait" href="portrait/">
       <div class="pillar-top">
         <span class="pillar-tag">Portrait Session</span>
       </div>
@@ -251,14 +196,21 @@
     </p>
   </section>
 
-  <footer class="foot">
-    <p>Studio Nagoya Base Community — 名古屋・上前津</p>
-    <p style="margin-top:0.4rem;">
-      <a href="https://nagoya-base.github.io/Studio-nagoya-base/">Studio Nagoya Base（スタジオ）</a>
-    </p>
-  </footer>
 
 </div>
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <nav class="site-footer__pillars">
+      <a href="baseball/" class="site-footer__link site-footer__link--baseball">⚾ 野球ユニ部</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="community/" class="site-footer__link site-footer__link--community">SNBコミュニティ</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="portrait/" class="site-footer__link site-footer__link--portrait">ポートレート</a>
+    </nav>
+    <p class="site-footer__copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
+  </div>
+</footer>
 
 </body>
 </html>

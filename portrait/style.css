@@ -1,127 +1,58 @@
-/* ===========================================
+/* ──────────────────────────────────────────────
    portrait/ 共通スタイルシート
-   ataru-nagoya / portrait/
-   =========================================== */
+   common.css を先に読み込むこと。
+   このファイルはピラー固有の上書きと専用コンポーネントのみ定義する。
+   ────────────────────────────────────────────── */
 
-/* ── CSS Variables ── */
-:root {
-  --bg:         #F8F8F6;
-  --bg-card:    #FFFFFF;
-  --bg-card2:   #F2F2F0;
-  --accent:     #C8102E;
-  --accent-lt:  #e03050;
-  --navy:       #1A3557;
-  --navy-lt:    #2a5580;
-  --text:       #1C1C1C;
-  --text-muted: #666666;
-  --border:     #E0E0E0;
-  --highlight:  #ffd060;
-}
-
-/* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* ── Base ── */
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
-  font-size: 15px;
-  line-height: 1.8;
-  -webkit-font-smoothing: antialiased;
+:root {
+  --accent:    #C8102E;
+  --accent-lt: #e03050;
+  --navy:      #1A3557;
+  --navy-lt:   #2a5580;
+  --highlight: #ffd060;
+  --bg-card2:  #F2F2F0;
 }
-a { color: var(--navy); text-decoration: none; }
+
+/* portrait の a はネイビー基調 */
+a { color: var(--navy); }
 a:hover { color: var(--accent); }
 
-/* ── Layout ── */
-.container {
-  width: min(100%, 980px);
-  margin: 0 auto;
-  padding: 0 1.25rem;
-}
 main { padding: 2.5rem 0 3rem; }
 section { padding: 2.5rem 0; }
 section + section { border-top: 1px solid var(--border); }
 
-/* ── Section label & heading ── */
-.section-label {
-  color: var(--accent);
-  font-size: 0.68rem;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  font-weight: 700;
-  margin: 0 0 0.5rem;
-}
+/* ── Section label & h2 ── */
+.section-label { color: var(--accent); }
+
 h2 {
   margin: 0 0 1.5rem;
   font-size: clamp(1.3rem, 3.4vw, 1.9rem);
-  line-height: 1.45;
   display: inline-block;
   padding-bottom: 0.35rem;
   border-bottom: 3px solid var(--accent);
-  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
-/* ── Navigation ── */
-nav {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(8px);
+/* ── Pillar sub-nav（ヘッダー直下のページ内ナビ） ── */
+.pillar-subnav {
   border-bottom: 1px solid var(--border);
-  padding: 0.9rem 1.5rem;
+  background: var(--bg);
+  padding: 0.5rem 0;
+}
+.pillar-subnav .container {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.nav-brand {
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: var(--navy);
-  white-space: nowrap;
-}
-.nav-brand span {
-  color: var(--accent);
-  margin-right: 0.4rem;
-}
-/* index.html 用 back link */
-.nav-back {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  transition: color 0.15s;
-}
-.nav-back:hover { color: var(--navy); }
-/* model / photographer 用 sub-nav */
-.nav-links-sub {
-  display: flex;
-  gap: 1.25rem;
-  list-style: none;
-}
-.nav-links-sub a {
-  font-size: 0.78rem;
-  color: #555;
-  transition: color 0.15s;
-}
-.nav-links-sub a:hover { color: var(--navy); }
-.nav-cta {
+  gap: 1.5rem;
   font-size: 0.78rem;
   font-weight: 700;
-  background: var(--accent);
-  color: #fff;
-  padding: 0.45rem 1.1rem;
-  border-radius: 3px;
-  transition: background 0.15s;
-  white-space: nowrap;
-  text-decoration: none;
 }
-.nav-cta:hover { background: var(--accent-lt); color: #fff; }
+.pillar-subnav a {
+  color: var(--text-muted);
+}
+.pillar-subnav a:hover { color: var(--navy); }
 
-/* ── Header / Hero ── */
+/* ── Header / Hero（dark navy） ── */
 header,
 .hero {
   background: var(--navy);
@@ -142,6 +73,7 @@ h1 {
   line-height: 1.35;
   font-size: clamp(1.8rem, 5vw, 2.5rem);
   font-weight: 800;
+  color: #fff;
 }
 .hero-lead {
   margin: 0 0 1.5rem;
@@ -212,28 +144,8 @@ h1 {
   color: var(--text-muted);
 }
 
-/* ── Footer ── */
-footer {
-  background: var(--navy);
-  color: rgba(255, 255, 255, 0.75);
-  text-align: center;
-  padding: 1.5rem 1rem;
-  font-size: 0.84rem;
-}
-footer a {
-  color: rgba(255, 255, 255, 0.7);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-footer a:hover { color: #fff; }
-.footer-links { margin-bottom: 0.5rem; }
-.footer-copy {
-  margin-top: 0.5rem;
-  opacity: 0.45;
-  font-size: 0.78rem;
-}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* ── Responsive ── */
 @media (max-width: 640px) {
-  .nav-links-sub { display: none; }
+  .pillar-subnav .container { flex-wrap: wrap; gap: 0.75rem; }
 }

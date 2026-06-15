@@ -27,6 +27,7 @@
   </script>
 
   <!-- 共通スタイル -->
+  <link rel="stylesheet" href="../common.css">
   <link rel="stylesheet" href="style.css">
 
   <!-- このページ固有のスタイル -->
@@ -47,18 +48,18 @@
     .point-title {
       font-size: 0.98rem;
       font-weight: 800;
-      color: var(--green-dark);
+      color: var(--accent-lt);
       margin-bottom: 0.35rem;
     }
     .point-badge {
       display: inline-block;
-      background: var(--bg-green);
+      background: var(--bg-tint);
       border: 1px solid var(--border);
       border-radius: 999px;
       padding: 0.15rem 0.7rem;
       font-size: 0.72rem;
       font-weight: 700;
-      color: var(--green);
+      color: var(--accent);
       margin-bottom: 0.5rem;
     }
     .point-desc { font-size: 0.86rem; color: var(--text-muted); }
@@ -72,22 +73,31 @@
     }
 
     /* ── Section bg alternates ── */
-    #pants      { background: var(--bg-green); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-    #undershirt { background: var(--bg-green); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    #pants      { background: var(--bg-tint); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    #undershirt { background: var(--bg-tint); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
   </style>
 </head>
 <body>
 
-<!-- ── Nav ── -->
-<nav>
-  <a href="./" class="nav-brand">⚾ 名古屋野球ユニ部</a>
-  <ul class="nav-links">
-    <li><a href="./">← トップ</a></li>
-    <li><a href="#basics">基本セット</a></li>
-    <li><a href="#pants">ユニパンツ</a></li>
-    <li><a href="#slapan">スラパン</a></li>
-    <li><a href="#undershirt">アンシャツ</a></li>
-  </ul>
+<!-- ── Site Nav ── -->
+<nav class="site-nav">
+  <a href="../" class="site-nav__brand">SNB Community</a>
+  <div class="site-nav__right">
+    <a href="../baseball/" class="site-nav__pillar site-nav__pillar--baseball" aria-current="page">⚾ 野球ユニ部</a>
+    <a href="../community/" class="site-nav__pillar site-nav__pillar--community">SNBコミュニティ</a>
+    <a href="../portrait/" class="site-nav__pillar site-nav__pillar--portrait">ポートレート</a>
+  </div>
+</nav>
+
+<!-- ── Pillar Sub-nav ── -->
+<nav style="border-bottom:1px solid var(--border); background:var(--bg-tint); padding:0.45rem 0;">
+  <div class="container" style="display:flex; gap:1.25rem; font-size:0.78rem; font-weight:700;">
+    <a href="./" style="color:var(--text-muted);">← 野球ユニ部トップ</a>
+    <a href="#basics" style="color:var(--text-muted);">基本セット</a>
+    <a href="#pants" style="color:var(--text-muted);">ユニパンツ</a>
+    <a href="#slapan" style="color:var(--text-muted);">スラパン</a>
+    <a href="#undershirt" style="color:var(--text-muted);">アンシャツ</a>
+  </div>
 </nav>
 
 <main>
@@ -263,19 +273,17 @@
 
 </main>
 
-<!-- ── Footer ── -->
-<footer>
-  <div class="container">
-    <div class="footer-brand">⚾ 名古屋野球ユニ部</div>
-    <p class="footer-note">
-      野球ユニフォームが好きな人たちの、ゆるいキャッチボールサークル。<br>
-      名古屋市内で不定期（主に土日）活動中。未経験・1人参加歓迎🏳️‍🌈
-    </p>
-    <p class="footer-links">
-      <a href="./">← 野球ユニ部トップ</a> ／
-      <a href="../portrait/">ポートレート体験（撮影）</a>
-    </p>
-    <p class="footer-copy">© 2022-2026 名古屋野球ユニ部. All rights reserved.</p>
+<!-- ── Site Footer ── -->
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <nav class="site-footer__pillars">
+      <a href="../baseball/" class="site-footer__link site-footer__link--baseball">⚾ 野球ユニ部</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="../community/" class="site-footer__link site-footer__link--community">SNBコミュニティ</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="../portrait/" class="site-footer__link site-footer__link--portrait">ポートレート</a>
+    </nav>
+    <p class="site-footer__copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
   </div>
 </footer>
 
