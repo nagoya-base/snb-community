@@ -28,6 +28,7 @@
     gtag('config', 'G-8K1TJG0S9Y');
   </script>
 
+  <link rel="stylesheet" href="../common.css">
   <link rel="stylesheet" href="style.css">
   <style>
     /* ── index.html 固有スタイル ── */
@@ -175,10 +176,14 @@
 </head>
 <body>
 
-<!-- ── Nav ── -->
-<nav>
-  <span class="nav-brand"><span>●</span> ATARU</span>
-  <a href="../" class="nav-back">トップへ</a>
+<!-- ── Site Nav ── -->
+<nav class="site-nav">
+  <a href="../" class="site-nav__brand">SNB Community</a>
+  <div class="site-nav__right">
+    <a href="../baseball/" class="site-nav__pillar site-nav__pillar--baseball">⚾ 野球ユニ部</a>
+    <a href="../community/" class="site-nav__pillar site-nav__pillar--community">SNBコミュニティ</a>
+    <a href="../portrait/" class="site-nav__pillar site-nav__pillar--portrait" aria-current="page">ポートレート</a>
+  </div>
 </nav>
 
 <!-- ── Hero ── -->
@@ -298,15 +303,18 @@
   </div>
 </section>
 
-<!-- ── Footer ── -->
-<footer>
-  <div class="footer-links">
-    <a href="./">メインページ</a> ／
-    <a href="model.html">モデル向け</a> ／
-    <a href="photographer.html">撮影者向け</a> ／
-    <a href="../baseball/">⚾ 名古屋野球ユニ部</a>
+<!-- ── Site Footer ── -->
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <nav class="site-footer__pillars">
+      <a href="../baseball/" class="site-footer__link site-footer__link--baseball">⚾ 野球ユニ部</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="../community/" class="site-footer__link site-footer__link--community">SNBコミュニティ</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="../portrait/" class="site-footer__link site-footer__link--portrait">ポートレート</a>
+    </nav>
+    <p class="site-footer__copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
   </div>
-  <p class="footer-copy">© 2026 アタル. All rights reserved.</p>
 </footer>
 
 </body>

@@ -1,0 +1,193 @@
+/* ──────────────────────────────────────────────
+   SNB Community 共通スタイル
+   全3本柱ページで共有するデザイントークン・共通コンポーネント
+   各ピラーは :root { --accent / --accent-lt } をローカル上書きして使用
+   ────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* ── Layout ── */
+  --max-w:           800px;
+
+  /* ── Background ── */
+  --bg:              #F5F2EC;
+  --bg-card:         #FFFFFF;
+  --bg-tint:         #EDEAE3;
+
+  /* ── Text ── */
+  --text:            #1C1A17;
+  --text-muted:      #6A6258;
+
+  /* ── Border / Divider ── */
+  --border:          #DDD8CF;
+  --divider:         #E5E1D8;
+
+  /* ── Pillar accent（各ピラーでローカル上書き）── */
+  --accent:          #1D3557;   /* default = SNBコミュニティ Navy */
+  --accent-lt:       #457B9D;
+
+  /* ── Cross-pillar identity colors（ナビ・フッターで使用） ── */
+  --color-baseball:  #3A7D44;
+  --color-community: #1D3557;
+  --color-portrait:  #C8102E;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 56px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
+  font-size: 15px;
+  line-height: 1.85;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-lt); }
+
+.container {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+section { padding: 4rem 0; }
+
+.section-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+h2 {
+  font-size: clamp(1.35rem, 3.5vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-bottom: 1.75rem;
+  color: var(--text);
+}
+
+h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ──────────────────────────────────────────────
+   Site Nav（全ページ共通ナビ）
+   ────────────────────────────────────────────── */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(245, 242, 236, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+}
+
+.site-nav__brand {
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  white-space: nowrap;
+}
+.site-nav__brand:hover { color: var(--accent); }
+
+.site-nav__right {
+  display: flex;
+  gap: 0.2rem 1.1rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.site-nav__pillar {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: color 0.15s;
+}
+
+.site-nav__pillar--baseball:hover,
+.site-nav__pillar--baseball[aria-current] { color: var(--color-baseball); }
+
+.site-nav__pillar--community:hover,
+.site-nav__pillar--community[aria-current] { color: var(--color-community); }
+
+.site-nav__pillar--portrait:hover,
+.site-nav__pillar--portrait[aria-current] { color: var(--color-portrait); }
+
+/* ──────────────────────────────────────────────
+   Site Footer（全ページ共通フッター）
+   ────────────────────────────────────────────── */
+.site-footer {
+  border-top: 1px solid var(--border);
+  background: var(--bg-tint);
+  padding: 2rem 1.5rem 2.5rem;
+  text-align: center;
+}
+
+.site-footer__inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+}
+
+.site-footer__pillars {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.2rem 0.5rem;
+  margin-bottom: 0.75rem;
+  list-style: none;
+}
+
+.site-footer__sep { color: var(--divider); }
+
+.site-footer__link {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: color 0.15s;
+}
+.site-footer__link--baseball:hover  { color: var(--color-baseball); }
+.site-footer__link--community:hover { color: var(--color-community); }
+.site-footer__link--portrait:hover  { color: var(--color-portrait); }
+
+.site-footer__copy {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ──────────────────────────────────────────────
+   Responsive
+   ────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .site-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.6rem 1.25rem;
+  }
+  .site-nav__right { gap: 0.15rem 0.75rem; }
+  .site-nav__pillar { font-size: 0.74rem; }
+  section { padding: 3rem 0; }
+}

@@ -1,102 +1,22 @@
 /* ──────────────────────────────────────────────
    名古屋野球ユニ部 共通スタイル
-   index.html / items.html で共有する基盤スタイル。
-   ページ固有のスタイルは各HTMLの <style> に記述。
+   common.css を先に読み込むこと。
+   このファイルはピラー固有の上書きと専用コンポーネントのみ定義する。
    ────────────────────────────────────────────── */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:         #F8F5EC;   /* 明るい砂色 */
-  --bg-card:    #FFFFFF;
-  --bg-green:   #EAF3E7;   /* 芝の薄緑 */
-  --bg-sky:     #E8F3FA;   /* 空の薄青 */
-  --green:      #3A7D44;   /* 芝の緑 */
-  --green-dark: #2C5F35;
-  --sky:        #2D7DD2;   /* 空の青 */
-  --dirt:       #B97A3D;   /* 内野の土 */
-  --text:       #2B2B26;
-  --text-muted: #6E685C;
-  --border:     #E2DCCD;
+  --accent:   #3A7D44;   /* 芝の緑 */
+  --accent-lt:#2C5F35;
+  --bg-tint:  #EAF3E7;   /* 芝の薄緑 */
+  --sky:      #2D7DD2;   /* 空の青（スケジュール・ノートボックス専用） */
+  --bg-sky:   #E8F3FA;
 }
-
-html { scroll-behavior: smooth; scroll-padding-top: 70px; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
-  font-size: 15px;
-  line-height: 1.9;
-  -webkit-font-smoothing: antialiased;
-}
-
-.container { max-width: 880px; margin: 0 auto; padding: 0 1.5rem; }
-section { padding: 4rem 0; }
-a { color: var(--sky); }
-
-.section-label {
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--green);
-  margin-bottom: 0.4rem;
-}
-h2 {
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  margin-bottom: 1.75rem;
-  color: var(--green-dark);
-}
-h3 {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: var(--green-dark);
-  margin-bottom: 1rem;
-}
-
-/* ── Nav ── */
-nav {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.8rem 1.5rem;
-}
-.nav-brand {
-  font-weight: 800;
-  font-size: 0.95rem;
-  letter-spacing: 0.05em;
-  color: var(--green-dark);
-  white-space: nowrap;
-  text-decoration: none;
-}
-.nav-links {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.2rem 1.1rem;
-  justify-content: flex-end;
-}
-.nav-links a {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-decoration: none;
-}
-.nav-links a:hover { color: var(--green); }
 
 /* ── Hero ── */
 .hero {
-  background: linear-gradient(180deg, var(--bg-sky) 0%, var(--bg-green) 100%);
+  background: linear-gradient(180deg, var(--bg-sky) 0%, var(--bg-tint) 100%);
   border-bottom: 1px solid var(--border);
   padding: 4.5rem 0 4rem;
   text-align: center;
@@ -109,7 +29,7 @@ nav {
   padding: 0.3rem 1.1rem;
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--green);
+  color: var(--accent);
   margin-bottom: 1.25rem;
 }
 .hero h1 {
@@ -117,7 +37,7 @@ nav {
   font-weight: 800;
   line-height: 1.35;
   letter-spacing: 0.03em;
-  color: var(--green-dark);
+  color: var(--accent-lt);
   margin-bottom: 1rem;
 }
 .hero-lead {
@@ -148,9 +68,9 @@ nav {
 .info-table th {
   width: 9em;
   white-space: nowrap;
-  color: var(--green-dark);
+  color: var(--accent-lt);
   font-weight: 800;
-  background: var(--bg-green);
+  background: var(--bg-tint);
 }
 
 /* ── Note box ── */
@@ -169,7 +89,7 @@ nav {
 
 /* ── Gallery / placeholder ── */
 .gallery-item {
-  border-radius: 14px;
+  border-radius: 10px;
   overflow: hidden;
   border: 1px solid var(--border);
   background: var(--bg-card);
@@ -191,24 +111,3 @@ nav {
   color: var(--text-muted);
   text-align: center;
 }
-
-/* ── Footer ── */
-footer {
-  border-top: 1px solid var(--border);
-  padding: 3rem 0;
-  background: var(--bg-green);
-}
-.footer-brand { font-size: 0.92rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--green-dark); }
-.footer-note { font-size: 0.8rem; color: var(--text-muted); }
-.footer-links { margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-muted); }
-.footer-links a { color: var(--text-muted); }
-.footer-links a:hover { color: var(--green-dark); }
-.footer-copy { font-size: 0.74rem; color: var(--text-muted); margin-top: 1.5rem; }
-
-@media (max-width: 600px) {
-  section { padding: 3rem 0; }
-  nav { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
-  .nav-links { justify-content: flex-start; }
-}
-
-:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }

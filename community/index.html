@@ -22,59 +22,15 @@
     gtag('config', 'G-8K1TJG0S9Y');
   </script>
 
+  <link rel="stylesheet" href="../common.css">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg:         #F2EFE9;
-      --bg-card:    #FDFCF9;
-      --bg-card2:   #E8EDF4;
-      --accent:     #1D3557;
-      --accent-lt:  #457B9D;
-      --text:       #1C1A17;
-      --text-muted: #6A6258;
-      --border:     #DDD8CF;
-      --divider:    #E5E1D8;
+      --accent:    #1D3557;
+      --accent-lt: #457B9D;
     }
 
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
-      font-size: 15px;
-      line-height: 1.8;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* ── header ── */
-    .site-header {
-      padding: 1.5rem 1.5rem 0;
-      max-width: 640px;
-      margin: 0 auto;
-    }
-
-    .site-nav {
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-    }
-
-    .site-nav a {
-      color: var(--accent-lt);
-      text-decoration: none;
-    }
-
-    .site-nav a:hover { color: var(--accent); }
-
-    .site-nav span { margin: 0 0.5rem; }
-
-    /* ── layout ── */
     .wrap {
-      max-width: 640px;
+      max-width: var(--max-w);
       margin: 0 auto;
       padding: 2.5rem 1.5rem 5rem;
     }
@@ -118,16 +74,6 @@
       margin: 0 auto;
     }
 
-    /* ── section label ── */
-    .section-label {
-      font-size: 0.68rem;
-      font-weight: 800;
-      letter-spacing: 0.26em;
-      text-transform: uppercase;
-      color: var(--accent-lt);
-      margin-bottom: 1rem;
-    }
-
     /* ── concept ── */
     .concept {
       margin-bottom: 3rem;
@@ -168,7 +114,7 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 1.75rem 1.75rem;
+      padding: 1.75rem;
       margin-bottom: 3rem;
     }
 
@@ -204,7 +150,7 @@
 
     /* next event banner */
     .next-banner {
-      background: var(--bg-card2);
+      background: var(--bg-tint);
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 1.25rem 1.5rem;
@@ -257,7 +203,7 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--accent-lt);
-      background: var(--bg-card2);
+      background: var(--bg-tint);
       border: 1px solid var(--border);
       border-radius: 3px;
       padding: 0.2rem 0.5rem;
@@ -350,39 +296,25 @@
       flex-shrink: 0;
     }
 
-    /* ── footer ── */
-    .site-footer {
-      text-align: center;
-      padding: 2rem 1.5rem 3rem;
-      font-size: 0.74rem;
-      color: var(--text-muted);
-      border-top: 1px solid var(--divider);
-    }
-
-    .site-footer a {
-      color: var(--accent-lt);
-      text-decoration: none;
-    }
-
     @media (max-width: 480px) {
       .hero { padding: 2rem 0 2rem; }
-      .format-card { padding: 1.25rem 1.25rem; }
+      .format-card { padding: 1.25rem; }
       .format-key { width: 5.5rem; }
       .next-banner { flex-direction: column; gap: 0.5rem; }
     }
-
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   </style>
 </head>
 <body>
 
-<header class="site-header">
-  <p class="site-nav">
-    <a href="../">SNB Community</a>
-    <span>›</span>
-    SNBコミュニティ
-  </p>
-</header>
+<!-- ── Site Nav ── -->
+<nav class="site-nav">
+  <a href="../" class="site-nav__brand">SNB Community</a>
+  <div class="site-nav__right">
+    <a href="../baseball/" class="site-nav__pillar site-nav__pillar--baseball">⚾ 野球ユニ部</a>
+    <a href="../community/" class="site-nav__pillar site-nav__pillar--community" aria-current="page">SNBコミュニティ</a>
+    <a href="../portrait/" class="site-nav__pillar site-nav__pillar--portrait">ポートレート</a>
+  </div>
+</nav>
 
 <main class="wrap">
 
@@ -507,8 +439,16 @@
 </main>
 
 <footer class="site-footer">
-  <p>SNBコミュニティ（SNBC）は不定期開催の少人数交流イベントです。</p>
-  <p style="margin-top: 0.4rem;"><a href="../">Studio Nagoya Base Community</a> — 名古屋・上前津</p>
+  <div class="site-footer__inner">
+    <nav class="site-footer__pillars">
+      <a href="../baseball/" class="site-footer__link site-footer__link--baseball">⚾ 野球ユニ部</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="../community/" class="site-footer__link site-footer__link--community">SNBコミュニティ</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="../portrait/" class="site-footer__link site-footer__link--portrait">ポートレート</a>
+    </nav>
+    <p class="site-footer__copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
+  </div>
 </footer>
 
 </body>
