@@ -7,33 +7,20 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --accent:    #C8102E;
-  --accent-lt: #e03050;
+  --accent:    #1E88E5;
+  --accent-lt: #42A5F5;
   --navy:      #1A3557;
   --navy-lt:   #2a5580;
   --highlight: #ffd060;
   --bg-card2:  #F2F2F0;
 }
 
-/* portrait の a はネイビー基調 */
-a { color: var(--navy); }
-a:hover { color: var(--accent); }
-
 main { padding: 2.5rem 0 3rem; }
 section { padding: 2.5rem 0; }
 section + section { border-top: 1px solid var(--border); }
 
-/* ── Section label & h2 ── */
+/* ── Section label ── */
 .section-label { color: var(--accent); }
-
-h2 {
-  margin: 0 0 1.5rem;
-  font-size: clamp(1.3rem, 3.4vw, 1.9rem);
-  display: inline-block;
-  padding-bottom: 0.35rem;
-  border-bottom: 3px solid var(--accent);
-  letter-spacing: 0.04em;
-}
 
 /* ── Pillar sub-nav（ヘッダー直下のページ内ナビ） ── */
 .pillar-subnav {
@@ -50,7 +37,7 @@ h2 {
 .pillar-subnav a {
   color: var(--text-muted);
 }
-.pillar-subnav a:hover { color: var(--navy); }
+.pillar-subnav a:hover { color: var(--accent); }
 
 /* ── Header / Hero（dark navy） ── */
 header,
@@ -128,13 +115,13 @@ h1 {
   border-radius: 8px;
   padding: 0.8rem 0.9rem;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--accent);
   display: block;
   transition: border-color 0.15s;
 }
 .contact-link:hover {
   border-color: var(--accent);
-  color: var(--navy);
+  color: var(--accent);
 }
 .contact-note {
   display: block;

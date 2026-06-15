@@ -24,13 +24,13 @@
   --divider:         #E5E1D8;
 
   /* ── Pillar accent（各ピラーでローカル上書き）── */
-  --accent:          #1D3557;   /* default = SNBコミュニティ Navy */
-  --accent-lt:       #457B9D;
+  --accent:          #1C1A17;   /* default = ニュートラル（各ピラーで上書き） */
+  --accent-lt:       #6A6258;
 
   /* ── Cross-pillar identity colors（ナビ・フッターで使用） ── */
   --color-baseball:  #3A7D44;
-  --color-community: #1D3557;
-  --color-portrait:  #C8102E;
+  --color-community: #C62828;
+  --color-portrait:  #1E88E5;
 }
 
 html {
