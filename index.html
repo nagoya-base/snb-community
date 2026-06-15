@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Nagoya Base Community｜名古屋の「好き」が集まる場所</title>
+  <meta name="description" content="名古屋・上前津を拠点に活動するコミュニティの入口。キャッチボールサークル「名古屋野球ユニ部」、少人数交流撮影会「SNBコミュニティ」、ポートレート体験の3つの活動を案内しています。">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://nagoya-base.github.io/snb-community/">
+
+  <!-- OGP -->
+  <meta property="og:title" content="Studio Nagoya Base Community｜名古屋の「好き」が集まる場所">
+  <meta property="og:description" content="キャッチボールサークル・少人数交流撮影会・ポートレート体験。名古屋・上前津のコミュニティ。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nagoya-base.github.io/snb-community/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Studio Nagoya Base Community">
+  <meta name="twitter:description" content="キャッチボールサークル・少人数交流撮影会・ポートレート体験。名古屋・上前津のコミュニティ。">
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K1TJG0S9Y"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-8K1TJG0S9Y');
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #FAF8F3;
+      --bg-card:    #FFFFFF;
+      --ink:        #23211C;
+      --ink-soft:   #5C564B;
+      --line:       #E4DFD3;
+      --rule:       #1C1A17;
+      /* 3本柱それぞれのアクセント（カードで使用） */
+      --uni:        #3A7D44;
+      --snbc:       #1D3557;
+      --portrait:   #C8102E;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
+      font-size: 15px;
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap { max-width: 760px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ── Masthead ── */
+    .masthead {
+      padding: 3.5rem 0 2.5rem;
+      border-bottom: 2px solid var(--rule);
+      margin-bottom: 0.4rem;
+    }
+    .masthead-kicker {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 1rem;
+    }
+    .masthead-title {
+      font-size: clamp(1.7rem, 6vw, 2.5rem);
+      font-weight: 800;
+      line-height: 1.3;
+      letter-spacing: 0.02em;
+    }
+    .masthead-sub {
+      margin-top: 1.25rem;
+      font-size: 0.92rem;
+      color: var(--ink-soft);
+      line-height: 1.95;
+      max-width: 560px;
+    }
+    .masthead-meta {
+      margin-top: 0.4rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--ink-soft);
+      text-align: right;
+    }
+
+    /* ── Section heading ── */
+    .lead-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin: 3rem 0 1.25rem;
+    }
+
+    /* ── Pillars ── */
+    .pillars {
+      display: grid;
+      gap: 1.1rem;
+    }
+
+    .pillar {
+      display: block;
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent, var(--line));
+      border-radius: 8px;
+      padding: 1.6rem 1.75rem;
+      text-decoration: none;
+      color: var(--ink);
+      transition: transform 0.16s, box-shadow 0.16s, border-color 0.16s;
+    }
+    .pillar:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(0,0,0,0.07);
+    }
+
+    .pillar--uni      { --accent: var(--uni); }
+    .pillar--snbc     { --accent: var(--snbc); }
+    .pillar--portrait { --accent: var(--portrait); }
+
+    .pillar-top {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.5rem;
+    }
+    .pillar-tag {
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .pillar-title {
+      font-size: 1.18rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      margin-bottom: 0.4rem;
+    }
+    .pillar-desc {
+      font-size: 0.87rem;
+      color: var(--ink-soft);
+      line-height: 1.85;
+    }
+    .pillar-arrow {
+      margin-top: 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+    }
+
+    /* ── About strip ── */
+    .about {
+      margin-top: 3.5rem;
+      padding-top: 2.5rem;
+      border-top: 1px solid var(--line);
+    }
+    .about p {
+      font-size: 0.87rem;
+      color: var(--ink-soft);
+      line-height: 1.95;
+    }
+
+    /* ── Footer ── */
+    .foot {
+      margin-top: 3rem;
+      padding: 2rem 0 3rem;
+      border-top: 2px solid var(--rule);
+      font-size: 0.76rem;
+      color: var(--ink-soft);
+      line-height: 1.8;
+    }
+    .foot a { color: var(--snbc); text-decoration: none; }
+    .foot a:hover { text-decoration: underline; }
+
+    @media (max-width: 480px) {
+      .masthead { padding: 2.5rem 0 2rem; }
+      .pillar { padding: 1.35rem 1.4rem; }
+    }
+
+    :focus-visible { outline: 2px solid var(--snbc); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="masthead-kicker">Studio Nagoya Base Community</p>
+    <h1 class="masthead-title">名古屋で、「好き」が集まる。</h1>
+    <p class="masthead-sub">
+      上前津を拠点に活動する、3つのゆるいコミュニティの入口です。
+      キャッチボール、衣装、撮影——興味のある入口からどうぞ。
+    </p>
+    <p class="masthead-meta">名古屋・上前津</p>
+  </header>
+
+  <p class="lead-label">3つの活動</p>
+
+  <div class="pillars">
+
+    <a class="pillar pillar--uni" href="./baseball/">
+      <div class="pillar-top">
+        <span class="pillar-tag">⚾ Catch Ball Circle</span>
+      </div>
+      <p class="pillar-title">名古屋野球ユニ部</p>
+      <p class="pillar-desc">
+        野球ユニフォームを着て、ゆるくキャッチボール。未経験・1人参加歓迎のサークルです。
+      </p>
+      <p class="pillar-arrow">活動を見る ›</p>
+    </a>
+
+    <a class="pillar pillar--snbc" href="./community/">
+      <div class="pillar-top">
+        <span class="pillar-tag">SNB Community</span>
+      </div>
+      <p class="pillar-title">SNBコミュニティ（少人数交流撮影会）</p>
+      <p class="pillar-desc">
+        箪笥に眠るお気に入りの一着を着て集まる、少人数の交流撮影会。同じ「好き」を持つ人と出会う場です。
+      </p>
+      <p class="pillar-arrow">詳しく見る ›</p>
+    </a>
+
+    <a class="pillar pillar--portrait" href="./portrait/">
+      <div class="pillar-top">
+        <span class="pillar-tag">Portrait Session</span>
+      </div>
+      <p class="pillar-title">ポートレート体験</p>
+      <p class="pillar-desc">
+        完全個室スタジオで楽しむポートレート体験。撮られる側・撮る側、どちらの入口も用意しています。
+      </p>
+      <p class="pillar-arrow">コースを見る ›</p>
+    </a>
+
+  </div>
+
+  <section class="about">
+    <p>
+      いずれの活動も、名古屋・上前津の Studio Nagoya Base を拠点に運営しています。
+      「ちょっと気になる」だけでも大歓迎。各ページの連絡先からお気軽にどうぞ。
+    </p>
+  </section>
+
+  <footer class="foot">
+    <p>Studio Nagoya Base Community — 名古屋・上前津</p>
+    <p style="margin-top:0.4rem;">
+      <a href="https://nagoya-base.github.io/Studio-nagoya-base/">Studio Nagoya Base（スタジオ）</a>
+    </p>
+  </footer>
+
+</div>
+
+</body>
+</html>
