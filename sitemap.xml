@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- ポータルトップ -->
+  <url>
+    <loc>https://nagoya-base.github.io/snb-community/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- 名古屋野球ユニ部 -->
+  <url>
+    <loc>https://nagoya-base.github.io/snb-community/baseball/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://nagoya-base.github.io/snb-community/baseball/items.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- SNBコミュニティ -->
+  <url>
+    <loc>https://nagoya-base.github.io/snb-community/community/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- ポートレート体験 -->
+  <url>
+    <loc>https://nagoya-base.github.io/snb-community/portrait/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://nagoya-base.github.io/snb-community/portrait/model.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nagoya-base.github.io/snb-community/portrait/photographer.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+</urlset>

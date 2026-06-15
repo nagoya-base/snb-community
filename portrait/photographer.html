@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>撮影者向け スタジオ見学・体験｜アタル 名古屋・上前津</title>
+  <meta name="description" content="カメラマン・撮影好き向けのスタジオ見学（無料・30分）と撮影お試し体験（90分¥3,000）。Godoxストロボ・COB定常光・LEDパネルを実際に操作。モデル同伴参加も可能。名古屋・上前津。">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://nagoya-base.github.io/snb-community/portrait/photographer.html">
+
+  <!-- OGP -->
+  <meta property="og:title" content="撮影者向け スタジオ見学・体験｜アタル 名古屋・上前津">
+  <meta property="og:description" content="スタジオ見学（無料）と撮影お試し体験（90分¥3,000）。Godoxストロボ・COB定常光・LEDパネルを実際に操作。名古屋・上前津。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nagoya-base.github.io/snb-community/portrait/photographer.html">
+  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/224A3133.jpeg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="撮影者向け スタジオ見学・体験｜アタル 名古屋・上前津">
+  <meta name="twitter:description" content="スタジオ見学無料・撮影お試し体験90分¥3,000。名古屋・上前津。">
+  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/224A3133.jpeg">
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K1TJG0S9Y"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-8K1TJG0S9Y');
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── photographer.html 固有スタイル ── */
+
+    .type-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .type-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.6rem 1.4rem;
+    }
+    .type-card.featured { border-width: 2px; border-color: var(--accent); }
+    .type-icon { font-size: 1.6rem; margin-bottom: 0.6rem; }
+    .type-title { font-size: 1rem; font-weight: 800; color: var(--navy); margin-bottom: 0.3rem; }
+    .type-price { font-size: 1.4rem; font-weight: 800; color: var(--accent); margin-bottom: 0.7rem; }
+    .type-price small { font-size: 0.8rem; color: var(--text-muted); font-weight: 400; }
+    .type-list { list-style: none; display: grid; gap: 0.3rem; margin-bottom: 1.1rem; }
+    .type-list li { font-size: 0.82rem; color: var(--text-muted); padding-left: 1rem; position: relative; }
+    .type-list li::before { content: '✓'; position: absolute; left: 0; color: var(--accent); font-size: 0.75rem; font-weight: 700; }
+    .type-note { font-size: 0.75rem; color: var(--text-muted); background: var(--bg-card2); border-radius: 4px; padding: 0.5rem 0.75rem; }
+    .type-cta-wrap { text-align: center; margin-top: 1.5rem; }
+
+    .equipment-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+    .equipment-col { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem 1.4rem; }
+    .equipment-col h3 { font-size: 0.88rem; font-weight: 800; color: var(--navy); margin-bottom: 0.75rem; padding-bottom: 0.4rem; border-bottom: 2px solid var(--border); }
+    .equipment-list { list-style: none; }
+    .equipment-list li { font-size: 0.84rem; color: var(--text-muted); padding: 0.25rem 0 0.25rem 1.1em; position: relative; }
+    .equipment-list li::before { content: '›'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+
+    .reason-list { display: grid; gap: 1.25rem; margin-top: 1rem; }
+    .reason-item { display: flex; gap: 1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem 1.4rem; }
+    .reason-icon { font-size: 1.6rem; flex-shrink: 0; padding-top: 0.1rem; }
+    .reason-item strong { display: block; font-size: 1rem; font-weight: 800; color: var(--navy); margin-bottom: 0.3rem; }
+    .reason-item p { font-size: 0.88rem; color: var(--text-muted); margin: 0; }
+
+    @media (max-width: 640px) {
+      .type-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Visual / Concept ── */
+    .visual-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .concept-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.2rem;
+    }
+    .concept-card h3 { font-size: 0.95rem; font-weight: 800; color: var(--navy); margin-bottom: 0.4rem; }
+    .concept-card p { font-size: 0.88rem; color: var(--text-muted); margin: 0; }
+
+    /* ── Gallery (before/after) ── */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .gallery-item { margin: 0; }
+    .gallery-img-wrap { position: relative; }
+    .gallery-img-wrap img {
+      width: 100%; height: 400px; object-fit: cover;
+      border-radius: 8px; border: 1px solid var(--border); display: block;
+    }
+    .gallery-badge {
+      position: absolute; top: 0.5rem; left: 0.5rem;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+      padding: 0.2rem 0.55rem; border-radius: 4px; line-height: 1;
+    }
+    .gallery-badge.before { background: rgba(0,0,0,0.55); color: #fff; }
+    .gallery-badge.after  { background: var(--accent); color: #fff; }
+    .gallery-item figcaption {
+      font-size: 0.82rem; color: var(--text-muted); margin-top: 0.4rem; text-align: center;
+    }
+
+    /* ── FAQ ── */
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .faq-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.2rem;
+    }
+    .faq-card h3 { font-size: 0.95rem; font-weight: 800; color: var(--navy); margin-bottom: 0.5rem; line-height: 1.5; }
+    .faq-card p { font-size: 0.88rem; color: var(--text-muted); margin: 0; }
+
+    /* ── Schedule note ── */
+    .schedule-note {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 0.9rem 1.1rem;
+      margin-top: 1.5rem;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.9;
+    }
+    .schedule-note strong { color: var(--navy); font-weight: 800; }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav>
+  <span class="nav-brand"><span>●</span> ATARU</span>
+  <ul class="nav-links-sub">
+    <li><a href="index.html">← メインページ</a></li>
+    <li><a href="model.html">モデル向け</a></li>
+  </ul>
+  <a href="#contact" class="nav-cta">申し込む</a>
+</nav>
+
+<!-- ── Header ── -->
+<header>
+  <div class="container">
+    <p class="hero-tag">Portrait Studio · Photographer Course</p>
+    <h1>🎥 撮影者として体験・見学する</h1>
+    <p class="hero-lead">スタジオを見学して機材を知る。次は自分で撮ってみる。スタジオ撮影の世界へ、小さな一歩から。</p>
+    <div class="hero-actions">
+      <a href="#contact" class="btn btn-primary">見学 or 体験を申し込む</a>
+      <a href="index.html" class="btn btn-white">コース一覧へ戻る</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <!-- ── Courses ── -->
+    <section id="courses">
+      <p class="section-label">Courses</p>
+      <h2>参加スタイル</h2>
+      <div class="type-grid">
+        <div class="type-card">
+          <div class="type-icon">👁</div>
+          <div class="type-title">見学コース</div>
+          <div class="type-price">無料 <small>/ 30分程度・事前予約制</small></div>
+          <ul class="type-list">
+            <li>スタジオの入り方・使い方を説明</li>
+            <li>Hue照明の実演（カラー切り替えなど）</li>
+            <li>空間・動線・雰囲気の確認</li>
+            <li>平日夜・土日に随時対応</li>
+            <li>「雰囲気だけ見たい」も歓迎</li>
+          </ul>
+          <div class="type-note">※ ストロボ・本格ライティングの体験は「お試し体験コース」で。DMまたはメールで事前予約を。</div>
+        </div>
+        <div class="type-card featured">
+          <div class="type-icon">📸</div>
+          <div class="type-title">お試し体験コース</div>
+          <div class="type-price">¥3,000 <small>/ 90分</small></div>
+          <ul class="type-list">
+            <li>ライティングのセットアップから体験</li>
+            <li>白背景・カラー照明・学校机を自由に操作</li>
+            <li>自分のカメラで本格ストロボ撮影</li>
+            <li>モデル同伴での参加も可能</li>
+            <li>完全個室・事前予約制</li>
+          </ul>
+          <div class="type-note">モデルなしの単独参加も歓迎。機材の理解を深めるだけでもOK。</div>
+        </div>
+      </div>
+      <div class="type-cta-wrap">
+        <a href="#contact" class="btn btn-primary">見学 or 体験を申し込む →</a>
+      </div>
+      <div class="schedule-note">
+        <strong>開催日時：</strong>平日夜（火・木・金　20:00〜）／ 休日 応相談<br>
+        どちらも事前予約制。名古屋・上前津エリア。
+      </div>
+    </section>
+
+    <!-- ── Gallery ── -->
+    <section id="gallery">
+      <p class="section-label">Visual Proof</p>
+      <h2>ライティングで変わる、写真の世界</h2>
+      <div class="visual-grid">
+        <div class="concept-card">
+          <h3>💡 体のラインが意図通り出る</h3>
+          <p>屋外の自然光と違い、光の方向・強さを完全にコントロールできます。</p>
+        </div>
+        <div class="concept-card">
+          <h3>🎨 背景を白・黒・カラーで選べる</h3>
+          <p>同じ衣装でも背景と照明の組み合わせで全く別の仕上がりになります。</p>
+        </div>
+        <div class="concept-card">
+          <h3>🔒 完全個室・貸し切りで使える</h3>
+          <p>スタッフ常駐なし。予約時間は貸し切り。自分のペースで試せます。</p>
+        </div>
+      </div>
+      <div class="gallery-grid">
+        <figure class="gallery-item">
+          <div class="gallery-img-wrap">
+            <img src="../images/224A3133.webp" loading="lazy" alt="作例：部屋の照明のみ" width="1080" height="1620">
+            <span class="gallery-badge before">BEFORE</span>
+          </div>
+          <figcaption>部屋の照明のみ</figcaption>
+        </figure>
+        <figure class="gallery-item">
+          <div class="gallery-img-wrap">
+            <img src="../images/IMG_7264.webp" loading="lazy" alt="作例：ストロボ＋黒背景" width="1365" height="2048">
+            <span class="gallery-badge after">AFTER</span>
+          </div>
+          <figcaption>ストロボ＋黒背景</figcaption>
+        </figure>
+        <figure class="gallery-item">
+          <div class="gallery-img-wrap">
+            <img src="../images/IMG_7278.webp" loading="lazy" alt="作例：ストロボ＋白背景" width="1365" height="2048">
+            <span class="gallery-badge after">AFTER</span>
+          </div>
+          <figcaption>ストロボ＋白背景</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ── Equipment ── -->
+    <section id="equipment">
+      <p class="section-label">Equipment</p>
+      <h2>使える機材</h2>
+      <div class="equipment-grid">
+        <div class="equipment-col">
+          <h3>光源</h3>
+          <ul class="equipment-list">
+            <li>ストロボ：Godox AD200Pro</li>
+            <li>ストロボ：Godox SK400II × 1灯</li>
+            <li>COB定常光：高出力 × 2灯（白色・フルカラー）</li>
+            <li>LEDパネル：フルカラー × 1</li>
+            <li>LEDパネル：バイカラー × 1</li>
+          </ul>
+        </div>
+        <div class="equipment-col">
+          <h3>アクセサリー・背景</h3>
+          <ul class="equipment-list">
+            <li>各種ソフトボックス・アンブレラ</li>
+            <li>グリッド・カラーフィルター類</li>
+            <li>白 / 黒 / カラー背景紙</li>
+            <li>ライトスタンド・レフ板</li>
+            <li>学校机・椅子（小道具）</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Why ── -->
+    <section id="why">
+      <p class="section-label">For Your Future</p>
+      <h2>スタジオ撮影を始める理由</h2>
+      <div class="reason-list">
+        <div class="reason-item">
+          <span class="reason-icon">🔦</span>
+          <div>
+            <strong>光をコントロールする楽しさを知る</strong>
+            <p>ストロボの向きひとつで、顔の印象は大きく変わります。「自分で光を作る」体験が、撮影の見え方を変えます。</p>
+          </div>
+        </div>
+        <div class="reason-item">
+          <span class="reason-icon">📐</span>
+          <div>
+            <strong>買う前に試す。失敗しない機材選び</strong>
+            <p>高価なストロボを購入する前に、実際のセットで触れて試せます。「自分に本当に必要な機材」が見学でわかります。</p>
+          </div>
+        </div>
+        <div class="reason-item">
+          <span class="reason-icon">🧑‍🤝‍🧑</span>
+          <div>
+            <strong>コアユーザーへのステップアップ</strong>
+            <p>見学 → お試し体験 → 定期利用と、自分のペースで関わり方を深められます。常連ユーザー向けの相談も随時受け付けています。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FAQ ── -->
+    <section id="faq">
+      <p class="section-label">FAQ</p>
+      <h2>よくある不安</h2>
+      <div class="faq-grid">
+        <div class="faq-card">
+          <h3>Q1：自分の機材と一緒に使えますか？</h3>
+          <p>A：はい。持ち込み機材とスタジオ常設機材の併用が可能です。ストロボとカメラの同調設定などは見学時にその場で確認できます。Canon・SONYに対応しています。</p>
+        </div>
+        <div class="faq-card">
+          <h3>Q2：ライティングをあまり組んだことがないのですが大丈夫ですか？</h3>
+          <p>A：見学会では実際に光を当てながら確認できます。「こういう写真を撮りたい」というイメージを持ってきていただければ、セッティングの参考になります。</p>
+        </div>
+        <div class="faq-card">
+          <h3>Q3：撮影相手と一緒に見学できますか？</h3>
+          <p>A：はい。被写体の方と一緒にお越しいただいても構いません。空間の広さ・動線・照明の雰囲気を事前に確認しておくと当日の撮影がスムーズです。</p>
+        </div>
+        <div class="faq-card">
+          <h3>Q4：匿名で問い合わせできますか？</h3>
+          <p>A：ニックネームやイニシャルで構いません。いただいた情報はご案内のみに使用し、第三者への共有・無断公開は一切行いません。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Contact ── -->
+    <section id="contact">
+      <p class="section-label">Contact</p>
+      <h2>見学 or 体験を申し込む</h2>
+      <p>希望内容（見学のみ／お試し体験）と希望日時をお知らせください。ご質問だけでも歓迎です。</p>
+      <div class="contact-links">
+        <a href="mailto:nagoyabase2023@gmail.com?subject=スタジオ見学・体験お問い合わせ" class="contact-link">
+          メールで申し込む
+          <span class="contact-note">nagoyabase2023@gmail.com　返信は通常24時間以内。</span>
+        </a>
+        <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="contact-link">
+          X（旧Twitter）@baseballuni2022 にDMする
+          <span class="contact-note">気軽に質問だけでもOKです。</span>
+        </a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div>
+    <a href="index.html">メインページ</a> ／
+    <a href="model.html">モデル向け</a>
+  </div>
+  <p class="footer-copy">© 2026 アタル. All rights reserved.</p>
+</footer>
+
+</body>
+</html>

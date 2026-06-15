@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ポートレート体験コース｜アタル 名古屋・上前津</title>
+  <meta name="description" content="名古屋・上前津の完全個室スタジオで楽しむポートレート体験。モデル（被写体）として撮ってもらうコースと、撮影者として見学・体験するコースの2展開。90分¥3,000〜。">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://nagoya-base.github.io/snb-community/portrait/">
+
+  <!-- OGP -->
+  <meta property="og:title" content="ポートレート体験コース｜アタル 名古屋・上前津">
+  <meta property="og:description" content="名古屋・上前津の完全個室スタジオで楽しむポートレート体験。モデル向け・撮影者向けの2コース。90分¥3,000〜。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nagoya-base.github.io/snb-community/portrait/">
+  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/IMG_7278.jpeg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ポートレート体験コース｜アタル 名古屋・上前津">
+  <meta name="twitter:description" content="名古屋・上前津の完全個室スタジオで楽しむポートレート体験。90分¥3,000〜。">
+  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/IMG_7278.jpeg">
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K1TJG0S9Y"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-8K1TJG0S9Y');
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ── index.html 固有スタイル ── */
+    .container { max-width: 800px; padding: 0 1.5rem; }
+    section { padding: 4rem 0; }
+    h2 { font-size: 1.5rem; letter-spacing: 0.04em; margin-bottom: 2rem; }
+
+    .hero { padding: 4.5rem 0 3.5rem; }
+    .hero h1 { font-size: clamp(1.9rem, 5vw, 2.7rem); line-height: 1.3; margin-bottom: 1rem; }
+    .hero h1 em { font-style: normal; color: var(--highlight); }
+    .hero-lead { font-size: 1rem; margin-bottom: 2rem; line-height: 1.9; }
+    .hero-specs { display: flex; flex-wrap: wrap; gap: 0.6rem 1.5rem; }
+    .hero-spec { font-size: 0.82rem; opacity: 0.88; }
+    .hero-spec strong { font-weight: 800; }
+
+    .path-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    .path-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .path-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 20px rgba(200, 16, 46, 0.09);
+    }
+    .path-card.featured { border-color: var(--accent); border-width: 2px; }
+    .path-icon { font-size: 2.2rem; margin-bottom: 0.75rem; }
+    .path-title { font-size: 1.15rem; font-weight: 800; color: var(--navy); margin-bottom: 0.5rem; }
+    .path-price { font-size: 1.35rem; font-weight: 800; color: var(--accent); margin-bottom: 1rem; }
+    .path-price small { font-size: 0.8rem; font-weight: 400; color: var(--text-muted); }
+    .path-list { list-style: none; margin-bottom: 1.5rem; flex: 1; }
+    .path-list li { padding: 0.3rem 0 0.3rem 1.2em; font-size: 0.88rem; color: var(--text-muted); position: relative; }
+    .path-list li::before { content: '›'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+    .path-cta {
+      display: block; text-align: center; padding: 0.75rem;
+      border-radius: 6px; font-weight: 700; font-size: 0.9rem;
+      background: var(--accent); color: #fff; transition: background 0.15s;
+      text-decoration: none;
+    }
+    .path-cta:hover { background: var(--accent-lt); color: #fff; }
+    .path-cta.outline {
+      background: transparent; color: var(--navy);
+      border: 2px solid var(--border);
+    }
+    .path-cta.outline:hover { border-color: var(--navy); color: var(--navy); }
+
+    .info-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-size: 0.86rem;
+      color: var(--text-muted);
+      margin-top: 2rem;
+      line-height: 1.9;
+    }
+
+    .event-card {
+      background: var(--bg-card);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem 1.5rem;
+    }
+    .event-date-badge {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+    .event-body { flex: 1; min-width: 220px; }
+    .event-title { font-size: 1.08rem; font-weight: 800; color: var(--navy); margin-bottom: 0.3rem; }
+    .event-desc { font-size: 0.86rem; color: var(--text-muted); }
+
+    @media (max-width: 600px) {
+      .path-grid { grid-template-columns: 1fr; }
+    }
+
+    .event-none {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      padding: 1rem 0;
+    }
+    .past-events-label {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      margin: 2rem 0 0.75rem;
+      text-transform: uppercase;
+    }
+    .event-card--past {
+      opacity: 0.6;
+      border-color: var(--border);
+      border-width: 1px;
+    }
+
+    /* ── Gallery ── */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+    @media (min-width: 600px) {
+      .gallery { grid-template-columns: repeat(3, 1fr); }
+    }
+    .gallery img,
+    .gallery-slot {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+      border-radius: 10px;
+      display: block;
+    }
+    .gallery img { border: 1px solid var(--border); }
+    .gallery-slot {
+      background: var(--bg-card);
+      border: 1.5px dashed var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav>
+  <span class="nav-brand"><span>●</span> ATARU</span>
+  <a href="../" class="nav-back">トップへ</a>
+</nav>
+
+<!-- ── Hero ── -->
+<div class="hero">
+  <div class="container">
+    <p class="hero-tag">Portrait Studio · Nagoya Kamimaetsu</p>
+    <h1>照明と一眼で、<br><em>あなたの写真が変わる。</em></h1>
+    <p class="hero-lead">
+      名古屋・上前津の完全個室スタジオで楽しむポートレート体験。<br>
+      撮ってもらいたい方も、撮りたい方も、どちらも歓迎。
+    </p>
+    <div class="hero-specs">
+      <span class="hero-spec">📍 <strong>名古屋・上前津</strong></span>
+      <span class="hero-spec">🔒 <strong>完全個室</strong></span>
+      <span class="hero-spec">⏱ <strong>90分〜</strong></span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Path selection ── -->
+<section>
+  <div class="container">
+    <p class="section-label">Choose Your Path</p>
+    <h2>あなたのスタイルはどっち？</h2>
+    <div class="path-grid">
+      <div class="path-card featured">
+        <div class="path-icon">📷</div>
+        <div class="path-title">モデルに興味あり</div>
+        <div class="path-price">¥5,000 <small>/ 90分〜</small></div>
+        <ul class="path-list">
+          <li>一眼レフ＋ストロボで撮ってもらう</li>
+          <li>スポユニ・コスプレ・ポートレーOK</li>
+          <li>白背景・カラー照明・各種背景あり</li>
+          <li>ポーズ指示あり・初心者歓迎</li>
+          <li>撮影データお渡し</li>
+        </ul>
+        <a href="model.html" class="path-cta">モデル向け詳細を見る →</a>
+      </div>
+      <div class="path-card">
+        <div class="path-icon">🎥</div>
+        <div class="path-title">撮影に興味あり</div>
+        <div class="path-price">見学 無料 <small>/ お試し体験¥3,000</small></div>
+        <ul class="path-list">
+          <li>スタジオ見学・機材解説（30分・無料）</li>
+          <li>ストロボ・COB・LEDを実際に操作</li>
+          <li>お試し撮影体験（90分¥3,000）</li>
+          <li>モデル同伴での参加も可能</li>
+          <li>平日夜・土日対応</li>
+        </ul>
+        <a href="photographer.html" class="path-cta outline">撮影者向け詳細を見る →</a>
+      </div>
+    </div>
+    <div class="info-box">
+      ※ 両コースとも完全個室・事前予約制です。ポートレート専用の運営です。撮影のみを目的とした方も安心してご参加ください。
+    </div>
+  </div>
+</section>
+
+<!-- ── Event ── -->
+<section id="event">
+  <div class="container">
+    <p class="section-label">Event</p>
+    <h2>開催予定のイベント</h2>
+    <!-- ▼ 開催予定イベントはここに追加 ▼ -->
+    <p class="event-none">現在、開催予定のイベントはありません。</p>
+    <!-- ▲ 開催予定イベントはここまで ▲ -->
+
+    <h3 class="past-events-label">過去のイベント</h3>
+    <div class="event-card event-card--past">
+      <div class="event-date-badge">6/14（日）</div>
+      <div class="event-body">
+        <div class="event-title">スタジオ撮影体験会 in 名古屋・上前津</div>
+        <p class="event-desc">90分¥3,000・完全個室。スポユニ・コスプレ歓迎、スタジオ未経験・自撮り勢も大歓迎の限定開催です。</p>
+      </div>
+      <a href="../community/" class="path-cta" style="flex: 0 0 auto; padding: 0.75rem 1.5rem;">詳細を見る →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Gallery ── -->
+<section id="gallery">
+  <div class="container">
+    <p class="section-label">Gallery</p>
+    <h2>作例ギャラリー</h2>
+    <div class="gallery">
+      <!-- 画像を追加するときは <div class="gallery-slot"> を
+           <img src="../images/ファイル名.webp" alt="説明" loading="lazy"> に置き換えてください -->
+      <img src="../images/IMG_0083.webp" alt="作例" loading="lazy">
+      <img src="../images/IMG_0088.webp" alt="作例" loading="lazy">
+      <img src="../images/IMG_0092.webp" alt="作例" loading="lazy">
+      <img src="../images/IMG_0102.webp" alt="作例" loading="lazy">
+      <img src="../images/IMG_0146.webp" alt="作例" loading="lazy">
+      <img src="../images/IMG_0157.webp" alt="作例" loading="lazy">
+      <div class="gallery-slot">07</div>
+      <div class="gallery-slot">08</div>
+      <div class="gallery-slot">09</div>
+      <div class="gallery-slot">10</div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="container">
+    <p class="section-label">Contact</p>
+    <h2>ご予約・お問い合わせ</h2>
+    <p>ご質問だけでも歓迎です。希望コースや日程の相談をお気軽にお送りください。</p>
+    <div class="contact-links">
+      <a href="mailto:nagoyabase2023@gmail.com?subject=ポートレート体験お問い合わせ" class="contact-link">
+        メールで相談・予約する
+        <span class="contact-note">nagoyabase2023@gmail.com　返信は通常24時間以内。</span>
+      </a>
+      <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="contact-link">
+        X（旧Twitter）@baseballuni2022 にDMする
+        <span class="contact-note">短い質問だけでもOKです。</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="footer-links">
+    <a href="./">メインページ</a> ／
+    <a href="model.html">モデル向け</a> ／
+    <a href="photographer.html">撮影者向け</a> ／
+    <a href="../baseball/">⚾ 名古屋野球ユニ部</a>
+  </div>
+  <p class="footer-copy">© 2026 アタル. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
