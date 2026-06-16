@@ -1,7 +1,8 @@
 /* ──────────────────────────────────────────────
-   SNBコミュニティ 共通スタイルシート
+   community/ 共通スタイルシート
    common.css を先に読み込むこと。
    このファイルはピラー固有の上書きと専用コンポーネントのみ定義する。
+   構造・余白・カードは baseball / portrait と共通トーンに揃える。
    ────────────────────────────────────────────── */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,58 +12,68 @@
   --accent-lt: #E53935;
 }
 
-.wrap {
-  max-width: var(--max-w);
-  margin: 0 auto;
-  padding: 2.5rem 1.5rem 5rem;
-}
-
-/* ── hero ── */
+/* ── Hero（明るい背景・赤アクセント） ── */
 .hero {
+  background: var(--bg-tint);
+  border-bottom: 1px solid var(--border);
+  padding: 4.5rem 0 3.5rem;
   text-align: center;
-  padding: 3rem 0 2.5rem;
-  border-bottom: 1px solid var(--divider);
-  margin-bottom: 2.5rem;
 }
 
-.hero-eyebrow {
+.hero-tag {
+  display: inline-block;
   font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--accent-lt);
-  margin-bottom: 1.1rem;
+  margin-bottom: 1rem;
 }
 
-.hero-title {
-  font-size: clamp(1.45rem, 5vw, 1.85rem);
+.hero h1 {
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
   font-weight: 800;
   letter-spacing: 0.03em;
-  line-height: 1.45;
+  line-height: 1.4;
   color: var(--text);
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
-.hero-title em {
+.hero h1 em {
   font-style: normal;
   color: var(--accent);
 }
 
-.hero-sub {
-  font-size: 0.88rem;
+.hero-lead {
+  font-size: 0.95rem;
   color: var(--text-muted);
   line-height: 1.9;
-  max-width: 420px;
-  margin: 0 auto;
+  max-width: 460px;
+  margin: 0 auto 1.75rem;
 }
 
-/* ── concept ── */
-.concept {
-  margin-bottom: 3rem;
+.hero-specs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 0.6rem;
 }
 
+.hero-spec {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.hero-spec strong { color: var(--text); font-weight: 800; }
+
+/* ── About ── */
 .concept-body {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: var(--text-muted);
   line-height: 2;
 }
@@ -77,27 +88,26 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
 }
 
 .tag {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
   font-size: 0.8rem;
   color: var(--text-muted);
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.03em;
 }
 
 /* ── format card ── */
 .format-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 1.75rem;
-  margin-bottom: 3rem;
 }
 
 .format-row {
@@ -105,7 +115,7 @@
   gap: 1rem;
   padding: 0.65rem 0;
   border-bottom: 1px solid var(--divider);
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   align-items: baseline;
 }
 
@@ -116,7 +126,7 @@
   flex-shrink: 0;
   font-weight: 700;
   color: var(--text);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   letter-spacing: 0.04em;
 }
 
@@ -125,18 +135,12 @@
   line-height: 1.75;
 }
 
-/* ── schedule section ── */
-.schedule-section {
-  margin-bottom: 3rem;
-}
-
-/* next event banner */
+/* ── next event banner ── */
 .next-banner {
-  background: var(--bg-tint);
+  background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 12px;
   padding: 1.25rem 1.5rem;
-  margin-bottom: 1rem;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -151,7 +155,7 @@
 }
 
 .next-text {
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   color: var(--text-muted);
 }
 
@@ -160,63 +164,15 @@
   font-weight: 700;
 }
 
-/* archive list */
-.archive-list {
-  list-style: none;
-  display: grid;
-  gap: 0.5rem;
-  margin-top: 1.5rem;
-}
-
-.archive-item {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.9rem 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-size: 0.85rem;
-}
-
-.archive-badge {
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent-lt);
-  background: var(--bg-tint);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 0.2rem 0.5rem;
-  white-space: nowrap;
-}
-
-.archive-name {
-  font-weight: 700;
-  color: var(--text);
-}
-
-.archive-date {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-left: auto;
-}
-
-/* ── rules ── */
-.rules-section {
-  margin-bottom: 3rem;
-}
-
+/* ── rules（共通 path-list トーンの › チェブロン） ── */
 .rules-list {
   list-style: none;
   display: grid;
   gap: 0.45rem;
-  margin-top: 0.75rem;
 }
 
 .rules-list li {
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   color: var(--text-muted);
   padding-left: 1.25rem;
   position: relative;
@@ -231,56 +187,45 @@
   font-weight: 700;
 }
 
-/* ── contact ── */
-.contact-section {
-  border-top: 1px solid var(--divider);
-  padding-top: 2rem;
-}
-
-.contact-block {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1.5rem 1.75rem;
-}
-
+/* ── contact（portrait と共通体系） ── */
 .contact-intro {
-  font-size: 0.86rem;
+  font-size: 0.92rem;
   color: var(--text-muted);
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   line-height: 1.85;
 }
 
 .contact-links {
   display: grid;
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.8rem;
 }
 
 .contact-link {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  font-size: 0.85rem;
-  color: var(--accent);
   text-decoration: none;
-  font-weight: 600;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  font-weight: 700;
+  color: var(--accent);
+  display: block;
+  transition: border-color 0.15s, color 0.15s;
 }
 
-.contact-link:hover { color: var(--text); }
+.contact-link:hover { border-color: var(--accent); color: var(--accent); }
 
-.contact-link-label {
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.contact-note {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.84rem;
+  font-weight: 400;
   color: var(--text-muted);
-  width: 4rem;
-  flex-shrink: 0;
 }
 
 @media (max-width: 480px) {
-  .hero { padding: 2rem 0 2rem; }
+  .hero { padding: 3rem 0 2.5rem; }
   .format-card { padding: 1.25rem; }
   .format-key { width: 5.5rem; }
-  .next-banner { flex-direction: column; gap: 0.5rem; }
+  .next-banner { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
 }
