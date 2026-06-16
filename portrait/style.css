@@ -7,7 +7,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --accent:    #1E88E5;
+  --accent:    #1976D2;
   --accent-lt: #42A5F5;
   --navy:      #1A3557;
   --navy-lt:   #2a5580;
