@@ -13,13 +13,13 @@
   <meta property="og:description" content="好きなサッカーユニで集まろう。名古屋・上前津で7/4(土)・7/5(日) 2days限定開催。定員4名・参加費4,000円。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://nagoya-base.github.io/snb-community/community/vol1_0704_soccer.html">
-  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/290F7E4A-F720-4F06-B004-D6949B28665F.jpg">
+  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/soccer-vol1-hero.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="SNBC サカユニ会 Vol.1｜7/4・7/5 名古屋">
   <meta name="twitter:description" content="好きなサッカーユニで集まろう。名古屋・上前津で7/4(土)・7/5(日) 2days限定開催。定員4名・参加費4,000円。">
-  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/290F7E4A-F720-4F06-B004-D6949B28665F.jpg">
+  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/soccer-vol1-hero.jpg">
 
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K1TJG0S9Y"></script>
@@ -49,7 +49,10 @@
       --limit-bg:   #FFEBEE;
     }
 
-    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 60px;
+    }
     body {
       background: var(--bg);
       color: var(--text);
@@ -613,7 +616,12 @@
 <!-- ── Hero ── -->
 <section class="hero" id="top">
   <div class="hero-img-wrap">
-    <img src="../images/290F7E4A-F720-4F06-B004-D6949B28665F.png" alt="SNBC サカユニ会 Vol.1" width="1730" height="909" loading="eager">
+    <picture>
+      <source srcset="../images/soccer-vol1-hero.webp" type="image/webp">
+      <img src="../images/soccer-vol1-hero.jpg"
+           alt="SNBC サカユニ会 Vol.1" width="1200" height="630" loading="eager"
+           fetchpriority="high">
+    </picture>
     <div class="hero-img-overlay"></div>
   </div>
   <div class="container">
@@ -910,7 +918,7 @@
       ユニフォーム・競パン・スーツ・撮影・交流。SNBコミュニティ（SNBC）不定期開催。
     </p>
     <span class="footer-link">
-      SNBコミュニティの詳細は <a href="./">こちら</a>
+      SNBコミュニティの詳細は <a href="../">こちら</a>
     </span>
     <p class="footer-copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
   </div>
