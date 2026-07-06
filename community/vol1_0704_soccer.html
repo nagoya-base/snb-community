@@ -562,6 +562,22 @@
       color: rgba(242, 239, 233, 0.42);
     }
 
+    /* ── Gallery ── */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-top: 2rem;
+    }
+    .gallery-grid img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      display: block;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 640px) {
       .nav-links { display: none; }
@@ -586,6 +602,7 @@
       .hero-content { padding: 2.5rem 0 4rem; }
 
       .about-grid { grid-template-columns: 1fr; }
+      .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
 
       .final-cta { padding: 4rem 0; }
     }
@@ -822,6 +839,20 @@
           <span>見せ合い・話し・希望者は写真撮影。無理に盛り上げなくていい、ゆるい場です。飲食物の持ち込みOK。近くにコンビニあり。</span>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Gallery ── -->
+<section id="gallery">
+  <div class="container">
+    <p class="section-label">Gallery</p>
+    <h2>当日の様子</h2>
+    <div class="gallery-grid">
+      <img src="../images/soccer-vol1-gallery01.webp" alt="サカユニ会 Vol.1 当日の様子" loading="lazy" decoding="async">
+      <img src="../images/soccer-vol1-gallery02.webp" alt="サカユニ会 Vol.1 当日の様子" loading="lazy" decoding="async">
+      <img src="../images/soccer-vol1-gallery03.webp" alt="サカユニ会 Vol.1 当日の様子" loading="lazy" decoding="async">
+      <img src="../images/soccer-vol1-gallery04.webp" alt="サカユニ会 Vol.1 当日の様子" loading="lazy" decoding="async">
     </div>
   </div>
 </section>
