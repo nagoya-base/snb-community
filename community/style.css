@@ -258,3 +258,29 @@
   color: var(--text-muted, #6b5e4a);
   margin-top: 4px;
 }
+
+/* 開催実績 */
+.past-events {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.past-events-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.past-event-item {
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+.past-event-title {
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.past-event-detail {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
