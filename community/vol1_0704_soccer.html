@@ -578,6 +578,26 @@
       display: block;
     }
 
+    /* ── Voices ── */
+    .voices-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .voice-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      padding: 1rem 1.25rem;
+    }
+    .voice-text {
+      font-size: 0.9rem;
+      line-height: 1.8;
+      margin: 0;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 640px) {
       .nav-links { display: none; }
@@ -603,6 +623,7 @@
 
       .about-grid { grid-template-columns: 1fr; }
       .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+      .voices-grid { grid-template-columns: 1fr; }
 
       .final-cta { padding: 4rem 0; }
     }
@@ -853,6 +874,34 @@
       <img src="../images/soccer-vol1-gallery02.webp" alt="サカユニ会 Vol.1 当日の様子" loading="lazy" decoding="async">
       <img src="../images/soccer-vol1-gallery03.webp" alt="サカユニ会 Vol.1 当日の様子" loading="lazy" decoding="async">
       <img src="../images/soccer-vol1-gallery04.webp" alt="サカユニ会 Vol.1 当日の様子" loading="lazy" decoding="async">
+    </div>
+  </div>
+</section>
+
+<!-- ── Voices ── -->
+<section id="voices">
+  <div class="container">
+    <p class="section-label">Voices</p>
+    <h2>参加者の声</h2>
+    <div class="voices-grid">
+      <div class="voice-card">
+        <p class="voice-text">「名古屋でこういうイベントがないので、もっとやってほしい」</p>
+      </div>
+      <div class="voice-card">
+        <p class="voice-text">「サカユニファン同士で情報交換できてよかった」</p>
+      </div>
+      <div class="voice-card">
+        <p class="voice-text">「夜開催だとお酒もあって打ち解けるの早くなりそう」</p>
+      </div>
+      <div class="voice-card">
+        <p class="voice-text">「本格的なポートレート撮ってもらえてよかった」</p>
+      </div>
+      <div class="voice-card">
+        <p class="voice-text">「野球ユニ版もやってほしい」</p>
+      </div>
+      <div class="voice-card">
+        <p class="voice-text">「ラグビー版もやってほしい」</p>
+      </div>
     </div>
   </div>
 </section>
