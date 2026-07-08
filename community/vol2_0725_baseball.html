@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>野球ユニ会 Vol.2（7/25開催） | SNBC</title>
+  <meta name="description" content="好きな野球ユニフォームを着て、見せ合ったり話したり。名古屋・上前津の個室スタジオで2026年7月25日（土）開催。定員4名・参加費4,000円。">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://nagoya-base.github.io/snb-community/community/vol2_0725_baseball.html">
+
+  <!-- OGP -->
+  <!-- TODO: Vol.2当日撮影後、専用OGP画像（例: ogp_baseball-vol2-hero.jpg）に差し替え。現在は野球ユニ部ページと共用の仮画像 -->
+  <meta property="og:title" content="野球ユニ会 Vol.2（7/25開催） | SNBC">
+  <meta property="og:description" content="好きな野球ユニで集まろう。名古屋・上前津で7/25(土) 開催。定員4名・参加費4,000円。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nagoya-base.github.io/snb-community/community/vol2_0725_baseball.html">
+  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/ogp_hero.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="野球ユニ会 Vol.2（7/25開催） | SNBC">
+  <meta name="twitter:description" content="好きな野球ユニで集まろう。名古屋・上前津で7/25(土) 開催。定員4名・参加費4,000円。">
+  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/ogp_hero.jpg">
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K1TJG0S9Y"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-8K1TJG0S9Y');
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #F2EFE9;
+      --bg-card:    #FDFCF9;
+      --bg-card2:   #E8F0E9;
+      --accent:     #2E7D32;
+      --accent-rgb: 46, 125, 50;
+      --accent-lt:  #66BB6A;
+      --navy:       #2E7D32;
+      --navy-lt:    #2E7D32;
+      --text:       #1C1A17;
+      --text-muted: #6A6258;
+      --border:     #DDD8CF;
+      --limit:      #2E7D32;
+      --limit-bg:   #E8F5E9;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 60px;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
+      font-size: 15px;
+      line-height: 1.8;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--navy); text-decoration: none; }
+    a:hover { color: var(--text); }
+
+    /* ── Layout ── */
+    .container { max-width: 800px; margin: 0 auto; padding: 0 1.5rem; }
+    section { padding: 5rem 0; }
+    section + section { border-top: 1px solid var(--border); }
+
+    .section-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 0.65rem;
+    }
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      margin-bottom: 2rem;
+      display: inline-block;
+      padding-bottom: 0.3rem;
+      border-bottom: 3px solid var(--accent);
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(253, 252, 249, 0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-brand {
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: var(--navy);
+    }
+    .nav-brand span {
+      color: var(--accent);
+      margin-right: 0.4rem;
+    }
+    .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+    .nav-links a {
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      color: #6A6258;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--navy); }
+    .nav-cta {
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: var(--accent);
+      color: #F2EFE9;
+      padding: 0.45rem 1.1rem;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+      transition: background 0.15s;
+    }
+    .nav-cta:hover { background: #E8F5E9; color: var(--accent); }
+
+    /* hamburger */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--navy);
+      transition: all 0.2s;
+    }
+
+    /* ── Limit badge ── */
+    .limit-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--limit-bg);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      padding: 0.3rem 1rem;
+      border-radius: 2px;
+      margin-bottom: 1.75rem;
+    }
+    .hero .limit-badge {
+      background: rgba(242, 239, 233, 0.14);
+      border-color: rgba(242, 239, 233, 0.32);
+      color: #F2EFE9;
+    }
+    .limit-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--limit);
+      animation: pulse 1.6s infinite;
+    }
+    .hero .limit-dot { background: #F2EFE9; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 0;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      background: #1C1A17;
+    }
+    .hero-img-wrap {
+      width: 100%;
+      height: 62vh;
+      min-height: 380px;
+      max-height: 560px;
+      position: relative;
+    }
+    .hero-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      display: block;
+    }
+    .hero-img-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(28, 26, 23, 0.05) 0%,
+        rgba(28, 26, 23, 0.45) 58%,
+        rgba(28, 26, 23, 0.95) 100%
+      );
+    }
+    .hero-content {
+      padding: 3.5rem 0 5rem;
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 5.5vw, 2.9rem);
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      line-height: 1.3;
+      margin-bottom: 1.2rem;
+      color: #F2EFE9;
+      display: block;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .hero h1 em { font-style: normal; color: #B9E4A5; }
+    .hero-sub {
+      font-size: 0.9rem;
+      color: rgba(242, 239, 233, 0.78);
+      line-height: 2;
+      margin-bottom: 2.25rem;
+    }
+    .hero-specs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-bottom: 2.5rem;
+    }
+    .hero-spec {
+      background: rgba(242, 239, 233, 0.14);
+      border: 1px solid rgba(242, 239, 233, 0.24);
+      color: rgba(242, 239, 233, 0.92);
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 0.4rem 1rem;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+    }
+    .hero-spec.big {
+      font-size: 1rem;
+      padding: 0.5rem 1.25rem;
+      background: rgba(242, 239, 233, 0.2);
+      border-color: rgba(242, 239, 233, 0.42);
+      color: #F2EFE9;
+    }
+    .hero-btns { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-block;
+      padding: 0.85rem 1.9rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      transition: all 0.18s;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #F2EFE9;
+    }
+    .btn-primary:hover {
+      background: #E8F5E9;
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .btn-outline {
+      border: 1.5px solid rgba(242, 239, 233, 0.5);
+      color: #F2EFE9;
+    }
+    .btn-outline:hover {
+      border-color: #F2EFE9;
+      color: #F2EFE9;
+    }
+    .btn-lg { padding: 1.05rem 2.5rem; font-size: 0.98rem; }
+
+    /* ── About cards ── */
+    .about-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .about-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: 0 0 6px 6px;
+      padding: 1.6rem 1.4rem;
+    }
+    .about-icon { font-size: 1.6rem; margin-bottom: 0.6rem; }
+    .about-title { font-size: 0.95rem; font-weight: 800; color: var(--navy); margin-bottom: 0.5rem; }
+    .about-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.75; }
+
+    /* ── Target section ── */
+    .target-list {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 2rem;
+    }
+    .target-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      padding: 1rem 1.4rem;
+      font-size: 0.9rem;
+    }
+    .target-item .ti-icon { font-size: 1.15rem; flex-shrink: 0; }
+    .target-item strong { display: block; font-weight: 700; margin-bottom: 0.1rem; color: var(--navy); }
+    .target-item span { font-size: 0.81rem; color: var(--text-muted); }
+
+    /* ── Pricing ── */
+    .price-box {
+      margin-top: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .price-box-header {
+      background: #E8F0E9;
+      border-bottom: 1px solid var(--border);
+      padding: 1.2rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .price-box-title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .price-main {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+    .price-main sup { font-size: 1.1rem; }
+    .price-main sub { font-size: 0.95rem; color: var(--accent); }
+    .price-box-body { padding: 1.5rem 1.75rem; }
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.86rem;
+    }
+    .price-row:last-child { border-bottom: none; }
+    .price-row .pr-label { color: var(--text-muted); }
+    .price-row .pr-val { font-weight: 700; }
+    .price-note {
+      margin-top: 1.25rem;
+      padding: 1rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 4px 4px 0;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.85;
+    }
+    .limit-inline {
+      display: inline-block;
+      background: var(--limit-bg);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.15rem 0.6rem;
+      border-radius: 2px;
+      letter-spacing: 0.06em;
+      vertical-align: middle;
+    }
+
+    /* ── Flow ── */
+    .flow-steps {
+      display: grid;
+      gap: 0;
+      margin-top: 2rem;
+      position: relative;
+    }
+    .flow-step {
+      display: flex;
+      gap: 1.25rem;
+      padding: 1.5rem 0;
+    }
+    .flow-step + .flow-step { border-top: 1px solid var(--border); }
+    .flow-num {
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: #E8F0E9;
+      border: 1.5px solid var(--border);
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.1rem;
+    }
+    .flow-text strong { display: block; font-size: 0.93rem; font-weight: 700; margin-bottom: 0.2rem; color: var(--navy); }
+    .flow-text span { font-size: 0.82rem; color: var(--text-muted); }
+
+    /* ── FAQ ── */
+    .faq-list { margin-top: 2rem; display: grid; gap: 0.6rem; }
+    details {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    details[open] { border-color: var(--accent); }
+    summary {
+      padding: 1.2rem 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      user-select: none;
+      color: var(--navy);
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: '+';
+      font-size: 1.2rem;
+      font-weight: 400;
+      color: var(--accent);
+      flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    details[open] summary::after { content: '−'; }
+    .faq-body {
+      padding: 1.1rem 1.5rem 1.4rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.85;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Final CTA ── */
+    .final-cta {
+      text-align: center;
+      padding: 6rem 0;
+      background: #E8F0E9;
+    }
+    .final-cta h2 {
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
+      font-weight: 800;
+      line-height: 1.4;
+      margin-bottom: 1rem;
+      display: block;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .final-cta h2 em { font-style: normal; color: var(--accent); }
+    .final-cta-sub {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+      line-height: 2;
+    }
+    .cta-channels {
+      display: grid;
+      gap: 1rem;
+      max-width: 440px;
+      margin: 0 auto 2rem;
+    }
+    .cta-channel {
+      display: flex;
+      align-items: center;
+      gap: 1.1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.2rem 1.5rem;
+      transition: border-color 0.15s, background 0.15s;
+      color: var(--text);
+    }
+    .cta-channel:hover {
+      border-color: var(--accent);
+      background: #E8F5E9;
+      color: var(--text);
+    }
+    .cta-channel-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .cta-channel-label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 0.15rem;
+      color: var(--navy);
+    }
+    .cta-channel-note {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .cta-limit-note {
+      font-size: 0.8rem;
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Footer ── */
+    footer {
+      background: #1C1A17;
+      color: #F2EFE9;
+      padding: 3rem 0;
+      text-align: center;
+    }
+    .footer-brand {
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+      color: rgba(242, 239, 233, 0.78);
+    }
+    .footer-note {
+      font-size: 0.78rem;
+      color: rgba(242, 239, 233, 0.62);
+      line-height: 1.9;
+      margin-bottom: 1rem;
+    }
+    .footer-link {
+      font-size: 0.78rem;
+      color: rgba(242, 239, 233, 0.62);
+      margin-bottom: 1.25rem;
+      display: block;
+    }
+    .footer-link a { color: #F2EFE9; text-decoration: underline; text-underline-offset: 2px; }
+    .footer-copy {
+      font-size: 0.72rem;
+      color: rgba(242, 239, 233, 0.42);
+    }
+
+    /* ── Gallery ── */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-top: 2rem;
+    }
+    .gallery-grid img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      display: block;
+    }
+
+    /* ── Voices ── */
+    .voices-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .voice-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      padding: 1rem 1.25rem;
+    }
+    .voice-text {
+      font-size: 0.9rem;
+      line-height: 1.8;
+      margin: 0;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .nav-links.open {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #FDFCF9;
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 1.5rem;
+        gap: 1rem;
+        z-index: 99;
+      }
+      nav { position: relative; }
+      .hamburger { display: flex; }
+      .nav-cta { display: none; }
+
+      .hero-img-wrap { height: 50vw; min-height: 220px; }
+      .hero-content { padding: 2.5rem 0 4rem; }
+
+      .about-grid { grid-template-columns: 1fr; }
+      .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+      .voices-grid { grid-template-columns: 1fr; }
+
+      .final-cta { padding: 4rem 0; }
+    }
+
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav>
+  <div class="nav-brand"><span>⚾</span>SNBC 野球ユニ会</div>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="#about">イベントについて</a></li>
+    <li><a href="#target">こんな人向け</a></li>
+    <li><a href="#pricing">参加費</a></li>
+    <li><a href="#flow">参加の流れ</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <a href="#contact" class="btn nav-cta">参加を申し込む</a>
+  <button class="hamburger" id="hamburger" aria-label="メニューを開く" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<main>
+
+<!-- ── Hero ── -->
+<section class="hero" id="top">
+  <!-- TODO: Vol.2当日撮影後、専用ヒーロー画像に差し替え（現在は野球ユニ部ページと共用の仮画像） -->
+  <div class="hero-img-wrap">
+    <picture>
+      <source srcset="../images/hero.webp" type="image/webp">
+      <img src="../images/hero.jpg"
+           alt="SNBC 野球ユニ会 Vol.2" width="1536" height="1024" loading="eager"
+           fetchpriority="high">
+    </picture>
+    <div class="hero-img-overlay"></div>
+  </div>
+  <div class="container">
+    <div class="hero-content">
+      <div class="limit-badge">
+        <span class="limit-dot"></span>
+        2026年7月25日（土）開催・受付中
+      </div>
+      <h1>
+        お気に入りの野球ユニで、<br>
+        <em>集まろう。</em>
+      </h1>
+      <p class="hero-sub">
+        ユニを着て見せ合ったり、話したり、希望者は写真を撮ったり。<br>
+        「知ってる人の部屋に集まる」くらいのゆるさで始めます。<br>
+        名古屋・上前津の小さな個室スタジオにて開催。
+      </p>
+      <div class="hero-specs">
+        <span class="hero-spec big">参加費 ¥4,000</span>
+        <span class="hero-spec">7/25(土)</span>
+        <span class="hero-spec">14:00〜17:00</span>
+        <span class="hero-spec">定員4名</span>
+        <span class="hero-spec">名古屋・上前津</span>
+        <span class="hero-spec">希望者は写真データ付き</span>
+      </div>
+      <div class="hero-btns">
+        <a href="#contact" class="btn btn-primary btn-lg">
+          ⚾ 参加を申し込む
+        </a>
+        <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg">
+          ✉️ X @baseballuni2022 をフォロー
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── About ── -->
+<section id="about">
+  <div class="container">
+    <p class="section-label">About</p>
+    <h2>どんな集まりですか？</h2>
+    <p style="font-size: 0.87rem; color: var(--text-muted); margin-top: -1.25rem; margin-bottom: 0;">
+      名古屋で、好きなものをきっかけに集まれる小さな場を作っています。
+    </p>
+    <div class="about-grid">
+      <div class="about-card">
+        <div class="about-icon">⚾</div>
+        <div class="about-title">ユニを着て集まるだけでOK</div>
+        <div class="about-desc">お気に入りの野球ユニフォームを着てきてください。見せ合ったり、話したり、それだけでいい集まりです。</div>
+      </div>
+      <div class="about-card">
+        <div class="about-icon">📷</div>
+        <div class="about-title">希望者は写真も撮れる</div>
+        <div class="about-desc">スタジオ機材でユニ姿の写真を撮ることもできます。強制はありません。希望者のみ、データ付き。</div>
+      </div>
+      <div class="about-card">
+        <div class="about-icon">🚪</div>
+        <div class="about-title">ゆるく始める場</div>
+        <div class="about-desc">大きなイベントではなく、「知ってる人の部屋に集まる」くらいのゆるさで。定員4名の小さな場です。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Target ── -->
+<section id="target">
+  <div class="container">
+    <p class="section-label">For You</p>
+    <h2>こんな人に来てほしい</h2>
+    <div class="target-list">
+      <div class="target-item">
+        <span class="ti-icon">⚾</span>
+        <div>
+          <strong>お気に入りの野球ユニがある</strong>
+          <span>プロ〜アマチュア、社会人、学生時代のもの、レプリカ、なんでも。ユニを持ってきてくれるだけでいいです。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">💬</span>
+        <div>
+          <strong>ユニの話を聞いてほしい・話したい</strong>
+          <span>好きなチームのこと、そのユニを選んだ理由。同じ趣味の人と話したい気持ちがあれば十分です。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">📸</span>
+        <div>
+          <strong>ユニ姿の写真を撮ってほしい（希望者のみ）</strong>
+          <span>スタジオで本格的な写真が撮れます。希望する人だけ。写真目的でなくても全然OK。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">🏙️</span>
+        <div>
+          <strong>名古屋・東京・大阪から来れる人</strong>
+          <span>遠征参加も大歓迎です。わざわざ来てくれる人を、ちゃんと迎えます。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">🔇</span>
+        <div>
+          <strong>大きなイベントより小さく静かな場が好き</strong>
+          <span>定員4名。にぎやかなイベントではなく、落ち着いた場所で話せる集まりです。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">🆕</span>
+        <div>
+          <strong>SNBCを初めて知った</strong>
+          <span>初回参加・初対面でも大丈夫です。気になったらいいね・リプだけでも構いません。</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Pricing ── -->
+<section id="pricing">
+  <div class="container">
+    <p class="section-label">Pricing</p>
+    <h2>参加費</h2>
+    <div class="price-box">
+      <div class="price-box-header">
+        <div>
+          <div class="price-box-title">⚾ SNBC 野球ユニ会 Vol.2</div>
+        </div>
+        <div class="price-main"><sup>¥</sup>4,000</div>
+      </div>
+      <div class="price-box-body">
+        <div class="price-row">
+          <span class="pr-label">日時</span>
+          <span class="pr-val">7月25日（土）14:00〜17:00</span>
+        </div>
+        <div class="price-row">
+          <span class="pr-label">場所</span>
+          <span class="pr-val">上前津｜Studio Nagoya Base</span>
+        </div>
+        <div class="price-row">
+          <span class="pr-label">定員</span>
+          <span class="pr-val">4名（最少催行2名）</span>
+        </div>
+        <div class="price-row">
+          <span class="pr-label">写真データ</span>
+          <span class="pr-val">希望者に当日お渡し</span>
+        </div>
+        <div class="price-row">
+          <span class="pr-label">持ち物</span>
+          <span class="pr-val">お気に入りの野球ユニ</span>
+        </div>
+        <div class="price-row">
+          <span class="pr-label">支払方法</span>
+          <span class="pr-val">現金・PayPay（当日）</span>
+        </div>
+      </div>
+    </div>
+    <div class="price-note">
+      定員に達し次第、募集を締め切ります。参加をご希望の方はX（@baseballuni2022）のDMまたは<a href="mailto:bbuni.ngo@gmail.com?subject=SNBC%20%E9%87%8E%E7%90%83%E3%83%A6%E3%83%8B%E4%BC%9AVol.2%20%E5%8F%82%E5%8A%A0%E7%94%B3%E8%BE%BC" style="color: #2E7D32; text-decoration: underline;">メール</a>にてご連絡ください。
+    </div>
+  </div>
+</section>
+
+<!-- ── Flow ── -->
+<section id="flow">
+  <div class="container">
+    <p class="section-label">How It Works</p>
+    <h2>参加までの流れ</h2>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-text">
+          <strong>XのDMまたはメールで申し込み</strong>
+          <span>年齢・好きなユニ・参加動機を添えてご連絡ください。いいね・リプだけでも気軽にどうぞ。</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-text">
+          <strong>主催から確認・詳細案内</strong>
+          <span>参加日・場所・支払い方法などをご案内します。やりとりは2〜3回程度。</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-text">
+          <strong>当日、会場へ</strong>
+          <span>上前津エリア。最寄り駅から近いです。会場での着替えOK。前日までに詳細をメッセージでお伝えします。</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-text">
+          <strong>3時間、ゆるく過ごす</strong>
+          <span>見せ合い・話し・希望者は写真撮影。無理に盛り上げなくていい、ゆるい場です。飲食物の持ち込みOK。近くにコンビニあり。</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Gallery ── -->
+<section id="gallery">
+  <div class="container">
+    <p class="section-label">Gallery</p>
+    <h2>当日の様子</h2>
+    <!-- TODO: Vol.2開催後、当日写真に差し替え -->
+    <p style="font-size: 0.9rem; color: var(--text-muted);">
+      当日の様子は、Vol.2開催後にこちらへ追加予定です。
+    </p>
+  </div>
+</section>
+
+<!-- ── Voices ── -->
+<section id="voices">
+  <div class="container">
+    <p class="section-label">Voices</p>
+    <h2>Vol.1（サカユニ会）参加者の声</h2>
+    <p style="font-size: 0.87rem; color: var(--text-muted); margin-top: -1.25rem; margin-bottom: 0;">
+      Vol.1（サカユニ会）にご参加いただいた方から、こんな声をいただきました。
+    </p>
+    <div class="voices-grid">
+      <div class="voice-card">
+        <p class="voice-text">「名古屋でこういうイベントがないので、もっとやってほしい」</p>
+      </div>
+      <div class="voice-card">
+        <p class="voice-text">「サカユニファン同士で情報交換できてよかった」</p>
+      </div>
+      <div class="voice-card">
+        <p class="voice-text">「野球ユニ版もやってほしい」</p>
+      </div>
+    </div>
+    <p style="font-size: 0.87rem; color: var(--text-muted); margin-top: 1.25rem;">
+      「野球ユニ版もやってほしい」という声を受けて、Vol.2 野球ユニ会を開催します。
+    </p>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<section id="faq">
+  <div class="container">
+    <p class="section-label">FAQ</p>
+    <h2>よくある質問</h2>
+    <div class="faq-list">
+      <details>
+        <summary>どんなユニを着ていけばいいですか？</summary>
+        <div class="faq-body">
+          お気に入りを着てきてください。プロ〜アマチュア、社会人、学生時代のもの、レプリカ、なんでも大丈夫です。「これでいいのかな」は気にしなくて大丈夫。
+        </div>
+      </details>
+      <details>
+        <summary>一人で行っても大丈夫ですか？</summary>
+        <div class="faq-body">
+          はい、一人参加が基本です。みんなそれぞれ一人で来る想定です。知り合いがいなくても大丈夫です。
+        </div>
+      </details>
+      <details>
+        <summary>写真は必ず撮らないといけないですか？</summary>
+        <div class="faq-body">
+          いいえ、希望者のみです。見せ合い・話すだけで帰っても全然OK。写真は「希望する人が撮れる」オプションです。
+        </div>
+      </details>
+      <details>
+        <summary>定員に満たない場合はどうなりますか？</summary>
+        <div class="faq-body">
+          最少催行人数は2名です（参加費は当日集金）。人数に満たない場合は中止となることがあります。あらかじめご了承ください。
+        </div>
+      </details>
+      <details>
+        <summary>遠征参加はできますか？</summary>
+        <div class="faq-body">
+          大歓迎です。東京・大阪からの参加者も想定しています。交通費の補助はありませんが、わざわざ来てくれる方を歓迎します。
+        </div>
+      </details>
+      <details>
+        <summary>野球ユニ以外は持ち込めますか？</summary>
+        <div class="faq-body">
+          Vol.2は野球ユニ会なので、野球のユニフォームがメインです。球団・社会人・学生時代のものなど問いません。不安な方はDMでご相談ください。
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ── Final CTA ── -->
+<section id="contact" class="final-cta">
+  <div class="container">
+    <div class="limit-badge" style="margin-bottom: 1.5rem;">
+      <span class="limit-dot"></span>
+      7/25(土) 開催・受付中
+    </div>
+    <h2>
+      お気に入りの野球ユニで、<br>
+      <em>参加してみませんか。</em>
+    </h2>
+    <p class="final-cta-sub">
+      年齢・好きなユニフォーム・参加動機を添えて、XのDMまたはメールでご連絡ください。<br>
+      定員に達し次第、募集を締め切ります。
+    </p>
+    <div class="cta-channels">
+      <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="cta-channel">
+        <span class="cta-channel-icon">✉️</span>
+        <span>
+          <span class="cta-channel-label">X（旧Twitter）@baseballuni2022 にDMする</span>
+          <span class="cta-channel-note">短い質問だけでもOKです。</span>
+        </span>
+      </a>
+      <a href="mailto:bbuni.ngo@gmail.com?subject=SNBC%20%E9%87%8E%E7%90%83%E3%83%A6%E3%83%8B%E4%BC%9AVol.2%20%E5%8F%82%E5%8A%A0%E7%94%B3%E8%BE%BC" class="cta-channel">
+        <span class="cta-channel-icon">✉️</span>
+        <span>
+          <span class="cta-channel-label">メールで申し込む</span>
+          <span class="cta-channel-note">bbuni.ngo@gmail.com</span>
+        </span>
+      </a>
+      <a href="../community/" class="cta-channel">
+        <span class="cta-channel-icon">⚾</span>
+        <span>
+          <span class="cta-channel-label">SNBCコミュニティページを見る</span>
+          <span class="cta-channel-note">他のイベント情報もこちら。</span>
+        </span>
+      </a>
+    </div>
+    <p class="cta-limit-note">⚾ 7/25(土) 14:00〜17:00・定員4名（最少催行2名）</p>
+  </div>
+</section>
+
+</main>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="container">
+    <div class="footer-brand">SNB Community｜名古屋・上前津</div>
+    <p class="footer-note">
+      名古屋・上前津で、好きなものをきっかけに集まれる小さな場を作っています。<br>
+      ユニフォーム・競パン・スーツ・撮影・交流。SNBコミュニティ（SNBC）不定期開催。
+    </p>
+    <span class="footer-link">
+      SNBコミュニティの詳細は <a href="../">こちら</a>
+    </span>
+    <p class="footer-copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
+  </div>
+</footer>
+
+<script>
+  var hamburger = document.getElementById('hamburger');
+  var navLinks = document.getElementById('nav-links');
+  hamburger.addEventListener('click', function() {
+    var isOpen = navLinks.classList.toggle('open');
+    hamburger.setAttribute('aria-expanded', isOpen);
+  });
+  navLinks.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      navLinks.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', 'false');
+    });
+  });
+</script>
+</body>
+</html>
