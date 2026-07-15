@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ポートレート体験コース | SNBC</title>
-  <meta name="description" content="名古屋・上前津の完全個室スタジオで楽しむポートレート体験。モデル（被写体）として撮ってもらうコースと、撮影者として見学・体験するコースの2展開。60分¥3,000〜。">
+  <title>男性ポートレート・作品撮り｜名古屋・上前津｜SNB Community</title>
+  <meta name="description" content="名古屋・上前津の完全個室スタジオで、男性ポートレート、スポーツユニフォーム、スーツ、筋肉表現、フェティッシュ寄りのコンセプト撮影に対応。初心者歓迎、ポージングサポートあり。">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://nagoya-base.github.io/snb-community/portrait/">
 
@@ -13,9 +13,9 @@
   {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "name": "Studio Nagoya Base — ポートレート体験",
+    "name": "Studio Nagoya Base — 男性ポートレート撮影",
     "url": "https://nagoya-base.github.io/snb-community/portrait/",
-    "description": "名古屋・上前津の完全個室スタジオで楽しむポートレート体験。モデル（被写体）として撮ってもらうコースと、撮影者として見学・体験するコースの2展開。60分¥3,000〜。",
+    "description": "名古屋・上前津の完全個室スタジオで行う男性ポートレート撮影。スポーツユニフォーム、スーツ、筋肉表現、フェティッシュ寄りのコンセプト撮影にも対応。モデルとして撮ってもらうコースと、撮影者として見学・体験するコースの2展開。60分¥3,000〜。",
     "email": "bbuni.ngo@gmail.com",
     "image": "https://nagoya-base.github.io/snb-community/images/IMG_7278.jpeg",
     "priceRange": "¥3,000〜",
@@ -37,14 +37,17 @@
   </script>
 
   <!-- OGP -->
-  <meta property="og:title" content="ポートレート体験コース | SNBC">
-  <meta property="og:description" content="名古屋・上前津の完全個室スタジオで楽しむポートレート体験。モデル向け・撮影者向けの2コース。60分¥3,000〜。">
+  <meta property="og:title" content="誰かの「好き」を、作品に。｜男性ポートレート撮影">
+  <meta property="og:description" content="名古屋・上前津の完全個室で、男性ポートレートから筋肉表現・コンセプト撮影まで。理解されにくいテーマも安心して相談できます。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://nagoya-base.github.io/snb-community/portrait/">
   <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/ogp_portrait_session.jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="誰かの好きを否定しない、名古屋・上前津の男性ポートレート撮影">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="ポートレート体験コース | SNBC">
-  <meta name="twitter:description" content="名古屋・上前津の完全個室スタジオで楽しむポートレート体験。60分¥3,000〜。">
+  <meta name="twitter:title" content="誰かの「好き」を、作品に。｜男性ポートレート撮影">
+  <meta name="twitter:description" content="名古屋・上前津の完全個室で、男性ポートレートから筋肉表現・コンセプト撮影まで。">
   <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/ogp_portrait_session.jpeg">
 
   <!-- Google Analytics -->
@@ -68,9 +71,45 @@
     .hero h1 { font-size: clamp(1.9rem, 5vw, 2.7rem); line-height: 1.3; margin-bottom: 1rem; }
     .hero h1 em { font-style: normal; color: var(--highlight); }
     .hero-lead { font-size: 1rem; margin-bottom: 2rem; line-height: 1.9; }
+    .hero-lead p { margin: 0 0 0.9rem; }
+    .hero-lead p:last-child { margin-bottom: 0; }
     .hero-specs { display: flex; flex-wrap: wrap; gap: 0.6rem 1.5rem; }
     .hero-spec { font-size: 0.82rem; opacity: 0.88; }
     .hero-spec strong { font-weight: 800; }
+
+    /* ── Text block（複数段落の本文）── */
+    .text-block p { margin: 0 0 1.1rem; line-height: 1.9; }
+    .text-block p:last-child { margin-bottom: 0; }
+
+    /* ── Theme cards（対応できる撮影テーマ）── */
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+    .theme-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.35rem;
+    }
+    .theme-icon { font-size: 1.7rem; margin-bottom: 0.6rem; }
+    .theme-title { font-size: 1.02rem; font-weight: 800; color: var(--navy); margin-bottom: 0.6rem; }
+    .theme-desc { font-size: 0.86rem; color: var(--text-muted); line-height: 1.85; }
+
+    /* ── Brand closing box ── */
+    .brand-box {
+      background: var(--navy);
+      color: #fff;
+      border-radius: 14px;
+      padding: 2.75rem 2rem;
+      text-align: center;
+    }
+    .brand-box h2 { color: #fff; }
+    .brand-box .text-block { max-width: 480px; margin: 0 auto 2rem; }
+    .brand-box .text-block p { color: rgba(255, 255, 255, 0.9); }
+    .brand-box .hero-actions { justify-content: center; }
 
     .path-grid {
       display: grid;
@@ -248,18 +287,71 @@
 <div class="hero">
   <div class="container">
     <p class="hero-tag">Portrait Studio · Nagoya Kamimaetsu</p>
-    <h1>照明と一眼で、<br><em>あなたの写真が変わる。</em></h1>
-    <p class="hero-lead">
-      名古屋・上前津の完全個室スタジオで楽しむポートレート体験。<br>
-      撮ってもらいたい方も、撮りたい方も、どちらも歓迎。
-    </p>
+    <h1>誰かの「好き」を、<br><em>作品に。</em></h1>
+    <div class="hero-lead">
+      <p>名古屋・上前津の完全個室スタジオで、男性ポートレート、宣材写真、コンセプト撮影を行っています。</p>
+      <p>野球ユニフォーム、サッカーユニフォーム、スーツ。<br>筋肉表現や、少しフェティッシュな世界観まで。</p>
+      <p>「こういう写真を撮ってみたいけれど、理解してもらえるかな」</p>
+      <p>そんな不安も含めて、安心して相談できる撮影を大切にしています。</p>
+    </div>
     <div class="hero-specs">
       <span class="hero-spec">📍 <strong>名古屋・上前津</strong></span>
       <span class="hero-spec">🔒 <strong>完全個室</strong></span>
-      <span class="hero-spec">⏱ <strong>60分〜</strong></span>
+      <span class="hero-spec">🔰 <strong>初心者歓迎</strong></span>
+      <span class="hero-spec">🙌 <strong>ポージングサポートあり</strong></span>
     </div>
   </div>
 </div>
+
+<!-- ── Philosophy ── -->
+<section id="philosophy">
+  <div class="container">
+    <p class="section-label">Concept</p>
+    <h2>写真が好きだから撮る。でも、それだけではありません。</h2>
+    <div class="text-block">
+      <p>撮影したいテーマや、かっこよく見せたい部分は、人によって違います。</p>
+      <p>「この衣装で撮りたい」<br>「筋肉をきれいに見せたい」<br>「少しフェチ寄りだけれど、作品として残したい」</p>
+      <p>そうした希望を、否定したり笑ったりすることはありません。</p>
+      <p>まずは話を聞き、<br>「この光なら似合いそうです」<br>「この角度なら、もっとよく見えます」<br>と一緒に考えながら撮影します。</p>
+      <p>撮影は、カメラの技術だけではなく、被写体との信頼関係で決まると考えています。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Themes ── -->
+<section id="themes">
+  <div class="container">
+    <p class="section-label">Themes</p>
+    <h2>対応できる撮影テーマ</h2>
+    <div class="theme-grid">
+      <article class="theme-card">
+        <div class="theme-icon">📷</div>
+        <h3 class="theme-title">一般的な男性ポートレート</h3>
+        <p class="theme-desc">自然な表情や、その人らしさを残す撮影です。SNS用、プロフィール写真、宣材写真、記念撮影など、目的に合わせて仕上げます。</p>
+      </article>
+      <article class="theme-card">
+        <div class="theme-icon">⚾</div>
+        <h3 class="theme-title">スポーツユニフォーム</h3>
+        <p class="theme-desc">野球ユニフォーム、サッカーユニフォーム、アンダーシャツや練習着などに対応しています。衣装の魅力や身体のラインが伝わる見せ方を一緒に考えます。</p>
+      </article>
+      <article class="theme-card">
+        <div class="theme-icon">🧥</div>
+        <h3 class="theme-title">スーツ・シャツスタイル</h3>
+        <p class="theme-desc">スーツ、白シャツ、スラックスなど、身近な衣装も光とポーズで印象的な作品になります。爽やか、クール、色気のある表現など、希望する雰囲気に合わせます。</p>
+      </article>
+      <article class="theme-card">
+        <div class="theme-icon">💪</div>
+        <h3 class="theme-title">筋肉・身体表現</h3>
+        <p class="theme-desc">胸、肩、腕、背中など、見せたい部分がきれいに見える光と角度を調整します。トレーニングの記録や、作品撮りとしての撮影も歓迎です。</p>
+      </article>
+      <article class="theme-card">
+        <div class="theme-icon">🎭</div>
+        <h3 class="theme-title">フェティッシュ・コンセプト撮影</h3>
+        <p class="theme-desc">少しフェチ寄りの衣装や、ダークな世界観、身体のラインを活かした作品撮りにも対応しています。露骨な演出ではなく、光・影・ポーズ・衣装で作品として仕上げます。「理解してもらえるか不安」という相談も歓迎です。内容は事前にすり合わせます。</p>
+      </article>
+    </div>
+  </div>
+</section>
 
 <!-- ── Model plans ── -->
 <section id="plans">
@@ -271,7 +363,7 @@
     <div class="plans">
       <article class="plan-card">
         <h3 class="plan-name">🟡 ライトプラン 60分</h3>
-        <p class="plan-desc">スタジオ初めての方向け。<br>パネルライト＋カラー照明で雰囲気を楽しむ入門コース。</p>
+        <p class="plan-desc">スタジオ撮影が初めての方、まずは気軽に撮ってみたい方向けの入門コース。<br>パネルライト＋カラー照明で雰囲気を楽しめます。</p>
         <div class="price-row">
           <span>1衣装・納品5枚（撮って出し）</span>
           <span class="price-value">¥5,000</span>
@@ -280,7 +372,7 @@
 
       <article class="plan-card">
         <h3 class="plan-name">🔵 スタンダード 90分</h3>
-        <p class="plan-desc">ストロボ1灯でしっかりしたポートレートに。<br>衣装2着まで対応。</p>
+        <p class="plan-desc">ストロボを使った本格的な男性ポートレート撮影。<br>白背景・黒背景どちらにも対応、衣装2着まで。</p>
         <div class="price-row">
           <span>2衣装・納品15枚（全枚軽調整込み）</span>
           <span class="price-value">¥10,000</span>
@@ -289,7 +381,7 @@
 
       <article class="plan-card">
         <h3 class="plan-name">🟣 作品撮り 120分</h3>
-        <p class="plan-desc">衣装・テーマに合わせてライティングを一から組む。<br>「こう撮りたい」というイメージを持ってきてください。<br>リピーター・テーマあり向け。</p>
+        <p class="plan-desc">筋肉表現やコンセプト撮影など、テーマに合わせてライティングを一から組みます。<br>衣装やイメージに合わせて光と構図を組み立て、「こう撮りたい」という相談をもとに一緒に作品を作ります。</p>
         <div class="price-row">
           <span>2衣装・納品15枚（全枚軽調整込み）</span>
           <span class="price-value">¥15,000</span>
@@ -305,6 +397,21 @@
 
     <div class="session-note">
       スタンダード以上は白背景をより明るく仕上げることも可能。黒背景はサイド光などアレンジにも対応します。
+    </div>
+  </div>
+</section>
+
+<!-- ── Studio ── -->
+<section id="studio">
+  <div class="container">
+    <p class="section-label">Studio</p>
+    <h2>人目を気にせず撮影できる完全個室</h2>
+    <div class="text-block">
+      <p>撮影場所は、名古屋・上前津の完全個室スタジオです。</p>
+      <p>ほかのお客様と一緒になることはありません。</p>
+      <p>撮影中の会話や衣装、ポーズを周囲に見られることなく、落ち着いて撮影できます。</p>
+      <p>スタジオ撮影が初めての方や、撮られることに慣れていない方も歓迎です。</p>
+      <p>ポーズや目線は、撮影しながら案内します。</p>
     </div>
   </div>
 </section>
@@ -362,20 +469,53 @@
   <div class="container">
     <p class="section-label">Gallery</p>
     <h2>作例ギャラリー</h2>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">スポーツユニフォーム、男性ポートレート、筋肉表現、コンセプト撮影など、さまざまなテーマに対応しています。</p>
     <div class="gallery">
-      <img src="../images/IMG_7278.webp" alt="コスプレ作例" loading="lazy">
-      <img src="../images/IMG_7264.webp" alt="野球ユニフォーム作例" loading="lazy">
-      <img src="../images/portrait_gallery_01.webp" alt="作例" loading="lazy">
-      <img src="../images/portrait_gallery_02.webp" alt="作例" loading="lazy">
-      <img src="../images/portrait_gallery_03.webp" alt="作例" loading="lazy">
-      <img src="../images/portrait_gallery_04.webp" alt="作例" loading="lazy">
-      <img src="../images/portrait_gallery_05.webp" alt="作例" loading="lazy">
-      <img src="../images/portrait_gallery_06.webp" alt="作例" loading="lazy">
-      <img src="../images/portrait_gallery_07.webp" alt="作例" loading="lazy">
-      <img src="../images/portrait_gallery_08.webp" alt="作例" loading="lazy">
-      <img src="../images/portrait_gallery_09.webp" alt="作例" loading="lazy">
-      <img src="../images/portrait_gallery_10.webp" alt="作例" loading="lazy">
-      <img src="../images/portrait_gallery_11.webp" alt="作例" loading="lazy">
+      <img src="../images/IMG_7278.webp" alt="コスプレを使ったコンセプト撮影の作例" loading="lazy">
+      <img src="../images/IMG_7264.webp" alt="野球ユニフォーム（練習着）の後ろ姿作例" loading="lazy">
+      <img src="../images/portrait_gallery_01.webp" alt="引き締まった上半身を魅せる筋肉ポートレート作例" loading="lazy">
+      <img src="../images/portrait_gallery_02.webp" alt="光と影で魅せる筋肉ポートレート作例" loading="lazy">
+      <img src="../images/portrait_gallery_03.webp" alt="筋肉の陰影を強調したポートレート作例" loading="lazy">
+      <img src="../images/portrait_gallery_04.webp" alt="上半身の筋肉表現を活かしたポートレート作例" loading="lazy">
+      <img src="../images/portrait_gallery_05.webp" alt="野球ユニフォームの後ろ姿作例" loading="lazy">
+      <img src="../images/portrait_gallery_06.webp" alt="光沢素材の衣装を使ったコンセプト撮影の作例" loading="lazy">
+      <img src="../images/portrait_gallery_07.webp" alt="マスクを使ったコンセプト撮影の作例" loading="lazy">
+      <img src="../images/portrait_gallery_08.webp" alt="マスクと衣装を使ったコンセプト撮影の作例" loading="lazy">
+      <img src="../images/portrait_gallery_09.webp" alt="スポーツウェアを使ったコンセプト撮影の作例" loading="lazy">
+      <img src="../images/portrait_gallery_10.webp" alt="サッカーユニフォームの作例" loading="lazy">
+      <img src="../images/portrait_gallery_11.webp" alt="野球ユニフォームを着用したポートレート作例" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<!-- ── Pre-shoot consultation ── -->
+<section id="consult">
+  <div class="container">
+    <p class="section-label">Before Booking</p>
+    <h2>撮影前に相談できます</h2>
+    <div class="text-block">
+      <p>撮りたい衣装やテーマが決まっていなくても問題ありません。</p>
+      <p>「この衣装は撮影できる？」<br>「自分に合う撮り方が分からない」<br>「少し特殊なテーマだけれど大丈夫？」</p>
+      <p>そうした質問だけでも歓迎です。</p>
+      <p>撮影内容や希望する雰囲気を確認したうえで、合いそうなプランや撮影方法を提案します。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Brand closing message ── -->
+<section id="brand-message">
+  <div class="container">
+    <div class="brand-box">
+      <h2>誰かの「好き」を否定しない。</h2>
+      <div class="text-block">
+        <p>一般的なポートレートも、<br>少し人には話しにくいテーマも。</p>
+        <p>その人が残したいと思った表現を、<br>一緒に作品にする撮影を大切にしています。</p>
+        <p>名古屋・上前津で、<br>あなたの撮ってみたい写真を聞かせてください。</p>
+      </div>
+      <div class="hero-actions">
+        <a href="#gallery" class="btn btn-white">作品例を見る</a>
+        <a href="#contact" class="btn btn-primary">撮影について相談する</a>
+      </div>
     </div>
   </div>
 </section>
