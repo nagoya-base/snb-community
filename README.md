@@ -32,7 +32,6 @@ snb-community/
 │   └── style.css
 ├── portrait/               # ポートレート体験
 │   ├── index.html
-│   ├── model.html          # モデル向け案内
 │   ├── photographer.html   # カメラマン向け案内
 │   └── style.css
 ├── images/                 # 画像（WebP中心・OGP用JPEGあり）
