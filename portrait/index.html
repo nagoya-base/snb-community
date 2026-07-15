@@ -112,6 +112,36 @@
     }
     .path-cta.outline:hover { border-color: var(--navy); color: var(--navy); }
 
+    .path-single {
+      max-width: 420px;
+      margin: 2rem auto 0;
+    }
+
+    .plans {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1rem; margin-bottom: 1.2rem;
+    }
+    .plan-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+    .plan-name { margin: 0 0 0.55rem; font-size: 1rem; font-weight: 700; }
+    .plan-desc { margin: 0 0 0.6rem; font-size: 0.88rem; color: var(--text-muted); }
+    .price-row {
+      display: flex; justify-content: space-between; gap: 0.8rem;
+      font-size: 0.94rem; border-top: 1px dashed var(--border); padding-top: 0.65rem;
+    }
+    .price-value { font-weight: 800; color: var(--accent); white-space: nowrap; }
+
+    .photo-features { list-style: none; margin: 0 0 1rem; }
+    .photo-features li { padding: 0.25rem 0 0.25rem 1.3em; position: relative; font-size: 0.88rem; }
+    .photo-features li::before { content: '›'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+
+    .session-note {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-left: 4px solid var(--accent); border-radius: 8px;
+      padding: 0.8rem 1rem; margin-bottom: 1.4rem;
+      font-size: 0.88rem; color: var(--text-muted);
+    }
+
     .info-box {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -231,26 +261,61 @@
   </div>
 </div>
 
-<!-- ── Path selection ── -->
+<!-- ── Model plans ── -->
+<section id="plans">
+  <div class="container">
+    <p class="section-label">Model Course</p>
+    <h2>モデルとして撮影を体験する</h2>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">一眼レフ＋ストロボで、あなたを本格的に撮影します。ポーズ指示あり、スタジオ未経験でも安心。しっかり作品を作りたい方向けの定番コースです。</p>
+
+    <div class="plans">
+      <article class="plan-card">
+        <h3 class="plan-name">🟡 ライトプラン 60分</h3>
+        <p class="plan-desc">スタジオ初めての方向け。<br>パネルライト＋カラー照明で雰囲気を楽しむ入門コース。</p>
+        <div class="price-row">
+          <span>1衣装・納品5枚（撮って出し）</span>
+          <span class="price-value">¥5,000</span>
+        </div>
+      </article>
+
+      <article class="plan-card">
+        <h3 class="plan-name">🔵 スタンダード 90分</h3>
+        <p class="plan-desc">ストロボ1灯でしっかりしたポートレートに。<br>衣装2着まで対応。</p>
+        <div class="price-row">
+          <span>2衣装・納品15枚（全枚軽調整込み）</span>
+          <span class="price-value">¥10,000</span>
+        </div>
+      </article>
+
+      <article class="plan-card">
+        <h3 class="plan-name">🟣 作品撮り 120分</h3>
+        <p class="plan-desc">衣装・テーマに合わせてライティングを一から組む。<br>「こう撮りたい」というイメージを持ってきてください。<br>リピーター・テーマあり向け。</p>
+        <div class="price-row">
+          <span>2衣装・納品15枚（全枚軽調整込み）</span>
+          <span class="price-value">¥15,000</span>
+        </div>
+      </article>
+    </div>
+
+    <ul class="photo-features">
+      <li>1組貸切（完全プライベート）</li>
+      <li>初心者OK・ポージング／撮影サポートあり</li>
+      <li>白背景・黒背景どちらも対応</li>
+    </ul>
+
+    <div class="session-note">
+      スタンダード以上は白背景をより明るく仕上げることも可能。黒背景はサイド光などアレンジにも対応します。
+    </div>
+  </div>
+</section>
+
+<!-- ── Photographer branch ── -->
 <section>
   <div class="container">
-    <p class="section-label">Choose Your Path</p>
-    <h2>あなたのスタイルはどっち？</h2>
-    <div class="path-grid">
+    <p class="section-label">Photographer Course</p>
+    <h2>撮影する側として参加したい方へ</h2>
+    <div class="path-single">
       <div class="path-card featured">
-        <div class="path-icon">📷</div>
-        <div class="path-title">モデルに興味あり</div>
-        <div class="path-price">¥5,000 <small>/ 60分〜</small></div>
-        <ul class="path-list">
-          <li>一眼レフ＋ストロボで撮ってもらう</li>
-          <li>スポユニ・コスプレ・ポートレーOK</li>
-          <li>白背景・カラー照明・各種背景あり</li>
-          <li>ポーズ指示あり・初心者歓迎</li>
-          <li>撮影データお渡し</li>
-        </ul>
-        <a href="model.html" class="path-cta">モデル向け詳細を見る →</a>
-      </div>
-      <div class="path-card">
         <div class="path-icon">🎥</div>
         <div class="path-title">撮影に興味あり</div>
         <div class="path-price">見学 無料 <small>/ お試し体験¥3,000</small></div>
@@ -261,11 +326,11 @@
           <li>モデル同伴での参加も可能</li>
           <li>平日夜・土日対応</li>
         </ul>
-        <a href="photographer.html" class="path-cta outline">撮影者向け詳細を見る →</a>
+        <a href="photographer.html" class="path-cta">撮影者向け詳細を見る →</a>
       </div>
     </div>
     <div class="info-box">
-      ※ 両コースとも完全個室・事前予約制です。ポートレート専用の運営です。撮影のみを目的とした方も安心してご参加ください。
+      ※ 完全個室・事前予約制です。ポートレート専用の運営です。撮影のみを目的とした方も安心してご参加ください。
     </div>
   </div>
 </section>
@@ -298,6 +363,8 @@
     <p class="section-label">Gallery</p>
     <h2>作例ギャラリー</h2>
     <div class="gallery">
+      <img src="../images/IMG_7278.webp" alt="コスプレ作例" loading="lazy">
+      <img src="../images/IMG_7264.webp" alt="野球ユニフォーム作例" loading="lazy">
       <img src="../images/portrait_gallery_01.webp" alt="作例" loading="lazy">
       <img src="../images/portrait_gallery_02.webp" alt="作例" loading="lazy">
       <img src="../images/portrait_gallery_03.webp" alt="作例" loading="lazy">
