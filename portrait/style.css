@@ -80,7 +80,11 @@ h1 {
     align-items: center;
   }
 }
+.hero-text {
+  min-width: 0;
+}
 .hero-media {
+  min-width: 0;
   border-radius: 12px;
   overflow: hidden;
 }
