@@ -69,9 +69,11 @@
     h2 { font-size: 1.5rem; letter-spacing: 0.04em; margin-bottom: 2rem; }
 
     /* ── Anchor jump offset（sticky nav分の余白）── */
-    #plans, #gallery, #contact { scroll-margin-top: 80px; }
+    #plans, #gallery, #contact,
+    .plan-card, .gallery-category { scroll-margin-top: 80px; }
     @media (max-width: 480px) {
-      #plans, #gallery, #contact { scroll-margin-top: 108px; }
+      #plans, #gallery, #contact,
+      .plan-card, .gallery-category { scroll-margin-top: 108px; }
     }
 
     .hero { padding: 4.5rem 0 3.5rem; }
@@ -247,35 +249,138 @@
       border-width: 1px;
     }
 
-    /* ── Gallery ── */
-    .gallery {
+    /* ── Gallery（Phase 3: カテゴリ別カード形式）── */
+    .gallery-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem 1rem;
+      margin: 1.5rem 0 2rem;
+    }
+    .gallery-nav a {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--accent);
+      padding: 0.4rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      text-decoration: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .gallery-nav a:hover {
+      border-color: var(--accent);
+      background: var(--bg-card);
+    }
+
+    .gallery-category { margin-top: 2.5rem; }
+    .gallery-category:first-of-type { margin-top: 0; }
+    .gallery-category__title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 1rem;
+    }
+
+    .gallery-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.75rem;
-      margin-top: 1.5rem;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
     }
-    @media (min-width: 600px) {
-      .gallery { grid-template-columns: repeat(3, 1fr); }
+    @media (min-width: 500px) {
+      .gallery-grid { grid-template-columns: repeat(2, 1fr); }
     }
-    .gallery img,
-    .gallery-slot {
+    @media (min-width: 860px) {
+      .gallery-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .gallery-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .gallery-card__image {
       width: 100%;
       aspect-ratio: 3 / 4;
       object-fit: cover;
-      border-radius: 10px;
       display: block;
     }
-    .gallery img { border: 1px solid var(--border); }
-    .gallery-slot {
-      background: var(--bg-card);
-      border: 1.5px dashed var(--border);
+    .gallery-card__body {
+      padding: 0.9rem 1rem 1.1rem;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-muted);
-      font-size: 0.78rem;
-      letter-spacing: 0.08em;
+      flex-direction: column;
+      flex: 1;
     }
+    .gallery-card__category {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+    .gallery-card__title {
+      font-size: 0.94rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 0.45rem;
+      line-height: 1.4;
+    }
+    .gallery-card__description {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 0.7rem;
+    }
+    .gallery-card__meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 0.9rem;
+    }
+    .gallery-card__meta div { display: flex; gap: 0.4rem; padding: 0.15rem 0; }
+    .gallery-card__meta dt { font-weight: 700; color: var(--navy); white-space: nowrap; }
+    .gallery-card__meta dd { margin: 0; }
+    .gallery-card__actions { margin-top: auto; }
+    .gallery-card__cta {
+      display: block;
+      text-align: center;
+      padding: 0.6rem;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.82rem;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .gallery-card__cta:hover { background: var(--accent-lt); color: #fff; }
+
+    .gallery-closing {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem 1.75rem;
+      text-align: center;
+      margin-top: 2.5rem;
+    }
+    .gallery-closing h3 { font-size: 1.15rem; font-weight: 800; color: var(--navy); margin-bottom: 0.75rem; }
+    .gallery-closing p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.85; max-width: 480px; margin: 0 auto 1.5rem; }
+    .gallery-closing .hero-actions { justify-content: center; }
+
+    /* ── Plan cards（Phase 3: 向いている撮影）── */
+    .plan-suited-block { margin: 0 0 0.7rem; }
+    .plan-suited-label { font-size: 0.74rem; font-weight: 800; color: var(--navy); margin-bottom: 0.35rem; }
+    .plan-suited {
+      list-style: none;
+      margin: 0;
+      padding: 0.6rem 0.7rem;
+      background: var(--bg-card2, #F2F2F0);
+      border-radius: 6px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .plan-suited li { padding: 0.1rem 0 0.1rem 1em; position: relative; line-height: 1.6; }
+    .plan-suited li::before { content: '›'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
   </style>
 </head>
 <body class="has-mobile-cta">
@@ -381,9 +486,18 @@
     <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">一眼レフ＋ストロボで、あなたを本格的に撮影します。ポーズ指示あり、スタジオ未経験でも安心。しっかり作品を作りたい方向けの定番コースです。</p>
 
     <div class="plans">
-      <article class="plan-card">
+      <article class="plan-card" id="plan-light">
         <h3 class="plan-name">🟡 ライトプラン 60分</h3>
         <p class="plan-desc">スタジオ撮影が初めての方、まずは気軽に撮ってみたい方向けの入門コース。<br>パネルライト＋カラー照明で雰囲気を楽しめます。</p>
+        <div class="plan-suited-block">
+          <p class="plan-suited-label">向いている撮影</p>
+          <ul class="plan-suited">
+            <li>一般的な男性ポートレート</li>
+            <li>SNS・プロフィール写真</li>
+            <li>スーツ・シャツ</li>
+            <li>1衣装での短時間撮影</li>
+          </ul>
+        </div>
         <div class="price-row">
           <span>1衣装・納品5枚（撮って出し）</span>
           <span class="price-value">¥5,000</span>
@@ -391,9 +505,19 @@
         <a href="mailto:bbuni.ngo@gmail.com?subject=%E3%83%A9%E3%82%A4%E3%83%88%E3%83%97%E3%83%A9%E3%83%B3%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%E3%83%A9%E3%82%A4%E3%83%88%E3%83%97%E3%83%A9%E3%83%B3%2060%E5%88%86%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="path-cta plan-cta">ライトプランで相談する</a>
       </article>
 
-      <article class="plan-card">
+      <article class="plan-card" id="plan-standard">
         <h3 class="plan-name">🔵 スタンダード 90分 <span class="plan-badge">おすすめ</span></h3>
         <p class="plan-desc">ストロボを使った本格的な男性ポートレート撮影。<br>白背景・黒背景どちらにも対応、衣装2着まで。</p>
+        <div class="plan-suited-block">
+          <p class="plan-suited-label">向いている撮影</p>
+          <ul class="plan-suited">
+            <li>野球・サッカーユニフォーム</li>
+            <li>スーツ・シャツ</li>
+            <li>スポーツウェア</li>
+            <li>筋肉ポートレート</li>
+            <li>白背景と黒背景の両方を使いたい方</li>
+          </ul>
+        </div>
         <div class="price-row">
           <span>2衣装・納品15枚（全枚軽調整込み）</span>
           <span class="price-value">¥10,000</span>
@@ -401,9 +525,19 @@
         <a href="mailto:bbuni.ngo@gmail.com?subject=%E3%82%B9%E3%82%BF%E3%83%B3%E3%83%80%E3%83%BC%E3%83%89%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%E3%82%B9%E3%82%BF%E3%83%B3%E3%83%80%E3%83%BC%E3%83%89%2090%E5%88%86%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="path-cta plan-cta">スタンダードで予約相談する</a>
       </article>
 
-      <article class="plan-card">
+      <article class="plan-card" id="plan-creative">
         <h3 class="plan-name">🟣 作品撮り 120分</h3>
         <p class="plan-desc">筋肉表現やコンセプト撮影など、テーマに合わせてライティングを一から組みます。<br>衣装やイメージに合わせて光と構図を組み立て、「こう撮りたい」という相談をもとに一緒に作品を作ります。</p>
+        <div class="plan-suited-block">
+          <p class="plan-suited-label">向いている撮影</p>
+          <ul class="plan-suited">
+            <li>筋肉・身体表現</li>
+            <li>マスクや特殊衣装</li>
+            <li>カラー照明</li>
+            <li>フェティッシュな世界観</li>
+            <li>光や構図を一から作り込みたい方</li>
+          </ul>
+        </div>
         <div class="price-row">
           <span>2衣装・納品15枚（全枚軽調整込み）</span>
           <span class="price-value">¥15,000</span>
@@ -411,6 +545,7 @@
         <a href="mailto:bbuni.ngo@gmail.com?subject=%E4%BD%9C%E5%93%81%E6%92%AE%E3%82%8A%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%E4%BD%9C%E5%93%81%E6%92%AE%E3%82%8A%20120%E5%88%86%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="path-cta plan-cta">作品撮りについて相談する</a>
       </article>
     </div>
+
 
     <ul class="photo-features">
       <li>1組貸切（完全プライベート）</li>
@@ -448,22 +583,248 @@
 <section id="gallery">
   <div class="container">
     <p class="section-label">Gallery</p>
-    <h2>作例ギャラリー</h2>
-    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">スポーツユニフォーム、男性ポートレート、筋肉表現、コンセプト撮影など、さまざまなテーマに対応しています。</p>
-    <div class="gallery">
-      <img src="../images/IMG_7278.webp" alt="コスプレを使ったコンセプト撮影の作例" loading="lazy">
-      <img src="../images/IMG_7264.webp" alt="野球ユニフォーム（練習着）の後ろ姿作例" loading="lazy">
-      <img src="../images/portrait_gallery_01.webp" alt="引き締まった上半身を魅せる筋肉ポートレート作例" loading="lazy">
-      <img src="../images/portrait_gallery_02.webp" alt="光と影で魅せる筋肉ポートレート作例" loading="lazy">
-      <img src="../images/portrait_gallery_03.webp" alt="筋肉の陰影を強調したポートレート作例" loading="lazy">
-      <img src="../images/portrait_gallery_04.webp" alt="上半身の筋肉表現を活かしたポートレート作例" loading="lazy">
-      <img src="../images/portrait_gallery_05.webp" alt="野球ユニフォームの後ろ姿作例" loading="lazy">
-      <img src="../images/portrait_gallery_06.webp" alt="光沢素材の衣装を使ったコンセプト撮影の作例" loading="lazy">
-      <img src="../images/portrait_gallery_07.webp" alt="マスクを使ったコンセプト撮影の作例" loading="lazy">
-      <img src="../images/portrait_gallery_08.webp" alt="マスクと衣装を使ったコンセプト撮影の作例" loading="lazy">
-      <img src="../images/portrait_gallery_09.webp" alt="スポーツウェアを使ったコンセプト撮影の作例" loading="lazy">
-      <img src="../images/portrait_gallery_10.webp" alt="サッカーユニフォームの作例" loading="lazy">
-      <img src="../images/portrait_gallery_11.webp" alt="野球ユニフォームを着用したポートレート作例" loading="lazy">
+    <h2>撮影テーマ別の作例</h2>
+    <div class="text-block">
+      <p>男性ポートレート、スポーツユニフォーム、筋肉表現、<br>コンセプト撮影など、撮りたいテーマに合わせて光と構図を組み立てます。</p>
+      <p>気になる作例があれば、お問い合わせ時に画像や作例名をお知らせください。<br>近い雰囲気の撮影方法とプランをご提案します。</p>
+    </div>
+
+    <nav class="gallery-nav" aria-label="作例カテゴリ">
+      <a href="#gallery-uniform">スポーツユニフォーム</a>
+      <a href="#gallery-muscle">筋肉・身体表現</a>
+      <a href="#gallery-concept">コンセプト・フェティッシュ</a>
+    </nav>
+
+    <section class="gallery-category" id="gallery-uniform">
+      <h3 class="gallery-category__title">スポーツユニフォーム</h3>
+      <div class="gallery-grid">
+        <article class="gallery-card">
+          <img src="../images/IMG_7264.webp" alt="白背景で野球ユニフォームを着た男性の後ろ姿" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">スポーツユニフォーム</p>
+            <h4 class="gallery-card__title">野球ユニフォームの後ろ姿</h4>
+            <p class="gallery-card__description">背番号、ユニフォームのシルエット、肩や背中のラインが伝わる角度で撮影しています。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>2衣装まで・白背景／黒背景</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#plan-standard" class="gallery-card__cta">スタンダードプランを見る</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait_gallery_05.webp" alt="野球ユニフォームを着た男性のバックスタイル" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">スポーツユニフォーム</p>
+            <h4 class="gallery-card__title">野球ユニフォーム・バックスタイル</h4>
+            <p class="gallery-card__description">背番号やユニフォームの形を見せながら、立ち姿や身体の向きを整えて撮影します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>2衣装まで・ポージングサポート</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="mailto:bbuni.ngo@gmail.com?subject=%E3%83%A6%E3%83%8B%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0%E6%92%AE%E5%BD%B1%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%81%99%E3%82%8B%E4%BD%9C%E4%BE%8B%EF%BC%9A%E9%87%8E%E7%90%83%E3%83%A6%E3%83%8B%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0%E3%83%BB%E3%83%90%E3%83%83%E3%82%AF%E3%82%B9%E3%82%BF%E3%82%A4%E3%83%AB%0A%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="gallery-card__cta">ユニフォーム撮影を相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait_gallery_09.webp" alt="スポーツウェアを着た男性ポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">スポーツユニフォーム</p>
+            <h4 class="gallery-card__title">スポーツウェアを使った男性ポートレート</h4>
+            <p class="gallery-card__description">スポーツウェアのフィット感や身体のラインを活かし、自然な立ち姿から作品的なポーズまで撮影します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>1〜2衣装・白背景／黒背景</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="mailto:bbuni.ngo@gmail.com?subject=%E3%82%B9%E3%83%9D%E3%83%BC%E3%83%84%E3%82%A6%E3%82%A7%E3%82%A2%E6%92%AE%E5%BD%B1%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%81%99%E3%82%8B%E4%BD%9C%E4%BE%8B%EF%BC%9A%E3%82%B9%E3%83%9D%E3%83%BC%E3%83%84%E3%82%A6%E3%82%A7%E3%82%A2%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%9F%E7%94%B7%E6%80%A7%E3%83%9D%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%83%88%0A%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="gallery-card__cta">スポーツウェア撮影を相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait_gallery_10.webp" alt="サッカーユニフォームを着た男性ポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">スポーツユニフォーム</p>
+            <h4 class="gallery-card__title">サッカーユニフォーム・ポートレート</h4>
+            <p class="gallery-card__description">ユニフォームのデザインを見せながら、選手らしさや本人らしい雰囲気を残します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>2衣装まで・ポージングサポート</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="mailto:bbuni.ngo@gmail.com?subject=%E3%82%B5%E3%83%83%E3%82%AB%E3%83%BC%E3%83%A6%E3%83%8B%E6%92%AE%E5%BD%B1%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%81%99%E3%82%8B%E4%BD%9C%E4%BE%8B%EF%BC%9A%E3%82%B5%E3%83%83%E3%82%AB%E3%83%BC%E3%83%A6%E3%83%8B%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0%E3%83%BB%E3%83%9D%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%83%88%0A%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="gallery-card__cta">サッカーユニ撮影を相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait_gallery_11.webp" alt="野球ユニフォームを着た男性ポートレート、正面" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">スポーツユニフォーム</p>
+            <h4 class="gallery-card__title">野球ユニフォーム・男性ポートレート</h4>
+            <p class="gallery-card__description">ユニフォーム姿を記録写真ではなく、光とポーズを整えた一枚の作品として残します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>2衣装まで・白背景／黒背景</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="mailto:bbuni.ngo@gmail.com?subject=%E9%87%8E%E7%90%83%E3%83%A6%E3%83%8B%E6%92%AE%E5%BD%B1%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%81%99%E3%82%8B%E4%BD%9C%E4%BE%8B%EF%BC%9A%E9%87%8E%E7%90%83%E3%83%A6%E3%83%8B%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0%E3%83%BB%E7%94%B7%E6%80%A7%E3%83%9D%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%83%88%0A%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="gallery-card__cta">野球ユニ撮影を相談する</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="gallery-category" id="gallery-muscle">
+      <h3 class="gallery-category__title">筋肉・身体表現</h3>
+      <div class="gallery-grid">
+        <article class="gallery-card">
+          <img src="../images/portrait_gallery_01.webp" alt="黒背景でサイド光を当てた上半身の筋肉ポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">筋肉・身体表現</p>
+            <h4 class="gallery-card__title">上半身の筋肉を見せるポートレート</h4>
+            <p class="gallery-card__description">胸、肩、腕に光を当て、トレーニングで作った身体の立体感を残します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>黒背景・サイド光</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="mailto:bbuni.ngo@gmail.com?subject=%E7%AD%8B%E8%82%89%E6%92%AE%E5%BD%B1%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%81%99%E3%82%8B%E4%BD%9C%E4%BE%8B%EF%BC%9A%E4%B8%8A%E5%8D%8A%E8%BA%AB%E3%81%AE%E7%AD%8B%E8%82%89%E3%82%92%E8%A6%8B%E3%81%9B%E3%82%8B%E3%83%9D%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%83%88%0A%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="gallery-card__cta">筋肉撮影について相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait_gallery_02.webp" alt="光と影で身体の凹凸を強調した筋肉ポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">筋肉・身体表現</p>
+            <h4 class="gallery-card__title">光と影で見せる筋肉表現</h4>
+            <p class="gallery-card__description">正面から均等に照らすのではなく、影を残すことで身体の凹凸を強調した撮影です。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
+              <div><dt>撮影内容</dt><dd>黒背景・サイド光・多灯ライティング</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="mailto:bbuni.ngo@gmail.com?subject=%E4%BD%9C%E5%93%81%E6%92%AE%E3%82%8A%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%81%99%E3%82%8B%E4%BD%9C%E4%BE%8B%EF%BC%9A%E5%85%89%E3%81%A8%E5%BD%B1%E3%81%A7%E8%A6%8B%E3%81%9B%E3%82%8B%E7%AD%8B%E8%82%89%E8%A1%A8%E7%8F%BE%0A%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="gallery-card__cta">作品撮りについて相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait_gallery_03.webp" alt="肩・胸・腕の陰影を強調した筋肉ポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">筋肉・身体表現</p>
+            <h4 class="gallery-card__title">肩・胸・腕の陰影を強調</h4>
+            <p class="gallery-card__description">見せたい部位に合わせて光の位置を調整し、身体のラインが最も伝わる角度を探します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
+              <div><dt>撮影内容</dt><dd>黒背景・ライティング調整</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="mailto:bbuni.ngo@gmail.com?subject=%E8%BF%91%E3%81%84%E6%92%AE%E5%BD%B1%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%81%99%E3%82%8B%E4%BD%9C%E4%BE%8B%EF%BC%9A%E8%82%A9%E3%83%BB%E8%83%B8%E3%83%BB%E8%85%95%E3%81%AE%E9%99%B0%E5%BD%B1%E3%82%92%E5%BC%B7%E8%AA%BF%0A%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="gallery-card__cta">近い撮影を相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait_gallery_04.webp" alt="自然な表情と上半身のラインを活かした男性ポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">筋肉・身体表現</p>
+            <h4 class="gallery-card__title">上半身を活かした男性ポートレート</h4>
+            <p class="gallery-card__description">過度に演出しすぎず、自然な表情と身体のラインを両立した撮影です。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>1〜2衣装・白背景／黒背景</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#plan-standard" class="gallery-card__cta">スタンダードプランを見る</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="gallery-category" id="gallery-concept">
+      <h3 class="gallery-category__title">コンセプト・フェティッシュ</h3>
+      <div class="gallery-grid">
+        <article class="gallery-card">
+          <img src="../images/IMG_7278.webp" alt="コスチューム衣装でカラー照明を使ったコンセプト撮影" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">コンセプト・フェティッシュ</p>
+            <h4 class="gallery-card__title">コスチュームを使ったコンセプト撮影</h4>
+            <p class="gallery-card__description">衣装の色や質感に合わせて背景と照明を調整し、キャラクター性や世界観を強調した撮影です。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
+              <div><dt>撮影内容</dt><dd>2衣装・カラー照明・背景演出</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="mailto:bbuni.ngo@gmail.com?subject=%E4%BD%9C%E5%93%81%E6%92%AE%E3%82%8A%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%81%99%E3%82%8B%E4%BD%9C%E4%BE%8B%EF%BC%9A%E3%82%B3%E3%82%B9%E3%83%81%E3%83%A5%E3%83%BC%E3%83%A0%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%9F%E3%82%B3%E3%83%B3%E3%82%BB%E3%83%97%E3%83%88%E6%92%AE%E5%BD%B1%0A%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="gallery-card__cta">作品撮りについて相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait_gallery_06.webp" alt="光沢素材の衣装とカラー照明を使ったコンセプト撮影" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">コンセプト・フェティッシュ</p>
+            <h4 class="gallery-card__title">光沢素材を活かしたコンセプト撮影</h4>
+            <p class="gallery-card__description">衣装に反射する光を調整し、素材の質感と身体のラインを作品として見せます。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
+              <div><dt>撮影内容</dt><dd>カラー照明・黒背景・多灯ライティング</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="mailto:bbuni.ngo@gmail.com?subject=%E7%89%B9%E6%AE%8A%E8%A1%A3%E8%A3%85%E3%81%AE%E6%92%AE%E5%BD%B1%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%81%99%E3%82%8B%E4%BD%9C%E4%BE%8B%EF%BC%9A%E5%85%89%E6%B2%A2%E7%B4%A0%E6%9D%90%E3%82%92%E6%B4%BB%E3%81%8B%E3%81%97%E3%81%9F%E3%82%B3%E3%83%B3%E3%82%BB%E3%83%97%E3%83%88%E6%92%AE%E5%BD%B1%0A%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="gallery-card__cta">特殊衣装の撮影を相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait_gallery_07.webp" alt="マスクを着用し顔を出さずに撮影した作品" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">コンセプト・フェティッシュ</p>
+            <h4 class="gallery-card__title">マスクを使った顔を出さない作品撮り</h4>
+            <p class="gallery-card__description">顔を出さずに、衣装、身体の向き、光と影で人物の雰囲気を作る撮影です。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
+              <div><dt>撮影内容</dt><dd>マスク・黒背景・カラー照明</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="mailto:bbuni.ngo@gmail.com?subject=%E9%A1%94%E3%82%92%E5%87%BA%E3%81%95%E3%81%AA%E3%81%84%E6%92%AE%E5%BD%B1%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%81%99%E3%82%8B%E4%BD%9C%E4%BE%8B%EF%BC%9A%E3%83%9E%E3%82%B9%E3%82%AF%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%9F%E9%A1%94%E3%82%92%E5%87%BA%E3%81%95%E3%81%AA%E3%81%84%E4%BD%9C%E5%93%81%E6%92%AE%E3%82%8A%0A%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="gallery-card__cta">顔を出さない撮影を相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait_gallery_08.webp" alt="マスクと衣装で作るダークな世界観のポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">コンセプト・フェティッシュ</p>
+            <h4 class="gallery-card__title">マスクと衣装で作るダークポートレート</h4>
+            <p class="gallery-card__description">顔を隠した状態でも、立ち方、手の位置、光の方向によって感情や世界観を表現します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
+              <div><dt>撮影内容</dt><dd>ダーク背景・カラー照明・ポーズ演出</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="mailto:bbuni.ngo@gmail.com?subject=%E3%82%B3%E3%83%B3%E3%82%BB%E3%83%97%E3%83%88%E6%92%AE%E5%BD%B1%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%81%99%E3%82%8B%E4%BD%9C%E4%BE%8B%EF%BC%9A%E3%83%9E%E3%82%B9%E3%82%AF%E3%81%A8%E8%A1%A3%E8%A3%85%E3%81%A7%E4%BD%9C%E3%82%8B%E3%83%80%E3%83%BC%E3%82%AF%E3%83%9D%E3%83%BC%E3%83%88%E3%83%AC%E3%83%BC%E3%83%88%0A%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="gallery-card__cta">コンセプト撮影を相談する</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <div class="gallery-closing">
+      <h3>気になる作例はありましたか？</h3>
+      <p>同じ衣装や体型でなくても、好きな光、色、雰囲気をもとに撮影内容を組み立てられます。<br>作例名や画像をお知らせいただければ、近い撮影方法と適したプランをご提案します。</p>
+      <div class="hero-actions">
+        <a href="#plans" class="btn btn-primary">料金・プランを見る</a>
+        <a href="#contact" class="btn btn-outline-light">この雰囲気で相談する</a>
+      </div>
     </div>
   </div>
 </section>
