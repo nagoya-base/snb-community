@@ -163,3 +163,82 @@ h1 {
 @media (max-width: 640px) {
   .pillar-subnav .container { flex-wrap: wrap; gap: 0.75rem; }
 }
+
+/* ──────────────────────────────────────────────
+   Phase 1 追加分（予約導線CTA強化 / 2026.07）
+   ────────────────────────────────────────────── */
+
+/* Hero上部CTA：既存 .hero-actions に上マージンのみ追加 */
+.hero-actions--top { margin-top: 1.75rem; }
+
+/* 主CTA（料金・プランを見る）を一段強く見せる修飾。.btn-primary と併用 */
+.btn-lg { padding: 0.85rem 1.6rem; font-size: 1rem; }
+
+/* アウトラインボタン（紺背景の hero / brand-box で使用） */
+.btn-outline {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.55);
+}
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #fff;
+  color: #fff;
+}
+
+/* プランカードCTA（.path-cta を流用、余白のみ追加） */
+.plan-cta { display: block; margin-top: 0.9rem; }
+
+/* スタンダードプランの「おすすめ」バッジ */
+.plan-badge {
+  display: inline-block;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  background: var(--highlight);
+  color: var(--navy);
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  vertical-align: middle;
+  margin-left: 0.4rem;
+}
+
+/* 撮影者向け導線（Contact直後の1行リンクに縮小・§6.4） */
+.photographer-note { padding: 1.5rem 0 0; text-align: center; }
+.photographer-note__text { font-size: 0.85rem; color: var(--text-muted); }
+.photographer-note__text a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* スマートフォン固定CTA（.btn を流用し、配置のみ追加） */
+.mobile-cta { display: none; }
+
+@media (max-width: 768px) {
+  .mobile-cta {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 150;
+    gap: 0.6rem;
+    padding: 0.6rem 0.9rem calc(0.6rem + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border);
+  }
+  .mobile-cta__btn { flex: 1; text-align: center; }
+  .mobile-cta__btn--outline {
+    background: transparent;
+    color: var(--navy);
+    border-color: var(--border);
+  }
+
+  /* 固定CTAが本文・規約・フッターに被らないよう下部余白を確保
+     （実測バー高さ約73px＋余裕分で88pxを確保） */
+  body.has-mobile-cta { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+}
