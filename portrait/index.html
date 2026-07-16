@@ -68,6 +68,12 @@
     section { padding: 4rem 0; }
     h2 { font-size: 1.5rem; letter-spacing: 0.04em; margin-bottom: 2rem; }
 
+    /* ── Anchor jump offset（sticky nav分の余白）── */
+    #plans, #gallery, #contact { scroll-margin-top: 80px; }
+    @media (max-width: 480px) {
+      #plans, #gallery, #contact { scroll-margin-top: 108px; }
+    }
+
     .hero { padding: 4.5rem 0 3.5rem; }
     .hero h1 { font-size: clamp(1.9rem, 5vw, 2.7rem); line-height: 1.3; margin-bottom: 1rem; }
     .hero h1 em { font-style: normal; color: var(--highlight); }
@@ -272,7 +278,7 @@
     }
   </style>
 </head>
-<body>
+<body class="has-mobile-cta">
 
 <!-- ── Site Nav ── -->
 <nav class="site-nav">
@@ -301,6 +307,11 @@
         <span class="hero-spec">🔒 <strong>完全個室</strong></span>
         <span class="hero-spec">🔰 <strong>初心者歓迎</strong></span>
         <span class="hero-spec">🙌 <strong>ポージングサポートあり</strong></span>
+      </div>
+      <div class="hero-actions hero-actions--top">
+        <a href="#plans" class="btn btn-primary btn-lg">料金・プランを見る</a>
+        <a href="#contact" class="btn btn-white">撮影について相談する</a>
+        <a href="#gallery" class="btn btn-outline">作例を見る</a>
       </div>
     </div>
     <div class="hero-media">
@@ -377,15 +388,17 @@
           <span>1衣装・納品5枚（撮って出し）</span>
           <span class="price-value">¥5,000</span>
         </div>
+        <a href="mailto:bbuni.ngo@gmail.com?subject=%E3%83%A9%E3%82%A4%E3%83%88%E3%83%97%E3%83%A9%E3%83%B3%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%E3%83%A9%E3%82%A4%E3%83%88%E3%83%97%E3%83%A9%E3%83%B3%2060%E5%88%86%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="path-cta plan-cta">ライトプランで相談する</a>
       </article>
 
       <article class="plan-card">
-        <h3 class="plan-name">🔵 スタンダード 90分</h3>
+        <h3 class="plan-name">🔵 スタンダード 90分 <span class="plan-badge">おすすめ</span></h3>
         <p class="plan-desc">ストロボを使った本格的な男性ポートレート撮影。<br>白背景・黒背景どちらにも対応、衣装2着まで。</p>
         <div class="price-row">
           <span>2衣装・納品15枚（全枚軽調整込み）</span>
           <span class="price-value">¥10,000</span>
         </div>
+        <a href="mailto:bbuni.ngo@gmail.com?subject=%E3%82%B9%E3%82%BF%E3%83%B3%E3%83%80%E3%83%BC%E3%83%89%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%E3%82%B9%E3%82%BF%E3%83%B3%E3%83%80%E3%83%BC%E3%83%89%2090%E5%88%86%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="path-cta plan-cta">スタンダードで予約相談する</a>
       </article>
 
       <article class="plan-card">
@@ -395,6 +408,7 @@
           <span>2衣装・納品15枚（全枚軽調整込み）</span>
           <span class="price-value">¥15,000</span>
         </div>
+        <a href="mailto:bbuni.ngo@gmail.com?subject=%E4%BD%9C%E5%93%81%E6%92%AE%E3%82%8A%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6%E7%9B%B8%E8%AB%87&body=%E5%B8%8C%E6%9C%9B%E3%83%97%E3%83%A9%E3%83%B3%EF%BC%9A%E4%BD%9C%E5%93%81%E6%92%AE%E3%82%8A%20120%E5%88%86%0A%E5%B8%8C%E6%9C%9B%E6%97%A5%EF%BC%9A%0A%E5%B8%8C%E6%9C%9B%E6%99%82%E9%96%93%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E8%A1%A3%E8%A3%85%EF%BC%9A%0A%E6%92%AE%E3%82%8A%E3%81%9F%E3%81%84%E9%9B%B0%E5%9B%B2%E6%B0%97%EF%BC%9A%0A%E8%B3%AA%E5%95%8F%E3%83%BB%E7%9B%B8%E8%AB%87%EF%BC%9A" class="path-cta plan-cta">作品撮りについて相談する</a>
       </article>
     </div>
 
@@ -421,32 +435,6 @@
       <p>撮影中の会話や衣装、ポーズを周囲に見られることなく、落ち着いて撮影できます。</p>
       <p>スタジオ撮影が初めての方や、撮られることに慣れていない方も歓迎です。</p>
       <p>ポーズや目線は、撮影しながら案内します。</p>
-    </div>
-  </div>
-</section>
-
-<!-- ── Photographer branch ── -->
-<section>
-  <div class="container">
-    <p class="section-label">Photographer Course</p>
-    <h2>撮影する側として参加したい方へ</h2>
-    <div class="path-single">
-      <div class="path-card featured">
-        <div class="path-icon">🎥</div>
-        <div class="path-title">撮影に興味あり</div>
-        <div class="path-price">見学 無料 <small>/ お試し体験¥3,000</small></div>
-        <ul class="path-list">
-          <li>スタジオ見学・機材解説（30分・無料）</li>
-          <li>ストロボ・COB・LEDを実際に操作</li>
-          <li>お試し撮影体験（60分¥3,000）</li>
-          <li>モデル同伴での参加も可能</li>
-          <li>平日夜・土日対応</li>
-        </ul>
-        <a href="photographer.html" class="path-cta">撮影者向け詳細を見る →</a>
-      </div>
-    </div>
-    <div class="info-box">
-      ※ 完全個室・事前予約制です。ポートレート専用の運営です。撮影のみを目的とした方も安心してご参加ください。
     </div>
   </div>
 </section>
@@ -522,8 +510,9 @@
         <p>名古屋・上前津で、<br>あなたの撮ってみたい写真を聞かせてください。</p>
       </div>
       <div class="hero-actions">
-        <a href="#gallery" class="btn btn-white">作品例を見る</a>
-        <a href="#contact" class="btn btn-primary">撮影について相談する</a>
+        <a href="#plans" class="btn btn-primary">料金・プランを見る</a>
+        <a href="#contact" class="btn btn-white">撮影について相談する</a>
+        <a href="#gallery" class="btn btn-outline">作品例を見る</a>
       </div>
     </div>
   </div>
@@ -547,6 +536,13 @@
   </div>
 </section>
 
+<!-- ── Photographer note (moved from mid-page per improvement plan §6.4) ── -->
+<section class="photographer-note">
+  <div class="container">
+    <p class="photographer-note__text">撮影機材やライティングを体験したい方は、<a href="photographer.html">撮影者向けページ</a>をご覧ください。</p>
+  </div>
+</section>
+
 <!-- ── Terms Link ── -->
 <section style="padding:2rem 0 0;text-align:center;">
   <p style="font-size:0.82rem;color:var(--text-muted);">
@@ -567,6 +563,12 @@
     <p class="site-footer__copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
   </div>
 </footer>
+
+<!-- ── Mobile Sticky CTA（768px以下でのみ表示）── -->
+<div class="mobile-cta" role="navigation" aria-label="クイックアクセス">
+  <a href="#plans" class="btn btn-primary mobile-cta__btn">料金を見る</a>
+  <a href="#contact" class="btn mobile-cta__btn mobile-cta__btn--outline">相談・予約</a>
+</div>
 
 </body>
 </html>
