@@ -1404,6 +1404,23 @@
     }
   });
 
+  /* スマホでフォーム入力中は固定CTAを一時的に隠す（キーボードとの競合防止） */
+  var mobileCta = document.querySelector('.mobile-cta');
+  if (mobileCta) {
+    form.addEventListener('focusin', function (e) {
+      if (e.target.matches('input, select, textarea')) {
+        mobileCta.style.display = 'none';
+      }
+    });
+    form.addEventListener('focusout', function () {
+      window.setTimeout(function () {
+        if (!form.contains(document.activeElement)) {
+          mobileCta.style.display = '';
+        }
+      }, 60);
+    });
+  }
+
   /* 各プラン・作例CTAからのプリフィル（href="#contact" data-plan data-artwork） */
   var PLAN_LABELS = {
     light: 'ライトプラン 60分',
