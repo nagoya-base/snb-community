@@ -61,6 +61,7 @@
 
   <link rel="stylesheet" href="../common.css">
   <link rel="stylesheet" href="style.css">
+  <link rel="preload" as="image" href="../images/hero_portrait.webp">
   <style>
     /* ── index.html 固有スタイル ── */
     .container { max-width: 800px; padding: 0 1.5rem; }
@@ -285,20 +286,28 @@
 
 <!-- ── Hero ── -->
 <div class="hero">
-  <div class="container">
-    <p class="hero-tag">Portrait Studio · Nagoya Kamimaetsu</p>
-    <h1>誰かの「好き」を、<br><em>作品に。</em></h1>
-    <div class="hero-lead">
-      <p>名古屋・上前津の完全個室スタジオで、男性ポートレート、宣材写真、コンセプト撮影を行っています。</p>
-      <p>野球ユニフォーム、サッカーユニフォーム、スーツ。<br>筋肉表現や、少しフェティッシュな世界観まで。</p>
-      <p>「こういう写真を撮ってみたいけれど、理解してもらえるかな」</p>
-      <p>そんな不安も含めて、安心して相談できる撮影を大切にしています。</p>
+  <div class="container hero-grid">
+    <div class="hero-text">
+      <p class="hero-tag">Portrait Studio · Nagoya Kamimaetsu</p>
+      <h1>誰かの「好き」を、<br><em>作品に。</em></h1>
+      <div class="hero-lead">
+        <p>名古屋・上前津の完全個室スタジオで、男性ポートレート、宣材写真、コンセプト撮影を行っています。</p>
+        <p>野球ユニフォーム、サッカーユニフォーム、スーツ。<br>筋肉表現や、少しフェティッシュな世界観まで。</p>
+        <p>「こういう写真を撮ってみたいけれど、理解してもらえるかな」</p>
+        <p>そんな不安も含めて、安心して相談できる撮影を大切にしています。</p>
+      </div>
+      <div class="hero-specs">
+        <span class="hero-spec">📍 <strong>名古屋・上前津</strong></span>
+        <span class="hero-spec">🔒 <strong>完全個室</strong></span>
+        <span class="hero-spec">🔰 <strong>初心者歓迎</strong></span>
+        <span class="hero-spec">🙌 <strong>ポージングサポートあり</strong></span>
+      </div>
     </div>
-    <div class="hero-specs">
-      <span class="hero-spec">📍 <strong>名古屋・上前津</strong></span>
-      <span class="hero-spec">🔒 <strong>完全個室</strong></span>
-      <span class="hero-spec">🔰 <strong>初心者歓迎</strong></span>
-      <span class="hero-spec">🙌 <strong>ポージングサポートあり</strong></span>
+    <div class="hero-media">
+      <picture>
+        <source srcset="../images/hero_portrait.webp" type="image/webp">
+        <img src="../images/ogp_portrait_session.jpeg" alt="名古屋・上前津の男性ポートレート撮影" width="1200" height="630" loading="eager" fetchpriority="high">
+      </picture>
     </div>
   </div>
 </div>

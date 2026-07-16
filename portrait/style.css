@@ -69,6 +69,29 @@ h1 {
 }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 0.8rem; }
 
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+@media (min-width: 860px) {
+  .hero-grid {
+    grid-template-columns: 1.1fr 1fr;
+    align-items: center;
+  }
+}
+.hero-media {
+  border-radius: 12px;
+  overflow: hidden;
+}
+.hero-media img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1200 / 630;
+  object-fit: cover;
+  display: block;
+}
+
 /* ── Buttons ── */
 .btn {
   display: inline-block;
