@@ -330,3 +330,18 @@ h1 {
 .booking-info-title { font-size: 0.98rem; font-weight: 800; color: var(--navy); margin-bottom: 0.5rem; }
 .booking-info-item p { font-size: 0.86rem; color: var(--text-muted); line-height: 1.85; }
 .booking-info-list { margin: 0 0 0.5rem 1.1rem; font-size: 0.86rem; color: var(--text-muted); line-height: 1.7; }
+
+/* ──────────────────────────────────────────────
+   Phase 3 追加分（作例を予約へつなげる / 2026.07）
+   ────────────────────────────────────────────── */
+
+/* 明るい背景用アウトラインボタン（.btn-outlineは紺背景専用のため別クラス） */
+.btn-outline-light {
+  background: transparent;
+  color: var(--navy);
+  border-color: var(--border);
+}
+.btn-outline-light:hover {
+  border-color: var(--navy);
+  color: var(--navy);
+}
