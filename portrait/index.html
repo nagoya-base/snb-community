@@ -15,10 +15,10 @@
     "@type": "LocalBusiness",
     "name": "Studio Nagoya Base — 男性ポートレート撮影",
     "url": "https://nagoya-base.github.io/snb-community/portrait/",
-    "description": "名古屋・上前津の完全個室スタジオで行う男性ポートレート撮影。スポーツユニフォーム、スーツ、筋肉表現、フェティッシュ寄りのコンセプト撮影にも対応。モデルとして撮ってもらうコースと、撮影者として見学・体験するコースの2展開。60分¥3,000〜。",
+    "description": "名古屋・上前津の完全個室スタジオで行う男性ポートレート撮影。スポーツユニフォーム、スーツ、筋肉表現、フェティッシュ寄りのコンセプト撮影に対応。ライトプラン60分（納品5枚）、スタンダード90分（納品15枚）、作品撮り120分（納品15枚）の3コース、5,000円から。",
     "email": "bbuni.ngo@gmail.com",
     "image": "https://nagoya-base.github.io/snb-community/images/portrait_gallery_13.jpeg",
-    "priceRange": "¥3,000〜",
+    "priceRange": "¥5,000〜¥15,000",
     "parentOrganization": {
       "@type": "Organization",
       "name": "Studio Nagoya Base Community",
@@ -106,6 +106,23 @@
     .theme-icon { font-size: 1.7rem; margin-bottom: 0.6rem; }
     .theme-title { font-size: 1.02rem; font-weight: 800; color: var(--navy); margin-bottom: 0.6rem; }
     .theme-desc { font-size: 0.86rem; color: var(--text-muted); line-height: 1.85; }
+
+    /* ── Value cards（撮影で得られるもの）── */
+    .value-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+    .value-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.35rem;
+      border-top: 3px solid var(--accent);
+    }
+    .value-card__title { font-size: 1.02rem; font-weight: 800; color: var(--navy); margin-bottom: 0.6rem; }
+    .value-card__text { font-size: 0.86rem; color: var(--text-muted); line-height: 1.85; }
 
     /* ── Brand closing box ── */
     .brand-box {
@@ -402,21 +419,19 @@
       <p class="hero-tag">Portrait Studio · Nagoya Kamimaetsu</p>
       <h1>誰かの「好き」を、<br><em>作品に。</em></h1>
       <div class="hero-lead">
-        <p>名古屋・上前津の完全個室スタジオで、男性ポートレート、宣材写真、コンセプト撮影を行っています。</p>
-        <p>野球ユニフォーム、サッカーユニフォーム、スーツ。<br>筋肉表現や、少しフェティッシュな世界観まで。</p>
-        <p>「こういう写真を撮ってみたいけれど、理解してもらえるかな」</p>
-        <p>そんな不安も含めて、安心して相談できる撮影を大切にしています。</p>
+        <p>名古屋・上前津の完全個室で行う、男性向けポートレート撮影。</p>
+        <p>ユニフォーム、スーツ、筋肉表現、少しフェティッシュな世界観まで、あなたの「撮りたい」を作品にします。</p>
       </div>
       <div class="hero-specs">
         <span class="hero-spec">📍 <strong>名古屋・上前津</strong></span>
         <span class="hero-spec">🔒 <strong>完全個室</strong></span>
         <span class="hero-spec">🔰 <strong>初心者歓迎</strong></span>
         <span class="hero-spec">🙌 <strong>ポージングサポートあり</strong></span>
+        <span class="hero-spec">💴 <strong>5,000円から</strong></span>
       </div>
       <div class="hero-actions hero-actions--top">
-        <a href="#plans" class="btn btn-primary btn-lg" data-ga-event="portrait_click_hero_plans" data-ga-section="hero" data-ga-location="hero">料金・プランを見る</a>
-        <a href="#contact" class="btn btn-white" data-ga-event="portrait_click_hero_consult" data-ga-section="hero" data-ga-location="hero">撮影について相談する</a>
-        <a href="#gallery" class="btn btn-outline" data-ga-event="portrait_click_hero_gallery" data-ga-section="hero" data-ga-location="hero">作例を見る</a>
+        <a href="#plans" class="btn btn-primary btn-lg" data-ga-event="portrait_click_hero_plans" data-ga-section="hero" data-ga-location="hero">料金・作例を見る</a>
+        <a href="#contact" class="btn btn-white" data-ga-event="portrait_click_hero_consult" data-ga-section="hero" data-ga-location="hero">まず撮影について相談する</a>
       </div>
     </div>
     <div class="hero-media">
@@ -428,17 +443,24 @@
   </div>
 </div>
 
-<!-- ── Philosophy ── -->
-<section id="philosophy">
+<!-- ── Value（撮影で得られるもの） ── -->
+<section id="portrait-value">
   <div class="container">
-    <p class="section-label">Concept</p>
-    <h2>写真が好きだから撮る。でも、それだけではありません。</h2>
-    <div class="text-block">
-      <p>撮影したいテーマや、かっこよく見せたい部分は、人によって違います。</p>
-      <p>「この衣装で撮りたい」<br>「筋肉をきれいに見せたい」<br>「少しフェチ寄りだけれど、作品として残したい」</p>
-      <p>そうした希望を、否定したり笑ったりすることはありません。</p>
-      <p>まずは話を聞き、<br>「この光なら似合いそうです」<br>「この角度なら、もっとよく見えます」<br>と一緒に考えながら撮影します。</p>
-      <p>撮影は、カメラの技術だけではなく、被写体との信頼関係で決まると考えています。</p>
+    <p class="section-label">Value</p>
+    <h2>ただ撮るのではなく、あなたらしく格好いい一枚を残します。</h2>
+    <div class="value-grid">
+      <article class="value-card">
+        <h3 class="value-card__title">衣装の魅力が伝わる</h3>
+        <p class="value-card__text">ユニフォームの背番号やシルエット、スーツのラインなど、好きな衣装が最もよく見える角度を探します。</p>
+      </article>
+      <article class="value-card">
+        <h3 class="value-card__title">身体をきれいに見せる</h3>
+        <p class="value-card__text">胸、肩、腕、背中など、残したい部分に合わせて光とポーズを調整します。</p>
+      </article>
+      <article class="value-card">
+        <h3 class="value-card__title">自分では撮れない作品になる</h3>
+        <p class="value-card__text">白背景の自然なポートレートから、黒背景やカラー照明を使った作品撮りまで対応します。</p>
+      </article>
     </div>
   </div>
 </section>
@@ -502,7 +524,8 @@
           <span>1衣装・納品5枚（撮って出し）</span>
           <span class="price-value">¥5,000</span>
         </div>
-        <a href="#contact" data-plan="light" class="path-cta plan-cta" data-ga-event="portrait_click_light_plan" data-ga-section="plans" data-ga-location="plan_card">ライトプランで相談する</a>
+        <a href="#contact" data-plan="light" data-contact-intent="booking" class="path-cta plan-cta" data-ga-event="portrait_click_plan_booking" data-ga-section="plans" data-ga-location="plan_card">ライトプランで予約を申し込む</a>
+        <a href="#contact" data-contact-intent="consult" class="plan-undecided-link" data-ga-event="portrait_click_plan_consult" data-ga-section="plans" data-ga-location="plan_card">どのプランか迷っている方はこちら</a>
       </article>
 
       <article class="plan-card" id="plan-standard">
@@ -522,7 +545,8 @@
           <span>2衣装・納品15枚（全枚軽調整込み）</span>
           <span class="price-value">¥10,000</span>
         </div>
-        <a href="#contact" data-plan="standard" class="path-cta plan-cta" data-ga-event="portrait_click_standard_plan" data-ga-section="plans" data-ga-location="plan_card">スタンダードで予約相談する</a>
+        <a href="#contact" data-plan="standard" data-contact-intent="booking" class="path-cta plan-cta" data-ga-event="portrait_click_plan_booking" data-ga-section="plans" data-ga-location="plan_card">スタンダードで予約を申し込む</a>
+        <a href="#contact" data-contact-intent="consult" class="plan-undecided-link" data-ga-event="portrait_click_plan_consult" data-ga-section="plans" data-ga-location="plan_card">どのプランか迷っている方はこちら</a>
       </article>
 
       <article class="plan-card" id="plan-creative">
@@ -542,7 +566,8 @@
           <span>2衣装・納品15枚（全枚軽調整込み）</span>
           <span class="price-value">¥15,000</span>
         </div>
-        <a href="#contact" data-plan="creative" class="path-cta plan-cta" data-ga-event="portrait_click_creative_plan" data-ga-section="plans" data-ga-location="plan_card">作品撮りについて相談する</a>
+        <a href="#contact" data-plan="creative" data-contact-intent="booking" class="path-cta plan-cta" data-ga-event="portrait_click_plan_booking" data-ga-section="plans" data-ga-location="plan_card">作品撮りで予約を申し込む</a>
+        <a href="#contact" data-contact-intent="consult" class="plan-undecided-link" data-ga-event="portrait_click_plan_consult" data-ga-section="plans" data-ga-location="plan_card">どのプランか迷っている方はこちら</a>
       </article>
     </div>
 
@@ -556,26 +581,10 @@
     <div class="session-note">
       スタンダード以上は白背景をより明るく仕上げることも可能。黒背景はサイド光などアレンジにも対応します。
     </div>
-  </div>
-</section>
 
-<!-- ── Photographer ── -->
-<section id="photographer">
-  <div class="container">
-    <p class="section-label">Photographer</p>
-    <h2>撮る人について</h2>
-    <!-- TODO: 写真方針が決まり次第、以下のいずれかの写真を追加
-         （後ろ姿／照明調整中／横顔・シルエット／機材と一緒の写真、いずれも顔出し必須ではない） -->
-    <div class="text-block">
-      <p><strong>アタル</strong></p>
-      <p>男性ポートレート、スポーツユニフォーム、筋肉表現、<br>少しフェティッシュな作品撮りを中心に撮影しています。</p>
-      <p>撮影したいテーマを否定せず、<br>衣装・光・ポーズを一緒に考えながら作品を作ることを大切にしています。</p>
-      <p>撮られることに慣れていない方には、<br>立ち方、手の位置、目線まで具体的に案内します。</p>
-      <p>「こう見せたい」という希望があれば、<br>その表現に合う光や構図を一緒に考えます。</p>
-      <p>まだ撮りたい内容がはっきり決まっていない場合も、<br>衣装や好きな雰囲気について話しながら決めていきましょう。</p>
-      <p>ミラーレスカメラとストロボ、COBライト、LED照明を使い、<br>白背景のプロフィール・宣材写真から、色と影を活かしたコンセプト撮影まで対応しています。</p>
-    </div>
-    <p class="photographer-x-link">X：<a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" data-ga-event="portrait_click_photographer_x" data-ga-section="photographer" data-ga-location="photographer">@baseballuni2022</a></p>
+    <p style="margin-top: 1.5rem; text-align: center;">
+      <a href="#gallery" class="btn btn-outline-light" data-ga-event="portrait_click_plans_gallery" data-ga-section="plans" data-ga-location="plans_footer">作例を見る</a>
+    </p>
   </div>
 </section>
 
@@ -609,7 +618,7 @@
               <div><dt>撮影内容</dt><dd>2衣装まで・白背景／黒背景</dd></div>
             </dl>
             <div class="gallery-card__actions">
-              <a href="#plan-standard" class="gallery-card__cta" data-ga-event="portrait_click_gallery_plan" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="sports_uniform" data-ga-item="baseball_back_view">スタンダードプランを見る</a>
+              <a href="#contact" data-plan="standard" data-artwork="野球ユニフォームの後ろ姿" data-contact-intent="consult" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="sports_uniform" data-ga-item="baseball_back_view">このユニフォーム撮影を相談する</a>
             </div>
           </div>
         </article>
@@ -742,7 +751,7 @@
               <div><dt>撮影内容</dt><dd>1〜2衣装・白背景／黒背景</dd></div>
             </dl>
             <div class="gallery-card__actions">
-              <a href="#plan-standard" class="gallery-card__cta" data-ga-event="portrait_click_gallery_plan" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="muscle" data-ga-item="muscle_natural_portrait">スタンダードプランを見る</a>
+              <a href="#contact" data-plan="standard" data-artwork="上半身を活かした男性ポートレート" data-contact-intent="consult" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="muscle" data-ga-item="muscle_natural_portrait">この雰囲気で撮影を相談する</a>
             </div>
           </div>
         </article>
@@ -882,6 +891,22 @@
       <p>撮影中の会話や衣装、ポーズを周囲に見られることなく、落ち着いて撮影できます。</p>
       <p>スタジオ撮影が初めての方や、撮られることに慣れていない方も歓迎です。</p>
       <p>ポーズや目線は、撮影しながら案内します。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Philosophy（Concept・否定しない姿勢） ── -->
+<section id="philosophy">
+  <div class="container">
+    <p class="section-label">Concept</p>
+    <h2>写真が好きだから撮る。でも、それだけではありません。</h2>
+    <div class="text-block">
+      <p>撮影したいテーマや、かっこよく見せたい部分は、人によって違います。</p>
+      <p>「この衣装で撮りたい」<br>「筋肉をきれいに見せたい」<br>「少しフェチ寄りだけれど、作品として残したい」</p>
+      <p>「こういう写真を撮ってみたいけれど、理解してもらえるかな」<br>そんな不安も含めて、安心して相談できる撮影を大切にしています。</p>
+      <p>そうした希望を、否定したり笑ったりすることはありません。</p>
+      <p>まずは話を聞き、<br>「この光なら似合いそうです」<br>「この角度なら、もっとよく見えます」<br>と一緒に考えながら撮影します。</p>
+      <p>撮影は、カメラの技術だけではなく、被写体との信頼関係で決まると考えています。</p>
     </div>
   </div>
 </section>
@@ -1028,10 +1053,25 @@
   <div class="container">
     <p class="section-label">Contact</p>
     <h2>ご予約・お問い合わせ</h2>
-    <p>ご質問だけでも歓迎です。希望コースや日程の相談をお気軽にお送りください。</p>
+    <p>予約日程が決まっている方は「予約を申し込みたい」を、撮影内容やプランから相談したい方は「まず相談したい」を選んでください。</p>
 
     <div class="form-notice">
-      <p><strong>フォーム送信時点では予約確定ではありません。</strong><br>内容と空き状況を確認し、通常24時間以内に返信します。プラン、日時、撮影内容について双方で確認できた時点で、予約確定となります。</p>
+      <p><strong>フォーム送信時点では予約確定ではありません。</strong><br>内容と空き状況を確認し、通常24時間以内に返信します。双方で内容を確認できた時点で予約確定となります。</p>
+    </div>
+
+    <div class="contact-assurance">
+      <div class="contact-assurance__item">
+        <p class="contact-assurance__title">相談だけでも大丈夫です</p>
+        <p class="contact-assurance__text">撮影内容や衣装、プランが決まっていなくても相談できます。</p>
+      </div>
+      <div class="contact-assurance__item">
+        <p class="contact-assurance__title">内容は公開しません</p>
+        <p class="contact-assurance__text">お問い合わせ内容や撮影テーマを、本人の許可なく公開することはありません。</p>
+      </div>
+      <div class="contact-assurance__item">
+        <p class="contact-assurance__title">通常24時間以内に返信</p>
+        <p class="contact-assurance__text">内容と空き状況を確認し、通常24時間以内にご案内します。</p>
+      </div>
     </div>
 
     <form id="portrait-consult-form" class="consult-form" novalidate>
@@ -1041,6 +1081,18 @@
       <input type="hidden" name="_captcha" value="false">
       <!-- honeypot（スパム対策・人には見えない） -->
       <input type="text" name="_honey" class="consult-form__honey" tabindex="-1" autocomplete="off">
+
+      <fieldset class="consult-form__fieldset">
+        <legend>今回のご希望</legend>
+
+        <div class="form-field">
+          <span class="form-field__label">今回のご希望 <span class="required-mark">必須</span></span>
+          <div class="radio-group">
+            <label class="radio-option"><input type="radio" id="pf-intent-booking" name="今回のご希望" value="日程を決めて予約を申し込みたい" required> 日程を決めて予約を申し込みたい</label>
+            <label class="radio-option"><input type="radio" id="pf-intent-consult" name="今回のご希望" value="まず撮影内容について相談したい" required> まず撮影内容について相談したい</label>
+          </div>
+        </div>
+      </fieldset>
 
       <fieldset class="consult-form__fieldset">
         <legend>連絡先</legend>
@@ -1074,12 +1126,12 @@
         </div>
       </fieldset>
 
-      <fieldset class="consult-form__fieldset">
+      <fieldset class="consult-form__fieldset is-booking-only" data-scope="booking">
         <legend>希望プラン・日時</legend>
 
         <div class="form-field">
           <label for="form-plan">希望プラン <span class="required-mark">必須</span></label>
-          <select id="form-plan" name="希望プラン" required>
+          <select id="form-plan" name="希望プラン" data-required-if-booking="true">
             <option value="まだ決まっていない" selected>まだ決まっていない</option>
             <option value="ライトプラン 60分">ライトプラン 60分</option>
             <option value="スタンダード 90分">スタンダード 90分</option>
@@ -1091,11 +1143,11 @@
         <div class="form-field-row">
           <div class="form-field">
             <label for="pf-date1">第1希望日 <span class="required-mark">必須</span></label>
-            <input type="date" id="pf-date1" name="第1希望日" required>
+            <input type="date" id="pf-date1" name="第1希望日" data-required-if-booking="true">
           </div>
           <div class="form-field">
             <label for="pf-time1">第1希望時間 <span class="required-mark">必須</span></label>
-            <select id="pf-time1" name="第1希望時間" required>
+            <select id="pf-time1" name="第1希望時間" data-required-if-booking="true">
               <option value="" selected disabled>選択してください</option>
               <option value="8:00〜11:00">8:00〜11:00</option>
               <option value="11:00〜14:00">11:00〜14:00</option>
@@ -1198,28 +1250,33 @@
           <label for="form-artwork">参考にしたい作例 <span class="optional-mark">任意</span></label>
           <input type="text" id="form-artwork" name="参考にしたい作例" placeholder="例：野球ユニフォーム・白背景">
         </div>
+
+        <div class="form-field">
+          <label for="pf-reference-url">参考画像または参考投稿URL <span class="optional-mark">任意</span></label>
+          <textarea id="pf-reference-url" name="参考画像・投稿URL" rows="2" placeholder="参考にしたい画像や投稿のURLがあれば入力してください（複数可）"></textarea>
+        </div>
       </fieldset>
 
-      <fieldset class="consult-form__fieldset">
+      <fieldset class="consult-form__fieldset is-booking-only" data-scope="booking">
         <legend>顔出し・公開・同伴者・お支払い</legend>
 
         <div class="form-field">
           <span class="form-field__label">顔出しについて <span class="required-mark">必須</span></span>
           <div class="radio-group">
-            <label class="radio-option"><input type="radio" name="顔出しについて" value="顔出し可能" required> 顔出し可能</label>
-            <label class="radio-option"><input type="radio" name="顔出しについて" value="一部のみ可能" required> 一部のみ可能</label>
-            <label class="radio-option"><input type="radio" name="顔出しについて" value="顔出し不可" required> 顔出し不可</label>
-            <label class="radio-option"><input type="radio" name="顔出しについて" value="相談して決めたい" required> 相談して決めたい</label>
+            <label class="radio-option"><input type="radio" name="顔出しについて" value="顔出し可能" data-required-if-booking="true"> 顔出し可能</label>
+            <label class="radio-option"><input type="radio" name="顔出しについて" value="一部のみ可能" data-required-if-booking="true"> 一部のみ可能</label>
+            <label class="radio-option"><input type="radio" name="顔出しについて" value="顔出し不可" data-required-if-booking="true"> 顔出し不可</label>
+            <label class="radio-option"><input type="radio" name="顔出しについて" value="相談して決めたい" data-required-if-booking="true"> 相談して決めたい</label>
           </div>
         </div>
 
         <div class="form-field">
           <span class="form-field__label">作例・SNSへの掲載について <span class="required-mark">必須</span></span>
           <div class="radio-group">
-            <label class="radio-option"><input type="radio" name="作例・SNSへの掲載について" value="掲載不可" required> 掲載不可</label>
-            <label class="radio-option"><input type="radio" name="作例・SNSへの掲載について" value="撮影後に写真を確認して判断したい" required> 撮影後に写真を確認して判断したい</label>
-            <label class="radio-option"><input type="radio" name="作例・SNSへの掲載について" value="顔が分からない写真のみ相談可能" required> 顔が分からない写真のみ相談可能</label>
-            <label class="radio-option"><input type="radio" name="作例・SNSへの掲載について" value="掲載相談可能" required> 掲載相談可能</label>
+            <label class="radio-option"><input type="radio" name="作例・SNSへの掲載について" value="掲載不可" data-required-if-booking="true"> 掲載不可</label>
+            <label class="radio-option"><input type="radio" name="作例・SNSへの掲載について" value="撮影後に写真を確認して判断したい" data-required-if-booking="true"> 撮影後に写真を確認して判断したい</label>
+            <label class="radio-option"><input type="radio" name="作例・SNSへの掲載について" value="顔が分からない写真のみ相談可能" data-required-if-booking="true"> 顔が分からない写真のみ相談可能</label>
+            <label class="radio-option"><input type="radio" name="作例・SNSへの掲載について" value="掲載相談可能" data-required-if-booking="true"> 掲載相談可能</label>
           </div>
           <p class="form-hint">フォーム上の回答だけで掲載を確定することはありません。実際に掲載をお願いする場合は、使用する写真と公開範囲を改めて確認します。</p>
         </div>
@@ -1227,10 +1284,10 @@
         <div class="form-field">
           <span class="form-field__label">同伴者について <span class="required-mark">必須</span></span>
           <div class="radio-group">
-            <label class="radio-option"><input type="radio" name="同伴者について" value="本人のみ" required> 本人のみ</label>
-            <label class="radio-option"><input type="radio" name="同伴者について" value="同伴者1名を希望" required> 同伴者1名を希望</label>
-            <label class="radio-option"><input type="radio" name="同伴者について" value="同伴者2名以上を希望" required> 同伴者2名以上を希望</label>
-            <label class="radio-option"><input type="radio" name="同伴者について" value="相談したい" required> 相談したい</label>
+            <label class="radio-option"><input type="radio" name="同伴者について" value="本人のみ" data-required-if-booking="true"> 本人のみ</label>
+            <label class="radio-option"><input type="radio" name="同伴者について" value="同伴者1名を希望" data-required-if-booking="true"> 同伴者1名を希望</label>
+            <label class="radio-option"><input type="radio" name="同伴者について" value="同伴者2名以上を希望" data-required-if-booking="true"> 同伴者2名以上を希望</label>
+            <label class="radio-option"><input type="radio" name="同伴者について" value="相談したい" data-required-if-booking="true"> 相談したい</label>
           </div>
           <p class="form-hint">同伴を希望する場合は、スタジオの収容人数と撮影内容を確認したうえでご案内します。</p>
         </div>
@@ -1238,10 +1295,10 @@
         <div class="form-field">
           <span class="form-field__label">希望する支払方法 <span class="required-mark">必須</span></span>
           <div class="radio-group">
-            <label class="radio-option"><input type="radio" name="希望する支払方法" value="現金" required> 現金</label>
-            <label class="radio-option"><input type="radio" name="希望する支払方法" value="PayPay" required> PayPay</label>
-            <label class="radio-option"><input type="radio" name="希望する支払方法" value="クレジットカード" required> クレジットカード</label>
-            <label class="radio-option"><input type="radio" name="希望する支払方法" value="まだ決めていない" required> まだ決めていない</label>
+            <label class="radio-option"><input type="radio" name="希望する支払方法" value="現金" data-required-if-booking="true"> 現金</label>
+            <label class="radio-option"><input type="radio" name="希望する支払方法" value="PayPay" data-required-if-booking="true"> PayPay</label>
+            <label class="radio-option"><input type="radio" name="希望する支払方法" value="クレジットカード" data-required-if-booking="true"> クレジットカード</label>
+            <label class="radio-option"><input type="radio" name="希望する支払方法" value="まだ決めていない" data-required-if-booking="true"> まだ決めていない</label>
           </div>
           <p class="form-hint">支払方法と支払時期は、予約確定時にご案内します。</p>
         </div>
@@ -1250,13 +1307,13 @@
       <fieldset class="consult-form__fieldset">
         <legend>その他</legend>
 
-        <div class="form-field">
+        <div class="form-field is-booking-only" data-scope="booking">
           <label for="pf-consideration">撮影時に配慮してほしいこと <span class="optional-mark">任意</span></label>
           <textarea id="pf-consideration" name="撮影時に配慮してほしいこと" rows="2" placeholder="例：&#10;肌の露出はここまでにしたい&#10;苦手なポーズがあります&#10;顔の右側を中心に撮りたい&#10;撮られることに慣れていません"></textarea>
         </div>
 
         <div class="form-field">
-          <label for="pf-question">質問・相談 <span class="optional-mark">任意</span></label>
+          <label for="pf-question" id="pf-question-label">質問・相談 <span class="optional-mark">任意</span></label>
           <textarea id="pf-question" name="質問・相談" rows="2" placeholder="料金、衣装、撮影内容など、気になることをご記入ください。"></textarea>
         </div>
       </fieldset>
@@ -1313,6 +1370,25 @@
   </div>
 </section>
 
+<!-- ── Photographer ── -->
+<section id="photographer">
+  <div class="container">
+    <p class="section-label">Photographer</p>
+    <h2>撮る人について</h2>
+    <!-- TODO: 写真方針が決まり次第、以下のいずれかの写真を追加
+         （後ろ姿／照明調整中／横顔・シルエット／機材と一緒の写真、いずれも顔出し必須ではない） -->
+    <div class="text-block">
+      <p><strong>アタル</strong></p>
+      <p>男性ポートレート、スポーツユニフォーム、筋肉表現、<br>少しフェティッシュな作品撮りを中心に撮影しています。</p>
+      <p>撮影したいテーマを否定せず、<br>衣装・光・ポーズを一緒に考えながら作品を作ることを大切にしています。</p>
+      <p>撮られることに慣れていない方には、<br>立ち方、手の位置、目線まで具体的に案内します。</p>
+      <p>「こう見せたい」という希望があれば、<br>その表現に合う光や構図を一緒に考えます。</p>
+      <p>まだ撮りたい内容がはっきり決まっていない場合も、<br>衣装や好きな雰囲気について話しながら決めていきましょう。</p>
+      <p>ミラーレスカメラとストロボ、COBライト、LED照明を使い、<br>白背景のプロフィール・宣材写真から、色と影を活かしたコンセプト撮影まで対応しています。</p>
+    </div>
+    <p class="photographer-x-link">X：<a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" data-ga-event="portrait_click_photographer_x" data-ga-section="photographer" data-ga-location="photographer">@baseballuni2022</a></p>
+  </div>
+</section>
 
 <!-- ── Photographer note (moved from mid-page per improvement plan §6.4) ── -->
 <section class="photographer-note">
@@ -1344,8 +1420,7 @@
 
 <!-- ── Mobile Sticky CTA（768px以下でのみ表示）── -->
 <div class="mobile-cta" role="navigation" aria-label="クイックアクセス">
-  <a href="#plans" class="btn btn-primary mobile-cta__btn" data-ga-event="portrait_click_mobile_plans" data-ga-section="mobile_fixed" data-ga-location="mobile_fixed">料金を見る</a>
-  <a href="#contact" class="btn mobile-cta__btn mobile-cta__btn--outline" data-ga-event="portrait_click_mobile_consult" data-ga-section="mobile_fixed" data-ga-location="mobile_fixed">相談・予約</a>
+  <a href="#contact" class="btn btn-primary mobile-cta__btn" data-ga-event="portrait_click_mobile_consult" data-ga-section="mobile_fixed" data-ga-location="mobile_fixed">撮影を予約・相談する</a>
 </div>
 
 <!-- ── Phase 4: 撮影相談フォーム制御 ── -->
@@ -1367,6 +1442,16 @@
   var submitBtn = document.getElementById('pf-submit-btn');
   var successBox = document.getElementById('pf-success');
   var errorBox = document.getElementById('pf-error');
+  var intentRadios = form.querySelectorAll('input[name="今回のご希望"]');
+  var intentBookingRadio = document.getElementById('pf-intent-booking');
+  var intentConsultRadio = document.getElementById('pf-intent-consult');
+  var bookingOnlyEls = form.querySelectorAll('.is-booking-only');
+  var requiredIfBookingEls = form.querySelectorAll('[data-required-if-booking]');
+  var questionLabel = document.getElementById('pf-question-label');
+  var questionField = document.getElementById('pf-question');
+
+  var QUESTION_PLACEHOLDER_DEFAULT = '料金、衣装、撮影内容など、気になることをご記入ください。';
+  var QUESTION_PLACEHOLDER_CONSULT = '例：\n野球ユニフォームで撮ってみたいです\n筋肉がきれいに見える写真を希望しています\nまだ具体的には決まっていないので相談したいです';
 
   /* 過去日付を選択できないようにする */
   var today = new Date().toISOString().split('T')[0];
@@ -1378,6 +1463,56 @@
     if (typeof gtag === 'function') {
       gtag('event', name, { page_section: 'contact', form_status: formStatus || '' });
     }
+  }
+
+  /* 「今回のご希望」の選択に応じて予約専用項目の表示・必須判定を切り替える */
+  function getContactIntent() {
+    if (intentBookingRadio && intentBookingRadio.checked) return 'booking';
+    if (intentConsultRadio && intentConsultRadio.checked) return 'consult';
+    return null;
+  }
+
+  function applyContactMode(intent, fireEvent) {
+    var isBooking = intent === 'booking';
+
+    bookingOnlyEls.forEach(function (el) { el.hidden = !isBooking; });
+
+    requiredIfBookingEls.forEach(function (el) {
+      if (isBooking) {
+        el.setAttribute('required', 'required');
+      } else {
+        el.removeAttribute('required');
+      }
+    });
+
+    if (questionLabel && questionField) {
+      if (intent === 'consult') {
+        questionField.placeholder = QUESTION_PLACEHOLDER_CONSULT;
+      } else {
+        questionField.placeholder = QUESTION_PLACEHOLDER_DEFAULT;
+      }
+    }
+
+    if (fireEvent && intent && typeof gtag === 'function') {
+      gtag('event', 'portrait_select_contact_type', { page_section: 'contact', contact_type: intent });
+    }
+  }
+
+  /* 初期状態は未選択（予約専用項目は選択されるまで非表示） */
+  applyContactMode(getContactIntent(), false);
+
+  intentRadios.forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      applyContactMode(getContactIntent(), true);
+    });
+  });
+
+  /* プランCTA・迷っている方リンク・ギャラリーCTAから遷移した際に、今回のご希望を自動選択する */
+  function setContactIntent(intent) {
+    var radio = intent === 'booking' ? intentBookingRadio : intentConsultRadio;
+    if (!radio) return;
+    radio.checked = true;
+    applyContactMode(intent, true);
   }
 
   /* フォーム表示イベント（#contactが画面に入ったら1回だけ） */
@@ -1421,18 +1556,24 @@
     });
   }
 
-  /* 各プラン・作例CTAからのプリフィル（href="#contact" data-plan data-artwork） */
+  /* 各プラン・作例CTAからのプリフィル（href="#contact" data-plan data-artwork data-contact-intent） */
   var PLAN_LABELS = {
     light: 'ライトプラン 60分',
     standard: 'スタンダード 90分',
     creative: '作品撮り 120分'
   };
-  document.querySelectorAll('[data-plan]').forEach(function (el) {
+  document.querySelectorAll('[data-plan], [data-contact-intent]').forEach(function (el) {
     el.addEventListener('click', function () {
       var plan = this.getAttribute('data-plan');
       var artwork = this.getAttribute('data-artwork');
       if (planField && plan && PLAN_LABELS[plan]) planField.value = PLAN_LABELS[plan];
       if (artworkField && artwork) artworkField.value = artwork;
+
+      /* 今回のご希望の自動選択：明示指定を優先、なければ作例名の有無（ギャラリーCTA）で相談と判定 */
+      var explicitIntent = this.getAttribute('data-contact-intent');
+      var inferredIntent = artwork ? 'consult' : (plan ? 'booking' : null);
+      var intent = explicitIntent || inferredIntent;
+      if (intent) setContactIntent(intent);
     });
   });
 
@@ -1478,7 +1619,8 @@
       return;
     }
 
-    trackEvent('portrait_form_submit', 'submitted');
+    var submitIntent = getContactIntent();
+    trackEvent(submitIntent === 'booking' ? 'portrait_form_submit_booking' : 'portrait_form_submit_consult', 'submitted');
     setSubmitting(true);
 
     var formData = new FormData(form);

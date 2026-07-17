@@ -80,6 +80,18 @@ h1 {
     align-items: center;
   }
 }
+/* スマートフォン：タイトル直後に画像を表示するための表示順変更。
+   画像を複製せず、.hero-text を display:contents で解いて
+   グリッドアイテムの order で並べ替える。 */
+@media (max-width: 859px) {
+  .hero-text { display: contents; }
+  .hero-text .hero-tag { order: 1; }
+  .hero-text h1 { order: 2; }
+  .hero-media { order: 3; }
+  .hero-text .hero-lead { order: 4; }
+  .hero-text .hero-specs { order: 5; }
+  .hero-text .hero-actions--top { order: 6; }
+}
 .hero-text {
   min-width: 0;
 }
@@ -189,6 +201,19 @@ h1 {
 /* プランカードCTA（.path-cta を流用、余白のみ追加） */
 .plan-cta { display: block; margin-top: 0.9rem; }
 
+/* プランに迷っている方向けの小さなテキストリンク */
+.plan-undecided-link {
+  display: block;
+  text-align: center;
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.plan-undecided-link:hover { color: var(--accent); }
+
 /* スタンダードプランの「おすすめ」バッジ */
 .plan-badge {
   display: inline-block;
@@ -232,11 +257,6 @@ h1 {
     border-top: 1px solid var(--border);
   }
   .mobile-cta__btn { flex: 1; text-align: center; }
-  .mobile-cta__btn--outline {
-    background: transparent;
-    color: var(--navy);
-    border-color: var(--border);
-  }
 
   /* 固定CTAが本文・規約・フッターに被らないよう下部余白を確保
      （実測バー高さ約73px＋余裕分で88pxを確保） */
@@ -362,6 +382,24 @@ h1 {
   line-height: 1.85;
 }
 .form-notice strong { color: var(--navy); }
+
+.contact-assurance {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+@media (min-width: 720px) {
+  .contact-assurance { grid-template-columns: repeat(3, 1fr); }
+}
+.contact-assurance__item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+}
+.contact-assurance__title { font-size: 0.9rem; font-weight: 800; color: var(--navy); margin-bottom: 0.4rem; }
+.contact-assurance__text { font-size: 0.82rem; color: var(--text-muted); line-height: 1.7; }
 
 .consult-form { margin-top: 1rem; }
 .consult-form__honey { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
