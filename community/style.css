@@ -12,6 +12,22 @@
   --accent-lt: #E53935;
 }
 
+/* ── Hero Image（OGP画像を上部に表示） ── */
+.hero-image {
+  width: 100%;
+  aspect-ratio: 1731 / 909;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+
+.hero-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+}
+
 /* ── Hero（明るい背景・赤アクセント） ── */
 .hero {
   background: var(--bg-tint);
