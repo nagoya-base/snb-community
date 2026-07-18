@@ -267,18 +267,6 @@ h1 {
    Phase 2 追加分（信頼材料コンテンツ / 2026.07）
    ────────────────────────────────────────────── */
 
-/* カメラマン紹介：Xリンク */
-.photographer-x-link {
-  margin-top: 1.25rem;
-  font-size: 0.86rem;
-  font-weight: 700;
-}
-.photographer-x-link a {
-  color: var(--accent);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
 /* 撮影の流れ：番号付きステップ */
 .flow-list {
   list-style: none;
