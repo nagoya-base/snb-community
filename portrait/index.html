@@ -62,17 +62,23 @@
   <link rel="stylesheet" href="../common.css">
   <link rel="stylesheet" href="style.css">
   <link rel="preload" as="image" href="../images/portrait/top/hero-photo-main.webp">
+  <script>document.documentElement.classList.add('js');</script>
   <style>
     /* ── index.html 固有スタイル ── */
     .container { max-width: 800px; padding: 0 1.5rem; }
     section { padding: 4rem 0; }
     h2 { font-size: 1.5rem; letter-spacing: 0.04em; margin-bottom: 2rem; }
 
-    /* ── Anchor jump offset（sticky nav分の余白）── */
-    #plans, #gallery, #contact,
-    .plan-card, .gallery-category { scroll-margin-top: 80px; }
+    /* ── Anchor jump offset（sticky nav + ローカルナビ分の余白）── */
+    #top, #purpose, #plans, #gallery, #photographer, #flow, #faq, #contact,
+    .plan-card, .gallery-category { scroll-margin-top: 132px; }
+    @media (max-width: 900px) {
+      /* ローカルナビはPCのみ表示のため、モバイルはグローバルナビ分のみ考慮 */
+      #top, #purpose, #plans, #gallery, #photographer, #flow, #faq, #contact,
+      .plan-card, .gallery-category { scroll-margin-top: 72px; }
+    }
     @media (max-width: 480px) {
-      #plans, #gallery, #contact,
+      #top, #purpose, #plans, #gallery, #photographer, #flow, #faq, #contact,
       .plan-card, .gallery-category { scroll-margin-top: 108px; }
     }
 
@@ -478,6 +484,124 @@
     }
     .plan-suited li { padding: 0.1rem 0 0.1rem 1em; position: relative; line-height: 1.6; }
     .plan-suited li::before { content: '›'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+
+    /* ── Purpose（目的から選ぶ） ── */
+    .purpose-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+    .purpose-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .purpose-card__title { font-size: 1.05rem; font-weight: 800; color: var(--navy); margin-bottom: 0.6rem; }
+    .purpose-card__desc { font-size: 0.88rem; color: var(--text-muted); line-height: 1.85; margin-bottom: 0.75rem; }
+    .purpose-card__note { font-size: 0.8rem; color: var(--accent); font-weight: 700; margin-bottom: 1.25rem; }
+    .purpose-card__cta { display: block; text-align: center; margin-top: auto; }
+    @media (max-width: 640px) {
+      .purpose-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Past Event（過去の開催実績） ── */
+    .event-card--finished { border-color: var(--border); border-width: 1px; background: var(--bg-card2, #F2F2F0); }
+    .event-card--finished .event-date-badge { background: var(--text-muted); }
+    .event-finished-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15rem 0.7rem;
+      margin-bottom: 0.4rem;
+    }
+    .event-card__link { display: inline-block; margin-top: 0.6rem; font-weight: 700; font-size: 0.86rem; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+    .event-card__link:hover { color: var(--accent-lt); }
+
+    /* ── Assurance（安心して撮影するために） ── */
+    .assurance-highlights {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.9rem;
+      margin: 1.75rem 0 2rem;
+    }
+    .assurance-highlight {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem 1rem;
+      text-align: center;
+    }
+    .assurance-highlight__icon { display: block; font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .assurance-highlight p { font-size: 0.84rem; font-weight: 700; color: var(--navy); }
+    .assurance-details { display: flex; flex-direction: column; gap: 0.75rem; }
+    .assurance-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .assurance-item[open] { border-color: var(--accent); }
+    .assurance-item summary {
+      padding: 1rem 1.25rem;
+      font-size: 0.94rem;
+      font-weight: 800;
+      color: var(--navy);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .assurance-item summary::-webkit-details-marker { display: none; }
+    .assurance-item summary::after {
+      content: '+';
+      font-size: 1.2rem;
+      font-weight: 400;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .assurance-item[open] summary::after { content: '−'; }
+    .assurance-item__body { padding: 0 1.25rem 1.25rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+    .assurance-item__body.text-block p { font-size: 0.88rem; }
+    .assurance-item__body .booking-info-grid { margin-top: 0; }
+
+    /* ── Flow step details ── */
+    .flow-step-detail { margin-top: 0.6rem; }
+    .flow-step-detail summary {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--accent);
+      cursor: pointer;
+      list-style: none;
+    }
+    .flow-step-detail summary::-webkit-details-marker { display: none; }
+    .flow-step-detail summary::before { content: '＋ '; }
+    .flow-step-detail[open] summary::before { content: '− '; }
+    .flow-step-detail__body { margin-top: 0.5rem; }
+    .flow-step-detail__body p { font-size: 0.86rem; color: var(--text-muted); line-height: 1.85; }
+
+    /* ── Gallery toggle ── */
+    .gallery-toggle-wrap { text-align: center; margin-top: 1.75rem; }
+    .gallery-card--extra:not([hidden]) { display: flex; }
+
+    /* ── Brand box（Contact導入として統合・短縮） ── */
+    .brand-box--compact {
+      padding: 1.75rem 1.5rem;
+      margin-bottom: 2rem;
+      text-align: left;
+    }
+    .brand-box--compact h2 { font-size: 1.15rem; margin-bottom: 0.6rem; }
+    .brand-box--compact p { font-size: 0.88rem; line-height: 1.85; color: rgba(255, 255, 255, 0.9); margin: 0; }
   </style>
 </head>
 <body class="has-mobile-cta">
@@ -485,6 +609,11 @@
 <!-- ── Site Nav ── -->
 <nav class="site-nav">
   <a href="../" class="site-nav__brand">SNB Community</a>
+  <button type="button" class="portrait-menu-toggle" id="portraitMenuToggle" aria-expanded="false" aria-controls="portraitMenu" aria-label="メニューを開く">
+    <span class="portrait-menu-toggle__bar"></span>
+    <span class="portrait-menu-toggle__bar"></span>
+    <span class="portrait-menu-toggle__bar"></span>
+  </button>
   <div class="site-nav__right">
     <a href="../baseball/" class="site-nav__pillar site-nav__pillar--baseball">⚾ 野球ユニ部</a>
     <a href="../community/" class="site-nav__pillar site-nav__pillar--community">🤝 SNBコミュニティ</a>
@@ -492,8 +621,41 @@
   </div>
 </nav>
 
+<!-- ── ポートレート ローカルナビ（PC表示） ── -->
+<nav class="portrait-subnav" aria-label="ポートレートページ内ナビ">
+  <div class="container portrait-subnav__inner">
+    <a href="#gallery" class="portrait-subnav__link">作例</a>
+    <a href="#plans" class="portrait-subnav__link">料金</a>
+    <a href="#photographer" class="portrait-subnav__link">撮る人</a>
+    <a href="#flow" class="portrait-subnav__link">撮影の流れ</a>
+    <a href="#faq" class="portrait-subnav__link">FAQ</a>
+    <a href="#contact" class="portrait-subnav__link">予約・相談</a>
+    <a href="photographer.html" class="portrait-subnav__link portrait-subnav__link--external">撮影者向け</a>
+  </div>
+</nav>
+
+<!-- ── スマートフォン用ハンバーガーメニュー ── -->
+<div class="portrait-menu" id="portraitMenu">
+  <div class="portrait-menu__panel">
+    <p class="portrait-menu__heading">このページ</p>
+    <a href="#top" class="portrait-menu__link">トップ</a>
+    <a href="#gallery" class="portrait-menu__link">作例</a>
+    <a href="#plans" class="portrait-menu__link">料金</a>
+    <a href="#photographer" class="portrait-menu__link">撮る人</a>
+    <a href="#flow" class="portrait-menu__link">撮影の流れ</a>
+    <a href="#faq" class="portrait-menu__link">FAQ</a>
+    <a href="#contact" class="portrait-menu__link">予約・相談</a>
+
+    <p class="portrait-menu__heading">別ページ</p>
+    <a href="photographer.html" class="portrait-menu__link">撮影者向け見学・体験</a>
+    <a href="event-0614.html" class="portrait-menu__link">6月14日撮影体験会（開催終了）</a>
+    <a href="../baseball/" class="portrait-menu__link">野球ユニ部</a>
+    <a href="../community/" class="portrait-menu__link">SNBコミュニティ</a>
+  </div>
+</div>
+
 <!-- ── Hero ── -->
-<div class="hero">
+<div class="hero" id="top">
   <div class="container hero-grid">
     <div class="hero-text">
       <p class="hero-tag">Portrait Studio · Nagoya Kamimaetsu</p>
@@ -510,7 +672,8 @@
         <span class="hero-spec">💴 <strong>5,000円から</strong></span>
       </div>
       <div class="hero-actions hero-actions--top">
-        <a href="#plans" class="btn btn-primary btn-lg" data-ga-event="portrait_click_hero_plans" data-ga-section="hero" data-ga-location="hero">料金・作例を見る</a>
+        <a href="#plans" class="btn btn-primary btn-lg" data-ga-event="portrait_click_hero_plans" data-ga-section="hero" data-ga-location="hero">料金を見る</a>
+        <a href="#gallery" class="btn btn-outline" data-ga-event="portrait_click_hero_gallery" data-ga-section="hero" data-ga-location="hero">作例を見る</a>
         <a href="#contact" class="btn btn-white" data-ga-event="portrait_click_hero_consult" data-ga-section="hero" data-ga-location="hero">まず撮影について相談する</a>
       </div>
     </div>
@@ -522,6 +685,28 @@
     </div>
   </div>
 </div>
+
+<!-- ── Purpose（目的から選ぶ） ── -->
+<section id="purpose">
+  <div class="container">
+    <p class="section-label">Purpose</p>
+    <h2>目的から選ぶ</h2>
+    <div class="purpose-grid">
+      <article class="purpose-card">
+        <h3 class="purpose-card__title">男性ポートレートを撮影してもらう</h3>
+        <p class="purpose-card__desc">ユニフォーム、スーツ、筋肉表現、コンセプト撮影まで。ポージングを案内しながら撮影します。</p>
+        <p class="purpose-card__note">5,000円から／完全個室／初心者歓迎</p>
+        <a href="#plans" class="btn btn-primary purpose-card__cta" data-ga-event="portrait_click_hero_plans" data-ga-section="purpose" data-ga-location="purpose_card">料金・プランを見る</a>
+      </article>
+      <article class="purpose-card">
+        <h3 class="purpose-card__title">撮影者として見学・体験する</h3>
+        <p class="purpose-card__desc">スタジオや照明機材を見学し、自分のカメラでストロボ撮影を体験できます。</p>
+        <p class="purpose-card__note">見学無料／撮影体験60分3,000円</p>
+        <a href="photographer.html" class="btn btn-primary purpose-card__cta" data-ga-event="portrait_click_photographer_course" data-ga-section="purpose" data-ga-location="purpose_card">撮影者向けページを見る</a>
+      </article>
+    </div>
+  </div>
+</section>
 
 <!-- ── Value（撮影で得られるもの） ── -->
 <section id="portrait-value">
@@ -751,7 +936,7 @@
           </div>
         </article>
 
-        <article class="gallery-card">
+        <article class="gallery-card gallery-card--extra">
           <img src="../images/portrait/top/gallery-photo-09.webp" alt="スポーツウェアを着た男性ポートレート" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">スポーツユニフォーム</p>
@@ -767,7 +952,7 @@
           </div>
         </article>
 
-        <article class="gallery-card">
+        <article class="gallery-card gallery-card--extra">
           <img src="../images/portrait/top/gallery-photo-10.webp" alt="サッカーユニフォームを着た男性ポートレート" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">スポーツユニフォーム</p>
@@ -783,7 +968,7 @@
           </div>
         </article>
 
-        <article class="gallery-card">
+        <article class="gallery-card gallery-card--extra">
           <img src="../images/portrait/top/gallery-photo-11.webp" alt="野球ユニフォームを着た男性ポートレート、正面" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">スポーツユニフォーム</p>
@@ -836,7 +1021,7 @@
           </div>
         </article>
 
-        <article class="gallery-card">
+        <article class="gallery-card gallery-card--extra">
           <img src="../images/portrait/top/gallery-photo-03.webp" alt="肩・胸・腕の陰影を強調した筋肉ポートレート" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">筋肉・身体表現</p>
@@ -852,7 +1037,7 @@
           </div>
         </article>
 
-        <article class="gallery-card">
+        <article class="gallery-card gallery-card--extra">
           <img src="../images/portrait/top/gallery-photo-04.webp" alt="自然な表情と上半身のラインを活かした男性ポートレート" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">筋肉・身体表現</p>
@@ -905,7 +1090,7 @@
           </div>
         </article>
 
-        <article class="gallery-card">
+        <article class="gallery-card gallery-card--extra">
           <img src="../images/portrait/top/gallery-photo-07.webp" alt="マスクを着用し顔を出さずに撮影した作品" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">コンセプト・フェティッシュ</p>
@@ -921,7 +1106,7 @@
           </div>
         </article>
 
-        <article class="gallery-card">
+        <article class="gallery-card gallery-card--extra">
           <img src="../images/portrait/top/gallery-photo-08.webp" alt="マスクと衣装で作るダークな世界観のポートレート" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">コンセプト・フェティッシュ</p>
@@ -939,6 +1124,10 @@
       </div>
     </section>
 
+    <div class="gallery-toggle-wrap">
+      <button type="button" id="galleryToggle" class="btn btn-outline-light gallery-toggle" aria-expanded="false" aria-controls="gallery-uniform gallery-muscle gallery-concept" hidden>すべての作例を見る</button>
+    </div>
+
     <div class="gallery-closing">
       <h3>気になる作例はありましたか？</h3>
       <p>同じ衣装や体型でなくても、好きな光、色、雰囲気をもとに撮影内容を組み立てられます。<br>作例名や画像をお知らせいただければ、近い撮影方法と適したプランをご提案します。</p>
@@ -950,6 +1139,23 @@
   </div>
 </section>
 
+<!-- ── Past Event（過去の開催実績） ── -->
+<section id="past-event">
+  <div class="container">
+    <p class="section-label">Past Event</p>
+    <h2>過去の開催実績</h2>
+    <article class="event-card event-card--finished">
+      <div class="event-date-badge">2026年6月14日</div>
+      <div class="event-body">
+        <p class="event-finished-tag">開催終了・過去イベント</p>
+        <h3 class="event-title">スタジオ撮影体験会 in 名古屋・上前津</h3>
+        <p class="event-desc">被写体としての撮影体験と、自分のカメラを使う撮影者体験を実施しました。</p>
+        <a href="event-0614.html" class="event-card__link" data-ga-event="portrait_click_past_event" data-ga-section="past_event" data-ga-location="past_event_card">詳細を見る →</a>
+      </div>
+    </article>
+  </div>
+</section>
+
 <!-- ── Flow ── -->
 <section id="flow">
   <div class="container">
@@ -957,100 +1163,127 @@
     <h2>撮影の流れ</h2>
     <ol class="flow-list">
       <li>
-        <h3 class="flow-step-title">お問い合わせ</h3>
-        <p>希望プラン、希望日、撮りたい衣装やテーマをお送りください。<br>撮影内容がまだ決まっていなくても問題ありません。質問や相談だけでも歓迎しています。</p>
+        <h3 class="flow-step-title">1. 相談</h3>
+        <p>希望プラン、希望日、撮りたい衣装やテーマをお送りください。撮影内容がまだ決まっていなくても問題ありません。</p>
+        <details class="flow-step-detail">
+          <summary>詳しく見る</summary>
+          <div class="flow-step-detail__body">
+            <p>質問や相談だけでも歓迎しています。衣装、希望する雰囲気、見せたい部分などをここで確認します。特殊な衣装やコンセプト撮影についても、この段階で内容を確認します。必要に応じて、参考写真、背景色、ライティング、簡単な絵コンテなどを使ってイメージを合わせます。</p>
+          </div>
+        </details>
       </li>
       <li>
-        <h3 class="flow-step-title">撮影内容のすり合わせ</h3>
-        <p>衣装、希望する雰囲気、見せたい部分などを確認します。<br>特殊な衣装やコンセプト撮影についても、この段階で内容を確認します。必要に応じて、参考写真、背景色、ライティング、簡単な絵コンテなどを使ってイメージを合わせます。</p>
-      </li>
-      <li>
-        <h3 class="flow-step-title">日程・プランの確定</h3>
+        <h3 class="flow-step-title">2. 内容・日時の確定</h3>
         <p>撮影内容、利用プラン、日時を確認し、双方の合意をもって予約確定となります。</p>
       </li>
       <li>
-        <h3 class="flow-step-title">当日の打ち合わせ</h3>
-        <p>スタジオ到着後、撮影内容と当日の流れを確認します。<br>衣装の順番や、撮りたい構図、公開したくない部分なども事前に確認します。</p>
+        <h3 class="flow-step-title">3. 当日の撮影</h3>
+        <p>スタジオ到着後、撮影内容と当日の流れを確認し、着替え・テスト撮影を経て本撮影を行います。</p>
+        <details class="flow-step-detail">
+          <summary>詳しく見る</summary>
+          <div class="flow-step-detail__body">
+            <p>スタジオ到着後、撮影内容と当日の流れを確認します。衣装の順番や、撮りたい構図、公開したくない部分なども事前に確認します。完全個室のスタジオ内で衣装に着替えていただき、衣装や小物を確認しながら撮影の準備を進めます。本撮影の前に数カット試し撮りを行い、光、構図、表情、ポーズを調整します。撮影した画像も確認しながら、希望する見え方に近づけていきます。本撮影では、衣装や撮影セットごとに撮影します。立ち方、手の位置、身体の向き、目線や表情は、その都度具体的に案内します。</p>
+          </div>
+        </details>
       </li>
       <li>
-        <h3 class="flow-step-title">着替え・準備</h3>
-        <p>完全個室のスタジオ内で衣装に着替えていただきます。<br>衣装や小物を確認しながら、撮影の準備を進めます。</p>
-      </li>
-      <li>
-        <h3 class="flow-step-title">テスト撮影</h3>
-        <p>本撮影の前に数カット試し撮りを行い、光、構図、表情、ポーズを調整します。<br>撮影した画像も確認しながら、希望する見え方に近づけていきます。</p>
-      </li>
-      <li>
-        <h3 class="flow-step-title">本撮影</h3>
-        <p>衣装や撮影セットごとに撮影します。<br>立ち方、手の位置、身体の向き、目線や表情は、その都度具体的に案内します。</p>
-      </li>
-      <li>
-        <h3 class="flow-step-title">写真の選定・納品</h3>
-        <p>プランに応じて写真を選定し、データで納品します。<br>スタンダードプランと作品撮りプランは、明るさ、色味、トリミング、必要に応じた背景修正を行い、撮影後1週間程度を目安にお渡しします。</p>
+        <h3 class="flow-step-title">4. 写真の選定・納品</h3>
+        <p>プランに応じて写真を選定し、データで納品します。</p>
+        <details class="flow-step-detail">
+          <summary>詳しく見る</summary>
+          <div class="flow-step-detail__body">
+            <p>スタンダードプランと作品撮りプランは、明るさ、色味、トリミング、必要に応じた背景修正を行い、撮影後1週間程度を目安にお渡しします。ライトプランは撮って出しデータをお渡しします。</p>
+          </div>
+        </details>
       </li>
     </ol>
   </div>
 </section>
 
-<!-- ── Studio ── -->
-<section id="studio">
+<!-- ── Assurance（安心して撮影するために：Studio/Concept/Privacy/Safety/Bookingを統合） ── -->
+<section id="assurance">
   <div class="container">
-    <p class="section-label">Studio</p>
-    <h2>人目を気にせず撮影できる完全個室</h2>
-    <div class="text-block">
-      <p>撮影場所は、名古屋・上前津の完全個室スタジオです。</p>
-      <p>ほかのお客様と一緒になることはありません。</p>
-      <p>撮影中の会話や衣装、ポーズを周囲に見られることなく、落ち着いて撮影できます。</p>
-      <p>スタジオ撮影が初めての方や、撮られることに慣れていない方も歓迎です。</p>
-      <p>ポーズや目線は、撮影しながら案内します。</p>
-    </div>
-  </div>
-</section>
+    <p class="section-label">Assurance</p>
+    <h2>安心して撮影するために</h2>
 
-<!-- ── Philosophy（Concept・否定しない姿勢） ── -->
-<section id="philosophy">
-  <div class="container">
-    <p class="section-label">Concept</p>
-    <h2>写真が好きだから撮る。でも、それだけではありません。</h2>
-    <div class="text-block">
-      <p>撮影したいテーマや、かっこよく見せたい部分は、人によって違います。</p>
-      <p>「この衣装で撮りたい」<br>「筋肉をきれいに見せたい」<br>「少しフェチ寄りだけれど、作品として残したい」</p>
-      <p>「こういう写真を撮ってみたいけれど、理解してもらえるかな」<br>そんな不安も含めて、安心して相談できる撮影を大切にしています。</p>
-      <p>そうした希望を、否定したり笑ったりすることはありません。</p>
-      <p>まずは話を聞き、<br>「この光なら似合いそうです」<br>「この角度なら、もっとよく見えます」<br>と一緒に考えながら撮影します。</p>
-      <p>撮影は、カメラの技術だけではなく、被写体との信頼関係で決まると考えています。</p>
+    <div class="assurance-highlights">
+      <div class="assurance-highlight">
+        <span class="assurance-highlight__icon">🔒</span>
+        <p>完全個室</p>
+      </div>
+      <div class="assurance-highlight">
+        <span class="assurance-highlight__icon">🙅</span>
+        <p>写真は無断公開しない</p>
+      </div>
+      <div class="assurance-highlight">
+        <span class="assurance-highlight__icon">🙆</span>
+        <p>希望しないポーズは断れる</p>
+      </div>
+      <div class="assurance-highlight">
+        <span class="assurance-highlight__icon">💬</span>
+        <p>撮影内容を事前に相談できる</p>
+      </div>
     </div>
-  </div>
-</section>
 
-<!-- ── Privacy ── -->
-<section id="privacy">
-  <div class="container">
-    <p class="section-label">Privacy</p>
-    <h2>撮影した写真の公開について</h2>
-    <div class="text-block">
-      <p>撮影した写真を、本人の許可なくSNSやウェブサイトの作例として公開することはありません。</p>
-      <p>作例掲載をお願いする場合は、掲載する写真と公開範囲を事前に確認します。</p>
-      <p>後ろ姿、マスク着用、顔を隠した構図、トリミングした写真であっても、本人の確認なく公開することはありません。</p>
-      <p>「写真は残したいけれど、公開はしたくない」という場合も、安心してご相談ください。</p>
-    </div>
-  </div>
-</section>
+    <div class="assurance-details">
+      <details class="assurance-item">
+        <summary>人目を気にせず撮影できる完全個室</summary>
+        <div class="assurance-item__body text-block">
+          <p>撮影場所は、名古屋・上前津の完全個室スタジオです。ほかのお客様と一緒になることはありません。</p>
+          <p>撮影中の会話や衣装、ポーズを周囲に見られることなく、落ち着いて撮影できます。スタジオ撮影が初めての方や、撮られることに慣れていない方も歓迎です。ポーズや目線は、撮影しながら案内します。</p>
+        </div>
+      </details>
 
-<!-- ── Safety ── -->
-<section id="safety">
-  <div class="container">
-    <p class="section-label">Safety</p>
-    <h2>安心して撮影いただくために</h2>
-    <div class="text-block">
-      <p>撮影したい内容や、希望する表現は、撮影前に確認してから進めます。</p>
-      <p>撮影中も、希望しないポーズや演出を断っていただいて問題ありません。</p>
-      <p>一度了承した内容であっても、途中で変更したり、中断したりできます。</p>
-      <p>無理にポーズや衣装、露出を求めることはありません。</p>
-      <p>このサービスは、写真作品を作るための撮影サービスです。性的なサービスは提供していません。</p>
-      <p>法令や公序良俗に反する内容、安全を確保できない内容には対応できません。</p>
-      <p>安全な判断ができないため、飲酒した状態での参加はご遠慮ください。</p>
-      <p>撮影者と被写体の双方が内容を確認し、納得した状態で一緒に作品を作ることを大切にしています。</p>
+      <details class="assurance-item">
+        <summary>撮影に対する考え方</summary>
+        <div class="assurance-item__body text-block">
+          <p>撮影したいテーマや、かっこよく見せたい部分は、人によって違います。</p>
+          <p>「この衣装で撮りたい」「筋肉をきれいに見せたい」「少しフェチ寄りだけれど、作品として残したい」——そうした希望を、否定したり笑ったりすることはありません。</p>
+          <p>「こういう写真を撮ってみたいけれど、理解してもらえるかな」そんな不安も含めて、安心して相談できる撮影を大切にしています。まずは話を聞き、「この光なら似合いそうです」「この角度なら、もっとよく見えます」と一緒に考えながら撮影します。撮影は、カメラの技術だけではなく、被写体との信頼関係で決まると考えています。</p>
+        </div>
+      </details>
+
+      <details class="assurance-item">
+        <summary>撮影した写真の公開について</summary>
+        <div class="assurance-item__body text-block">
+          <p>撮影した写真を、本人の許可なくSNSやウェブサイトの作例として公開することはありません。作例掲載をお願いする場合は、掲載する写真と公開範囲を事前に確認します。</p>
+          <p>後ろ姿、マスク着用、顔を隠した構図、トリミングした写真であっても、本人の確認なく公開することはありません。「写真は残したいけれど、公開はしたくない」という場合も、安心してご相談ください。</p>
+        </div>
+      </details>
+
+      <details class="assurance-item">
+        <summary>撮影中の安全・配慮について</summary>
+        <div class="assurance-item__body text-block">
+          <p>撮影したい内容や、希望する表現は、撮影前に確認してから進めます。撮影中も、希望しないポーズや演出を断っていただいて問題ありません。一度了承した内容であっても、途中で変更したり、中断したりできます。無理にポーズや衣装、露出を求めることはありません。</p>
+          <p>このサービスは、写真作品を作るための撮影サービスです。性的なサービスは提供していません。法令や公序良俗に反する内容、安全を確保できない内容には対応できません。安全な判断ができないため、飲酒した状態での参加はご遠慮ください。</p>
+          <p>撮影者と被写体の双方が内容を確認し、納得した状態で一緒に作品を作ることを大切にしています。</p>
+        </div>
+      </details>
+
+      <details class="assurance-item">
+        <summary>お支払い・納品・キャンセルについて</summary>
+        <div class="assurance-item__body">
+          <div class="booking-info-grid">
+            <div class="booking-info-item">
+              <h3 class="booking-info-title">お支払い</h3>
+              <p>現金、PayPay、クレジットカードに対応しています。<br>支払方法と支払時期は、予約確定時にご案内します。</p>
+            </div>
+            <div class="booking-info-item">
+              <h3 class="booking-info-title">写真の納品</h3>
+              <p>ライトプランは撮って出しデータをお渡しします。<br>スタンダードプランと作品撮りプランは、明るさ、色味、トリミング、必要に応じた背景修正を行い、撮影後1週間程度を目安に納品します。</p>
+            </div>
+            <div class="booking-info-item">
+              <h3 class="booking-info-title">キャンセル</h3>
+              <ul class="booking-info-list">
+                <li>利用日の2日前まで：無料</li>
+                <li>利用日の前日：料金の50％</li>
+                <li>利用日当日：料金の100％</li>
+              </ul>
+              <p>詳細はSNB共通規約をご確認ください。</p>
+            </div>
+          </div>
+        </div>
+      </details>
     </div>
   </div>
 </section>
@@ -1115,54 +1348,12 @@
   </div>
 </section>
 
-<!-- ── Booking Information ── -->
-<section id="booking-info">
-  <div class="container">
-    <p class="section-label">Booking Information</p>
-    <h2>ご予約にあたって</h2>
-    <div class="booking-info-grid">
-      <div class="booking-info-item">
-        <h3 class="booking-info-title">お支払い</h3>
-        <p>現金、PayPay、クレジットカードに対応しています。<br>支払方法と支払時期は、予約確定時にご案内します。</p>
-      </div>
-      <div class="booking-info-item">
-        <h3 class="booking-info-title">写真の納品</h3>
-        <p>ライトプランは撮って出しデータをお渡しします。<br>スタンダードプランと作品撮りプランは、明るさ、色味、トリミング、必要に応じた背景修正を行い、撮影後1週間程度を目安に納品します。</p>
-      </div>
-      <div class="booking-info-item">
-        <h3 class="booking-info-title">キャンセル</h3>
-        <ul class="booking-info-list">
-          <li>利用日の2日前まで：無料</li>
-          <li>利用日の前日：料金の50％</li>
-          <li>利用日当日：料金の100％</li>
-        </ul>
-        <p>詳細はSNB共通規約をご確認ください。</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── Brand closing message ── -->
-<section id="brand-message">
-  <div class="container">
-    <div class="brand-box">
-      <h2>誰かの「好き」を否定しない。</h2>
-      <div class="text-block">
-        <p>一般的なポートレートも、<br>少し人には話しにくいテーマも。</p>
-        <p>その人が残したいと思った表現を、<br>一緒に作品にする撮影を大切にしています。</p>
-        <p>名古屋・上前津で、<br>あなたの撮ってみたい写真を聞かせてください。</p>
-      </div>
-      <div class="hero-actions">
-        <a href="#plans" class="btn btn-primary" data-ga-event="portrait_click_hero_plans" data-ga-section="brand_message" data-ga-location="brand_message">料金・プランを見る</a>
-        <a href="#contact" class="btn btn-white" data-ga-event="portrait_click_hero_consult" data-ga-section="brand_message" data-ga-location="brand_message">撮影について相談する</a>
-        <a href="#gallery" class="btn btn-outline" data-ga-event="portrait_click_hero_gallery" data-ga-section="brand_message" data-ga-location="brand_message">作品例を見る</a>
-      </div>
-    </div>
-  </div>
-</section>
-
 <section id="contact">
   <div class="container">
+    <div class="brand-box brand-box--compact">
+      <h2>誰かの「好き」を否定しない。</h2>
+      <p>その人が残したいと思った表現を、一緒に作品にする撮影を大切にしています。名古屋・上前津で、あなたの撮ってみたい写真を聞かせてください。</p>
+    </div>
     <p class="section-label">Contact</p>
     <h2>ご予約・お問い合わせ</h2>
     <p>予約日程が決まっている方は「予約を申し込みたい」を、撮影内容やプランから相談したい方は「まず相談したい」を選んでください。</p>
@@ -1826,6 +2017,77 @@
         page_section: 'contact',
         plan_name: PLAN_SLUG[planSelect.value] || 'other'
       });
+    });
+  }
+})();
+</script>
+
+<!-- ── ハンバーガーメニュー・作例の折りたたみ表示（プログレッシブエンハンスメント） ── -->
+<script>
+(function () {
+  'use strict';
+
+  /* .js は<head>で即座に付与済み（JS有効時のみ）。
+     JS無効時は .portrait-menu / .gallery-card--extra が常に表示された状態になる。 */
+
+  /* ── ハンバーガーメニュー ── */
+  var toggle = document.getElementById('portraitMenuToggle');
+  var menu = document.getElementById('portraitMenu');
+
+  if (toggle && menu) {
+    function closeMenu() {
+      menu.classList.remove('is-open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'メニューを開く');
+      document.body.classList.remove('portrait-menu-open');
+    }
+    function openMenu() {
+      menu.classList.add('is-open');
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('aria-label', 'メニューを閉じる');
+      document.body.classList.add('portrait-menu-open');
+    }
+
+    toggle.addEventListener('click', function () {
+      if (menu.classList.contains('is-open')) closeMenu(); else openMenu();
+    });
+
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', closeMenu);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && menu.classList.contains('is-open')) closeMenu();
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!menu.classList.contains('is-open')) return;
+      if (menu.contains(e.target) || toggle.contains(e.target)) return;
+      closeMenu();
+    });
+  }
+
+  /* ── 作例の初期表示を絞り込み、ボタンで展開 ── */
+  var extras = document.querySelectorAll('.gallery-card--extra');
+  var galleryToggle = document.getElementById('galleryToggle');
+
+  if (extras.length && galleryToggle) {
+    var totalCards = document.querySelectorAll('.gallery-card').length;
+    var labelCollapsed = 'すべての作例を見る（全' + totalCards + '枚）';
+    var labelExpanded = '表示を減らす';
+
+    extras.forEach(function (el) { el.hidden = true; });
+    galleryToggle.hidden = false;
+    galleryToggle.textContent = labelCollapsed;
+
+    galleryToggle.addEventListener('click', function () {
+      var expanded = galleryToggle.getAttribute('aria-expanded') === 'true';
+      extras.forEach(function (el) { el.hidden = expanded; });
+      galleryToggle.setAttribute('aria-expanded', String(!expanded));
+      galleryToggle.textContent = expanded ? labelCollapsed : labelExpanded;
+      if (expanded) {
+        galleryToggle.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     });
   }
 })();
