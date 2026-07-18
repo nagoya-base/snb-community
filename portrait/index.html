@@ -72,8 +72,9 @@
     /* ── Anchor jump offset（sticky nav + ローカルナビ分の余白）── */
     #top, #purpose, #plans, #gallery, #photographer, #flow, #faq, #contact,
     .plan-card, .gallery-category { scroll-margin-top: 132px; }
-    @media (max-width: 900px) {
-      /* ローカルナビはPCのみ表示のため、モバイルはグローバルナビ分のみ考慮 */
+    @media (max-width: 860px) {
+      /* ローカルナビはPCのみ表示のため、モバイルはグローバルナビ分のみ考慮
+         （.portrait-subnav の表示切替と同じ 860px に統一） */
       #top, #purpose, #plans, #gallery, #photographer, #flow, #faq, #contact,
       .plan-card, .gallery-category { scroll-margin-top: 72px; }
     }
@@ -637,6 +638,7 @@
 <!-- ── スマートフォン用ハンバーガーメニュー ── -->
 <div class="portrait-menu" id="portraitMenu">
   <div class="portrait-menu__panel">
+    <button type="button" class="portrait-menu__close" id="portraitMenuClose" aria-label="メニューを閉じる">✕ 閉じる</button>
     <p class="portrait-menu__heading">このページ</p>
     <a href="#top" class="portrait-menu__link">トップ</a>
     <a href="#gallery" class="portrait-menu__link">作例</a>
@@ -2033,37 +2035,68 @@
   /* ── ハンバーガーメニュー ── */
   var toggle = document.getElementById('portraitMenuToggle');
   var menu = document.getElementById('portraitMenu');
+  var closeBtn = document.getElementById('portraitMenuClose');
 
   if (toggle && menu) {
-    function closeMenu() {
+    /* 閉じた状態では inert + aria-hidden で、Tabやスクリーンリーダーから完全に除外する。
+       このscriptはJS有効時のみ実行されるため、no-JS時は inert が付与されず全リンクに到達できる。 */
+    function closeMenu(opts) {
       menu.classList.remove('is-open');
+      menu.setAttribute('inert', '');
+      menu.setAttribute('aria-hidden', 'true');
       toggle.setAttribute('aria-expanded', 'false');
       toggle.setAttribute('aria-label', 'メニューを開く');
       document.body.classList.remove('portrait-menu-open');
+      if (!opts || opts.restoreFocus !== false) toggle.focus();
     }
     function openMenu() {
       menu.classList.add('is-open');
+      menu.removeAttribute('inert');
+      menu.setAttribute('aria-hidden', 'false');
       toggle.setAttribute('aria-expanded', 'true');
       toggle.setAttribute('aria-label', 'メニューを閉じる');
       document.body.classList.add('portrait-menu-open');
+      var focusTarget = closeBtn || menu.querySelector('a, button');
+      if (focusTarget) focusTarget.focus();
     }
+
+    /* 初期状態は閉じた状態にする（JS有効時のみ実行されるためno-JSには影響しない） */
+    closeMenu({ restoreFocus: false });
 
     toggle.addEventListener('click', function () {
       if (menu.classList.contains('is-open')) closeMenu(); else openMenu();
     });
 
+    if (closeBtn) closeBtn.addEventListener('click', function () { closeMenu(); });
+
     menu.querySelectorAll('a').forEach(function (a) {
-      a.addEventListener('click', closeMenu);
+      a.addEventListener('click', function () { closeMenu({ restoreFocus: false }); });
     });
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && menu.classList.contains('is-open')) closeMenu();
     });
 
-    document.addEventListener('click', function (e) {
-      if (!menu.classList.contains('is-open')) return;
-      if (menu.contains(e.target) || toggle.contains(e.target)) return;
-      closeMenu();
+    /* オーバーレイ背景（.portrait-menu自身）を直接クリックした場合のみ閉じる。
+       パネルやリンクのクリックはバブリングしても e.target がそれらの要素になるため誤って閉じない。 */
+    menu.addEventListener('click', function (e) {
+      if (e.target === menu) closeMenu();
+    });
+
+    /* 開いている間はパネル内でTabフォーカスをループさせる（フォーカストラップ） */
+    menu.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab' || !menu.classList.contains('is-open')) return;
+      var focusables = Array.prototype.slice.call(menu.querySelectorAll('a, button'));
+      if (!focusables.length) return;
+      var first = focusables[0];
+      var last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     });
   }
 

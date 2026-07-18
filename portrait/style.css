@@ -625,10 +625,27 @@ h1 {
   align-items: center;
 }
 
+/* 閉じるボタン（JS有効時のドロワー内のみ意味を持つが、no-JS時も無害に表示） */
+.portrait-menu__close {
+  display: none;
+  align-self: flex-end;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg-card2, #F2F2F0);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
 body.portrait-menu-open { overflow: hidden; }
 
 @media (max-width: 860px) {
-  .portrait-menu-toggle { display: flex; }
+  /* ハンバーガーボタンはJS有効時のみ表示（no-JSでは動作しないボタンを出さない） */
+  html.js .portrait-menu-toggle { display: flex; }
   .site-nav { flex-direction: row; align-items: center; flex-wrap: nowrap; padding: 0.65rem 1.25rem; }
   .site-nav__right { display: none; }
   .portrait-subnav { display: none; }
@@ -640,11 +657,16 @@ body.portrait-menu-open { overflow: hidden; }
     padding: 1rem 1.5rem 1.5rem;
   }
 
-  /* JS有効時：固定オーバーレイ式ドロワーに切り替え、初期状態は非表示 */
+  /* JS有効時：固定オーバーレイ式ドロワーに切り替え、初期状態は非表示。
+     overlayはナビバーの下端から始まるため、グローバルナビとハンバーガーボタンは
+     開閉状態に関わらず常にオーバーレイの上に表示され、操作できる。 */
   html.js .portrait-menu {
     position: fixed;
-    inset: 0;
-    z-index: 140;
+    top: 51px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 130;
     background: rgba(28, 26, 23, 0.45);
     padding: 0;
     border-bottom: none;
@@ -656,6 +678,7 @@ body.portrait-menu-open { overflow: hidden; }
     opacity: 1;
     pointer-events: auto;
   }
+  html.js .portrait-menu__close { display: inline-flex; align-items: center; justify-content: center; }
   html.js .portrait-menu .portrait-menu__panel {
     position: absolute;
     top: 0;
@@ -663,7 +686,7 @@ body.portrait-menu-open { overflow: hidden; }
     width: min(320px, 84vw);
     height: 100%;
     background: var(--bg);
-    padding: 4.5rem 1.5rem 2rem;
+    padding: 1.5rem 1.5rem 2rem;
     overflow-y: auto;
     box-shadow: -10px 0 28px rgba(0, 0, 0, 0.18);
     transform: translateX(100%);
