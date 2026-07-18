@@ -182,6 +182,86 @@
       margin: 2rem auto 0;
     }
 
+    /* ── Photographer profile（撮る人について） ── */
+    .photographer-profile {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 2rem;
+      align-items: start;
+      margin-top: 2rem;
+    }
+    .photographer-profile__media {
+      width: 100%;
+    }
+    .photographer-profile__image {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4 / 5;
+      object-fit: cover;
+      border-radius: 14px;
+    }
+    .photographer-profile__body {
+      min-width: 0;
+    }
+    .photographer-profile__role {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+    }
+    .photographer-profile__name {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 1rem;
+    }
+    .photographer-profile__text p {
+      font-size: 0.92rem;
+      line-height: 1.9;
+      color: var(--text-muted);
+      margin: 0 0 1rem;
+    }
+    .photographer-profile__text p:last-child { margin-bottom: 0; }
+    .photographer-profile__features {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1.5rem 0 0;
+    }
+    .photographer-profile__feature {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--navy);
+      background: var(--bg-card2, #F2F2F0);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.35rem 0.85rem;
+    }
+    .photographer-profile__actions {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .photographer-profile__x-link {
+      display: inline-block;
+      margin: 0.9rem 0 0;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .photographer-profile__x-link:hover { color: var(--accent); }
+    @media (max-width: 700px) {
+      .photographer-profile { grid-template-columns: 1fr; }
+      .photographer-profile__media { max-width: 360px; margin: 0 auto; }
+    }
+
     .plans {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -496,6 +576,38 @@
         <h3 class="theme-title">フェティッシュ・コンセプト撮影</h3>
         <p class="theme-desc">少しフェチ寄りの衣装や、ダークな世界観、身体のラインを活かした作品撮りにも対応しています。露骨な演出ではなく、光・影・ポーズ・衣装で作品として仕上げます。「理解してもらえるか不安」という相談も歓迎です。内容は事前にすり合わせます。</p>
       </article>
+    </div>
+  </div>
+</section>
+
+<!-- ── Photographer（撮る人について） ── -->
+<section id="photographer">
+  <div class="container">
+    <p class="section-label">Photographer</p>
+    <h2>撮る人について</h2>
+    <div class="photographer-profile">
+      <div class="photographer-profile__media">
+        <img src="../images/portrait/top/photographer-photo-ataru.webp" alt="撮影者アタルのプロフィール写真" width="960" height="1200" loading="lazy" decoding="async" class="photographer-profile__image">
+      </div>
+      <div class="photographer-profile__body">
+        <p class="photographer-profile__role">Photographer</p>
+        <h3 class="photographer-profile__name">アタル</h3>
+        <div class="photographer-profile__text">
+          <p>男性ポートレート、スポーツユニフォーム、スーツ、筋肉表現、少しフェティッシュな作品撮りを中心に撮影しています。</p>
+          <p>撮られることに慣れていない方には、立ち方、手の位置、身体の向き、目線まで具体的に案内します。</p>
+          <p>「こう撮りたい」がまだはっきり決まっていなくても、衣装や好きな雰囲気を伺いながら、光・背景・構図を一緒に組み立てます。</p>
+        </div>
+        <ul class="photographer-profile__features">
+          <li class="photographer-profile__feature">男性ポートレート中心</li>
+          <li class="photographer-profile__feature">ポージングを具体的に案内</li>
+          <li class="photographer-profile__feature">完全個室・1組貸切</li>
+          <li class="photographer-profile__feature">テーマを否定せず一緒に考える</li>
+        </ul>
+        <div class="photographer-profile__actions">
+          <a href="#contact" class="btn btn-primary" data-contact-intent="consult" data-ga-event="portrait_click_photographer_consult" data-ga-section="photographer" data-ga-location="photographer_profile">まず撮影について相談する</a>
+          <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="photographer-profile__x-link" data-ga-event="portrait_click_photographer_x" data-ga-section="photographer" data-ga-location="photographer">Xで作例・活動を見る</a>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1367,26 +1479,6 @@
         <span class="contact-note">短い質問だけでもOKです。</span>
       </a>
     </div>
-  </div>
-</section>
-
-<!-- ── Photographer ── -->
-<section id="photographer">
-  <div class="container">
-    <p class="section-label">Photographer</p>
-    <h2>撮る人について</h2>
-    <!-- TODO: 写真方針が決まり次第、以下のいずれかの写真を追加
-         （後ろ姿／照明調整中／横顔・シルエット／機材と一緒の写真、いずれも顔出し必須ではない） -->
-    <div class="text-block">
-      <p><strong>アタル</strong></p>
-      <p>男性ポートレート、スポーツユニフォーム、筋肉表現、<br>少しフェティッシュな作品撮りを中心に撮影しています。</p>
-      <p>撮影したいテーマを否定せず、<br>衣装・光・ポーズを一緒に考えながら作品を作ることを大切にしています。</p>
-      <p>撮られることに慣れていない方には、<br>立ち方、手の位置、目線まで具体的に案内します。</p>
-      <p>「こう見せたい」という希望があれば、<br>その表現に合う光や構図を一緒に考えます。</p>
-      <p>まだ撮りたい内容がはっきり決まっていない場合も、<br>衣装や好きな雰囲気について話しながら決めていきましょう。</p>
-      <p>ミラーレスカメラとストロボ、COBライト、LED照明を使い、<br>白背景のプロフィール・宣材写真から、色と影を活かしたコンセプト撮影まで対応しています。</p>
-    </div>
-    <p class="photographer-x-link">X：<a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" data-ga-event="portrait_click_photographer_x" data-ga-section="photographer" data-ga-location="photographer">@baseballuni2022</a></p>
   </div>
 </section>
 
