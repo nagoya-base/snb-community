@@ -536,3 +536,163 @@ h1 {
 @media (max-width: 480px) {
   .consult-form__fieldset { padding: 1rem 0.9rem 1.25rem; }
 }
+
+/* ──────────────────────────────────────────────
+   ローカルナビ・ハンバーガーメニュー（Issue #72）
+   ────────────────────────────────────────────── */
+
+/* ハンバーガーボタン（PCでは非表示） */
+.portrait-menu-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 34px;
+  height: 34px;
+  padding: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.portrait-menu-toggle__bar {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--text);
+  border-radius: 1px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.portrait-menu-toggle[aria-expanded="true"] .portrait-menu-toggle__bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.portrait-menu-toggle[aria-expanded="true"] .portrait-menu-toggle__bar:nth-child(2) { opacity: 0; }
+.portrait-menu-toggle[aria-expanded="true"] .portrait-menu-toggle__bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+/* ポートレート専用ローカルナビ（PC表示・グローバルナビ直下に配置） */
+.portrait-subnav {
+  position: sticky;
+  top: 57px;
+  z-index: 90;
+  background: rgba(245, 242, 236, 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.portrait-subnav__inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.15rem;
+  padding: 0.55rem 1.5rem;
+}
+.portrait-subnav__link {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.portrait-subnav__link:hover { color: var(--accent); }
+.portrait-subnav__link--external { color: var(--accent); }
+
+/* モバイル用ハンバーガードロワー。
+   既定（no-JS）ではページ内に通常表示され、主要リンクへ到達できる。
+   JS有効時（html.js）のみ、固定オーバーレイの開閉式ドロワーに変わる。 */
+.portrait-menu { display: none; }
+
+.portrait-menu__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.portrait-menu__heading {
+  margin-top: 1.1rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.portrait-menu__heading:first-child { margin-top: 0; }
+.portrait-menu__link {
+  padding: 0.6rem 0.2rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+/* 閉じるボタン（JS有効時のドロワー内のみ意味を持つが、no-JS時も無害に表示） */
+.portrait-menu__close {
+  display: none;
+  align-self: flex-end;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg-card2, #F2F2F0);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+body.portrait-menu-open { overflow: hidden; }
+
+@media (max-width: 860px) {
+  /* ハンバーガーボタンはJS有効時のみ表示（no-JSでは動作しないボタンを出さない） */
+  html.js .portrait-menu-toggle { display: flex; }
+  .site-nav { flex-direction: row; align-items: center; flex-wrap: nowrap; padding: 0.65rem 1.25rem; }
+  .site-nav__right { display: none; }
+  .portrait-subnav { display: none; }
+
+  .portrait-menu {
+    display: block;
+    background: var(--bg-tint);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem 1.5rem;
+  }
+
+  /* JS有効時：固定オーバーレイ式ドロワーに切り替え、初期状態は非表示。
+     overlayはナビバーの下端から始まるため、グローバルナビとハンバーガーボタンは
+     開閉状態に関わらず常にオーバーレイの上に表示され、操作できる。 */
+  html.js .portrait-menu {
+    position: fixed;
+    top: 51px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 130;
+    background: rgba(28, 26, 23, 0.45);
+    padding: 0;
+    border-bottom: none;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  html.js .portrait-menu.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  html.js .portrait-menu__close { display: inline-flex; align-items: center; justify-content: center; }
+  html.js .portrait-menu .portrait-menu__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: min(320px, 84vw);
+    height: 100%;
+    background: var(--bg);
+    padding: 1.5rem 1.5rem 2rem;
+    overflow-y: auto;
+    box-shadow: -10px 0 28px rgba(0, 0, 0, 0.18);
+    transform: translateX(100%);
+    transition: transform 0.22s ease;
+  }
+  html.js .portrait-menu.is-open .portrait-menu__panel {
+    transform: translateX(0);
+  }
+}

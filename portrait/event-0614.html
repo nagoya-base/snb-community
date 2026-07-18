@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>スタジオ撮影体験会（6/14限定） | SNBC</title>
-  <meta name="description" content="2026年6月14日（日）限定開催。名古屋・上前津の完全個室スタジオで90分¥3,000の撮影体験会。スポユニ・フェチ・コスプレ歓迎、スタジオ未経験・自撮り勢大歓迎。白背景・カラー照明・学校机あり。">
+  <title>2026年6月14日開催｜スタジオ撮影体験会（開催終了） | SNBC</title>
+  <meta name="description" content="2026年6月14日（日）に名古屋・上前津の完全個室スタジオで開催したスタジオ撮影体験会の記録です。このイベントは終了しました。現在の男性ポートレート撮影・撮影者向け見学体験は各ページをご覧ください。">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://nagoya-base.github.io/snb-community/portrait/event-0614.html">
 
   <!-- OGP -->
-  <meta property="og:title" content="スタジオ撮影体験会（6/14限定） | SNBC">
-  <meta property="og:description" content="90分¥3,000・完全個室・スタジオ未経験歓迎。スポユニ・フェチ・コスプレOK。名古屋・上前津にて6/14(日)限定開催。">
+  <meta property="og:title" content="2026年6月14日開催｜スタジオ撮影体験会（開催終了） | SNBC">
+  <meta property="og:description" content="2026年6月14日（日）に名古屋・上前津で開催したスタジオ撮影体験会の開催実績です。このイベントは終了しました。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://nagoya-base.github.io/snb-community/portrait/event-0614.html">
   <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/portrait/top/meta-ogp-main.jpg">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="スタジオ撮影体験会（6/14限定） | SNBC">
-  <meta name="twitter:description" content="90分¥3,000・完全個室・スタジオ未経験歓迎。スポユニ・フェチ・コスプレOK。6/14(日)限定開催。">
+  <meta name="twitter:title" content="2026年6月14日開催｜スタジオ撮影体験会（開催終了） | SNBC">
+  <meta name="twitter:description" content="2026年6月14日（日）に名古屋・上前津で開催したスタジオ撮影体験会の開催実績です。このイベントは終了しました。">
   <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/portrait/top/meta-ogp-main.jpg">
 
   <!-- Google Analytics -->
@@ -174,6 +174,19 @@
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.3; }
+    }
+
+    /* ── Ended badge（開催終了の明示） ── */
+    .ended-badge {
+      display: block;
+      background: rgba(242, 239, 233, 0.94);
+      border-color: rgba(242, 239, 233, 0.94);
+      color: var(--accent);
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      padding: 0.55rem 1.25rem;
+      margin-bottom: 1rem;
     }
 
     /* ── Hero ── */
@@ -427,6 +440,12 @@
       font-size: 0.82rem;
       color: var(--text-muted);
       line-height: 1.85;
+    }
+    .price-note a, .faq-body a {
+      color: var(--accent);
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 2px;
     }
     .limit-inline {
       display: inline-block;
@@ -702,6 +721,14 @@
       padding: 0.5rem 0.75rem;
       margin-top: 0.5rem;
     }
+    .type-note a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font-weight: 700; }
+
+    .ended-inline-note {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: -1.25rem;
+      margin-bottom: 1.5rem;
+    }
 
     /* ── Responsive ── */
     @media (max-width: 640px) {
@@ -740,7 +767,7 @@
 
 <!-- ── Nav ── -->
 <nav>
-  <div class="nav-brand"><span>6/14</span>撮影体験会</div>
+  <div class="nav-brand"><span>6/14</span>撮影体験会（開催終了）</div>
   <ul class="nav-links" id="nav-links">
     <li><a href="#target">こんな人向け</a></li>
     <li><a href="#gallery">作例</a></li>
@@ -748,7 +775,7 @@
     <li><a href="#pricing">料金</a></li>
     <li><a href="#faq">FAQ</a></li>
   </ul>
-  <a href="#contact" class="btn nav-cta">予約・相談する</a>
+  <a href="index.html" class="btn nav-cta">現在のサービスを見る</a>
   <button class="hamburger" id="hamburger" aria-label="メニューを開く" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
@@ -764,33 +791,36 @@
   </div>
   <div class="container">
     <div class="hero-content">
-      <div class="limit-badge">
+      <div class="limit-badge ended-badge">
+        このイベントは終了しました
+      </div>
+      <div class="limit-badge" style="margin-top: -1.25rem;">
         <span class="limit-dot"></span>
-        2026年6月14日（日）限定開催 ／ 試験開催につき今回のみの価格
+        2026年6月14日（日）開催
       </div>
       <h1>
         いつもと違う空間で、<br>
         <em>撮ってみない？</em>
       </h1>
       <p class="hero-sub">
-        スタジオ未経験・自撮り勢 大歓迎。<br>
-        スポユニ・フェチ・コスプレ OK。<br>
-        名古屋・上前津の完全個室スタジオにて、一日限りの体験会を開きます。
+        スタジオ未経験・自撮り勢 大歓迎。スポユニ・フェチ・コスプレ OK。<br>
+        名古屋・上前津の完全個室スタジオにて開催した、一日限りの体験会の記録です。<br>
+        現在は下記の男性ポートレート撮影・撮影者向け見学体験をご利用いただけます。
       </p>
       <div class="hero-specs">
         <span class="hero-spec big">90分 ¥3,000</span>
         <span class="hero-spec">完全個室</span>
-        <span class="hero-spec">6/14のみ</span>
+        <span class="hero-spec">2026年6月14日開催</span>
         <span class="hero-spec">名古屋・上前津</span>
         <span class="hero-spec">初心者歓迎</span>
         <span class="hero-spec">10:00〜17:30（4枠制）</span>
       </div>
       <div class="hero-btns">
-        <a href="mailto:nagoyabase2023@gmail.com?subject=20260614撮影会お問い合わせ" class="btn btn-primary btn-lg">
-          📋 メールで予約・相談する
+        <a href="index.html" class="btn btn-primary btn-lg">
+          📷 現在の男性ポートレート撮影を見る
         </a>
-        <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg">
-          ✉️ X @baseballuni2022 にDMする
+        <a href="photographer.html" class="btn btn-outline btn-lg">
+          🎥 撮影者向けの見学・体験を見る
         </a>
       </div>
     </div>
@@ -800,8 +830,9 @@
 <!-- ── Participation type ── -->
 <section id="type">
   <div class="container">
-    <p class="section-label">How to Join</p>
-    <h2>参加タイプを選んでください</h2>
+    <p class="section-label">How It Was</p>
+    <h2>参加タイプ（2026年6月14日開催時の内容）</h2>
+    <p class="ended-inline-note">以下は2026年6月14日開催時の参加内容です。現在このイベント自体の受付は行っておりません。</p>
     <div class="type-grid">
       <div class="type-card featured">
         <div class="type-icon">📷</div>
@@ -814,7 +845,7 @@
           <li>撮影指示あり・初めてでも安心</li>
           <li>データ当日お渡し</li>
         </ul>
-        <a href="#contact" class="btn btn-primary" style="display:block;text-align:center;width:100%;border-radius:6px;">予約する</a>
+        <div class="type-note">現在は <a href="index.html">男性ポートレート撮影（通常セッション）</a> でご利用いただけます。</div>
       </div>
       <div class="type-card featured">
         <div class="type-icon">🎥</div>
@@ -827,8 +858,7 @@
           <li>モデル（被写体）同伴でご参加ください</li>
           <li>事前予約制・完全個室</li>
         </ul>
-        <div class="type-note">※ 撮影者としての参加は、モデル（被写体）同伴でお願いします。DMまたはメールで事前予約を。</div>
-        <a href="#contact" class="btn btn-primary" style="display:block;text-align:center;width:100%;border-radius:6px;margin-top:1rem;">参加を申し込む</a>
+        <div class="type-note">現在は <a href="photographer.html">撮影者向け見学・体験ページ</a> でご利用いただけます。</div>
       </div>
     </div>
   </div>
@@ -971,11 +1001,11 @@
 <section id="pricing">
   <div class="container">
     <p class="section-label">Pricing</p>
-    <h2>料金</h2>
+    <h2>料金（2026年6月14日開催時の内容）</h2>
     <div class="price-box">
       <div class="price-box-header">
         <div>
-          <div class="price-box-title">📷 撮影体験コース <span class="limit-inline">6/14限定価格</span></div>
+          <div class="price-box-title">📷 撮影体験コース <span class="limit-inline">2026年6月14日開催時の価格</span></div>
         </div>
         <div class="price-main"><sup>¥</sup>3,000<sub> / 90分</sub></div>
       </div>
@@ -1010,9 +1040,8 @@
       </div>
     </div>
     <div class="price-note">
-      <strong style="color: var(--text);">作例掲載OK協力価格について</strong><br>
-      撮影した写真をポートフォリオ・SNS等への掲載にご協力いただける方には、同内容でさらにお得な「協力価格」でご案内します。詳細はDMまたはメールにてお問い合わせください。<br><br>
-      <span style="color: var(--accent); font-weight: 700;">この価格は6/14の試験開催のみ。次回開催は未定です。</span>
+      <strong style="color: var(--text);">この料金は2026年6月14日の開催時のみのものです。</strong><br>
+      このイベントは終了しており、現在この内容・価格でのお申し込みは受け付けておりません。現在の男性ポートレート撮影の料金は<a href="index.html#plans">こちら</a>、撮影者向け見学・体験の料金は<a href="photographer.html#courses">こちら</a>をご確認ください。
     </div>
   </div>
 </section>
@@ -1080,15 +1109,15 @@
         </div>
       </details>
       <details>
-        <summary>どんな衣装・服装でもOKですか？</summary>
+        <summary>どんな衣装・服装でもOKでしたか？</summary>
         <div class="faq-body">
-          スポーツユニフォーム・コスプレ衣装・私服・フェチ系の衣装など、基本的に何でもOKです。衣装は各自でご持参ください（貸し出しはありません）。過度に性的なものや、他者の権利を侵害するものは対応できません。不安な場合は事前にDMでご確認ください。
+          スポーツユニフォーム・コスプレ衣装・私服・フェチ系の衣装など、基本的に何でもOKという内容でした（衣装は各自持参、貸し出しなし）。過度に性的なものや、他者の権利を侵害するものは対応していませんでした。現在の男性ポートレート撮影における衣装・撮影内容の条件は、<a href="index.html#faq">こちら</a>をご確認ください。
         </div>
       </details>
       <details>
-        <summary>予約のキャンセルはできますか？</summary>
+        <summary>キャンセル規定はどうなっていましたか？</summary>
         <div class="faq-body">
-          前日までのご連絡であればキャンセル可能です。当日のキャンセルはご遠慮ください。詳細はDMまたはメールにてご確認ください。
+          前日までのご連絡であればキャンセル可能、当日のキャンセルはご遠慮いただく規定でした。このイベントは終了しており、現在このキャンセル規定でのお申し込みは受け付けておりません。現在の男性ポートレート撮影のキャンセル規定は<a href="index.html#assurance">こちら</a>、撮影者向け見学・体験については<a href="photographer.html">こちら</a>をご確認ください。
         </div>
       </details>
     </div>
@@ -1098,35 +1127,33 @@
 <!-- ── Final CTA ── -->
 <section id="contact" class="final-cta">
   <div class="container">
-    <div class="limit-badge" style="margin-bottom: 1.5rem;">
-      <span class="limit-dot"></span>
-      6/14（日）限定 ／ 試験開催 ／ 次回未定
+    <div class="limit-badge ended-badge" style="margin-bottom: 1.5rem;">
+      このイベントは終了しました
     </div>
     <h2>
-      ¥3,000なら、<br>
-      <em>一回くらい行ってみようかな</em>
+      現在は、<br>
+      <em>このサービスをご利用いただけます</em>
     </h2>
     <p class="final-cta-sub">
-      そのくらいの気持ちで大丈夫です。<br>
-      気になったら、まず気軽にDMを。
+      2026年6月14日のイベントは終了しましたが、<br>
+      同じ名古屋・上前津のスタジオで、現在も撮影をお楽しみいただけます。
     </p>
     <div class="cta-channels">
-      <a href="mailto:nagoyabase2023@gmail.com?subject=20260614撮影会お問い合わせ" class="cta-channel">
-        <span class="cta-channel-icon">📧</span>
+      <a href="index.html" class="cta-channel">
+        <span class="cta-channel-icon">📷</span>
         <span>
-          <span class="cta-channel-label">メールで予約・相談する</span>
-          <span class="cta-channel-note">nagoyabase2023@gmail.com　24時間以内に返信。</span>
+          <span class="cta-channel-label">現在の男性ポートレート撮影を見る</span>
+          <span class="cta-channel-note">ユニフォーム・スーツ・筋肉表現・コンセプト撮影まで対応。</span>
         </span>
       </a>
-      <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="cta-channel">
-        <span class="cta-channel-icon">✉️</span>
+      <a href="photographer.html" class="cta-channel">
+        <span class="cta-channel-icon">🎥</span>
         <span>
-          <span class="cta-channel-label">X（旧Twitter）@baseballuni2022 にDMする</span>
-          <span class="cta-channel-note">一番気軽。短い質問だけでもOK。</span>
+          <span class="cta-channel-label">撮影者向けの見学・体験を見る</span>
+          <span class="cta-channel-note">スタジオ見学無料／撮影体験60分¥3,000。</span>
         </span>
       </a>
     </div>
-    <p class="cta-limit-note">⚡ 6/14限定 ／ 枠に限りがあります</p>
   </div>
 </section>
 
@@ -1147,7 +1174,7 @@
       上前津 撮影 ／ 名古屋 撮影スタジオ ／ スポユニ 撮影 ／ 完全個室スタジオ
     </p>
     <span class="footer-link">
-      ポートレート体験の詳細・通常セッションについては <a href="../">こちら</a>
+      ポートレート体験の詳細・通常セッションについては <a href="index.html">こちら</a>
     </span>
     <p class="footer-copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
   </div>
