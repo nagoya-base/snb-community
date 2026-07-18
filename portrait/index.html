@@ -244,6 +244,16 @@
     .photographer-profile__actions {
       margin-top: 1.5rem;
     }
+    .photographer-profile__x-link {
+      display: inline-block;
+      margin: 0.9rem 0 0;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .photographer-profile__x-link:hover { color: var(--accent); }
     @media (max-width: 700px) {
       .photographer-profile { grid-template-columns: 1fr; }
       .photographer-profile__media { max-width: 360px; margin: 0 auto; }
@@ -574,7 +584,7 @@
     <h2>撮る人について</h2>
     <div class="photographer-profile">
       <div class="photographer-profile__media">
-        <img src="../images/portrait/top/photographer-photo-ataru.webp" alt="撮影者アタルのプロフィール写真" width="960" height="1200" loading="lazy" class="photographer-profile__image">
+        <img src="../images/portrait/top/photographer-photo-ataru.webp" alt="撮影者アタルのプロフィール写真" width="960" height="1200" loading="lazy" decoding="async" class="photographer-profile__image">
       </div>
       <div class="photographer-profile__body">
         <p class="photographer-profile__role">Photographer</p>
@@ -592,6 +602,7 @@
         </ul>
         <div class="photographer-profile__actions">
           <a href="#contact" class="btn btn-primary" data-contact-intent="consult" data-ga-event="portrait_click_photographer_consult" data-ga-section="photographer" data-ga-location="photographer_profile">まず撮影について相談する</a>
+          <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="photographer-profile__x-link" data-ga-event="portrait_click_photographer_x" data-ga-section="photographer" data-ga-location="photographer">Xで作例・活動を見る</a>
         </div>
       </div>
     </div>
