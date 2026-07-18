@@ -343,6 +343,19 @@ images/community/baseball-vol2/meta-ogp-main.jpg
 
 フォルダ名ですでに対象ページが分かるため、ファイル名は用途だけを表します。
 
+### 例外：専用OGPを持たないページ
+
+サブページ（イベント詳細ページなど）が同じ柱のトップページと実質同じ内容を共有し、個別のOGP画像を用意していない場合は、そのページのトップOGPを共用してかまいません。
+
+例：
+
+```text
+portrait/event-0614.html   → images/portrait/top/meta-ogp-main.jpg を共用
+portrait/photographer.html → images/portrait/top/meta-ogp-main.jpg を共用
+```
+
+新しい訴求内容の画像を用意した場合は、通常どおり `images/{pillar}/{page}/meta-ogp-main.jpg` を個別に作成します。
+
 ---
 
 ## 11. ヒーロー画像のルール
