@@ -45,27 +45,33 @@
   var STATUS_META = {
     upcoming: {
       label: "開催予定・募集開始前", modifier: "upcoming", ctaEnabled: false,
+      formHeading: "まもなく募集を開始します",
       formMessage: "募集開始までお待ちください。開始はXでお知らせします。"
     },
     recruiting: {
       label: "募集中", modifier: "recruiting", ctaEnabled: true,
+      formHeading: null,
       formMessage: null
     },
     full: {
       label: "満席", modifier: "full", ctaEnabled: false,
-      formMessage: "満席となりました。参加についてのご相談はXのDMからご連絡ください。"
+      formHeading: "満席になりました",
+      formMessage: "参加についてのご相談はXのDMからご連絡ください。"
     },
     closed: {
       label: "受付終了", modifier: "closed", ctaEnabled: false,
-      formMessage: "このイベントの受付は終了しました。次回開催についてはXをご確認ください。"
+      formHeading: "受付を終了しました",
+      formMessage: "次回開催についてはXをご確認ください。"
     },
     finished: {
       label: "開催終了", modifier: "finished", ctaEnabled: false,
-      formMessage: "このイベントの受付は終了しました。次回開催についてはXをご確認ください。"
+      formHeading: "このイベントは終了しました",
+      formMessage: "次回開催についてはXをご確認ください。"
     },
     paused: {
       label: "活動休止中", modifier: "paused", ctaEnabled: false,
-      formMessage: "現在、募集を休止しています。次回開催はXでお知らせします。"
+      formHeading: "現在、募集を休止しています",
+      formMessage: "次回開催はXでお知らせします。"
     }
   };
 
@@ -167,6 +173,8 @@
         el.hidden = !meta.ctaEnabled;
       } else if (field === "form-fallback") {
         el.hidden = meta.ctaEnabled;
+      } else if (field === "form-fallback-heading") {
+        el.textContent = meta.formHeading || "";
       } else if (field === "form-fallback-text") {
         el.textContent = meta.formMessage || "";
       } else if (field === "dot") {
