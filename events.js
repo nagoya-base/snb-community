@@ -17,7 +17,6 @@
       venue: "上前津｜Studio Nagoya Base",
       fee: "¥4,000（現金・PayPay）",
       capacity: 4,
-      remaining: null,
       minimum: 2,
       condition: "お気に入りの野球ユニフォーム",
       status: "recruiting",
@@ -32,7 +31,6 @@
       venue: "名古屋市内（公園・グラウンド）",
       fee: "基本無料",
       capacity: null,
-      remaining: null,
       minimum: null,
       condition: "グローブ必須・ユニフォーム推奨",
       status: "paused",
@@ -106,15 +104,7 @@
       return "finished";
     }
 
-    if (ev.status === "recruiting" || ev.status === "full" || ev.status === "upcoming") {
-      return ev.status;
-    }
-
-    if (typeof ev.remaining === "number") {
-      return ev.remaining <= 0 ? "full" : "recruiting";
-    }
-
-    return "upcoming";
+    return ev.status || "upcoming";
   }
 
   function findEvent(eventId) {
@@ -125,14 +115,58 @@
   }
 
   var FIELD_MAP = {
+    title: "title",
     date: "dateLabel",
     time: "timeLabel",
     venue: "venue",
     fee: "fee",
+    "fee-amount": "fee",
     minimum: "minimum",
+    "minimum-amount": "minimum",
     condition: "condition",
-    capacity: "capacity"
+    capacity: "capacity",
+    "capacity-amount": "capacity"
   };
+
+  // upcoming/recruiting/full/closed/finished/paused の状態文言テンプレート。
+  // 日付経過等で自動finishedになった場合も、この関数側で「募集中」等の誤認を防ぐ。
+  function buildInlineLabel(ev, status) {
+    switch (status) {
+      case "upcoming":
+        return "開催予定：" + ev.title;
+      case "recruiting":
+        return "次回開催：" + ev.title + "・募集中";
+      case "full":
+        return "次回開催：" + ev.title + "・満席";
+      case "closed":
+        return ev.title + "・受付終了";
+      case "finished":
+        return ev.title + "は終了しました";
+      case "paused":
+        return "次回開催は準備中です";
+      default:
+        return ev.title;
+    }
+  }
+
+  // baseball-next-activity のような、固定本文をevents.js側の状態に連動させたい箇所向け。
+  function buildScheduleNote(ev, status) {
+    if (status === "recruiting") {
+      var lines = ["次回の活動を募集中です。"];
+      var when = [ev.dateLabel, ev.timeLabel].filter(Boolean).join(" ");
+      if (when) lines.push(when);
+      if (ev.venue) lines.push(ev.venue);
+      lines.push("参加を検討している方は、事前にDMでご連絡ください。");
+      return lines.join("<br>");
+    }
+    if (status === "finished") {
+      return "前回の活動は終了しました。<br>次回情報はXで案内します。";
+    }
+    if (status === "closed") {
+      return "受付を終了しました。<br>次回情報はXで案内します。";
+    }
+    return "現在、屋外活動を休止しています。<br>次回開催はXでお知らせします。";
+  }
 
   function fillField(el, field, ev) {
     var key = FIELD_MAP[field];
@@ -143,6 +177,10 @@
       el.textContent = "最少催行" + value + "名";
     } else if (field === "capacity") {
       el.textContent = "定員" + value + "名";
+    } else if (field === "minimum-amount" || field === "capacity-amount") {
+      el.textContent = value + "名";
+    } else if (field === "fee-amount") {
+      el.textContent = String(value).replace(/^[¥￥]/, "").replace(/[（(].*$/, "");
     } else {
       el.textContent = value;
     }
@@ -165,9 +203,17 @@
         el.textContent = meta.label;
         el.className = el.className.replace(/\bstatus-badge--\S+/g, "").trim();
         el.classList.add("status-badge--" + meta.modifier);
+      } else if (field === "status-class") {
+        el.className = el.className.replace(/\bstatus-badge--\S+/g, "").trim();
+        el.classList.add("status-badge--" + meta.modifier);
+      } else if (field === "badge-label") {
+        el.textContent = meta.label;
       } else if (field === "badge-inline") {
-        var dateBit = ev.dateLabel ? ev.dateLabel.replace(/^\d{4}年/, "") : "";
-        el.textContent = "次回開催：" + (dateBit ? dateBit + " " : "") + ev.title + "・" + meta.label;
+        el.textContent = buildInlineLabel(ev, status);
+      } else if (field === "heading") {
+        el.textContent = (status === "finished" || status === "closed") ? "開催情報" : "次回開催";
+      } else if (field === "schedule-note") {
+        el.innerHTML = buildScheduleNote(ev, status);
       } else if (field === "form-gate") {
         // recruiting以外は申込フォーム本体（入力・送信ボタン含む）を非表示にし、送信できなくする。
         el.hidden = !meta.ctaEnabled;
