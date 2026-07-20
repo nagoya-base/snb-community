@@ -29,6 +29,7 @@
     gtag('js', new Date());
     gtag('config', 'G-8K1TJG0S9Y');
   </script>
+  <script src="../events.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -523,13 +524,6 @@
       font-size: 0.78rem;
       color: var(--text-muted);
     }
-    .cta-limit-note {
-      font-size: 0.8rem;
-      color: var(--accent);
-      font-weight: 700;
-      letter-spacing: 0.06em;
-    }
-
     /* ── 参加申込 / 検討中の切り分け ── */
     .cta-split {
       display: grid;
@@ -724,9 +718,9 @@
   <div class="nav-brand"><span>⚾</span>SNBC 野球ユニ会</div>
   <ul class="nav-links" id="nav-links">
     <li><a href="#about">イベントについて</a></li>
+    <li><a href="#flow">参加の流れ</a></li>
     <li><a href="#target">こんな人向け</a></li>
     <li><a href="#pricing">参加費</a></li>
-    <li><a href="#flow">参加の流れ</a></li>
     <li><a href="#faq">FAQ</a></li>
   </ul>
   <a href="#contact" class="btn nav-cta">このイベントに申し込む</a>
@@ -750,7 +744,7 @@
   </div>
   <div class="container">
     <div class="hero-content">
-      <div class="limit-badge">
+      <div class="limit-badge" data-event-id="community-vol2-0725" data-event-field="badge">
         <span class="limit-dot"></span>
         2026年7月25日（土）開催・受付中
       </div>
@@ -770,6 +764,8 @@
         <span class="hero-spec">定員4名</span>
         <span class="hero-spec">名古屋・上前津</span>
         <span class="hero-spec">希望者は写真データ付き</span>
+        <span class="hero-spec" data-event-id="community-vol2-0725" data-event-field="minimum">最少催行2名</span>
+        <span class="hero-spec" data-event-id="community-vol2-0725" data-event-field="condition">お気に入りの野球ユニフォーム</span>
       </div>
       <div class="hero-btns">
         <a href="#contact" class="btn btn-primary btn-lg">
@@ -806,6 +802,44 @@
         <div class="about-icon">🚪</div>
         <div class="about-title">ゆるく始める場</div>
         <div class="about-desc">大きなイベントではなく、「知ってる人の部屋に集まる」くらいのゆるさで。定員4名の小さな場です。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Flow ── -->
+<section id="flow">
+  <div class="container">
+    <p class="section-label">How It Works</p>
+    <h2>参加までの流れ</h2>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-text">
+          <strong>申込フォームから申し込み</strong>
+          <span>年代・好きなユニ・参加動機を添えてお送りください。参加前の質問だけならXのDMでも気軽にどうぞ。</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-text">
+          <strong>主催から確認・詳細案内</strong>
+          <span>参加日・場所・支払い方法などをご案内します。やりとりは2〜3回程度。</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-text">
+          <strong>当日、会場へ</strong>
+          <span>上前津エリア。最寄り駅から近いです。会場での着替えOK。前日までに詳細をメッセージでお伝えします。</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-text">
+          <strong>3時間、ゆるく過ごす</strong>
+          <span>見せ合い・話し・希望者は写真撮影。無理に盛り上げなくていい、ゆるい場です。飲食物の持ち込みOK。近くにコンビニあり。</span>
+        </div>
       </div>
     </div>
   </div>
@@ -908,44 +942,6 @@
   </div>
 </section>
 
-<!-- ── Flow ── -->
-<section id="flow">
-  <div class="container">
-    <p class="section-label">How It Works</p>
-    <h2>参加までの流れ</h2>
-    <div class="flow-steps">
-      <div class="flow-step">
-        <div class="flow-num">1</div>
-        <div class="flow-text">
-          <strong>申込フォームから申し込み</strong>
-          <span>年代・好きなユニ・参加動機を添えてお送りください。参加前の質問だけならXのDMでも気軽にどうぞ。</span>
-        </div>
-      </div>
-      <div class="flow-step">
-        <div class="flow-num">2</div>
-        <div class="flow-text">
-          <strong>主催から確認・詳細案内</strong>
-          <span>参加日・場所・支払い方法などをご案内します。やりとりは2〜3回程度。</span>
-        </div>
-      </div>
-      <div class="flow-step">
-        <div class="flow-num">3</div>
-        <div class="flow-text">
-          <strong>当日、会場へ</strong>
-          <span>上前津エリア。最寄り駅から近いです。会場での着替えOK。前日までに詳細をメッセージでお伝えします。</span>
-        </div>
-      </div>
-      <div class="flow-step">
-        <div class="flow-num">4</div>
-        <div class="flow-text">
-          <strong>3時間、ゆるく過ごす</strong>
-          <span>見せ合い・話し・希望者は写真撮影。無理に盛り上げなくていい、ゆるい場です。飲食物の持ち込みOK。近くにコンビニあり。</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ── Gallery ── -->
 <section id="gallery">
   <div class="container">
@@ -1032,7 +1028,7 @@
 <!-- ── Final CTA ── -->
 <section id="contact" class="final-cta">
   <div class="container">
-    <div class="limit-badge" style="margin-bottom: 1.5rem;">
+    <div class="limit-badge" style="margin-bottom: 1.5rem;" data-event-id="community-vol2-0725" data-event-field="badge">
       <span class="limit-dot"></span>
       7/25(土) 開催・受付中
     </div>
@@ -1041,7 +1037,7 @@
       <em>参加してみませんか。</em>
     </h2>
     <p class="final-cta-sub">
-      定員に達し次第、募集を締め切ります。参加を希望する方は下の申込フォームからお送りください。
+      参加を希望する方は下の申込フォームからお送りください。
     </p>
 
     <div class="cta-split">
@@ -1136,7 +1132,6 @@
         </span>
       </a>
     </div>
-    <p class="cta-limit-note">⚾ 7/25(土) 14:00〜17:00・定員4名（最少催行2名）</p>
   </div>
 </section>
 
@@ -1170,6 +1165,10 @@
       hamburger.setAttribute('aria-expanded', 'false');
     });
   });
+
+  if (window.SNBEventStatus) {
+    window.SNBEventStatus.render('community-vol2-0725');
+  }
 </script>
 
 <!-- ── 参加申込フォーム制御 ── -->

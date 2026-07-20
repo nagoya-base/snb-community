@@ -95,6 +95,7 @@
     gtag('js', new Date());
     gtag('config', 'G-8K1TJG0S9Y');
   </script>
+  <script src="../events.js"></script>
 
   <!-- 共通スタイル -->
   <link rel="stylesheet" href="../common.css">
@@ -326,10 +327,10 @@
 <!-- ── Pillar Sub-nav ── -->
 <nav class="pillar-subnav" style="border-bottom:1px solid var(--border); background:var(--bg-tint); padding:0.45rem 0;">
   <div class="container" style="display:flex; gap:1.25rem; font-size:0.78rem; font-weight:700; color:var(--text-muted);">
+    <a href="#schedule" style="color:var(--text-muted);">次回開催</a>
     <a href="#about" style="color:var(--text-muted);">About</a>
     <a href="#activity" style="color:var(--text-muted);">活動内容</a>
     <a href="#join" style="color:var(--text-muted);">参加方法</a>
-    <a href="#schedule" style="color:var(--text-muted);">次回開催</a>
     <a href="#gallery" style="color:var(--text-muted);">ギャラリー</a>
     <a href="#contact" style="color:var(--text-muted);">連絡先</a>
   </div>
@@ -363,6 +364,32 @@
     </div>
     <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-primary">参加についてDMする</a>
     <a href="#activity" class="btn btn-outline">活動内容を見る</a>
+  </div>
+</section>
+
+<!-- ── Schedule ── -->
+<section id="schedule">
+  <div class="container">
+    <p class="section-label">Schedule</p>
+    <h2>次回の活動について</h2>
+    <!-- ▼ 次回開催情報は events.js の "baseball-next-activity" エントリを編集してください ▼ -->
+    <div class="schedule-card">
+      <span class="status-badge" data-event-id="baseball-next-activity" data-event-field="badge">活動休止中</span>
+      <p class="schedule-note" style="margin-top: 0.9rem;">
+        7月19日の活動は終了しました。<br>
+        8月は暑さ対策のため、屋外での活動をお休みする予定です。<br><br>
+        次回開催はXでお知らせします。<br>
+        参加を検討している方は、事前にDMでご連絡ください。
+      </p>
+      <p style="margin-top: 1.5rem;">
+        <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Xで次回開催を確認する</a>
+        <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-outline">初参加についてDMする</a>
+      </p>
+      <p class="schedule-note" style="margin-top: 1.25rem; font-size: 0.82rem;">
+        初参加の方は「年代・野球経験・グローブの有無」を添えてご連絡ください。
+      </p>
+    </div>
+    <!-- ▲ 次回開催情報は events.js の "baseball-next-activity" エントリを編集してください ▲ -->
   </div>
 </section>
 
@@ -520,33 +547,6 @@
   </div>
 </section>
 
-<!-- ── Schedule ── -->
-<section id="schedule">
-  <div class="container">
-    <p class="section-label">Schedule</p>
-    <h2>次回の活動について</h2>
-    <!-- ▼ 次回開催情報はここを編集 ▼
-         開催が決まったら schedule-card の内容を書き換えてください。
-    -->
-    <div class="schedule-card">
-      <p class="schedule-note">
-        7月19日の活動は終了しました。<br>
-        8月は暑さ対策のため、屋外での活動をお休みする予定です。<br><br>
-        次回開催はXでお知らせします。<br>
-        参加を検討している方は、事前にDMでご連絡ください。
-      </p>
-      <p style="margin-top: 1.5rem;">
-        <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Xで次回開催を確認する</a>
-        <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-outline">初参加についてDMする</a>
-      </p>
-      <p class="schedule-note" style="margin-top: 1.25rem; font-size: 0.82rem;">
-        初参加の方は「年代・野球経験・グローブの有無」を添えてご連絡ください。
-      </p>
-    </div>
-    <!-- ▲ 次回開催情報はここを編集 ▲ -->
-  </div>
-</section>
-
 <!-- ── Gallery ── -->
 <section id="gallery">
   <div class="container">
@@ -612,6 +612,12 @@
     <p class="site-footer__copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
   </div>
 </footer>
+
+<script>
+  if (window.SNBEventStatus) {
+    window.SNBEventStatus.render('baseball-next-activity');
+  }
+</script>
 
 </body>
 </html>

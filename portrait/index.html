@@ -508,6 +508,82 @@
       .purpose-grid { grid-template-columns: 1fr; }
     }
 
+    .purpose-chips { margin-top: 1.75rem; }
+    .purpose-chips__label { font-size: 0.8rem; font-weight: 800; color: var(--navy); margin-bottom: 0.6rem; }
+    .purpose-chips__nav { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+    .purpose-chip {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--navy);
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+    .purpose-chip:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* ── Showcase（代表作例） ── */
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+    @media (min-width: 900px) {
+      .showcase-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .showcase-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .showcase-card__image {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+      display: block;
+    }
+    .showcase-card__body {
+      padding: 0.9rem 1rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .showcase-card__category {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+    .showcase-card__description {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 0.9rem;
+    }
+    .showcase-card__cta {
+      display: block;
+      text-align: center;
+      padding: 0.6rem;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.82rem;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      margin-top: auto;
+      transition: background 0.15s;
+    }
+    .showcase-card__cta:hover { background: var(--accent-lt); color: #fff; }
+
     /* ── Past Event（過去の開催実績） ── */
     .event-card--finished { border-color: var(--border); border-width: 1px; background: var(--bg-card2, #F2F2F0); }
     .event-card--finished .event-date-badge { background: var(--text-muted); }
@@ -624,9 +700,10 @@
 <!-- ── ポートレート ローカルナビ（PC表示） ── -->
 <nav class="portrait-subnav" aria-label="ポートレートページ内ナビ">
   <div class="container portrait-subnav__inner">
-    <a href="#gallery" class="portrait-subnav__link">作例</a>
+    <a href="#showcase" class="portrait-subnav__link">代表作例</a>
     <a href="#plans" class="portrait-subnav__link">料金</a>
     <a href="#photographer" class="portrait-subnav__link">撮る人</a>
+    <a href="#gallery" class="portrait-subnav__link">作例</a>
     <a href="#flow" class="portrait-subnav__link">撮影の流れ</a>
     <a href="#faq" class="portrait-subnav__link">FAQ</a>
     <a href="#contact" class="portrait-subnav__link">予約・相談</a>
@@ -640,9 +717,10 @@
     <button type="button" class="portrait-menu__close" id="portraitMenuClose" aria-label="メニューを閉じる">✕ 閉じる</button>
     <p class="portrait-menu__heading">このページ</p>
     <a href="#top" class="portrait-menu__link">トップ</a>
-    <a href="#gallery" class="portrait-menu__link">作例</a>
+    <a href="#showcase" class="portrait-menu__link">代表作例</a>
     <a href="#plans" class="portrait-menu__link">料金</a>
     <a href="#photographer" class="portrait-menu__link">撮る人</a>
+    <a href="#gallery" class="portrait-menu__link">作例</a>
     <a href="#flow" class="portrait-menu__link">撮影の流れ</a>
     <a href="#faq" class="portrait-menu__link">FAQ</a>
     <a href="#contact" class="portrait-menu__link">予約・相談</a>
@@ -706,6 +784,57 @@
         <a href="photographer.html" class="btn btn-primary purpose-card__cta" data-ga-event="portrait_click_photographer_course" data-ga-section="purpose" data-ga-location="purpose_card">撮影者向けページを見る</a>
       </article>
     </div>
+    <div class="purpose-chips">
+      <p class="purpose-chips__label">撮りたい雰囲気で探す</p>
+      <nav class="purpose-chips__nav" aria-label="撮りたい雰囲気で探す">
+        <a href="#showcase-uniform" class="purpose-chip" data-ga-event="portrait_click_purpose_chip" data-ga-section="purpose" data-ga-location="purpose_chip" data-ga-category="sports_uniform">ユニフォーム姿を残したい</a>
+        <a href="#showcase-muscle" class="purpose-chip" data-ga-event="portrait_click_purpose_chip" data-ga-section="purpose" data-ga-location="purpose_chip" data-ga-category="muscle">筋肉や身体を格好よく撮りたい</a>
+        <a href="#showcase-portrait" class="purpose-chip" data-ga-event="portrait_click_purpose_chip" data-ga-section="purpose" data-ga-location="purpose_chip" data-ga-category="natural_portrait">スーツや私服で自然に撮りたい</a>
+        <a href="#showcase-concept" class="purpose-chip" data-ga-event="portrait_click_purpose_chip" data-ga-section="purpose" data-ga-location="purpose_chip" data-ga-category="concept">世界観のある作品を作りたい</a>
+      </nav>
+    </div>
+  </div>
+</section>
+
+<!-- ── Showcase（代表作例） ── -->
+<section id="showcase">
+  <div class="container">
+    <p class="section-label">Showcase</p>
+    <h2>代表作例</h2>
+    <div class="showcase-grid">
+      <article class="showcase-card" id="showcase-uniform">
+        <img src="../images/portrait/top/gallery-photo-12.webp" alt="白背景で野球ユニフォームを着た男性の後ろ姿" loading="lazy" class="showcase-card__image">
+        <div class="showcase-card__body">
+          <p class="showcase-card__category">野球ユニフォーム</p>
+          <p class="showcase-card__description">背番号、ユニフォームのシルエット、肩や背中のラインが伝わる角度で撮影しています。</p>
+          <a href="#contact" data-plan="standard" data-artwork="野球ユニフォームの後ろ姿" data-contact-intent="consult" class="showcase-card__cta" data-ga-event="portrait_click_showcase_consult" data-ga-section="showcase" data-ga-location="showcase_card" data-ga-category="sports_uniform" data-ga-item="baseball_back_view">この雰囲気で相談する</a>
+        </div>
+      </article>
+      <article class="showcase-card" id="showcase-portrait">
+        <img src="../images/portrait/top/gallery-photo-04.webp" alt="自然な表情と上半身のラインを活かした男性ポートレート" loading="lazy" class="showcase-card__image">
+        <div class="showcase-card__body">
+          <p class="showcase-card__category">男性ポートレート</p>
+          <p class="showcase-card__description">過度に演出しすぎず、自然な表情と身体のラインを両立した撮影です。</p>
+          <a href="#contact" data-plan="standard" data-artwork="上半身を活かした男性ポートレート" data-contact-intent="consult" class="showcase-card__cta" data-ga-event="portrait_click_showcase_consult" data-ga-section="showcase" data-ga-location="showcase_card" data-ga-category="muscle" data-ga-item="muscle_natural_portrait">この雰囲気で相談する</a>
+        </div>
+      </article>
+      <article class="showcase-card" id="showcase-muscle">
+        <img src="../images/portrait/top/gallery-photo-01.webp" alt="黒背景でサイド光を当てた上半身の筋肉ポートレート" loading="lazy" class="showcase-card__image">
+        <div class="showcase-card__body">
+          <p class="showcase-card__category">筋肉・身体表現</p>
+          <p class="showcase-card__description">胸、肩、腕に光を当て、トレーニングで作った身体の立体感を残します。</p>
+          <a href="#contact" data-plan="standard" data-artwork="上半身の筋肉を見せるポートレート" data-contact-intent="consult" class="showcase-card__cta" data-ga-event="portrait_click_showcase_consult" data-ga-section="showcase" data-ga-location="showcase_card" data-ga-category="muscle" data-ga-item="muscle_upper_body">この雰囲気で相談する</a>
+        </div>
+      </article>
+      <article class="showcase-card" id="showcase-concept">
+        <img src="../images/portrait/top/gallery-photo-13.webp" alt="コスチューム衣装でカラー照明を使ったコンセプト撮影" loading="lazy" class="showcase-card__image">
+        <div class="showcase-card__body">
+          <p class="showcase-card__category">コンセプト・フェティッシュ</p>
+          <p class="showcase-card__description">衣装の色や質感に合わせて背景と照明を調整し、キャラクター性や世界観を強調した撮影です。</p>
+          <a href="#contact" data-plan="creative" data-artwork="コスチュームを使ったコンセプト撮影" data-contact-intent="consult" class="showcase-card__cta" data-ga-event="portrait_click_showcase_consult" data-ga-section="showcase" data-ga-location="showcase_card" data-ga-category="concept" data-ga-item="concept_costume">この雰囲気で相談する</a>
+        </div>
+      </article>
+    </div>
   </div>
 </section>
 
@@ -762,38 +891,6 @@
         <h3 class="theme-title">フェティッシュ・コンセプト撮影</h3>
         <p class="theme-desc">少しフェチ寄りの衣装や、ダークな世界観、身体のラインを活かした作品撮りにも対応しています。露骨な演出ではなく、光・影・ポーズ・衣装で作品として仕上げます。「理解してもらえるか不安」という相談も歓迎です。内容は事前にすり合わせます。</p>
       </article>
-    </div>
-  </div>
-</section>
-
-<!-- ── Photographer（撮る人について） ── -->
-<section id="photographer">
-  <div class="container">
-    <p class="section-label">Photographer</p>
-    <h2>撮る人について</h2>
-    <div class="photographer-profile">
-      <div class="photographer-profile__media">
-        <img src="../images/portrait/top/photographer-photo-ataru.webp" alt="撮影者アタルのプロフィール写真" width="960" height="1200" loading="lazy" decoding="async" class="photographer-profile__image">
-      </div>
-      <div class="photographer-profile__body">
-        <p class="photographer-profile__role">Photographer</p>
-        <h3 class="photographer-profile__name">アタル</h3>
-        <div class="photographer-profile__text">
-          <p>男性ポートレート、スポーツユニフォーム、スーツ、筋肉表現、少しフェティッシュな作品撮りを中心に撮影しています。</p>
-          <p>撮られることに慣れていない方には、立ち方、手の位置、身体の向き、目線まで具体的に案内します。</p>
-          <p>「こう撮りたい」がまだはっきり決まっていなくても、衣装や好きな雰囲気を伺いながら、光・背景・構図を一緒に組み立てます。</p>
-        </div>
-        <ul class="photographer-profile__features">
-          <li class="photographer-profile__feature">男性ポートレート中心</li>
-          <li class="photographer-profile__feature">ポージングを具体的に案内</li>
-          <li class="photographer-profile__feature">完全個室・1組貸切</li>
-          <li class="photographer-profile__feature">テーマを否定せず一緒に考える</li>
-        </ul>
-        <div class="photographer-profile__actions">
-          <a href="#contact" class="btn btn-primary" data-contact-intent="consult" data-ga-event="portrait_click_photographer_consult" data-ga-section="photographer" data-ga-location="photographer_profile">撮影内容を相談する</a>
-          <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="photographer-profile__x-link" data-ga-event="portrait_click_photographer_x" data-ga-section="photographer" data-ga-location="photographer">Xで作例・活動を見る</a>
-        </div>
-      </div>
     </div>
   </div>
 </section>
@@ -883,6 +980,38 @@
     <p style="margin-top: 1.5rem; text-align: center;">
       <a href="#gallery" class="btn btn-outline-light" data-ga-event="portrait_click_plans_gallery" data-ga-section="plans" data-ga-location="plans_footer">作例を見る</a>
     </p>
+  </div>
+</section>
+
+<!-- ── Photographer（撮る人について） ── -->
+<section id="photographer">
+  <div class="container">
+    <p class="section-label">Photographer</p>
+    <h2>撮る人について</h2>
+    <div class="photographer-profile">
+      <div class="photographer-profile__media">
+        <img src="../images/portrait/top/photographer-photo-ataru.webp" alt="撮影者アタルのプロフィール写真" width="960" height="1200" loading="lazy" decoding="async" class="photographer-profile__image">
+      </div>
+      <div class="photographer-profile__body">
+        <p class="photographer-profile__role">Photographer</p>
+        <h3 class="photographer-profile__name">アタル</h3>
+        <div class="photographer-profile__text">
+          <p>男性ポートレート、スポーツユニフォーム、スーツ、筋肉表現、少しフェティッシュな作品撮りを中心に撮影しています。</p>
+          <p>撮られることに慣れていない方には、立ち方、手の位置、身体の向き、目線まで具体的に案内します。</p>
+          <p>「こう撮りたい」がまだはっきり決まっていなくても、衣装や好きな雰囲気を伺いながら、光・背景・構図を一緒に組み立てます。</p>
+        </div>
+        <ul class="photographer-profile__features">
+          <li class="photographer-profile__feature">男性ポートレート中心</li>
+          <li class="photographer-profile__feature">ポージングを具体的に案内</li>
+          <li class="photographer-profile__feature">完全個室・1組貸切</li>
+          <li class="photographer-profile__feature">テーマを否定せず一緒に考える</li>
+        </ul>
+        <div class="photographer-profile__actions">
+          <a href="#contact" class="btn btn-primary" data-contact-intent="consult" data-ga-event="portrait_click_photographer_consult" data-ga-section="photographer" data-ga-location="photographer_profile">撮影内容を相談する</a>
+          <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="photographer-profile__x-link" data-ga-event="portrait_click_photographer_x" data-ga-section="photographer" data-ga-location="photographer">Xで作例・活動を見る</a>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
