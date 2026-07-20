@@ -528,6 +528,10 @@ h1 {
   color: #7a1f17;
 }
 .form-result--error strong { color: #7a1f17; }
+.form-result__fallback-mailto {
+  display: inline-block;
+  margin-top: 0.75rem;
+}
 
 @media (max-width: 480px) {
   .consult-form__fieldset { padding: 1rem 0.9rem 1.25rem; }
