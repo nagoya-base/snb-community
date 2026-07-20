@@ -201,19 +201,6 @@ h1 {
 /* プランカードCTA（.path-cta を流用、余白のみ追加） */
 .plan-cta { display: block; margin-top: 0.9rem; }
 
-/* プランに迷っている方向けの小さなテキストリンク */
-.plan-undecided-link {
-  display: block;
-  text-align: center;
-  margin-top: 0.6rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.plan-undecided-link:hover { color: var(--accent); }
-
 /* スタンダードプランの「おすすめ」バッジ */
 .plan-badge {
   display: inline-block;
