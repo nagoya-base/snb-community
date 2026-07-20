@@ -530,6 +530,92 @@
       letter-spacing: 0.06em;
     }
 
+    /* ── 参加申込 / 検討中の切り分け ── */
+    .cta-split {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.9rem;
+      max-width: 440px;
+      margin: 0 auto 2rem;
+      text-align: left;
+    }
+    @media (min-width: 640px) {
+      .cta-split { grid-template-columns: 1fr 1fr; }
+    }
+    .cta-split-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+    }
+    .cta-split-item--apply { border-top: 3px solid var(--accent); }
+    .cta-split-title { font-size: 0.92rem; font-weight: 800; color: var(--navy); margin-bottom: 0.4rem; }
+    .cta-split-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.75; }
+
+    /* ── 申込フォーム ── */
+    .apply-form { text-align: left; max-width: 560px; margin: 0 auto 2rem; }
+    .apply-form__honey { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .form-field { margin-top: 1.1rem; }
+    .form-field:first-of-type { margin-top: 0; }
+    .form-field label { display: block; font-size: 0.86rem; font-weight: 700; color: var(--navy); margin-bottom: 0.4rem; }
+    .required-mark, .optional-mark {
+      display: inline-block;
+      font-size: 0.66rem;
+      font-weight: 800;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      margin-left: 0.3rem;
+      vertical-align: middle;
+    }
+    .required-mark { background: #fde7e7; color: #b3261e; }
+    .optional-mark { background: var(--bg-card2); color: var(--text-muted); }
+    .form-field input[type="text"],
+    .form-field input[type="email"],
+    .form-field textarea {
+      width: 100%;
+      font-size: 1rem;
+      padding: 0.7rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--navy);
+      font-family: inherit;
+    }
+    .form-field input:focus,
+    .form-field textarea:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+      border-color: var(--accent);
+    }
+    .form-field textarea { resize: vertical; min-height: 4rem; }
+    .form-hint { margin-top: 0.35rem; font-size: 0.76rem; color: var(--text-muted); line-height: 1.6; }
+    .checkbox-option--agree {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .checkbox-option--agree input { width: 18px; height: 18px; flex-shrink: 0; margin-top: 0.15rem; accent-color: var(--accent); }
+    .checkbox-option--agree a { color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+    .apply-form__submit { display: block; width: 100%; text-align: center; margin-top: 1.5rem; padding: 0.95rem; font-size: 1rem; }
+    .apply-form__submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    .form-privacy-note { margin-top: 1rem; font-size: 0.74rem; color: var(--text-muted); line-height: 1.8; }
+    .form-result {
+      border-radius: 8px;
+      padding: 1.35rem 1.25rem;
+      margin: 0 auto 2rem;
+      max-width: 560px;
+      font-size: 0.88rem;
+      line-height: 1.85;
+      text-align: left;
+    }
+    .form-result--success { background: #eaf6ec; border: 1px solid #b7ddbc; color: #1e4620; }
+    .form-result--success strong { color: #1e4620; }
+    .form-result--error { background: #fdeceb; border: 1px solid #f3b8b3; color: #7a1f17; }
+    .form-result--error strong { color: #7a1f17; }
+
     /* ── Footer ── */
     footer {
       background: #1C1A17;
@@ -643,7 +729,7 @@
     <li><a href="#flow">参加の流れ</a></li>
     <li><a href="#faq">FAQ</a></li>
   </ul>
-  <a href="#contact" class="btn nav-cta">参加を申し込む</a>
+  <a href="#contact" class="btn nav-cta">このイベントに申し込む</a>
   <button class="hamburger" id="hamburger" aria-label="メニューを開く" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
@@ -687,10 +773,10 @@
       </div>
       <div class="hero-btns">
         <a href="#contact" class="btn btn-primary btn-lg">
-          ⚾ 参加を申し込む
+          ⚾ このイベントに申し込む
         </a>
         <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg">
-          ✉️ X @baseballuni2022 をフォロー
+          💬 参加前にDMで質問する
         </a>
       </div>
     </div>
@@ -817,7 +903,7 @@
       </div>
     </div>
     <div class="price-note">
-      定員に達し次第、募集を締め切ります。参加をご希望の方はX（@baseballuni2022）のDMまたは<a href="mailto:bbuni.ngo@gmail.com?subject=SNBC%20%E9%87%8E%E7%90%83%E3%83%A6%E3%83%8B%E4%BC%9AVol.2%20%E5%8F%82%E5%8A%A0%E7%94%B3%E8%BE%BC" style="color: #2E7D32; text-decoration: underline;">メール</a>にてご連絡ください。
+      定員に達し次第、募集を締め切ります。参加をご希望の方は<a href="#contact" style="color: #2E7D32; text-decoration: underline;">申込フォーム</a>から、質問だけの場合はX（@baseballuni2022）のDMからご連絡ください。
     </div>
   </div>
 </section>
@@ -831,8 +917,8 @@
       <div class="flow-step">
         <div class="flow-num">1</div>
         <div class="flow-text">
-          <strong>XのDMまたはメールで申し込み</strong>
-          <span>年齢・好きなユニ・参加動機を添えてご連絡ください。いいね・リプだけでも気軽にどうぞ。</span>
+          <strong>申込フォームから申し込み</strong>
+          <span>年代・好きなユニ・参加動機を添えてお送りください。参加前の質問だけならXのDMでも気軽にどうぞ。</span>
         </div>
       </div>
       <div class="flow-step">
@@ -955,22 +1041,91 @@
       <em>参加してみませんか。</em>
     </h2>
     <p class="final-cta-sub">
-      年齢・好きなユニフォーム・参加動機を添えて、XのDMまたはメールでご連絡ください。<br>
-      定員に達し次第、募集を締め切ります。
+      定員に達し次第、募集を締め切ります。参加を希望する方は下の申込フォームからお送りください。
     </p>
+
+    <div class="cta-split">
+      <div class="cta-split-item cta-split-item--apply">
+        <p class="cta-split-title">参加申込</p>
+        <p class="cta-split-desc">申込フォームから必要事項をお送りください。</p>
+      </div>
+      <div class="cta-split-item cta-split-item--consider">
+        <p class="cta-split-title">検討中</p>
+        <p class="cta-split-desc">告知投稿へのいいね・リプだけでも歓迎です。<br>ただし、参加枠の確保には申込が必要です。</p>
+      </div>
+    </div>
+
+    <form id="vol2-apply-form" class="apply-form" novalidate>
+      <input type="hidden" name="_subject" value="【SNBC 野球ユニ会Vol.2】参加申込フォーム">
+      <input type="hidden" name="_template" value="table">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="text" name="_honey" class="apply-form__honey" tabindex="-1" autocomplete="off">
+
+      <div class="form-field">
+        <label for="af-name">お名前 <span class="required-mark">必須</span></label>
+        <input type="text" id="af-name" name="お名前" required autocomplete="name">
+      </div>
+
+      <div class="form-field">
+        <label for="af-email">メールアドレス <span class="required-mark">必須</span></label>
+        <input type="email" id="af-email" name="メールアドレス" required autocomplete="email">
+        <p class="form-hint">参加可否のご連絡に使用します。</p>
+      </div>
+
+      <div class="form-field">
+        <label for="af-x">Xアカウント <span class="optional-mark">任意</span></label>
+        <input type="text" id="af-x" name="Xアカウント" placeholder="@baseballuni2022" autocomplete="off">
+      </div>
+
+      <div class="form-field">
+        <label for="af-age">年代 <span class="required-mark">必須</span></label>
+        <input type="text" id="af-age" name="年代" placeholder="例：30代" required>
+      </div>
+
+      <div class="form-field">
+        <label for="af-intro">簡単な自己紹介 <span class="optional-mark">任意</span></label>
+        <textarea id="af-intro" name="簡単な自己紹介" rows="2" placeholder="例：野球観戦が好きです。"></textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="af-uniform">好きなユニフォーム <span class="optional-mark">任意</span></label>
+        <input type="text" id="af-uniform" name="好きなユニフォーム" placeholder="例：中日ドラゴンズ">
+      </div>
+
+      <div class="form-field">
+        <label for="af-reason">参加したいと思った理由 <span class="optional-mark">任意</span></label>
+        <textarea id="af-reason" name="参加したいと思った理由" rows="2" placeholder="例：同じ趣味の人と話したり、ユニフォーム姿を撮ってもらいたくて参加を希望しました。"></textarea>
+      </div>
+
+      <div class="form-field">
+        <label class="checkbox-option--agree">
+          <input type="checkbox" name="共通参加規約への同意" value="同意する" required>
+          <span><a href="../#terms" target="_blank" rel="noopener noreferrer">共通参加規約</a>を確認し、同意します。</span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary apply-form__submit" id="af-submit-btn">このイベントに申し込む</button>
+
+      <p class="form-privacy-note">入力された情報は、本イベントの参加確認と必要な連絡のためにのみ使用します。</p>
+    </form>
+
+    <div class="form-result form-result--success" id="af-success" hidden>
+      <p><strong>お申し込みありがとうございます。</strong></p>
+      <p>内容を確認し、通常24時間以内にご連絡します。</p>
+      <p>返信が届かない場合は、迷惑メールフォルダをご確認いただくか、XのDMからお問い合わせください。</p>
+    </div>
+
+    <div class="form-result form-result--error" id="af-error" hidden>
+      <p><strong>送信中にエラーが発生しました。</strong></p>
+      <p>お手数ですが、XのDMから直接ご連絡ください。</p>
+    </div>
+
     <div class="cta-channels">
       <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="cta-channel">
-        <span class="cta-channel-icon">✉️</span>
+        <span class="cta-channel-icon">💬</span>
         <span>
-          <span class="cta-channel-label">X（旧Twitter）@baseballuni2022 にDMする</span>
-          <span class="cta-channel-note">短い質問だけでもOKです。</span>
-        </span>
-      </a>
-      <a href="mailto:bbuni.ngo@gmail.com?subject=SNBC%20%E9%87%8E%E7%90%83%E3%83%A6%E3%83%8B%E4%BC%9AVol.2%20%E5%8F%82%E5%8A%A0%E7%94%B3%E8%BE%BC" class="cta-channel">
-        <span class="cta-channel-icon">✉️</span>
-        <span>
-          <span class="cta-channel-label">メールで申し込む</span>
-          <span class="cta-channel-note">bbuni.ngo@gmail.com</span>
+          <span class="cta-channel-label">参加前にDMで質問する</span>
+          <span class="cta-channel-note">X（旧Twitter）@baseballuni2022／短い質問だけでもOKです。</span>
         </span>
       </a>
       <a href="../community/" class="cta-channel">
@@ -1015,6 +1170,63 @@
       hamburger.setAttribute('aria-expanded', 'false');
     });
   });
+</script>
+
+<!-- ── 参加申込フォーム制御 ── -->
+<script>
+(function () {
+  'use strict';
+
+  var FORM_ENDPOINT = 'https://formsubmit.co/ajax/bbuni.ngo@gmail.com';
+
+  var form = document.getElementById('vol2-apply-form');
+  if (!form) return;
+
+  var submitBtn = document.getElementById('af-submit-btn');
+  var successBox = document.getElementById('af-success');
+  var errorBox = document.getElementById('af-error');
+
+  function setSubmitting(isSubmitting) {
+    if (!submitBtn) return;
+    submitBtn.disabled = isSubmitting;
+    submitBtn.textContent = isSubmitting ? '送信中…' : 'このイベントに申し込む';
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    if (!form.reportValidity()) {
+      return;
+    }
+
+    setSubmitting(true);
+
+    var formData = new FormData(form);
+
+    fetch(FORM_ENDPOINT, {
+      method: 'POST',
+      body: formData,
+      headers: { Accept: 'application/json' }
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error('送信に失敗しました');
+        return response.json();
+      })
+      .then(function () {
+        form.hidden = true;
+        if (successBox) successBox.hidden = false;
+        if (errorBox) errorBox.hidden = true;
+        successBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      })
+      .catch(function () {
+        setSubmitting(false);
+        if (errorBox) {
+          errorBox.hidden = false;
+          errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+  });
+})();
 </script>
 </body>
 </html>
