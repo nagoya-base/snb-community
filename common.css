@@ -228,3 +228,40 @@ h3 {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* ── Event status badge（募集状態: upcoming/recruiting/full/closed/finished/paused） ── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.status-badge--upcoming {
+  background: #EEF2F6;
+  color: #46586B;
+}
+
+.status-badge--recruiting {
+  background: #E4F5E9;
+  color: #1E7A46;
+}
+
+.status-badge--full {
+  background: #FDECEA;
+  color: #B23B2E;
+}
+
+.status-badge--closed,
+.status-badge--finished {
+  background: #EDEDED;
+  color: #6B6B6B;
+}
+
+.status-badge--paused {
+  background: #FFF4E0;
+  color: #9A6A15;
+}
