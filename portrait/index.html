@@ -667,8 +667,8 @@
     .flow-step-detail__body p { font-size: 0.86rem; color: var(--text-muted); line-height: 1.85; }
 
     /* ── Gallery toggle ── */
-    .gallery-toggle-wrap { text-align: center; margin-top: 1.75rem; }
-    .gallery-card--extra:not([hidden]) { display: flex; }
+    .showcase-toggle-wrap { text-align: center; margin-top: 1.75rem; }
+    [hidden] { display: none !important; }
 
     /* ── Brand box（Contact導入として統合・短縮） ── */
     .brand-box--compact {
@@ -834,6 +834,260 @@
           <a href="#contact" data-plan="creative" data-artwork="コスチュームを使ったコンセプト撮影" data-contact-intent="consult" class="showcase-card__cta" data-ga-event="portrait_click_showcase_consult" data-ga-section="showcase" data-ga-location="showcase_card" data-ga-category="concept" data-ga-item="concept_costume">この雰囲気で相談する</a>
         </div>
       </article>
+    </div>
+
+    <div class="showcase-toggle-wrap">
+      <button type="button" id="galleryToggle" class="btn btn-outline-light gallery-toggle" aria-expanded="false" aria-controls="gallery" data-ga-event="portrait_toggle_gallery" data-ga-section="showcase" data-ga-location="showcase_toggle" hidden>すべての作例を見る（全13枚）</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── Gallery ── -->
+<section id="gallery">
+  <div class="container">
+    <p class="section-label">Gallery</p>
+    <h2>撮影テーマ別の作例</h2>
+    <div class="text-block">
+      <p>男性ポートレート、スポーツユニフォーム、筋肉表現、<br>コンセプト撮影など、撮りたいテーマに合わせて光と構図を組み立てます。</p>
+      <p>気になる作例があれば、お問い合わせ時に画像や作例名をお知らせください。<br>近い雰囲気の撮影方法とプランをご提案します。</p>
+    </div>
+
+    <nav class="gallery-nav" aria-label="作例カテゴリ">
+      <a href="#gallery-uniform">スポーツユニフォーム</a>
+      <a href="#gallery-muscle">筋肉・身体表現</a>
+      <a href="#gallery-concept">コンセプト・フェティッシュ</a>
+    </nav>
+
+    <section class="gallery-category" id="gallery-uniform">
+      <h3 class="gallery-category__title">スポーツユニフォーム</h3>
+      <div class="gallery-grid">
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-12.webp" alt="白背景で野球ユニフォームを着た男性の後ろ姿" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">スポーツユニフォーム</p>
+            <h4 class="gallery-card__title">野球ユニフォームの後ろ姿</h4>
+            <p class="gallery-card__description">背番号、ユニフォームのシルエット、肩や背中のラインが伝わる角度で撮影しています。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>2衣装まで・白背景／黒背景</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="standard" data-artwork="野球ユニフォームの後ろ姿" data-contact-intent="consult" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="sports_uniform" data-ga-item="baseball_back_view">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-05.webp" alt="野球ユニフォームを着た男性のバックスタイル" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">スポーツユニフォーム</p>
+            <h4 class="gallery-card__title">野球ユニフォーム・バックスタイル</h4>
+            <p class="gallery-card__description">背番号やユニフォームの形を見せながら、立ち姿や身体の向きを整えて撮影します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>2衣装まで・ポージングサポート</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="standard" data-artwork="野球ユニフォーム・バックスタイル" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="sports_uniform" data-ga-item="baseball_back_style">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-09.webp" alt="スポーツウェアを着た男性ポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">スポーツユニフォーム</p>
+            <h4 class="gallery-card__title">スポーツウェアを使った男性ポートレート</h4>
+            <p class="gallery-card__description">スポーツウェアのフィット感や身体のラインを活かし、自然な立ち姿から作品的なポーズまで撮影します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>1〜2衣装・白背景／黒背景</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="standard" data-artwork="スポーツウェアを使った男性ポートレート" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="sports_uniform" data-ga-item="sportswear_portrait">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-10.webp" alt="サッカーユニフォームを着た男性ポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">スポーツユニフォーム</p>
+            <h4 class="gallery-card__title">サッカーユニフォーム・ポートレート</h4>
+            <p class="gallery-card__description">ユニフォームのデザインを見せながら、選手らしさや本人らしい雰囲気を残します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>2衣装まで・ポージングサポート</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="standard" data-artwork="サッカーユニフォーム・ポートレート" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="sports_uniform" data-ga-item="soccer_uniform">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-11.webp" alt="野球ユニフォームを着た男性ポートレート、正面" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">スポーツユニフォーム</p>
+            <h4 class="gallery-card__title">野球ユニフォーム・男性ポートレート</h4>
+            <p class="gallery-card__description">ユニフォーム姿を記録写真ではなく、光とポーズを整えた一枚の作品として残します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>2衣装まで・白背景／黒背景</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="standard" data-artwork="野球ユニフォーム・男性ポートレート" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="sports_uniform" data-ga-item="baseball_portrait">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="gallery-category" id="gallery-muscle">
+      <h3 class="gallery-category__title">筋肉・身体表現</h3>
+      <div class="gallery-grid">
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-01.webp" alt="黒背景でサイド光を当てた上半身の筋肉ポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">筋肉・身体表現</p>
+            <h4 class="gallery-card__title">上半身の筋肉を見せるポートレート</h4>
+            <p class="gallery-card__description">胸、肩、腕に光を当て、トレーニングで作った身体の立体感を残します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>黒背景・サイド光</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="standard" data-artwork="上半身の筋肉を見せるポートレート" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="muscle" data-ga-item="muscle_upper_body">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-02.webp" alt="光と影で身体の凹凸を強調した筋肉ポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">筋肉・身体表現</p>
+            <h4 class="gallery-card__title">光と影で見せる筋肉表現</h4>
+            <p class="gallery-card__description">正面から均等に照らすのではなく、影を残すことで身体の凹凸を強調した撮影です。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
+              <div><dt>撮影内容</dt><dd>黒背景・サイド光・多灯ライティング</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="creative" data-artwork="光と影で見せる筋肉表現" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="muscle" data-ga-item="muscle_light_shadow">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-03.webp" alt="肩・胸・腕の陰影を強調した筋肉ポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">筋肉・身体表現</p>
+            <h4 class="gallery-card__title">肩・胸・腕の陰影を強調</h4>
+            <p class="gallery-card__description">見せたい部位に合わせて光の位置を調整し、身体のラインが最も伝わる角度を探します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
+              <div><dt>撮影内容</dt><dd>黒背景・ライティング調整</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="creative" data-artwork="肩・胸・腕の陰影を強調" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="muscle" data-ga-item="muscle_shadow_emphasis">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-04.webp" alt="自然な表情と上半身のラインを活かした男性ポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">筋肉・身体表現</p>
+            <h4 class="gallery-card__title">上半身を活かした男性ポートレート</h4>
+            <p class="gallery-card__description">過度に演出しすぎず、自然な表情と身体のラインを両立した撮影です。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
+              <div><dt>撮影内容</dt><dd>1〜2衣装・白背景／黒背景</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="standard" data-artwork="上半身を活かした男性ポートレート" data-contact-intent="consult" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="muscle" data-ga-item="muscle_natural_portrait">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="gallery-category" id="gallery-concept">
+      <h3 class="gallery-category__title">コンセプト・フェティッシュ</h3>
+      <div class="gallery-grid">
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-13.webp" alt="コスチューム衣装でカラー照明を使ったコンセプト撮影" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">コンセプト・フェティッシュ</p>
+            <h4 class="gallery-card__title">コスチュームを使ったコンセプト撮影</h4>
+            <p class="gallery-card__description">衣装の色や質感に合わせて背景と照明を調整し、キャラクター性や世界観を強調した撮影です。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
+              <div><dt>撮影内容</dt><dd>2衣装・カラー照明・背景演出</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="creative" data-artwork="コスチュームを使ったコンセプト撮影" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="concept" data-ga-item="concept_costume">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-06.webp" alt="光沢素材の衣装とカラー照明を使ったコンセプト撮影" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">コンセプト・フェティッシュ</p>
+            <h4 class="gallery-card__title">光沢素材を活かしたコンセプト撮影</h4>
+            <p class="gallery-card__description">衣装に反射する光を調整し、素材の質感と身体のラインを作品として見せます。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
+              <div><dt>撮影内容</dt><dd>カラー照明・黒背景・多灯ライティング</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="creative" data-artwork="光沢素材を活かしたコンセプト撮影" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="concept" data-ga-item="concept_glossy_material">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-07.webp" alt="マスクを着用し顔を出さずに撮影した作品" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">コンセプト・フェティッシュ</p>
+            <h4 class="gallery-card__title">マスクを使った顔を出さない作品撮り</h4>
+            <p class="gallery-card__description">顔を出さずに、衣装、身体の向き、光と影で人物の雰囲気を作る撮影です。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
+              <div><dt>撮影内容</dt><dd>マスク・黒背景・カラー照明</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="creative" data-artwork="マスクを使った顔を出さない作品撮り" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="concept" data-ga-item="concept_mask_no_face">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="gallery-card">
+          <img src="../images/portrait/top/gallery-photo-08.webp" alt="マスクと衣装で作るダークな世界観のポートレート" loading="lazy" class="gallery-card__image">
+          <div class="gallery-card__body">
+            <p class="gallery-card__category">コンセプト・フェティッシュ</p>
+            <h4 class="gallery-card__title">マスクと衣装で作るダークポートレート</h4>
+            <p class="gallery-card__description">顔を隠した状態でも、立ち方、手の位置、光の方向によって感情や世界観を表現します。</p>
+            <dl class="gallery-card__meta">
+              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
+              <div><dt>撮影内容</dt><dd>ダーク背景・カラー照明・ポーズ演出</dd></div>
+            </dl>
+            <div class="gallery-card__actions">
+              <a href="#contact" data-plan="creative" data-artwork="マスクと衣装で作るダークポートレート" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="concept" data-ga-item="concept_mask_dark">この雰囲気で相談する</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <div class="gallery-closing">
+      <h3>気になる作例はありましたか？</h3>
+      <p>同じ衣装や体型でなくても、好きな光、色、雰囲気をもとに撮影内容を組み立てられます。<br>作例名や画像をお知らせいただければ、近い撮影方法と適したプランをご提案します。</p>
+      <div class="hero-actions">
+        <a href="#plans" class="btn btn-primary" data-ga-event="portrait_click_hero_plans" data-ga-section="gallery" data-ga-location="gallery_closing">料金・プランを見る</a>
+        <a href="#contact" class="btn btn-outline-light" data-ga-event="portrait_click_hero_consult" data-ga-section="gallery" data-ga-location="gallery_closing">この雰囲気で相談する</a>
+      </div>
     </div>
   </div>
 </section>
@@ -1012,260 +1266,6 @@
           <a href="#contact" class="btn btn-primary" data-contact-intent="consult" data-ga-event="portrait_click_photographer_consult" data-ga-section="photographer" data-ga-location="photographer_profile">撮影内容を相談する</a>
           <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="photographer-profile__x-link" data-ga-event="portrait_click_photographer_x" data-ga-section="photographer" data-ga-location="photographer">Xで作例・活動を見る</a>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── Gallery ── -->
-<section id="gallery">
-  <div class="container">
-    <p class="section-label">Gallery</p>
-    <h2>撮影テーマ別の作例</h2>
-    <div class="text-block">
-      <p>男性ポートレート、スポーツユニフォーム、筋肉表現、<br>コンセプト撮影など、撮りたいテーマに合わせて光と構図を組み立てます。</p>
-      <p>気になる作例があれば、お問い合わせ時に画像や作例名をお知らせください。<br>近い雰囲気の撮影方法とプランをご提案します。</p>
-    </div>
-
-    <nav class="gallery-nav" aria-label="作例カテゴリ">
-      <a href="#gallery-uniform">スポーツユニフォーム</a>
-      <a href="#gallery-muscle">筋肉・身体表現</a>
-      <a href="#gallery-concept">コンセプト・フェティッシュ</a>
-    </nav>
-
-    <section class="gallery-category" id="gallery-uniform">
-      <h3 class="gallery-category__title">スポーツユニフォーム</h3>
-      <div class="gallery-grid">
-        <article class="gallery-card">
-          <img src="../images/portrait/top/gallery-photo-12.webp" alt="白背景で野球ユニフォームを着た男性の後ろ姿" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">スポーツユニフォーム</p>
-            <h4 class="gallery-card__title">野球ユニフォームの後ろ姿</h4>
-            <p class="gallery-card__description">背番号、ユニフォームのシルエット、肩や背中のラインが伝わる角度で撮影しています。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
-              <div><dt>撮影内容</dt><dd>2衣装まで・白背景／黒背景</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="standard" data-artwork="野球ユニフォームの後ろ姿" data-contact-intent="consult" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="sports_uniform" data-ga-item="baseball_back_view">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="gallery-card">
-          <img src="../images/portrait/top/gallery-photo-05.webp" alt="野球ユニフォームを着た男性のバックスタイル" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">スポーツユニフォーム</p>
-            <h4 class="gallery-card__title">野球ユニフォーム・バックスタイル</h4>
-            <p class="gallery-card__description">背番号やユニフォームの形を見せながら、立ち姿や身体の向きを整えて撮影します。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
-              <div><dt>撮影内容</dt><dd>2衣装まで・ポージングサポート</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="standard" data-artwork="野球ユニフォーム・バックスタイル" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="sports_uniform" data-ga-item="baseball_back_style">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="gallery-card gallery-card--extra">
-          <img src="../images/portrait/top/gallery-photo-09.webp" alt="スポーツウェアを着た男性ポートレート" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">スポーツユニフォーム</p>
-            <h4 class="gallery-card__title">スポーツウェアを使った男性ポートレート</h4>
-            <p class="gallery-card__description">スポーツウェアのフィット感や身体のラインを活かし、自然な立ち姿から作品的なポーズまで撮影します。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
-              <div><dt>撮影内容</dt><dd>1〜2衣装・白背景／黒背景</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="standard" data-artwork="スポーツウェアを使った男性ポートレート" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="sports_uniform" data-ga-item="sportswear_portrait">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="gallery-card gallery-card--extra">
-          <img src="../images/portrait/top/gallery-photo-10.webp" alt="サッカーユニフォームを着た男性ポートレート" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">スポーツユニフォーム</p>
-            <h4 class="gallery-card__title">サッカーユニフォーム・ポートレート</h4>
-            <p class="gallery-card__description">ユニフォームのデザインを見せながら、選手らしさや本人らしい雰囲気を残します。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
-              <div><dt>撮影内容</dt><dd>2衣装まで・ポージングサポート</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="standard" data-artwork="サッカーユニフォーム・ポートレート" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="sports_uniform" data-ga-item="soccer_uniform">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="gallery-card gallery-card--extra">
-          <img src="../images/portrait/top/gallery-photo-11.webp" alt="野球ユニフォームを着た男性ポートレート、正面" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">スポーツユニフォーム</p>
-            <h4 class="gallery-card__title">野球ユニフォーム・男性ポートレート</h4>
-            <p class="gallery-card__description">ユニフォーム姿を記録写真ではなく、光とポーズを整えた一枚の作品として残します。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
-              <div><dt>撮影内容</dt><dd>2衣装まで・白背景／黒背景</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="standard" data-artwork="野球ユニフォーム・男性ポートレート" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="sports_uniform" data-ga-item="baseball_portrait">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section class="gallery-category" id="gallery-muscle">
-      <h3 class="gallery-category__title">筋肉・身体表現</h3>
-      <div class="gallery-grid">
-        <article class="gallery-card">
-          <img src="../images/portrait/top/gallery-photo-01.webp" alt="黒背景でサイド光を当てた上半身の筋肉ポートレート" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">筋肉・身体表現</p>
-            <h4 class="gallery-card__title">上半身の筋肉を見せるポートレート</h4>
-            <p class="gallery-card__description">胸、肩、腕に光を当て、トレーニングで作った身体の立体感を残します。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
-              <div><dt>撮影内容</dt><dd>黒背景・サイド光</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="standard" data-artwork="上半身の筋肉を見せるポートレート" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="muscle" data-ga-item="muscle_upper_body">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="gallery-card">
-          <img src="../images/portrait/top/gallery-photo-02.webp" alt="光と影で身体の凹凸を強調した筋肉ポートレート" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">筋肉・身体表現</p>
-            <h4 class="gallery-card__title">光と影で見せる筋肉表現</h4>
-            <p class="gallery-card__description">正面から均等に照らすのではなく、影を残すことで身体の凹凸を強調した撮影です。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
-              <div><dt>撮影内容</dt><dd>黒背景・サイド光・多灯ライティング</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="creative" data-artwork="光と影で見せる筋肉表現" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="muscle" data-ga-item="muscle_light_shadow">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="gallery-card gallery-card--extra">
-          <img src="../images/portrait/top/gallery-photo-03.webp" alt="肩・胸・腕の陰影を強調した筋肉ポートレート" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">筋肉・身体表現</p>
-            <h4 class="gallery-card__title">肩・胸・腕の陰影を強調</h4>
-            <p class="gallery-card__description">見せたい部位に合わせて光の位置を調整し、身体のラインが最も伝わる角度を探します。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
-              <div><dt>撮影内容</dt><dd>黒背景・ライティング調整</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="creative" data-artwork="肩・胸・腕の陰影を強調" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="muscle" data-ga-item="muscle_shadow_emphasis">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="gallery-card gallery-card--extra">
-          <img src="../images/portrait/top/gallery-photo-04.webp" alt="自然な表情と上半身のラインを活かした男性ポートレート" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">筋肉・身体表現</p>
-            <h4 class="gallery-card__title">上半身を活かした男性ポートレート</h4>
-            <p class="gallery-card__description">過度に演出しすぎず、自然な表情と身体のラインを両立した撮影です。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>スタンダード90分</dd></div>
-              <div><dt>撮影内容</dt><dd>1〜2衣装・白背景／黒背景</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="standard" data-artwork="上半身を活かした男性ポートレート" data-contact-intent="consult" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="muscle" data-ga-item="muscle_natural_portrait">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section class="gallery-category" id="gallery-concept">
-      <h3 class="gallery-category__title">コンセプト・フェティッシュ</h3>
-      <div class="gallery-grid">
-        <article class="gallery-card">
-          <img src="../images/portrait/top/gallery-photo-13.webp" alt="コスチューム衣装でカラー照明を使ったコンセプト撮影" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">コンセプト・フェティッシュ</p>
-            <h4 class="gallery-card__title">コスチュームを使ったコンセプト撮影</h4>
-            <p class="gallery-card__description">衣装の色や質感に合わせて背景と照明を調整し、キャラクター性や世界観を強調した撮影です。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
-              <div><dt>撮影内容</dt><dd>2衣装・カラー照明・背景演出</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="creative" data-artwork="コスチュームを使ったコンセプト撮影" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="concept" data-ga-item="concept_costume">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="gallery-card">
-          <img src="../images/portrait/top/gallery-photo-06.webp" alt="光沢素材の衣装とカラー照明を使ったコンセプト撮影" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">コンセプト・フェティッシュ</p>
-            <h4 class="gallery-card__title">光沢素材を活かしたコンセプト撮影</h4>
-            <p class="gallery-card__description">衣装に反射する光を調整し、素材の質感と身体のラインを作品として見せます。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
-              <div><dt>撮影内容</dt><dd>カラー照明・黒背景・多灯ライティング</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="creative" data-artwork="光沢素材を活かしたコンセプト撮影" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="concept" data-ga-item="concept_glossy_material">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="gallery-card gallery-card--extra">
-          <img src="../images/portrait/top/gallery-photo-07.webp" alt="マスクを着用し顔を出さずに撮影した作品" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">コンセプト・フェティッシュ</p>
-            <h4 class="gallery-card__title">マスクを使った顔を出さない作品撮り</h4>
-            <p class="gallery-card__description">顔を出さずに、衣装、身体の向き、光と影で人物の雰囲気を作る撮影です。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
-              <div><dt>撮影内容</dt><dd>マスク・黒背景・カラー照明</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="creative" data-artwork="マスクを使った顔を出さない作品撮り" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="concept" data-ga-item="concept_mask_no_face">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="gallery-card gallery-card--extra">
-          <img src="../images/portrait/top/gallery-photo-08.webp" alt="マスクと衣装で作るダークな世界観のポートレート" loading="lazy" class="gallery-card__image">
-          <div class="gallery-card__body">
-            <p class="gallery-card__category">コンセプト・フェティッシュ</p>
-            <h4 class="gallery-card__title">マスクと衣装で作るダークポートレート</h4>
-            <p class="gallery-card__description">顔を隠した状態でも、立ち方、手の位置、光の方向によって感情や世界観を表現します。</p>
-            <dl class="gallery-card__meta">
-              <div><dt>おすすめプラン</dt><dd>作品撮り120分</dd></div>
-              <div><dt>撮影内容</dt><dd>ダーク背景・カラー照明・ポーズ演出</dd></div>
-            </dl>
-            <div class="gallery-card__actions">
-              <a href="#contact" data-plan="creative" data-artwork="マスクと衣装で作るダークポートレート" class="gallery-card__cta" data-ga-event="portrait_click_gallery_consult" data-ga-section="gallery" data-ga-location="gallery_card" data-ga-category="concept" data-ga-item="concept_mask_dark">この雰囲気で相談する</a>
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <div class="gallery-toggle-wrap">
-      <button type="button" id="galleryToggle" class="btn btn-outline-light gallery-toggle" aria-expanded="false" aria-controls="gallery-uniform gallery-muscle gallery-concept" hidden>すべての作例を見る</button>
-    </div>
-
-    <div class="gallery-closing">
-      <h3>気になる作例はありましたか？</h3>
-      <p>同じ衣装や体型でなくても、好きな光、色、雰囲気をもとに撮影内容を組み立てられます。<br>作例名や画像をお知らせいただければ、近い撮影方法と適したプランをご提案します。</p>
-      <div class="hero-actions">
-        <a href="#plans" class="btn btn-primary" data-ga-event="portrait_click_hero_plans" data-ga-section="gallery" data-ga-location="gallery_closing">料金・プランを見る</a>
-        <a href="#contact" class="btn btn-outline-light" data-ga-event="portrait_click_hero_consult" data-ga-section="gallery" data-ga-location="gallery_closing">この雰囲気で相談する</a>
       </div>
     </div>
   </div>
@@ -2168,7 +2168,7 @@
   'use strict';
 
   /* .js は<head>で即座に付与済み（JS有効時のみ）。
-     JS無効時は .portrait-menu / .gallery-card--extra が常に表示された状態になる。 */
+     JS無効時は .portrait-menu / #gallery が常に表示された状態になる。 */
 
   /* ── ハンバーガーメニュー ── */
   var toggle = document.getElementById('portraitMenuToggle');
@@ -2238,22 +2238,22 @@
     });
   }
 
-  /* ── 作例の初期表示を絞り込み、ボタンで展開 ── */
-  var extras = document.querySelectorAll('.gallery-card--extra');
+  /* ── 詳細ギャラリー全体の初期表示を絞り込み、ボタンで展開 ── */
+  var gallery = document.getElementById('gallery');
   var galleryToggle = document.getElementById('galleryToggle');
 
-  if (extras.length && galleryToggle) {
-    var totalCards = document.querySelectorAll('.gallery-card').length;
+  if (gallery && galleryToggle) {
+    var totalCards = gallery.querySelectorAll('.gallery-card').length;
     var labelCollapsed = 'すべての作例を見る（全' + totalCards + '枚）';
-    var labelExpanded = '表示を減らす';
+    var labelExpanded = '作例を閉じる';
 
-    extras.forEach(function (el) { el.hidden = true; });
+    gallery.hidden = true;
     galleryToggle.hidden = false;
     galleryToggle.textContent = labelCollapsed;
 
     galleryToggle.addEventListener('click', function () {
       var expanded = galleryToggle.getAttribute('aria-expanded') === 'true';
-      extras.forEach(function (el) { el.hidden = expanded; });
+      gallery.hidden = expanded;
       galleryToggle.setAttribute('aria-expanded', String(!expanded));
       galleryToggle.textContent = expanded ? labelCollapsed : labelExpanded;
       if (expanded) {
