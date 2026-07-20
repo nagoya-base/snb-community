@@ -159,12 +159,19 @@
       lines.push("参加を検討している方は、事前にDMでご連絡ください。");
       return lines.join("<br>");
     }
-    if (status === "finished") {
-      return "前回の活動は終了しました。<br>次回情報はXで案内します。";
+    if (status === "upcoming") {
+      return "次回の活動を準備中です。<br>詳細が決まり次第、Xでお知らせします。";
+    }
+    if (status === "full") {
+      return "次回の活動は定員に達しました。<br>参加についてのご相談はXのDMからご連絡ください。";
     }
     if (status === "closed") {
       return "受付を終了しました。<br>次回情報はXで案内します。";
     }
+    if (status === "finished") {
+      return "前回の活動は終了しました。<br>次回情報はXで案内します。";
+    }
+    // paused
     return "現在、屋外活動を休止しています。<br>次回開催はXでお知らせします。";
   }
 
