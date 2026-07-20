@@ -667,8 +667,8 @@
     .flow-step-detail__body p { font-size: 0.86rem; color: var(--text-muted); line-height: 1.85; }
 
     /* ── Gallery toggle ── */
-    .gallery-toggle-wrap { text-align: center; margin-top: 1.75rem; }
-    .gallery-card--extra:not([hidden]) { display: flex; }
+    .showcase-toggle-wrap { text-align: center; margin-top: 1.75rem; }
+    [hidden] { display: none !important; }
 
     /* ── Brand box（Contact導入として統合・短縮） ── */
     .brand-box--compact {
@@ -834,6 +834,10 @@
           <a href="#contact" data-plan="creative" data-artwork="コスチュームを使ったコンセプト撮影" data-contact-intent="consult" class="showcase-card__cta" data-ga-event="portrait_click_showcase_consult" data-ga-section="showcase" data-ga-location="showcase_card" data-ga-category="concept" data-ga-item="concept_costume">この雰囲気で相談する</a>
         </div>
       </article>
+    </div>
+
+    <div class="showcase-toggle-wrap">
+      <button type="button" id="galleryToggle" class="btn btn-outline-light gallery-toggle" aria-expanded="false" aria-controls="gallery" data-ga-event="portrait_toggle_gallery" data-ga-section="showcase" data-ga-location="showcase_toggle" hidden>すべての作例を見る（全13枚）</button>
     </div>
   </div>
 </section>
@@ -1066,7 +1070,7 @@
           </div>
         </article>
 
-        <article class="gallery-card gallery-card--extra">
+        <article class="gallery-card">
           <img src="../images/portrait/top/gallery-photo-09.webp" alt="スポーツウェアを着た男性ポートレート" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">スポーツユニフォーム</p>
@@ -1082,7 +1086,7 @@
           </div>
         </article>
 
-        <article class="gallery-card gallery-card--extra">
+        <article class="gallery-card">
           <img src="../images/portrait/top/gallery-photo-10.webp" alt="サッカーユニフォームを着た男性ポートレート" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">スポーツユニフォーム</p>
@@ -1098,7 +1102,7 @@
           </div>
         </article>
 
-        <article class="gallery-card gallery-card--extra">
+        <article class="gallery-card">
           <img src="../images/portrait/top/gallery-photo-11.webp" alt="野球ユニフォームを着た男性ポートレート、正面" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">スポーツユニフォーム</p>
@@ -1151,7 +1155,7 @@
           </div>
         </article>
 
-        <article class="gallery-card gallery-card--extra">
+        <article class="gallery-card">
           <img src="../images/portrait/top/gallery-photo-03.webp" alt="肩・胸・腕の陰影を強調した筋肉ポートレート" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">筋肉・身体表現</p>
@@ -1167,7 +1171,7 @@
           </div>
         </article>
 
-        <article class="gallery-card gallery-card--extra">
+        <article class="gallery-card">
           <img src="../images/portrait/top/gallery-photo-04.webp" alt="自然な表情と上半身のラインを活かした男性ポートレート" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">筋肉・身体表現</p>
@@ -1220,7 +1224,7 @@
           </div>
         </article>
 
-        <article class="gallery-card gallery-card--extra">
+        <article class="gallery-card">
           <img src="../images/portrait/top/gallery-photo-07.webp" alt="マスクを着用し顔を出さずに撮影した作品" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">コンセプト・フェティッシュ</p>
@@ -1236,7 +1240,7 @@
           </div>
         </article>
 
-        <article class="gallery-card gallery-card--extra">
+        <article class="gallery-card">
           <img src="../images/portrait/top/gallery-photo-08.webp" alt="マスクと衣装で作るダークな世界観のポートレート" loading="lazy" class="gallery-card__image">
           <div class="gallery-card__body">
             <p class="gallery-card__category">コンセプト・フェティッシュ</p>
@@ -1253,10 +1257,6 @@
         </article>
       </div>
     </section>
-
-    <div class="gallery-toggle-wrap">
-      <button type="button" id="galleryToggle" class="btn btn-outline-light gallery-toggle" aria-expanded="false" aria-controls="gallery-uniform gallery-muscle gallery-concept" hidden>すべての作例を見る</button>
-    </div>
 
     <div class="gallery-closing">
       <h3>気になる作例はありましたか？</h3>
@@ -2166,7 +2166,7 @@
   'use strict';
 
   /* .js は<head>で即座に付与済み（JS有効時のみ）。
-     JS無効時は .portrait-menu / .gallery-card--extra が常に表示された状態になる。 */
+     JS無効時は .portrait-menu / #gallery が常に表示された状態になる。 */
 
   /* ── ハンバーガーメニュー ── */
   var toggle = document.getElementById('portraitMenuToggle');
@@ -2236,22 +2236,22 @@
     });
   }
 
-  /* ── 作例の初期表示を絞り込み、ボタンで展開 ── */
-  var extras = document.querySelectorAll('.gallery-card--extra');
+  /* ── 詳細ギャラリー全体の初期表示を絞り込み、ボタンで展開 ── */
+  var gallery = document.getElementById('gallery');
   var galleryToggle = document.getElementById('galleryToggle');
 
-  if (extras.length && galleryToggle) {
-    var totalCards = document.querySelectorAll('.gallery-card').length;
+  if (gallery && galleryToggle) {
+    var totalCards = gallery.querySelectorAll('.gallery-card').length;
     var labelCollapsed = 'すべての作例を見る（全' + totalCards + '枚）';
-    var labelExpanded = '表示を減らす';
+    var labelExpanded = '作例を閉じる';
 
-    extras.forEach(function (el) { el.hidden = true; });
+    gallery.hidden = true;
     galleryToggle.hidden = false;
     galleryToggle.textContent = labelCollapsed;
 
     galleryToggle.addEventListener('click', function () {
       var expanded = galleryToggle.getAttribute('aria-expanded') === 'true';
-      extras.forEach(function (el) { el.hidden = expanded; });
+      gallery.hidden = expanded;
       galleryToggle.setAttribute('aria-expanded', String(!expanded));
       galleryToggle.textContent = expanded ? labelCollapsed : labelExpanded;
       if (expanded) {
