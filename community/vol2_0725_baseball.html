@@ -524,6 +524,43 @@
       font-size: 0.78rem;
       color: var(--text-muted);
     }
+
+    /* ── 募集状態に応じたフォーム停止時の代替表示 ── */
+    .form-status-fallback {
+      max-width: 440px;
+      margin: 0 auto 2rem;
+      padding: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-align: center;
+    }
+    .form-status-fallback__text {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.85;
+      margin-bottom: 1rem;
+    }
+
+    /* ── 募集状態ごとの色（.limit-badge / .limit-dot を状態クラスで上書き） ── */
+    .limit-badge.status-badge--upcoming { background: #EEF2F6; color: #46586B; }
+    .limit-badge.status-badge--full { background: #FDECEA; color: #B23B2E; }
+    .limit-badge.status-badge--closed,
+    .limit-badge.status-badge--finished { background: #EDEDED; color: #6B6B6B; }
+    .limit-badge.status-badge--paused { background: #FFF4E0; color: #9A6A15; }
+    .limit-badge:not(.status-badge--recruiting) .limit-dot {
+      background: currentColor;
+      animation: none;
+    }
+    .hero .limit-badge.status-badge--upcoming,
+    .hero .limit-badge.status-badge--full,
+    .hero .limit-badge.status-badge--closed,
+    .hero .limit-badge.status-badge--finished,
+    .hero .limit-badge.status-badge--paused {
+      background: rgba(242, 239, 233, 0.14);
+      color: #F2EFE9;
+    }
+
     /* ── 参加申込 / 検討中の切り分け ── */
     .cta-split {
       display: grid;
@@ -1036,84 +1073,91 @@
       お気に入りの野球ユニで、<br>
       <em>参加してみませんか。</em>
     </h2>
-    <p class="final-cta-sub">
-      参加を希望する方は下の申込フォームからお送りください。
-    </p>
+    <div data-event-id="community-vol2-0725" data-event-field="form-gate">
+      <p class="final-cta-sub">
+        参加を希望する方は下の申込フォームからお送りください。
+      </p>
 
-    <div class="cta-split">
-      <div class="cta-split-item cta-split-item--apply">
-        <p class="cta-split-title">参加申込</p>
-        <p class="cta-split-desc">申込フォームから必要事項をお送りください。</p>
+      <div class="cta-split">
+        <div class="cta-split-item cta-split-item--apply">
+          <p class="cta-split-title">参加申込</p>
+          <p class="cta-split-desc">申込フォームから必要事項をお送りください。</p>
+        </div>
+        <div class="cta-split-item cta-split-item--consider">
+          <p class="cta-split-title">検討中</p>
+          <p class="cta-split-desc">告知投稿へのいいね・リプだけでも歓迎です。<br>ただし、参加枠の確保には申込が必要です。</p>
+        </div>
       </div>
-      <div class="cta-split-item cta-split-item--consider">
-        <p class="cta-split-title">検討中</p>
-        <p class="cta-split-desc">告知投稿へのいいね・リプだけでも歓迎です。<br>ただし、参加枠の確保には申込が必要です。</p>
+
+      <form id="vol2-apply-form" class="apply-form" novalidate>
+        <input type="hidden" name="_subject" value="【SNBC 野球ユニ会Vol.2】参加申込フォーム">
+        <input type="hidden" name="_template" value="table">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="text" name="_honey" class="apply-form__honey" tabindex="-1" autocomplete="off">
+
+        <div class="form-field">
+          <label for="af-name">お名前 <span class="required-mark">必須</span></label>
+          <input type="text" id="af-name" name="お名前" required autocomplete="name">
+        </div>
+
+        <div class="form-field">
+          <label for="af-email">メールアドレス <span class="required-mark">必須</span></label>
+          <input type="email" id="af-email" name="メールアドレス" required autocomplete="email">
+          <p class="form-hint">参加可否のご連絡に使用します。</p>
+        </div>
+
+        <div class="form-field">
+          <label for="af-x">Xアカウント <span class="optional-mark">任意</span></label>
+          <input type="text" id="af-x" name="Xアカウント" placeholder="@baseballuni2022" autocomplete="off">
+        </div>
+
+        <div class="form-field">
+          <label for="af-age">年代 <span class="required-mark">必須</span></label>
+          <input type="text" id="af-age" name="年代" placeholder="例：30代" required>
+        </div>
+
+        <div class="form-field">
+          <label for="af-intro">簡単な自己紹介 <span class="required-mark">必須</span></label>
+          <textarea id="af-intro" name="簡単な自己紹介" rows="2" placeholder="例：野球観戦が好きです。" required></textarea>
+        </div>
+
+        <div class="form-field">
+          <label for="af-uniform">好きなユニフォーム <span class="required-mark">必須</span></label>
+          <input type="text" id="af-uniform" name="好きなユニフォーム" placeholder="例：中日ドラゴンズ" required>
+        </div>
+
+        <div class="form-field">
+          <label for="af-reason">参加したいと思った理由 <span class="required-mark">必須</span></label>
+          <textarea id="af-reason" name="参加したいと思った理由" rows="2" placeholder="例：同じ趣味の人と話したり、ユニフォーム姿を撮ってもらいたくて参加を希望しました。" required></textarea>
+        </div>
+
+        <div class="form-field">
+          <label class="checkbox-option--agree">
+            <input type="checkbox" name="共通参加規約への同意" value="同意する" required>
+            <span><a href="../#terms" target="_blank" rel="noopener noreferrer">共通参加規約</a>を確認し、同意します。</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary apply-form__submit" id="af-submit-btn">このイベントに申し込む</button>
+
+        <p class="form-privacy-note">入力された情報は、本イベントの参加確認と必要な連絡のためにのみ使用します。</p>
+      </form>
+
+      <div class="form-result form-result--success" id="af-success" hidden>
+        <p><strong>お申し込みありがとうございます。</strong></p>
+        <p>内容を確認し、通常24時間以内にご連絡します。</p>
+        <p>返信が届かない場合は、迷惑メールフォルダをご確認いただくか、XのDMからお問い合わせください。</p>
+      </div>
+
+      <div class="form-result form-result--error" id="af-error" hidden>
+        <p><strong>送信中にエラーが発生しました。</strong></p>
+        <p>お手数ですが、XのDMから直接ご連絡ください。</p>
       </div>
     </div>
 
-    <form id="vol2-apply-form" class="apply-form" novalidate>
-      <input type="hidden" name="_subject" value="【SNBC 野球ユニ会Vol.2】参加申込フォーム">
-      <input type="hidden" name="_template" value="table">
-      <input type="hidden" name="_captcha" value="false">
-      <input type="text" name="_honey" class="apply-form__honey" tabindex="-1" autocomplete="off">
-
-      <div class="form-field">
-        <label for="af-name">お名前 <span class="required-mark">必須</span></label>
-        <input type="text" id="af-name" name="お名前" required autocomplete="name">
-      </div>
-
-      <div class="form-field">
-        <label for="af-email">メールアドレス <span class="required-mark">必須</span></label>
-        <input type="email" id="af-email" name="メールアドレス" required autocomplete="email">
-        <p class="form-hint">参加可否のご連絡に使用します。</p>
-      </div>
-
-      <div class="form-field">
-        <label for="af-x">Xアカウント <span class="optional-mark">任意</span></label>
-        <input type="text" id="af-x" name="Xアカウント" placeholder="@baseballuni2022" autocomplete="off">
-      </div>
-
-      <div class="form-field">
-        <label for="af-age">年代 <span class="required-mark">必須</span></label>
-        <input type="text" id="af-age" name="年代" placeholder="例：30代" required>
-      </div>
-
-      <div class="form-field">
-        <label for="af-intro">簡単な自己紹介 <span class="required-mark">必須</span></label>
-        <textarea id="af-intro" name="簡単な自己紹介" rows="2" placeholder="例：野球観戦が好きです。" required></textarea>
-      </div>
-
-      <div class="form-field">
-        <label for="af-uniform">好きなユニフォーム <span class="required-mark">必須</span></label>
-        <input type="text" id="af-uniform" name="好きなユニフォーム" placeholder="例：中日ドラゴンズ" required>
-      </div>
-
-      <div class="form-field">
-        <label for="af-reason">参加したいと思った理由 <span class="required-mark">必須</span></label>
-        <textarea id="af-reason" name="参加したいと思った理由" rows="2" placeholder="例：同じ趣味の人と話したり、ユニフォーム姿を撮ってもらいたくて参加を希望しました。" required></textarea>
-      </div>
-
-      <div class="form-field">
-        <label class="checkbox-option--agree">
-          <input type="checkbox" name="共通参加規約への同意" value="同意する" required>
-          <span><a href="../#terms" target="_blank" rel="noopener noreferrer">共通参加規約</a>を確認し、同意します。</span>
-        </label>
-      </div>
-
-      <button type="submit" class="btn btn-primary apply-form__submit" id="af-submit-btn">このイベントに申し込む</button>
-
-      <p class="form-privacy-note">入力された情報は、本イベントの参加確認と必要な連絡のためにのみ使用します。</p>
-    </form>
-
-    <div class="form-result form-result--success" id="af-success" hidden>
-      <p><strong>お申し込みありがとうございます。</strong></p>
-      <p>内容を確認し、通常24時間以内にご連絡します。</p>
-      <p>返信が届かない場合は、迷惑メールフォルダをご確認いただくか、XのDMからお問い合わせください。</p>
-    </div>
-
-    <div class="form-result form-result--error" id="af-error" hidden>
-      <p><strong>送信中にエラーが発生しました。</strong></p>
-      <p>お手数ですが、XのDMから直接ご連絡ください。</p>
+    <div class="form-status-fallback" data-event-id="community-vol2-0725" data-event-field="form-fallback" hidden>
+      <p class="form-status-fallback__text" data-event-id="community-vol2-0725" data-event-field="form-fallback-text"></p>
+      <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Xで最新情報を見る</a>
     </div>
 
     <div class="cta-channels">

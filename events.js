@@ -40,13 +40,33 @@
     }
   ];
 
+  // ctaEnabled:false は「申込フォーム・送信ボタンを止めて、代替の案内文に切り替える」ことを意味する。
+  // キャンセル待ちなど存在しない機能へのリンクは出さない。
   var STATUS_META = {
-    upcoming: { label: "開催予定・募集開始前", modifier: "upcoming", ctaEnabled: false, ctaText: null },
-    recruiting: { label: "募集中", modifier: "recruiting", ctaEnabled: true, ctaText: "このイベントに申し込む" },
-    full: { label: "満席", modifier: "full", ctaEnabled: false, ctaText: null },
-    closed: { label: "受付終了", modifier: "closed", ctaEnabled: false, ctaText: null },
-    finished: { label: "開催終了", modifier: "finished", ctaEnabled: false, ctaText: null },
-    paused: { label: "活動休止中", modifier: "paused", ctaEnabled: false, ctaText: null }
+    upcoming: {
+      label: "開催予定・募集開始前", modifier: "upcoming", ctaEnabled: false,
+      formMessage: "募集開始までお待ちください。開始はXでお知らせします。"
+    },
+    recruiting: {
+      label: "募集中", modifier: "recruiting", ctaEnabled: true,
+      formMessage: null
+    },
+    full: {
+      label: "満席", modifier: "full", ctaEnabled: false,
+      formMessage: "満席となりました。参加についてのご相談はXのDMからご連絡ください。"
+    },
+    closed: {
+      label: "受付終了", modifier: "closed", ctaEnabled: false,
+      formMessage: "このイベントの受付は終了しました。次回開催についてはXをご確認ください。"
+    },
+    finished: {
+      label: "開催終了", modifier: "finished", ctaEnabled: false,
+      formMessage: "このイベントの受付は終了しました。次回開催についてはXをご確認ください。"
+    },
+    paused: {
+      label: "活動休止中", modifier: "paused", ctaEnabled: false,
+      formMessage: "現在、募集を休止しています。次回開催はXでお知らせします。"
+    }
   };
 
   function getTodayJST() {
@@ -142,15 +162,13 @@
       } else if (field === "badge-inline") {
         var dateBit = ev.dateLabel ? ev.dateLabel.replace(/^\d{4}年/, "") : "";
         el.textContent = "次回開催：" + (dateBit ? dateBit + " " : "") + ev.title + "・" + meta.label;
-      } else if (field === "cta") {
-        if (meta.ctaEnabled) {
-          el.hidden = false;
-          el.textContent = meta.ctaText;
-        } else {
-          el.hidden = true;
-        }
-      } else if (field === "cta-fallback") {
+      } else if (field === "form-gate") {
+        // recruiting以外は申込フォーム本体（入力・送信ボタン含む）を非表示にし、送信できなくする。
+        el.hidden = !meta.ctaEnabled;
+      } else if (field === "form-fallback") {
         el.hidden = meta.ctaEnabled;
+      } else if (field === "form-fallback-text") {
+        el.textContent = meta.formMessage || "";
       } else if (field === "dot") {
         el.classList.toggle("active", status === "recruiting" || status === "upcoming");
       } else {
