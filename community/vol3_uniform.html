@@ -29,6 +29,7 @@
     gtag('js', new Date());
     gtag('config', 'G-8K1TJG0S9Y');
   </script>
+  <script src="../events.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -539,6 +540,8 @@
     .form-result--success strong { color: #1e4620; }
     .form-result--error { background: #fdeceb; border: 1px solid #f3b8b3; color: #7a1f17; }
     .form-result--error strong { color: #7a1f17; }
+    .form-result--closed { background: var(--bg-card2); border: 1px solid var(--border); color: var(--text); }
+    .form-result--closed strong { color: var(--navy); }
 
     /* ── Footer ── */
     footer {
@@ -639,7 +642,7 @@
     <div class="hero-content">
       <div class="limit-badge">
         <span class="limit-dot"></span>
-        事前アンケート実施中
+        <span class="js-survey-badge-label">事前アンケート実施中</span>
       </div>
       <h1>
         Vol.3 少人数ユニフォーム<br>
@@ -654,6 +657,7 @@
         <span class="hero-spec">名古屋・上前津</span>
         <span class="hero-spec">14:00〜17:00予定</span>
         <span class="hero-spec">候補日4日程から複数選択可</span>
+        <span class="hero-spec">回答期限：2026年7月31日（金）</span>
       </div>
       <div class="hero-btns">
         <a href="#survey" class="btn btn-primary btn-lg">
@@ -711,6 +715,10 @@
         <div class="price-row">
           <span class="pr-label">候補日</span>
           <span class="pr-val">2026年8月8日（土）／8月11日（火・祝）／8月12日（水）／8月16日（日）</span>
+        </div>
+        <div class="price-row">
+          <span class="pr-label">回答期限</span>
+          <span class="pr-val">2026年7月31日（金）23:59（日本時間）まで</span>
         </div>
         <div class="price-row">
           <span class="pr-label">時間</span>
@@ -832,14 +840,15 @@
   <div class="container">
     <div class="limit-badge" style="margin-bottom: 1.5rem;">
       <span class="limit-dot"></span>
-      事前アンケート実施中
+      <span class="js-survey-badge-label">事前アンケート実施中</span>
     </div>
     <h2>
       参加できそうな日を、<br>
       <em>教えてください。</em>
     </h2>
     <p class="final-cta-sub">
-      参加可能日と希望ユニフォームを、下のアンケートフォームからお送りください。
+      参加可能日と希望ユニフォームを、下のアンケートフォームからお送りください。<br>
+      <strong>回答期限：2026年7月31日（金）23:59（日本時間）</strong>
     </p>
 
     <form id="vol3-survey-form" class="apply-form" novalidate>
@@ -1040,6 +1049,11 @@
       <p>お手数ですが、XのDMから直接ご連絡ください。</p>
     </div>
 
+    <div class="form-result form-result--closed" id="sf-closed" hidden>
+      <p><strong>アンケートは終了しました。開催日・テーマの決定をお待ちください。</strong></p>
+      <p>ご質問がある場合は、XのDMからお問い合わせください。</p>
+    </div>
+
     <div class="cta-channels">
       <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="cta-channel">
         <span class="cta-channel-icon">💬</span>
@@ -1098,12 +1112,28 @@
 
   var FORM_ENDPOINT = 'https://formsubmit.co/ajax/bbuni.ngo@gmail.com';
 
+  // 回答期限：2026年7月31日（金）23:59（日本時間）。判定失敗時は回答不可の安全側に倒す。
+  var SURVEY_DEADLINE_DATE = '2026-07-31';
+  var todayJST = (window.SNBEventStatus && window.SNBEventStatus.getTodayJST) ? window.SNBEventStatus.getTodayJST() : null;
+  var isSurveyClosed = !todayJST || todayJST > SURVEY_DEADLINE_DATE;
+
   var form = document.getElementById('vol3-survey-form');
   if (!form) return;
 
   var submitBtn = document.getElementById('sf-submit-btn');
   var successBox = document.getElementById('sf-success');
   var errorBox = document.getElementById('sf-error');
+  var closedBox = document.getElementById('sf-closed');
+  var badgeLabels = document.querySelectorAll('.js-survey-badge-label');
+
+  if (isSurveyClosed) {
+    form.hidden = true;
+    if (successBox) successBox.hidden = true;
+    if (errorBox) errorBox.hidden = true;
+    if (closedBox) closedBox.hidden = false;
+    badgeLabels.forEach(function (el) { el.textContent = 'アンケートは終了しました'; });
+    return;
+  }
 
   var dateChecks = form.querySelectorAll('input[name="参加可能日"]');
   var dateError = document.getElementById('sf-dates-error');

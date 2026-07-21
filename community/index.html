@@ -116,17 +116,18 @@
         </p>
       </div>
     </div>
-    <div class="next-banner">
-      <span class="next-dot active"></span>
+    <div class="next-banner" id="vol3-survey-banner">
+      <span class="next-dot active" id="vol3-survey-dot"></span>
       <div class="next-event">
-        <p class="next-event-title"><strong>次回企画：Vol.3 少人数ユニフォーム撮影交流会・事前アンケート実施中</strong></p>
+        <p class="next-event-title"><strong id="vol3-survey-title">次回企画：Vol.3 少人数ユニフォーム撮影交流会・事前アンケート実施中</strong></p>
         <ul class="next-event-detail">
           <li>候補日：2026年8月8日（土）／8月11日（火・祝）／8月12日（水）／8月16日（日）</li>
           <li>上前津｜Studio Nagoya Base</li>
         </ul>
         <p class="next-event-note">
-          <span class="status-badge">アンケート実施中</span><br>
-          <a href="vol3_uniform.html">📋 参加可能日を回答する →</a><br>
+          <span class="status-badge" id="vol3-survey-badge">アンケート実施中</span><br>
+          回答期限：2026年7月31日（金）23:59（日本時間）<br>
+          <a href="vol3_uniform.html" id="vol3-survey-link">📋 参加可能日を回答する →</a><br>
           回答＝参加確定ではありません。開催日・希望ユニフォームの決定にご協力ください。
         </p>
       </div>
@@ -268,6 +269,25 @@
   if (window.SNBEventStatus) {
     window.SNBEventStatus.render('community-vol2-0725');
   }
+</script>
+
+<script>
+  (function () {
+    // Vol.3事前アンケートの回答期限：2026年7月31日（金）23:59（日本時間）。判定失敗時は終了扱いにする。
+    var todayJST = (window.SNBEventStatus && window.SNBEventStatus.getTodayJST) ? window.SNBEventStatus.getTodayJST() : null;
+    var isSurveyClosed = !todayJST || todayJST > '2026-07-31';
+    if (!isSurveyClosed) return;
+
+    var title = document.getElementById('vol3-survey-title');
+    var badge = document.getElementById('vol3-survey-badge');
+    var dot = document.getElementById('vol3-survey-dot');
+    var link = document.getElementById('vol3-survey-link');
+
+    if (title) title.textContent = '次回企画：Vol.3 少人数ユニフォーム撮影交流会・アンケート終了';
+    if (badge) badge.textContent = 'アンケート終了';
+    if (dot) dot.classList.remove('active');
+    if (link) link.textContent = '📋 アンケートは終了しました →';
+  })();
 </script>
 
 </body>

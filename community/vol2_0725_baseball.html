@@ -1240,8 +1240,8 @@
       <a href="vol3_uniform.html" class="cta-channel">
         <span class="cta-channel-icon">📋</span>
         <span>
-          <span class="cta-channel-label">次回企画（Vol.3）の参加可能日を回答する</span>
-          <span class="cta-channel-note">少人数ユニフォーム撮影交流会 Vol.3の事前アンケートを実施中です。</span>
+          <span class="cta-channel-label" id="vol3-cta-label">次回企画（Vol.3）の参加可能日を回答する</span>
+          <span class="cta-channel-note" id="vol3-cta-note">少人数ユニフォーム撮影交流会 Vol.3の事前アンケートを実施中です（回答期限：2026年7月31日）。</span>
         </span>
       </a>
     </div>
@@ -1282,6 +1282,20 @@
   if (window.SNBEventStatus) {
     window.SNBEventStatus.render('community-vol2-0725');
   }
+</script>
+
+<script>
+  (function () {
+    // Vol.3事前アンケートの回答期限：2026年7月31日（金）23:59（日本時間）。判定失敗時は終了扱いにする。
+    var todayJST = (window.SNBEventStatus && window.SNBEventStatus.getTodayJST) ? window.SNBEventStatus.getTodayJST() : null;
+    var isSurveyClosed = !todayJST || todayJST > '2026-07-31';
+    if (!isSurveyClosed) return;
+
+    var label = document.getElementById('vol3-cta-label');
+    var note = document.getElementById('vol3-cta-note');
+    if (label) label.textContent = '次回企画（Vol.3）のアンケートは終了しました';
+    if (note) note.textContent = '少人数ユニフォーム撮影交流会 Vol.3の事前アンケートは終了しました。開催日・テーマの決定をお待ちください。';
+  })();
 </script>
 
 <!-- ── 参加申込フォーム制御 ── -->
