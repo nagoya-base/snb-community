@@ -1730,14 +1730,14 @@
         </div>
 
         <div class="form-field">
-          <span class="form-field__label">作例・SNSへの掲載について <span class="required-mark">必須</span></span>
+          <span class="form-field__label">運営が撮影した写真の掲載について <span class="required-mark">必須</span></span>
           <div class="radio-group">
-            <label class="radio-option"><input type="radio" name="作例・SNSへの掲載について" value="掲載不可" data-required-if-booking="true"> 掲載不可</label>
-            <label class="radio-option"><input type="radio" name="作例・SNSへの掲載について" value="撮影後に写真を確認して判断したい" data-required-if-booking="true"> 撮影後に写真を確認して判断したい</label>
-            <label class="radio-option"><input type="radio" name="作例・SNSへの掲載について" value="顔が分からない写真のみ相談可能" data-required-if-booking="true"> 顔が分からない写真のみ相談可能</label>
-            <label class="radio-option"><input type="radio" name="作例・SNSへの掲載について" value="掲載相談可能" data-required-if-booking="true"> 掲載相談可能</label>
+            <label class="radio-option"><input type="radio" name="運営が撮影した写真の掲載について" value="顔を含めて掲載可" data-required-if-booking="true"> 顔を含めて掲載可</label>
+            <label class="radio-option"><input type="radio" name="運営が撮影した写真の掲載について" value="本人が特定されにくい写真のみ掲載可" data-required-if-booking="true"> 本人が特定されにくい写真のみ掲載可</label>
+            <label class="radio-option"><input type="radio" name="運営が撮影した写真の掲載について" value="掲載候補を事前確認した場合のみ可" data-required-if-booking="true"> 掲載候補を事前確認した場合のみ可</label>
+            <label class="radio-option"><input type="radio" name="運営が撮影した写真の掲載について" value="掲載不可" data-required-if-booking="true"> 掲載不可</label>
           </div>
-          <p class="form-hint">フォーム上の回答だけで掲載を確定することはありません。実際に掲載をお願いする場合は、使用する写真と公開範囲を改めて確認します。</p>
+          <p class="form-hint">フォーム上の回答だけで掲載を確定することはありません。実際に掲載をお願いする場合は、使用する写真と公開範囲を改めて確認します。「掲載可」は撮影予約の必須条件ではありません。</p>
         </div>
 
         <div class="form-field">
@@ -1779,6 +1779,14 @@
 
       <fieldset class="consult-form__fieldset is-booking-only" data-scope="booking">
         <legend>規約・確認事項</legend>
+
+        <div class="form-field">
+          <label class="checkbox-option checkbox-option--agree">
+            <input type="checkbox" id="pf-agree-rules" name="規約への同意" value="同意する" data-required-if-booking="true" aria-describedby="pf-agree-error">
+            「<a href="../legal/community-rules.html" target="_blank" rel="noopener noreferrer">イベント参加の心得</a>」と「<a href="../legal/photo-terms.html" target="_blank" rel="noopener noreferrer">撮影写真の利用規約</a>」を確認し、内容に同意します。
+          </label>
+          <p class="form-error" id="pf-agree-error" hidden>「イベント参加の心得」と「撮影写真の利用規約」への同意が必要です。</p>
+        </div>
 
         <div class="form-field">
           <label class="checkbox-option checkbox-option--agree">
@@ -1848,6 +1856,9 @@
       <a href="../community/" class="site-footer__link site-footer__link--community">🤝 SNBコミュニティ</a>
       <span class="site-footer__sep" aria-hidden="true">／</span>
       <a href="../portrait/" class="site-footer__link site-footer__link--portrait">📷 ポートレート</a>
+    </nav>
+    <nav class="site-footer__legal">
+      <a href="../legal/" class="site-footer__legal-link">規約・参加ルール</a>
     </nav>
     <p class="site-footer__copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
   </div>
@@ -2093,6 +2104,28 @@
     radio.addEventListener('change', updateContactValidity);
   });
 
+  /* 規約同意チェック（予約時のみ必須）：わかりやすいメッセージをチェック欄の近くに表示する */
+  var agreeCheckbox = document.getElementById('pf-agree-rules');
+  var agreeError = document.getElementById('pf-agree-error');
+
+  function clearAgreeError() {
+    if (agreeError) agreeError.hidden = true;
+  }
+
+  function validateAgreement() {
+    if (!agreeCheckbox) return true;
+    clearAgreeError();
+    if (agreeCheckbox.hasAttribute('required') && !agreeCheckbox.checked) {
+      if (agreeError) agreeError.hidden = false;
+      agreeCheckbox.focus({ preventScroll: true });
+      agreeCheckbox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return false;
+    }
+    return true;
+  }
+
+  if (agreeCheckbox) agreeCheckbox.addEventListener('change', clearAgreeError);
+
   function submitLabelForIntent(intent) {
     if (intent === 'booking') return SUBMIT_LABEL_BOOKING;
     if (intent === 'consult') return SUBMIT_LABEL_CONSULT;
@@ -2111,6 +2144,10 @@
     if (!costumeGroupValid()) {
       if (costumeError) costumeError.hidden = false;
       costumeGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    if (!validateAgreement()) {
       return;
     }
 

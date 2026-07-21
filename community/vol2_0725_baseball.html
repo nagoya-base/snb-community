@@ -1168,6 +1168,38 @@
         </div>
 
         <div class="form-field">
+          <label id="af-photo-label">運営が撮影した写真の掲載について <span class="required-mark">必須</span></label>
+          <div class="radio-group" id="af-photo-group" role="group" aria-labelledby="af-photo-label" aria-describedby="af-photo-error">
+            <label class="radio-option">
+              <input type="radio" name="運営が撮影した写真の掲載について" value="顔を含めて掲載可" required>
+              <span>顔を含めて掲載可</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="運営が撮影した写真の掲載について" value="本人が特定されにくい写真のみ掲載可" required>
+              <span>本人が特定されにくい写真のみ掲載可</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="運営が撮影した写真の掲載について" value="掲載候補を事前確認した場合のみ可" required>
+              <span>掲載候補を事前確認した場合のみ可</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="運営が撮影した写真の掲載について" value="掲載不可" required>
+              <span>掲載不可</span>
+            </label>
+          </div>
+          <p class="form-hint">「掲載可」はイベント参加の必須条件ではありません。掲載を希望しない場合も参加いただけます。</p>
+          <p class="field-error" id="af-photo-error" role="alert" hidden></p>
+        </div>
+
+        <div class="form-field">
+          <label class="checkbox-option--agree">
+            <input type="checkbox" id="af-agree-rules" name="規約への同意" value="同意する" required aria-describedby="af-agree-error">
+            <span>「<a href="../legal/community-rules.html" target="_blank" rel="noopener noreferrer">イベント参加の心得</a>」と「<a href="../legal/photo-terms.html" target="_blank" rel="noopener noreferrer">撮影写真の利用規約</a>」を確認し、内容に同意します。</span>
+          </label>
+          <p class="field-error" id="af-agree-error" role="alert" hidden></p>
+        </div>
+
+        <div class="form-field">
           <label class="checkbox-option--agree">
             <input type="checkbox" name="共通参加規約への同意" value="同意する" required>
             <span><a href="../#terms" target="_blank" rel="noopener noreferrer">共通参加規約</a>を確認し、同意します。</span>
@@ -1227,7 +1259,7 @@
       ユニフォーム・競パン・スーツ・撮影・交流。SNBコミュニティ（SNBC）不定期開催。
     </p>
     <span class="footer-link">
-      SNBコミュニティの詳細は <a href="../">こちら</a>
+      SNBコミュニティの詳細は <a href="../">こちら</a>／<a href="../legal/">規約・参加ルール</a>
     </span>
     <p class="footer-copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
   </div>
@@ -1272,6 +1304,11 @@
   var emailError = document.getElementById('af-email-error');
   var xError = document.getElementById('af-x-error');
   var methodRadios = form.querySelectorAll('input[name="希望する連絡方法"]');
+
+  var photoRadios = form.querySelectorAll('input[name="運営が撮影した写真の掲載について"]');
+  var photoError = document.getElementById('af-photo-error');
+  var agreeCheckbox = document.getElementById('af-agree-rules');
+  var agreeError = document.getElementById('af-agree-error');
 
   function setSubmitting(isSubmitting) {
     if (!submitBtn) return;
@@ -1333,8 +1370,55 @@
     radio.addEventListener('change', clearContactErrors);
   });
 
+  function getCheckedPhoto() {
+    var checked = form.querySelector('input[name="運営が撮影した写真の掲載について"]:checked');
+    return checked ? checked.value : '';
+  }
+
+  function clearPhotoError() {
+    if (photoError) { photoError.hidden = true; photoError.textContent = ''; }
+  }
+
+  function validatePhotoGroup() {
+    clearPhotoError();
+    if (!getCheckedPhoto()) {
+      showFieldError(photoError, '運営が撮影した写真の掲載について、いずれかを選択してください。');
+      focusAndScroll(photoRadios[0]);
+      return false;
+    }
+    return true;
+  }
+
+  photoRadios.forEach(function (radio) {
+    radio.addEventListener('change', clearPhotoError);
+  });
+
+  function clearAgreeError() {
+    if (agreeError) { agreeError.hidden = true; agreeError.textContent = ''; }
+  }
+
+  function validateAgreement() {
+    clearAgreeError();
+    if (!agreeCheckbox.checked) {
+      showFieldError(agreeError, '「イベント参加の心得」と「撮影写真の利用規約」への同意が必要です。');
+      focusAndScroll(agreeCheckbox);
+      return false;
+    }
+    return true;
+  }
+
+  if (agreeCheckbox) agreeCheckbox.addEventListener('change', clearAgreeError);
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
+
+    if (!validatePhotoGroup()) {
+      return;
+    }
+
+    if (!validateAgreement()) {
+      return;
+    }
 
     if (!form.reportValidity()) {
       return;

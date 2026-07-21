@@ -172,6 +172,19 @@ h3 {
 .site-footer__link--community:hover { color: var(--color-community); }
 .site-footer__link--portrait:hover  { color: var(--color-portrait); }
 
+.site-footer__legal {
+  margin-bottom: 0.75rem;
+}
+
+.site-footer__legal-link {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.site-footer__legal-link:hover { color: var(--text); }
+
 .site-footer__copy {
   font-size: 0.72rem;
   color: var(--text-muted);
