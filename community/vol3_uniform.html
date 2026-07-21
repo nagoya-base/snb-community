@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vol.3 少人数ユニフォーム撮影交流会｜SNBコミュニティ</title>
+  <meta name="description" content="名古屋・上前津で開催する少人数ユニフォーム撮影交流会 Vol.3。参加可能日と希望ユニフォームを複数選択で回答できます。1人から開催予定。">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://nagoya-base.github.io/snb-community/community/vol3_uniform.html">
+
+  <!-- OGP -->
+  <meta property="og:title" content="Vol.3 少人数ユニフォーム撮影交流会｜SNBコミュニティ">
+  <meta property="og:description" content="名古屋・上前津で開催する少人数ユニフォーム撮影交流会 Vol.3。参加可能日と希望ユニフォームを複数選択で回答できます。1人から開催予定。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nagoya-base.github.io/snb-community/community/vol3_uniform.html">
+  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
+  <meta property="og:image:width" content="1731">
+  <meta property="og:image:height" content="909">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Vol.3 少人数ユニフォーム撮影交流会｜SNBコミュニティ">
+  <meta name="twitter:description" content="名古屋・上前津で開催する少人数ユニフォーム撮影交流会 Vol.3。参加可能日と希望ユニフォームを複数選択で回答できます。1人から開催予定。">
+  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K1TJG0S9Y"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-8K1TJG0S9Y');
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #F2EFE9;
+      --bg-card:    #FDFCF9;
+      --bg-card2:   #E8EAF6;
+      --accent:     #3949AB;
+      --accent-rgb: 57, 73, 171;
+      --accent-lt:  #7986CB;
+      --navy:       #3949AB;
+      --navy-lt:    #3949AB;
+      --text:       #1C1A17;
+      --text-muted: #6A6258;
+      --border:     #DDD8CF;
+      --limit:      #3949AB;
+      --limit-bg:   #E8EAF6;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 60px;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
+      font-size: 15px;
+      line-height: 1.8;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--navy); text-decoration: none; }
+    a:hover { color: var(--text); }
+
+    /* ── Layout ── */
+    .container { max-width: 800px; margin: 0 auto; padding: 0 1.5rem; }
+    section { padding: 5rem 0; }
+    section + section { border-top: 1px solid var(--border); }
+
+    .section-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 0.65rem;
+    }
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      margin-bottom: 2rem;
+      display: inline-block;
+      padding-bottom: 0.3rem;
+      border-bottom: 3px solid var(--accent);
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(253, 252, 249, 0.96);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-brand {
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: var(--navy);
+    }
+    .nav-brand span {
+      color: var(--accent);
+      margin-right: 0.4rem;
+    }
+    .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+    .nav-links a {
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      color: #6A6258;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--navy); }
+    .nav-cta {
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: var(--accent);
+      color: #F2EFE9;
+      padding: 0.45rem 1.1rem;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+      transition: background 0.15s;
+    }
+    .nav-cta:hover { background: #E8EAF6; color: var(--accent); }
+
+    /* hamburger */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--navy);
+      transition: all 0.2s;
+    }
+
+    /* ── Limit badge ── */
+    .limit-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--limit-bg);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      padding: 0.3rem 1rem;
+      border-radius: 2px;
+      margin-bottom: 1.75rem;
+    }
+    .hero .limit-badge {
+      background: rgba(242, 239, 233, 0.14);
+      border-color: rgba(242, 239, 233, 0.32);
+      color: #F2EFE9;
+    }
+    .limit-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--limit);
+      animation: pulse 1.6s infinite;
+    }
+    .hero .limit-dot { background: #F2EFE9; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 0;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      background: #1C1A17;
+    }
+    .hero-img-wrap {
+      width: 100%;
+      height: 62vh;
+      min-height: 380px;
+      max-height: 560px;
+      position: relative;
+    }
+    .hero-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      display: block;
+    }
+    .hero-img-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(28, 26, 23, 0.05) 0%,
+        rgba(28, 26, 23, 0.45) 58%,
+        rgba(28, 26, 23, 0.95) 100%
+      );
+    }
+    .hero-content {
+      padding: 3.5rem 0 5rem;
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 5.5vw, 2.9rem);
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      line-height: 1.3;
+      margin-bottom: 1.2rem;
+      color: #F2EFE9;
+      display: block;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .hero h1 em { font-style: normal; color: #B9C2F0; }
+    .hero-sub {
+      font-size: 0.9rem;
+      color: rgba(242, 239, 233, 0.78);
+      line-height: 2;
+      margin-bottom: 2.25rem;
+    }
+    .hero-specs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-bottom: 2.5rem;
+    }
+    .hero-spec {
+      background: rgba(242, 239, 233, 0.14);
+      border: 1px solid rgba(242, 239, 233, 0.24);
+      color: rgba(242, 239, 233, 0.92);
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 0.4rem 1rem;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+    }
+    .hero-spec.big {
+      font-size: 1rem;
+      padding: 0.5rem 1.25rem;
+      background: rgba(242, 239, 233, 0.2);
+      border-color: rgba(242, 239, 233, 0.42);
+      color: #F2EFE9;
+    }
+    .hero-btns { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-block;
+      padding: 0.85rem 1.9rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      transition: all 0.18s;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #F2EFE9;
+    }
+    .btn-primary:hover {
+      background: #E8EAF6;
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .btn-outline {
+      border: 1.5px solid rgba(242, 239, 233, 0.5);
+      color: #F2EFE9;
+    }
+    .btn-outline:hover {
+      border-color: #F2EFE9;
+      color: #F2EFE9;
+    }
+    .btn-lg { padding: 1.05rem 2.5rem; font-size: 0.98rem; }
+
+    /* ── About cards ── */
+    .about-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .about-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: 0 0 6px 6px;
+      padding: 1.6rem 1.4rem;
+    }
+    .about-icon { font-size: 1.6rem; margin-bottom: 0.6rem; }
+    .about-title { font-size: 0.95rem; font-weight: 800; color: var(--navy); margin-bottom: 0.5rem; }
+    .about-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.75; }
+
+    /* ── Target section ── */
+    .target-list {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 2rem;
+    }
+    .target-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      padding: 1rem 1.4rem;
+      font-size: 0.9rem;
+    }
+    .target-item .ti-icon { font-size: 1.15rem; flex-shrink: 0; }
+    .target-item strong { display: block; font-weight: 700; margin-bottom: 0.1rem; color: var(--navy); }
+    .target-item span { font-size: 0.81rem; color: var(--text-muted); }
+
+    /* ── 候補日カード ── */
+    .price-box {
+      margin-top: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .price-box-header {
+      background: #E8EAF6;
+      border-bottom: 1px solid var(--border);
+      padding: 1.2rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .price-box-title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .price-box-body { padding: 1.5rem 1.75rem; }
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.86rem;
+      gap: 1rem;
+    }
+    .price-row:last-child { border-bottom: none; }
+    .price-row .pr-label { color: var(--text-muted); }
+    .price-row .pr-val { font-weight: 700; text-align: right; }
+    .price-note {
+      margin-top: 1.25rem;
+      padding: 1rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 4px 4px 0;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.85;
+    }
+
+    /* ── FAQ ── */
+    .faq-list { margin-top: 2rem; display: grid; gap: 0.6rem; }
+    details {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    details[open] { border-color: var(--accent); }
+    summary {
+      padding: 1.2rem 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      user-select: none;
+      color: var(--navy);
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: '+';
+      font-size: 1.2rem;
+      font-weight: 400;
+      color: var(--accent);
+      flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    details[open] summary::after { content: '−'; }
+    .faq-body {
+      padding: 1.1rem 1.5rem 1.4rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.85;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Final CTA ── */
+    .final-cta {
+      text-align: center;
+      padding: 6rem 0;
+      background: #E8EAF6;
+    }
+    .final-cta h2 {
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
+      font-weight: 800;
+      line-height: 1.4;
+      margin-bottom: 1rem;
+      display: block;
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .final-cta h2 em { font-style: normal; color: var(--accent); }
+    .final-cta-sub {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+      line-height: 2;
+    }
+    .cta-channels {
+      display: grid;
+      gap: 1rem;
+      max-width: 440px;
+      margin: 0 auto 2rem;
+    }
+    .cta-channel {
+      display: flex;
+      align-items: center;
+      gap: 1.1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.2rem 1.5rem;
+      transition: border-color 0.15s, background 0.15s;
+      color: var(--text);
+    }
+    .cta-channel:hover {
+      border-color: var(--accent);
+      background: #E8EAF6;
+      color: var(--text);
+    }
+    .cta-channel-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .cta-channel-label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 0.15rem;
+      color: var(--navy);
+    }
+    .cta-channel-note {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* ── 申込/アンケートフォーム ── */
+    .apply-form { text-align: left; max-width: 560px; margin: 0 auto 2rem; }
+    .apply-form__honey { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .form-field { margin-top: 1.4rem; }
+    .form-field:first-of-type { margin-top: 0; }
+    .form-field label,
+    .form-field > .form-legend { display: block; font-size: 0.86rem; font-weight: 700; color: var(--navy); margin-bottom: 0.4rem; }
+    .required-mark, .optional-mark {
+      display: inline-block;
+      font-size: 0.66rem;
+      font-weight: 800;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      margin-left: 0.3rem;
+      vertical-align: middle;
+    }
+    .required-mark { background: #fde7e7; color: #b3261e; }
+    .optional-mark { background: var(--bg-card2); color: var(--text-muted); }
+    .form-field input[type="text"],
+    .form-field input[type="email"],
+    .form-field textarea {
+      width: 100%;
+      font-size: 1rem;
+      padding: 0.7rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--navy);
+      font-family: inherit;
+    }
+    .form-field input:focus,
+    .form-field textarea:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+      border-color: var(--accent);
+    }
+    .form-field textarea { resize: vertical; min-height: 4rem; }
+    .form-hint { margin-top: 0.35rem; font-size: 0.76rem; color: var(--text-muted); line-height: 1.6; }
+    .contact-guide { font-size: 0.82rem; color: var(--text-muted); line-height: 1.7; }
+    .contact-guide.is-error { color: #b3261e; font-weight: 700; }
+    .field-error { margin-top: 0.35rem; font-size: 0.78rem; color: #b3261e; font-weight: 700; line-height: 1.6; }
+    .radio-group,
+    .checkbox-group { display: flex; flex-wrap: wrap; gap: 0.5rem 1.1rem; margin-top: 0.4rem; }
+    .radio-option,
+    .checkbox-option { display: flex; align-items: center; gap: 0.4rem; font-size: 0.86rem; color: var(--text); }
+    .radio-option input,
+    .checkbox-option input { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--accent); }
+    .apply-form__submit { display: block; width: 100%; text-align: center; margin-top: 1.75rem; padding: 0.95rem; font-size: 1rem; }
+    .apply-form__submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    .form-privacy-note { margin-top: 1rem; font-size: 0.74rem; color: var(--text-muted); line-height: 1.8; }
+    .form-rules-note { margin-top: 0.6rem; font-size: 0.74rem; color: var(--text-muted); line-height: 1.8; }
+    .form-rules-note a { color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+    .form-result {
+      border-radius: 8px;
+      padding: 1.35rem 1.25rem;
+      margin: 0 auto 2rem;
+      max-width: 560px;
+      font-size: 0.88rem;
+      line-height: 1.85;
+      text-align: left;
+    }
+    .form-result--success { background: #eaf6ec; border: 1px solid #b7ddbc; color: #1e4620; }
+    .form-result--success strong { color: #1e4620; }
+    .form-result--error { background: #fdeceb; border: 1px solid #f3b8b3; color: #7a1f17; }
+    .form-result--error strong { color: #7a1f17; }
+
+    /* ── Footer ── */
+    footer {
+      background: #1C1A17;
+      color: #F2EFE9;
+      padding: 3rem 0;
+      text-align: center;
+    }
+    .footer-brand {
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+      color: rgba(242, 239, 233, 0.78);
+    }
+    .footer-note {
+      font-size: 0.78rem;
+      color: rgba(242, 239, 233, 0.62);
+      line-height: 1.9;
+      margin-bottom: 1rem;
+    }
+    .footer-link {
+      font-size: 0.78rem;
+      color: rgba(242, 239, 233, 0.62);
+      margin-bottom: 1.25rem;
+      display: block;
+    }
+    .footer-link a { color: #F2EFE9; text-decoration: underline; text-underline-offset: 2px; }
+    .footer-copy {
+      font-size: 0.72rem;
+      color: rgba(242, 239, 233, 0.42);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .nav-links.open {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #FDFCF9;
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 1.5rem;
+        gap: 1rem;
+        z-index: 99;
+      }
+      nav { position: relative; }
+      .hamburger { display: flex; }
+      .nav-cta { display: none; }
+
+      .hero-img-wrap { height: 50vw; min-height: 220px; }
+      .hero-content { padding: 2.5rem 0 4rem; }
+
+      .about-grid { grid-template-columns: 1fr; }
+      .price-row { flex-direction: column; align-items: flex-start; gap: 0.15rem; }
+      .price-row .pr-val { text-align: left; }
+
+      .final-cta { padding: 4rem 0; }
+    }
+
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav>
+  <div class="nav-brand"><span>📸</span>SNBC Vol.3 撮影交流会</div>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="#about">企画について</a></li>
+    <li><a href="#schedule">候補日・ユニフォーム</a></li>
+    <li><a href="#target">こんな人向け</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <a href="#survey" class="btn nav-cta">参加可能日を回答する</a>
+  <button class="hamburger" id="hamburger" aria-label="メニューを開く" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<main>
+
+<!-- ── Hero ── -->
+<section class="hero" id="top">
+  <div class="hero-img-wrap">
+    <picture>
+      <source srcset="../images/community/top/hero-photo-main.webp" type="image/webp">
+      <img src="../images/community/top/meta-ogp-main.jpg"
+           alt="Vol.3 少人数ユニフォーム撮影交流会 名古屋・上前津｜Studio Nagoya Base" width="1731" height="909" loading="eager"
+           fetchpriority="high">
+    </picture>
+    <div class="hero-img-overlay"></div>
+  </div>
+  <div class="container">
+    <div class="hero-content">
+      <div class="limit-badge">
+        <span class="limit-dot"></span>
+        事前アンケート実施中
+      </div>
+      <h1>
+        Vol.3 少人数ユニフォーム<br>
+        <em>撮影交流会</em>
+      </h1>
+      <p class="hero-sub">
+        野球ユニ・サカユニ・陸上ユニ・競パンなど、好きなユニフォーム姿を少人数で撮影する交流企画です。<br>
+        今回は正式申込の前に、参加できそうな日と着てみたいユニフォームを教えてください。
+      </p>
+      <div class="hero-specs">
+        <span class="hero-spec big">1人から開催</span>
+        <span class="hero-spec">名古屋・上前津</span>
+        <span class="hero-spec">14:00〜17:00予定</span>
+        <span class="hero-spec">候補日4日程から複数選択可</span>
+      </div>
+      <div class="hero-btns">
+        <a href="#survey" class="btn btn-primary btn-lg">
+          📋 参加可能日を回答する
+        </a>
+        <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg">
+          💬 参加前にDMで質問する
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── About ── -->
+<section id="about">
+  <div class="container">
+    <p class="section-label">About</p>
+    <h2>これは何のアンケートですか？</h2>
+    <p style="font-size: 0.87rem; color: var(--text-muted); margin-top: -1.25rem; margin-bottom: 0;">
+      Vol.3は、開催日とテーマを決めるための事前希望調査です。回答＝参加確定ではありません。
+    </p>
+    <div class="about-grid">
+      <div class="about-card">
+        <div class="about-icon">📋</div>
+        <div class="about-title">事前アンケートです</div>
+        <div class="about-desc">正式な参加申込ではなく、開催日・テーマ決定のための希望調査です。回答いただいた内容は参加確定を意味しません。</div>
+      </div>
+      <div class="about-card">
+        <div class="about-icon">🙋</div>
+        <div class="about-title">1人でも開催候補になります</div>
+        <div class="about-desc">参加希望が1人でもその日は開催候補とします。参加人数が少ない日は、終了時間が早まる場合があります。</div>
+      </div>
+      <div class="about-card">
+        <div class="about-icon">👕</div>
+        <div class="about-title">着衣での撮影交流です</div>
+        <div class="about-desc">競パンを含みますが、性的サービスや出会い目的の企画ではなく、ユニフォーム姿を撮影・交流する着衣撮影企画です。</div>
+      </div>
+    </div>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2rem; line-height: 1.9;">
+      これまで第1回はサッカーユニ、第2回は野球ユニで開催してきました。Vol.3では、次に開催してほしいテーマと参加できる日を、複数選択でお聞きします。「コミュニティに参加する」というよりも、1人から気軽に参加できる定期撮影企画としてご覧ください。
+    </p>
+  </div>
+</section>
+
+<!-- ── 候補日・ユニフォーム ── -->
+<section id="schedule">
+  <div class="container">
+    <p class="section-label">Schedule</p>
+    <h2>候補日・希望ユニフォーム</h2>
+    <div class="price-box">
+      <div class="price-box-header">
+        <div class="price-box-title">📸 SNBC Vol.3 少人数ユニフォーム撮影交流会</div>
+      </div>
+      <div class="price-box-body">
+        <div class="price-row">
+          <span class="pr-label">候補日</span>
+          <span class="pr-val">2026年8月8日（土）／8月11日（火・祝）／8月12日（水）／8月16日（日）</span>
+        </div>
+        <div class="price-row">
+          <span class="pr-label">時間</span>
+          <span class="pr-val">14:00〜17:00予定（少人数の日は早めに終了する場合あり）</span>
+        </div>
+        <div class="price-row">
+          <span class="pr-label">場所</span>
+          <span class="pr-val">上前津｜Studio Nagoya Base</span>
+        </div>
+        <div class="price-row">
+          <span class="pr-label">希望ユニフォーム例</span>
+          <span class="pr-val">野球ユニ・サカユニ・陸上ユニ・競パン・その他</span>
+        </div>
+      </div>
+    </div>
+    <div class="price-note">
+      日程・テーマは、いただいた回答をもとに決定します。開催が確定しましたら、あらためて特設ページとX（@baseballuni2022）でお知らせします。
+    </div>
+  </div>
+</section>
+
+<!-- ── Target ── -->
+<section id="target">
+  <div class="container">
+    <p class="section-label">For You</p>
+    <h2>こんな人におすすめ</h2>
+    <div class="target-list">
+      <div class="target-item">
+        <span class="ti-icon">👕</span>
+        <div>
+          <strong>好きなユニフォームがある</strong>
+          <span>野球ユニ・サカユニ・陸上ユニ・競パンなど。着てみたいものがあれば十分です。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">🙋</span>
+        <div>
+          <strong>1人での参加を考えている</strong>
+          <span>1人からの参加を前提にしています。知り合いがいなくても大丈夫です。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">📅</span>
+        <div>
+          <strong>候補日の中で参加できる日がある</strong>
+          <span>4日程のうち1日でも参加できそうなら、ぜひ回答してください。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">🆕</span>
+        <div>
+          <strong>SNBCを初めて知った</strong>
+          <span>初回参加・初対面でも大丈夫です。まずはアンケートだけの回答でも歓迎です。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">⚾</span>
+        <div>
+          <strong>過去のVol.1・Vol.2が気になっていた</strong>
+          <span>第1回はサッカーユニ、第2回は野球ユニで開催済み。次のテーマを一緒に決めませんか。</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<section id="faq">
+  <div class="container">
+    <p class="section-label">FAQ</p>
+    <h2>よくある質問</h2>
+    <div class="faq-list">
+      <details>
+        <summary>回答したら参加が確定しますか？</summary>
+        <div class="faq-body">
+          いいえ、今回は正式申込ではなく事前アンケートです。回答内容をもとに開催日・テーマを決定し、開催が確定した際にあらためて特設ページとXでご案内します。
+        </div>
+      </details>
+      <details>
+        <summary>参加希望者が1人だけの日はどうなりますか？</summary>
+        <div class="faq-body">
+          1人でもその日は開催候補とします。ただし参加人数が少ない日は、終了時間が早まる場合があります。
+        </div>
+      </details>
+      <details>
+        <summary>候補日は複数選んでも大丈夫ですか？</summary>
+        <div class="faq-body">
+          はい、参加できる日はすべて選んでください。希望ユニフォームも同様に複数選択できます。
+        </div>
+      </details>
+      <details>
+        <summary>「その他」を選んだユニフォームは何を書けばいいですか？</summary>
+        <div class="faq-body">
+          野球ユニ・サカユニ・陸上ユニ・競パン以外に着てみたいユニフォームがあれば、自由記入欄に具体的に書いてください。
+        </div>
+      </details>
+      <details>
+        <summary>競パンのみの回でも参加できますか？</summary>
+        <div class="faq-body">
+          今回のアンケートでは希望ユニフォームとして「競パン」も選択できます。あくまで着衣での撮影交流企画としての開催を予定しています。
+        </div>
+      </details>
+      <details>
+        <summary>参加前に質問したいことがあります</summary>
+        <div class="faq-body">
+          X（@baseballuni2022）のDMからお気軽にご連絡ください。短い質問だけでも歓迎です。
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ── Final CTA / Survey ── -->
+<section id="survey" class="final-cta">
+  <div class="container">
+    <div class="limit-badge" style="margin-bottom: 1.5rem;">
+      <span class="limit-dot"></span>
+      事前アンケート実施中
+    </div>
+    <h2>
+      参加できそうな日を、<br>
+      <em>教えてください。</em>
+    </h2>
+    <p class="final-cta-sub">
+      参加可能日と希望ユニフォームを、下のアンケートフォームからお送りください。
+    </p>
+
+    <form id="vol3-survey-form" class="apply-form" novalidate>
+      <input type="hidden" name="_subject" value="【SNBC Vol.3 少人数ユニフォーム撮影交流会】事前アンケート">
+      <input type="hidden" name="_template" value="table">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="text" name="_honey" class="apply-form__honey" tabindex="-1" autocomplete="off">
+
+      <fieldset class="form-field" style="border: none; padding: 0;">
+        <legend class="form-legend">参加可能日 <span class="required-mark">必須</span></legend>
+        <div class="checkbox-group" id="sf-dates-group" role="group" aria-describedby="sf-dates-hint sf-dates-error">
+          <label class="checkbox-option">
+            <input type="checkbox" name="参加可能日" value="8月8日（土）14:00〜17:00">
+            <span>8月8日（土）14:00〜17:00</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="参加可能日" value="8月11日（火・祝）14:00〜17:00">
+            <span>8月11日（火・祝）14:00〜17:00</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="参加可能日" value="8月12日（水）14:00〜17:00">
+            <span>8月12日（水）14:00〜17:00</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="参加可能日" value="8月16日（日）14:00〜17:00">
+            <span>8月16日（日）14:00〜17:00</span>
+          </label>
+        </div>
+        <p class="form-hint" id="sf-dates-hint">参加できる日をすべて選んでください。参加人数が少ない日は早めに終了する場合があります。</p>
+        <p class="field-error" id="sf-dates-error" role="alert" hidden></p>
+      </fieldset>
+
+      <fieldset class="form-field" style="border: none; padding: 0;">
+        <legend class="form-legend">希望ユニフォーム <span class="required-mark">必須</span></legend>
+        <div class="checkbox-group" id="sf-uniform-group" role="group" aria-describedby="sf-uniform-error">
+          <label class="checkbox-option">
+            <input type="checkbox" name="希望ユニフォーム" value="野球ユニフォーム">
+            <span>野球ユニフォーム</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="希望ユニフォーム" value="サッカーユニフォーム">
+            <span>サッカーユニフォーム</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="希望ユニフォーム" value="陸上ユニフォーム">
+            <span>陸上ユニフォーム</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" name="希望ユニフォーム" value="競パン">
+            <span>競パン</span>
+          </label>
+          <label class="checkbox-option">
+            <input type="checkbox" id="sf-uniform-other" name="希望ユニフォーム" value="その他">
+            <span>その他</span>
+          </label>
+        </div>
+        <p class="field-error" id="sf-uniform-error" role="alert" hidden></p>
+      </fieldset>
+
+      <div class="form-field" id="sf-uniform-other-wrap" hidden>
+        <label for="sf-uniform-other-text">「その他」の内容</label>
+        <input type="text" id="sf-uniform-other-text" name="その他のユニフォーム内容" placeholder="例：柔道着">
+      </div>
+
+      <div class="form-field">
+        <p class="contact-guide" id="sf-contact-guide">メールアドレスまたはXアカウントのどちらかを入力してください。</p>
+      </div>
+
+      <div class="form-field">
+        <label for="sf-email">メールアドレス <span class="optional-mark">任意</span></label>
+        <input type="email" id="sf-email" name="メールアドレス" autocomplete="email" aria-describedby="sf-email-hint sf-email-error">
+        <p class="form-hint" id="sf-email-hint">回答内容についてのご連絡に使用します。</p>
+        <p class="field-error" id="sf-email-error" role="alert" hidden></p>
+      </div>
+
+      <div class="form-field">
+        <label for="sf-x">Xアカウント <span class="optional-mark">任意</span></label>
+        <input type="text" id="sf-x" name="Xアカウント" placeholder="@baseballuni2022" autocomplete="off" aria-describedby="sf-x-error">
+        <p class="field-error" id="sf-x-error" role="alert" hidden></p>
+      </div>
+
+      <div class="form-field">
+        <label for="sf-method-email">希望する連絡方法 <span class="required-mark">必須</span></label>
+        <div class="radio-group" id="sf-method-group">
+          <label class="radio-option">
+            <input type="radio" id="sf-method-email" name="希望する連絡方法" value="メール" required>
+            <span>メール</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" id="sf-method-x" name="希望する連絡方法" value="XのDM" required>
+            <span>XのDM</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" id="sf-method-either" name="希望する連絡方法" value="どちらでもよい" required>
+            <span>どちらでもよい</span>
+          </label>
+        </div>
+        <p class="field-error" id="sf-method-error" role="alert" hidden></p>
+      </div>
+
+      <div class="form-field">
+        <label for="sf-name">名前またはハンドルネーム <span class="required-mark">必須</span></label>
+        <input type="text" id="sf-name" name="名前またはハンドルネーム" required autocomplete="name">
+      </div>
+
+      <div class="form-field">
+        <label for="sf-age">年代 <span class="optional-mark">任意</span></label>
+        <input type="text" id="sf-age" name="年代" placeholder="例：30代">
+      </div>
+
+      <fieldset class="form-field" style="border: none; padding: 0;">
+        <legend class="form-legend">参加経験 <span class="required-mark">必須</span></legend>
+        <div class="radio-group" id="sf-experience-group" role="group" aria-describedby="sf-experience-error">
+          <label class="radio-option">
+            <input type="radio" name="参加経験" value="初参加" required>
+            <span>初参加</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="参加経験" value="過去に参加したことがある" required>
+            <span>過去に参加したことがある</span>
+          </label>
+        </div>
+        <p class="field-error" id="sf-experience-error" role="alert" hidden></p>
+      </fieldset>
+
+      <div class="form-field">
+        <label id="sf-solo-label">1人開催でも参加したい <span class="optional-mark">任意</span></label>
+        <div class="radio-group" role="group" aria-labelledby="sf-solo-label">
+          <label class="radio-option">
+            <input type="radio" name="1人開催でも参加したい" value="はい">
+            <span>はい</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="1人開催でも参加したい" value="複数人集まる場合のみ">
+            <span>複数人集まる場合のみ</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label id="sf-face-label">顔出しについて <span class="optional-mark">任意</span></label>
+        <div class="radio-group" role="group" aria-labelledby="sf-face-label">
+          <label class="radio-option">
+            <input type="radio" name="顔出しについて" value="顔出し可">
+            <span>顔出し可</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="顔出しについて" value="顔出し不可">
+            <span>顔出し不可</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="顔出しについて" value="相談したい">
+            <span>相談したい</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label id="sf-sns-label">SNS掲載について <span class="optional-mark">任意</span></label>
+        <div class="radio-group" role="group" aria-labelledby="sf-sns-label">
+          <label class="radio-option">
+            <input type="radio" name="SNS掲載について" value="掲載可">
+            <span>掲載可</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="SNS掲載について" value="掲載不可">
+            <span>掲載不可</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="SNS掲載について" value="写真確認後に判断">
+            <span>写真確認後に判断</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="sf-other">その他の希望・質問 <span class="optional-mark">任意</span></label>
+        <textarea id="sf-other" name="その他の希望・質問" rows="3" placeholder="例：着替えの場所について教えてほしいです。"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary apply-form__submit" id="sf-submit-btn">回答を送信する</button>
+
+      <p class="form-privacy-note">入力された情報は、開催日・企画内容の検討および必要な連絡のためにのみ使用します。</p>
+      <p class="form-rules-note">
+        参加が確定した回については、あらためて「<a href="../legal/community-rules.html" target="_blank" rel="noopener noreferrer">イベント参加の心得</a>」と「<a href="../legal/photo-terms.html" target="_blank" rel="noopener noreferrer">撮影写真の利用規約</a>」への同意をお願いします。
+      </p>
+    </form>
+
+    <div class="form-result form-result--success" id="sf-success" hidden>
+      <p><strong>ご回答ありがとうございます。</strong></p>
+      <p>いただいた内容は、開催日・テーマの検討に使用します。参加確定のご案内ではありませんので、開催が確定しましたら特設ページとXであらためてお知らせします。</p>
+      <p>ご質問がある場合は、XのDMからお問い合わせください。</p>
+    </div>
+
+    <div class="form-result form-result--error" id="sf-error" hidden>
+      <p><strong>送信中にエラーが発生しました。</strong></p>
+      <p>お手数ですが、XのDMから直接ご連絡ください。</p>
+    </div>
+
+    <div class="cta-channels">
+      <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="cta-channel">
+        <span class="cta-channel-icon">💬</span>
+        <span>
+          <span class="cta-channel-label">参加前にDMで質問する</span>
+          <span class="cta-channel-note">X（旧Twitter）@baseballuni2022／短い質問だけでもOKです。</span>
+        </span>
+      </a>
+      <a href="../community/" class="cta-channel">
+        <span class="cta-channel-icon">🤝</span>
+        <span>
+          <span class="cta-channel-label">SNBCコミュニティページを見る</span>
+          <span class="cta-channel-note">他のイベント情報もこちら。</span>
+        </span>
+      </a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="container">
+    <div class="footer-brand">SNB Community｜名古屋・上前津</div>
+    <p class="footer-note">
+      名古屋・上前津で、好きなものをきっかけに集まれる小さな場を作っています。<br>
+      ユニフォーム・競パン・スーツ・撮影・交流。SNBコミュニティ（SNBC）不定期開催。
+    </p>
+    <span class="footer-link">
+      SNBコミュニティの詳細は <a href="../">こちら</a>／<a href="../legal/">規約・参加ルール</a>
+    </span>
+    <p class="footer-copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
+  </div>
+</footer>
+
+<script>
+  var hamburger = document.getElementById('hamburger');
+  var navLinks = document.getElementById('nav-links');
+  hamburger.addEventListener('click', function() {
+    var isOpen = navLinks.classList.toggle('open');
+    hamburger.setAttribute('aria-expanded', isOpen);
+  });
+  navLinks.querySelectorAll('a').forEach(function(a) {
+    a.addEventListener('click', function() {
+      navLinks.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', 'false');
+    });
+  });
+</script>
+
+<!-- ── アンケートフォーム制御 ── -->
+<script>
+(function () {
+  'use strict';
+
+  var FORM_ENDPOINT = 'https://formsubmit.co/ajax/bbuni.ngo@gmail.com';
+
+  var form = document.getElementById('vol3-survey-form');
+  if (!form) return;
+
+  var submitBtn = document.getElementById('sf-submit-btn');
+  var successBox = document.getElementById('sf-success');
+  var errorBox = document.getElementById('sf-error');
+
+  var dateChecks = form.querySelectorAll('input[name="参加可能日"]');
+  var dateError = document.getElementById('sf-dates-error');
+
+  var uniformChecks = form.querySelectorAll('input[name="希望ユニフォーム"]');
+  var uniformError = document.getElementById('sf-uniform-error');
+  var uniformOtherCheckbox = document.getElementById('sf-uniform-other');
+  var uniformOtherWrap = document.getElementById('sf-uniform-other-wrap');
+
+  var emailInput = document.getElementById('sf-email');
+  var xInput = document.getElementById('sf-x');
+  var contactGuide = document.getElementById('sf-contact-guide');
+  var emailError = document.getElementById('sf-email-error');
+  var xError = document.getElementById('sf-x-error');
+  var methodRadios = form.querySelectorAll('input[name="希望する連絡方法"]');
+
+  var experienceError = document.getElementById('sf-experience-error');
+
+  function setSubmitting(isSubmitting) {
+    if (!submitBtn) return;
+    submitBtn.disabled = isSubmitting;
+    submitBtn.textContent = isSubmitting ? '送信中…' : '回答を送信する';
+  }
+
+  function showFieldError(el, message) {
+    if (!el) return;
+    el.textContent = message;
+    el.hidden = false;
+  }
+
+  function focusAndScroll(el) {
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function toggleUniformOther() {
+    var show = uniformOtherCheckbox.checked;
+    uniformOtherWrap.hidden = !show;
+  }
+  uniformOtherCheckbox.addEventListener('change', toggleUniformOther);
+
+  function clearDatesError() {
+    if (dateError) { dateError.hidden = true; dateError.textContent = ''; }
+  }
+  function validateDates() {
+    clearDatesError();
+    var anyChecked = Array.prototype.some.call(dateChecks, function (c) { return c.checked; });
+    if (!anyChecked) {
+      showFieldError(dateError, '参加可能日を1つ以上選択してください。');
+      focusAndScroll(dateChecks[0]);
+      return false;
+    }
+    return true;
+  }
+  dateChecks.forEach(function (c) { c.addEventListener('change', clearDatesError); });
+
+  function clearUniformError() {
+    if (uniformError) { uniformError.hidden = true; uniformError.textContent = ''; }
+  }
+  function validateUniforms() {
+    clearUniformError();
+    var anyChecked = Array.prototype.some.call(uniformChecks, function (c) { return c.checked; });
+    if (!anyChecked) {
+      showFieldError(uniformError, '希望ユニフォームを1つ以上選択してください。');
+      focusAndScroll(uniformChecks[0]);
+      return false;
+    }
+    return true;
+  }
+  uniformChecks.forEach(function (c) { c.addEventListener('change', clearUniformError); });
+
+  function clearContactErrors() {
+    if (contactGuide) contactGuide.classList.remove('is-error');
+    if (emailError) { emailError.hidden = true; emailError.textContent = ''; }
+    if (xError) { xError.hidden = true; xError.textContent = ''; }
+  }
+
+  function getCheckedMethod() {
+    var checked = form.querySelector('input[name="希望する連絡方法"]:checked');
+    return checked ? checked.value : '';
+  }
+
+  function validateContact() {
+    clearContactErrors();
+
+    var emailVal = emailInput.value.trim();
+    var xVal = xInput.value.trim();
+    var methodVal = getCheckedMethod();
+
+    if (!emailVal && !xVal) {
+      if (contactGuide) contactGuide.classList.add('is-error');
+      focusAndScroll(emailInput);
+      return false;
+    }
+    if (methodVal === 'XのDM' && !xVal) {
+      showFieldError(xError, 'XのDMを選択した場合は、Xアカウントを入力してください。');
+      focusAndScroll(xInput);
+      return false;
+    }
+    if (methodVal === 'メール' && !emailVal) {
+      showFieldError(emailError, 'メールを選択した場合は、メールアドレスを入力してください。');
+      focusAndScroll(emailInput);
+      return false;
+    }
+    return true;
+  }
+
+  emailInput.addEventListener('input', clearContactErrors);
+  xInput.addEventListener('input', clearContactErrors);
+  methodRadios.forEach(function (radio) {
+    radio.addEventListener('change', clearContactErrors);
+  });
+
+  function clearExperienceError() {
+    if (experienceError) { experienceError.hidden = true; experienceError.textContent = ''; }
+  }
+  function validateExperience() {
+    clearExperienceError();
+    var checked = form.querySelector('input[name="参加経験"]:checked');
+    if (!checked) {
+      showFieldError(experienceError, '参加経験を選択してください。');
+      focusAndScroll(form.querySelector('input[name="参加経験"]'));
+      return false;
+    }
+    return true;
+  }
+  form.querySelectorAll('input[name="参加経験"]').forEach(function (radio) {
+    radio.addEventListener('change', clearExperienceError);
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    if (!validateDates()) return;
+    if (!validateUniforms()) return;
+
+    if (!form.reportValidity()) {
+      return;
+    }
+
+    if (!validateContact()) return;
+    if (!validateExperience()) return;
+
+    setSubmitting(true);
+
+    var formData = new FormData(form);
+
+    fetch(FORM_ENDPOINT, {
+      method: 'POST',
+      body: formData,
+      headers: { Accept: 'application/json' }
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error('送信に失敗しました');
+        return response.json();
+      })
+      .then(function () {
+        form.hidden = true;
+        if (successBox) successBox.hidden = false;
+        if (errorBox) errorBox.hidden = true;
+        successBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      })
+      .catch(function () {
+        setSubmitting(false);
+        if (errorBox) {
+          errorBox.hidden = false;
+          errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+  });
+})();
+</script>
+</body>
+</html>
