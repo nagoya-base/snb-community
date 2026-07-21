@@ -44,4 +44,21 @@
     <priority>0.4</priority>
   </url>
 
+  <!-- 規約・参加ルール -->
+  <url>
+    <loc>https://nagoya-base.github.io/snb-community/legal/</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://nagoya-base.github.io/snb-community/legal/community-rules.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://nagoya-base.github.io/snb-community/legal/photo-terms.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
 </urlset>

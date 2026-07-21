@@ -1,0 +1,328 @@
+/* ──────────────────────────────────────────────
+   legal/ 共通スタイルシート
+   common.css を先に読み込むこと。
+   規約案内ページおよび各規約本文ページで共有する。
+   ────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --accent:    #1D3557;
+  --accent-lt: #457B9D;
+}
+
+/* ── Hero（案内ページ・本文ページ共通の見出しブロック） ── */
+.legal-hero,
+.legal-doc-header {
+  padding: 3rem 0 2rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+
+.legal-hero h1,
+.legal-doc-header h1 {
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  margin-top: 0.5rem;
+}
+
+.legal-doc-sub {
+  margin-top: 0.6rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.legal-doc-meta {
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.legal-hero-lead {
+  margin-top: 1rem;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  line-height: 1.95;
+  max-width: 640px;
+}
+
+/* ── 規約案内ページ：リンクカード ── */
+.legal-cards {
+  display: grid;
+  gap: 1.1rem;
+  margin-bottom: 2.5rem;
+}
+
+.legal-card {
+  display: block;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 1.6rem 1.75rem;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform 0.16s, box-shadow 0.16s;
+}
+
+.legal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.07);
+  color: var(--text);
+}
+
+.legal-card-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.legal-card-desc {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.85;
+}
+
+.legal-card-arrow {
+  margin-top: 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+/* ── 規約案内ページ：PDF版の案内 ── */
+.legal-pdf-note {
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.legal-pdf-note p {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+
+.legal-pdf-note a {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── 規約本文ページ：導入文 ── */
+.legal-doc-intro {
+  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: 2;
+  margin-bottom: 2.25rem;
+}
+
+/* ── 規約本文ページ：目次 ── */
+.legal-toc {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 3rem;
+}
+
+.legal-toc-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.legal-toc ol {
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+  counter-reset: none;
+}
+
+.legal-toc a {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.6;
+  text-decoration: none;
+}
+
+.legal-toc a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── 規約本文ページ：本文セクション ── */
+.legal-body {
+  max-width: 100%;
+}
+
+.legal-section {
+  padding-top: 2.25rem;
+  margin-top: 2.25rem;
+  border-top: 1px solid var(--divider);
+}
+
+.legal-section:first-child {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+
+.legal-section h2 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  margin-bottom: 1.1rem;
+  scroll-margin-top: 72px;
+}
+
+.legal-section p {
+  font-size: 1rem;
+  line-height: 2;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+.legal-section p:last-child {
+  margin-bottom: 0;
+}
+
+.legal-list {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.legal-list:last-child { margin-bottom: 0; }
+
+.legal-list > li {
+  font-size: 1rem;
+  line-height: 2;
+  color: var(--text);
+}
+
+.legal-sublist {
+  list-style: none;
+  padding-left: 1.25rem;
+  margin-top: 0.6rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.legal-sublist > li {
+  font-size: 1rem;
+  line-height: 1.9;
+  color: var(--text);
+  padding-left: 1.1rem;
+  position: relative;
+}
+
+.legal-sublist > li::before {
+  content: '–';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.legal-note {
+  font-size: 0.85rem;
+  line-height: 1.9;
+  color: var(--text-muted);
+  background: var(--bg-tint);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+}
+
+/* ── 規約本文ページ：ページ下部ナビゲーション ── */
+.legal-nav-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 3rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.legal-nav-footer a {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legal-menu-cta {
+  margin: 2.5rem 0 1rem;
+  text-align: center;
+}
+
+.btn {
+  display: inline-block;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 0.85rem 1.9rem;
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  border: 2px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn-primary:hover {
+  background: var(--accent-lt);
+  border-color: var(--accent-lt);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 480px) {
+  .legal-hero, .legal-doc-header { padding: 2.25rem 0 1.5rem; }
+  .legal-card { padding: 1.35rem 1.4rem; }
+  .legal-toc { padding: 1.25rem 1.4rem; }
+  .legal-nav-footer { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+}
+
+/* ── 印刷CSS：本文のみを読みやすく出力する ── */
+@media print {
+  .site-nav,
+  .site-footer,
+  .legal-toc,
+  .legal-nav-footer,
+  .legal-menu-cta,
+  .legal-pdf-note {
+    display: none;
+  }
+  body { background: #fff; color: #000; }
+  .legal-section {
+    border-top: none;
+    break-inside: avoid;
+  }
+  a { color: #000; text-decoration: underline; }
+}
