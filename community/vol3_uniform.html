@@ -650,7 +650,7 @@
         今回は正式申込の前に、参加できそうな日と着てみたいユニフォームを教えてください。
       </p>
       <div class="hero-specs">
-        <span class="hero-spec big">1人から開催</span>
+        <span class="hero-spec big">最少催行1名</span>
         <span class="hero-spec">名古屋・上前津</span>
         <span class="hero-spec">14:00〜17:00予定</span>
         <span class="hero-spec">候補日4日程から複数選択可</span>
@@ -683,8 +683,8 @@
       </div>
       <div class="about-card">
         <div class="about-icon">🙋</div>
-        <div class="about-title">1人でも開催候補になります</div>
-        <div class="about-desc">参加希望が1人でもその日は開催候補とします。参加人数が少ない日は、終了時間が早まる場合があります。</div>
+        <div class="about-title">最少催行1名です</div>
+        <div class="about-desc">最少催行1名です。参加希望が1名でもその日は開催します。参加人数が少ない日は、終了時間が早まる場合があります。</div>
       </div>
       <div class="about-card">
         <div class="about-icon">👕</div>
@@ -715,6 +715,10 @@
         <div class="price-row">
           <span class="pr-label">時間</span>
           <span class="pr-val">14:00〜17:00予定（少人数の日は早めに終了する場合あり）</span>
+        </div>
+        <div class="price-row">
+          <span class="pr-label">最少催行</span>
+          <span class="pr-val">1名（1名でも開催します）</span>
         </div>
         <div class="price-row">
           <span class="pr-label">場所</span>
@@ -749,7 +753,7 @@
         <span class="ti-icon">🙋</span>
         <div>
           <strong>1人での参加を考えている</strong>
-          <span>1人からの参加を前提にしています。知り合いがいなくても大丈夫です。</span>
+          <span>最少催行1名。1人からの参加を前提にしています。知り合いがいなくても大丈夫です。</span>
         </div>
       </div>
       <div class="target-item">
@@ -792,7 +796,7 @@
       <details>
         <summary>参加希望者が1人だけの日はどうなりますか？</summary>
         <div class="faq-body">
-          1人でもその日は開催候補とします。ただし参加人数が少ない日は、終了時間が早まる場合があります。
+          最少催行1名です。参加希望が1名でもその日は開催します。ただし参加人数が少ない日は、終了時間が早まる場合があります。
         </div>
       </details>
       <details>
@@ -896,8 +900,9 @@
       </fieldset>
 
       <div class="form-field" id="sf-uniform-other-wrap" hidden>
-        <label for="sf-uniform-other-text">「その他」の内容</label>
-        <input type="text" id="sf-uniform-other-text" name="その他のユニフォーム内容" placeholder="例：柔道着">
+        <label for="sf-uniform-other-text">「その他」の内容 <span class="required-mark">必須</span></label>
+        <input type="text" id="sf-uniform-other-text" name="その他のユニフォーム内容" placeholder="例：柔道着" disabled aria-describedby="sf-uniform-other-error">
+        <p class="field-error" id="sf-uniform-other-error" role="alert" hidden></p>
       </div>
 
       <div class="form-field">
@@ -1020,7 +1025,7 @@
 
       <p class="form-privacy-note">入力された情報は、開催日・企画内容の検討および必要な連絡のためにのみ使用します。</p>
       <p class="form-rules-note">
-        参加が確定した回については、あらためて「<a href="../legal/community-rules.html" target="_blank" rel="noopener noreferrer">イベント参加の心得</a>」と「<a href="../legal/photo-terms.html" target="_blank" rel="noopener noreferrer">撮影写真の利用規約</a>」への同意をお願いします。
+        参加が確定した回については、あらためて「<a href="../legal/" target="_blank" rel="noopener noreferrer">SNBコミュニティ 共通参加規約</a>」（イベント参加の心得・撮影写真の利用規約を含みます）への同意をお願いします。
       </p>
     </form>
 
@@ -1107,6 +1112,8 @@
   var uniformError = document.getElementById('sf-uniform-error');
   var uniformOtherCheckbox = document.getElementById('sf-uniform-other');
   var uniformOtherWrap = document.getElementById('sf-uniform-other-wrap');
+  var uniformOtherText = document.getElementById('sf-uniform-other-text');
+  var uniformOtherError = document.getElementById('sf-uniform-other-error');
 
   var emailInput = document.getElementById('sf-email');
   var xInput = document.getElementById('sf-x');
@@ -1135,11 +1142,31 @@
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
+  function clearUniformOtherError() {
+    if (uniformOtherError) { uniformOtherError.hidden = true; uniformOtherError.textContent = ''; }
+  }
+
   function toggleUniformOther() {
     var show = uniformOtherCheckbox.checked;
     uniformOtherWrap.hidden = !show;
+    uniformOtherText.disabled = !show;
+    if (!show) {
+      uniformOtherText.value = '';
+      clearUniformOtherError();
+    }
   }
   uniformOtherCheckbox.addEventListener('change', toggleUniformOther);
+  uniformOtherText.addEventListener('input', clearUniformOtherError);
+
+  function validateUniformOther() {
+    clearUniformOtherError();
+    if (uniformOtherCheckbox.checked && !uniformOtherText.value.trim()) {
+      showFieldError(uniformOtherError, '「その他」を選択した場合は、内容を入力してください。');
+      focusAndScroll(uniformOtherText);
+      return false;
+    }
+    return true;
+  }
 
   function clearDatesError() {
     if (dateError) { dateError.hidden = true; dateError.textContent = ''; }
@@ -1235,6 +1262,7 @@
 
     if (!validateDates()) return;
     if (!validateUniforms()) return;
+    if (!validateUniformOther()) return;
 
     if (!form.reportValidity()) {
       return;
