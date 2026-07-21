@@ -302,9 +302,39 @@ h1 {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 1.1rem 1.25rem;
+  padding: 0;
 }
-.faq-q { font-weight: 800; color: var(--navy); margin-bottom: 0.5rem; font-size: 0.96rem; }
+.faq-item summary.faq-q {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 0;
+  font-weight: 800;
+  color: var(--navy);
+  font-size: 0.96rem;
+  cursor: pointer;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.faq-item summary.faq-q::-webkit-details-marker { display: none; }
+.faq-item summary.faq-q:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; border-radius: 6px; }
+.faq-q-text { flex: 1 1 auto; }
+.faq-item summary.faq-q::after {
+  content: '＋';
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+.faq-item[open] summary.faq-q::after { content: '－'; }
+.faq-a-wrap { padding: 0 1.25rem 1.1rem; }
 .faq-a { font-size: 0.88rem; color: var(--text-muted); line-height: 1.85; }
 .faq-a + .faq-a { margin-top: 0.5rem; }
 .faq-list-inner { margin: 0.4rem 0 0.6rem 1.1rem; font-size: 0.88rem; color: var(--text-muted); line-height: 1.7; }
@@ -448,6 +478,7 @@ h1 {
 }
 .form-field textarea { resize: vertical; min-height: 4.5rem; }
 .form-hint { margin-top: 0.4rem; font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+.form-hint--rule { margin-top: 0.25rem; font-weight: 700; color: var(--navy); }
 .form-error { margin-top: 0.5rem; font-size: 0.8rem; color: #b3261e; font-weight: 700; }
 
 .radio-group, .checkbox-group {
