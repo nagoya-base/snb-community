@@ -625,6 +625,12 @@
     }
     .form-field textarea { resize: vertical; min-height: 4rem; }
     .form-hint { margin-top: 0.35rem; font-size: 0.76rem; color: var(--text-muted); line-height: 1.6; }
+    .contact-guide { font-size: 0.82rem; color: var(--text-muted); line-height: 1.7; }
+    .contact-guide.is-error { color: #b3261e; font-weight: 700; }
+    .field-error { margin-top: 0.35rem; font-size: 0.78rem; color: #b3261e; font-weight: 700; line-height: 1.6; }
+    .radio-group { display: flex; flex-wrap: wrap; gap: 0.5rem 1.1rem; margin-top: 0.4rem; }
+    .radio-option { display: flex; align-items: center; gap: 0.4rem; font-size: 0.86rem; color: var(--text); }
+    .radio-option input { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--accent); }
     .checkbox-option--agree {
       display: flex;
       align-items: flex-start;
@@ -1106,14 +1112,39 @@
         </div>
 
         <div class="form-field">
-          <label for="af-email">メールアドレス <span class="required-mark">必須</span></label>
-          <input type="email" id="af-email" name="メールアドレス" required autocomplete="email">
-          <p class="form-hint">参加可否のご連絡に使用します。</p>
+          <p class="contact-guide" id="af-contact-guide">メールアドレスまたはXアカウントのどちらかを入力してください。</p>
+        </div>
+
+        <div class="form-field">
+          <label for="af-email">メールアドレス <span class="optional-mark">任意</span></label>
+          <input type="email" id="af-email" name="メールアドレス" autocomplete="email" aria-describedby="af-email-hint af-email-error">
+          <p class="form-hint" id="af-email-hint">参加可否のご連絡に使用します。</p>
+          <p class="field-error" id="af-email-error" role="alert" hidden></p>
         </div>
 
         <div class="form-field">
           <label for="af-x">Xアカウント <span class="optional-mark">任意</span></label>
-          <input type="text" id="af-x" name="Xアカウント" placeholder="@baseballuni2022" autocomplete="off">
+          <input type="text" id="af-x" name="Xアカウント" placeholder="@baseballuni2022" autocomplete="off" aria-describedby="af-x-error">
+          <p class="field-error" id="af-x-error" role="alert" hidden></p>
+        </div>
+
+        <div class="form-field">
+          <label for="af-method-email">希望する連絡方法 <span class="required-mark">必須</span></label>
+          <div class="radio-group" id="af-method-group">
+            <label class="radio-option">
+              <input type="radio" id="af-method-email" name="希望する連絡方法" value="メール" required>
+              <span>メール</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" id="af-method-x" name="希望する連絡方法" value="XのDM" required>
+              <span>XのDM</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" id="af-method-either" name="希望する連絡方法" value="どちらでもよい" required>
+              <span>どちらでもよい</span>
+            </label>
+          </div>
+          <p class="field-error" id="af-method-error" role="alert" hidden></p>
         </div>
 
         <div class="form-field">
@@ -1235,16 +1266,81 @@
   var successBox = document.getElementById('af-success');
   var errorBox = document.getElementById('af-error');
 
+  var emailInput = document.getElementById('af-email');
+  var xInput = document.getElementById('af-x');
+  var contactGuide = document.getElementById('af-contact-guide');
+  var emailError = document.getElementById('af-email-error');
+  var xError = document.getElementById('af-x-error');
+  var methodRadios = form.querySelectorAll('input[name="希望する連絡方法"]');
+
   function setSubmitting(isSubmitting) {
     if (!submitBtn) return;
     submitBtn.disabled = isSubmitting;
     submitBtn.textContent = isSubmitting ? '送信中…' : 'このイベントに申し込む';
   }
 
+  function showFieldError(el, message) {
+    if (!el) return;
+    el.textContent = message;
+    el.hidden = false;
+  }
+
+  function clearContactErrors() {
+    if (contactGuide) contactGuide.classList.remove('is-error');
+    if (emailError) { emailError.hidden = true; emailError.textContent = ''; }
+    if (xError) { xError.hidden = true; xError.textContent = ''; }
+  }
+
+  function focusAndScroll(el) {
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function getCheckedMethod() {
+    var checked = form.querySelector('input[name="希望する連絡方法"]:checked');
+    return checked ? checked.value : '';
+  }
+
+  function validateContact() {
+    clearContactErrors();
+
+    var emailVal = emailInput.value.trim();
+    var xVal = xInput.value.trim();
+    var methodVal = getCheckedMethod();
+
+    if (!emailVal && !xVal) {
+      if (contactGuide) contactGuide.classList.add('is-error');
+      focusAndScroll(emailInput);
+      return false;
+    }
+    if (methodVal === 'XのDM' && !xVal) {
+      showFieldError(xError, 'XのDMを選択した場合は、Xアカウントを入力してください。');
+      focusAndScroll(xInput);
+      return false;
+    }
+    if (methodVal === 'メール' && !emailVal) {
+      showFieldError(emailError, 'メールを選択した場合は、メールアドレスを入力してください。');
+      focusAndScroll(emailInput);
+      return false;
+    }
+    return true;
+  }
+
+  emailInput.addEventListener('input', clearContactErrors);
+  xInput.addEventListener('input', clearContactErrors);
+  methodRadios.forEach(function (radio) {
+    radio.addEventListener('change', clearContactErrors);
+  });
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
 
     if (!form.reportValidity()) {
+      return;
+    }
+
+    if (!validateContact()) {
       return;
     }
 
