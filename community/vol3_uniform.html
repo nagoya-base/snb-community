@@ -198,10 +198,12 @@
     }
     .hero-img-wrap {
       width: 100%;
+      /* max-heightで高さを制限すると、幅いっぱいにcontain表示した画像が
+         縮小されて左右に大きな余白ができてしまうため、上限は設けず
+         アスペクト比どおりに全幅表示する（下限のみmin-heightで確保）。 */
       aspect-ratio: 1672 / 941;
       height: auto;
       min-height: 220px;
-      max-height: 560px;
       position: relative;
       background: #001f3e; /* 画像左端の色に合わせ、レターボックス部分の継ぎ目を目立たなくする */
     }
