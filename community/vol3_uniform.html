@@ -390,6 +390,17 @@
       line-height: 1.85;
     }
 
+    /* ── 候補日セクション末尾のCTA ── */
+    .schedule-cta {
+      margin-top: 2rem;
+      text-align: center;
+    }
+    .schedule-cta-note {
+      margin-top: 0.75rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
     /* ── FAQ ── */
     .faq-list { margin-top: 2rem; display: grid; gap: 0.6rem; }
     details {
@@ -628,6 +639,7 @@
   <ul class="nav-links" id="nav-links">
     <li><a href="#about">企画について</a></li>
     <li><a href="#schedule">候補日・ユニフォーム</a></li>
+    <li><a href="#survey">アンケートに回答</a></li>
     <li><a href="#target">こんな人向け</a></li>
     <li><a href="#faq">FAQ</a></li>
   </ul>
@@ -753,96 +765,9 @@
     <div class="price-note">
       日程・テーマは、いただいた回答をもとに決定します。開催が確定しましたら、あらためて特設ページとX（@baseballuni2022）でお知らせします。
     </div>
-  </div>
-</section>
-
-<!-- ── Target ── -->
-<section id="target">
-  <div class="container">
-    <p class="section-label">For You</p>
-    <h2>こんな人におすすめ</h2>
-    <div class="target-list">
-      <div class="target-item">
-        <span class="ti-icon">👕</span>
-        <div>
-          <strong>好きなユニフォームがある</strong>
-          <span>野球ユニ・サカユニ・陸上ユニ・競パンなど。着てみたいものがあれば十分です。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">🙋</span>
-        <div>
-          <strong>1人での参加を考えている</strong>
-          <span>最少催行1名。1人からの参加を前提にしています。知り合いがいなくても大丈夫です。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">📅</span>
-        <div>
-          <strong>候補日の中で参加できる日がある</strong>
-          <span>4日程のうち1日でも参加できそうなら、ぜひ回答してください。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">🆕</span>
-        <div>
-          <strong>SNBCを初めて知った</strong>
-          <span>初回参加・初対面でも大丈夫です。まずはアンケートだけの回答でも歓迎です。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">⚾</span>
-        <div>
-          <strong>Vol.1や今週末のVol.2が気になっていた</strong>
-          <span>第1回はサッカーユニで開催、第2回は野球ユニで今週末7/25に開催予定。次のテーマを一緒に決めませんか。</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── FAQ ── -->
-<section id="faq">
-  <div class="container">
-    <p class="section-label">FAQ</p>
-    <h2>よくある質問</h2>
-    <div class="faq-list">
-      <details>
-        <summary>回答したら参加が確定しますか？</summary>
-        <div class="faq-body">
-          いいえ、今回は正式申込ではなく事前アンケートです。回答内容をもとに開催日・テーマを決定し、開催が確定した際にあらためて特設ページとXでご案内します。
-        </div>
-      </details>
-      <details>
-        <summary>参加希望者が1人だけの日はどうなりますか？</summary>
-        <div class="faq-body">
-          最少催行1名です。参加希望が1名でもその日は開催します。ただし参加人数が少ない日は、終了時間が早まる場合があります。
-        </div>
-      </details>
-      <details>
-        <summary>候補日は複数選んでも大丈夫ですか？</summary>
-        <div class="faq-body">
-          はい、参加できる日はすべて選んでください。希望ユニフォームも同様に複数選択できます。
-        </div>
-      </details>
-      <details>
-        <summary>「その他」を選んだユニフォームは何を書けばいいですか？</summary>
-        <div class="faq-body">
-          野球ユニ・サカユニ・陸上ユニ・競パン以外に着てみたいユニフォームがあれば、自由記入欄に具体的に書いてください。
-        </div>
-      </details>
-      <details>
-        <summary>競パンのみの回でも参加できますか？</summary>
-        <div class="faq-body">
-          今回のアンケートでは希望ユニフォームとして「競パン」も選択できます。あくまで着衣での撮影交流企画としての開催を予定しています。
-        </div>
-      </details>
-      <details>
-        <summary>参加前に質問したいことがあります</summary>
-        <div class="faq-body">
-          X（@baseballuni2022）のDMからお気軽にご連絡ください。短い質問だけでも歓迎です。
-        </div>
-      </details>
+    <div class="schedule-cta">
+      <a href="#survey" class="btn btn-primary btn-lg">参加できる日を回答する</a>
+      <p class="schedule-cta-note">正式申込ではありません。1〜2分で回答できます。</p>
     </div>
   </div>
 </section>
@@ -859,7 +784,8 @@
       <em>教えてください。</em>
     </h2>
     <p class="final-cta-sub">
-      参加可能日と希望ユニフォームを、下のアンケートフォームからお送りください。<br>
+      正式申込ではなく、開催日・テーマを決めるための事前希望調査です。回答＝参加確定ではありません。<br>
+      候補日は複数選択できます。所要時間の目安は約1〜2分です。<br>
       <strong>回答期限：2026年7月31日（金）23:59（日本時間）</strong>
     </p>
 
@@ -1065,7 +991,105 @@
       <p><strong>アンケートは終了しました。開催日・テーマの決定をお待ちください。</strong></p>
       <p>ご質問がある場合は、XのDMからお問い合わせください。</p>
     </div>
+  </div>
+</section>
 
+<!-- ── Target ── -->
+<section id="target">
+  <div class="container">
+    <p class="section-label">For You</p>
+    <h2>こんな人におすすめ</h2>
+    <div class="target-list">
+      <div class="target-item">
+        <span class="ti-icon">👕</span>
+        <div>
+          <strong>好きなユニフォームがある</strong>
+          <span>野球ユニ・サカユニ・陸上ユニ・競パンなど。着てみたいものがあれば十分です。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">🙋</span>
+        <div>
+          <strong>1人での参加を考えている</strong>
+          <span>最少催行1名。1人からの参加を前提にしています。知り合いがいなくても大丈夫です。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">📅</span>
+        <div>
+          <strong>候補日の中で参加できる日がある</strong>
+          <span>4日程のうち1日でも参加できそうなら、ぜひ回答してください。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">🆕</span>
+        <div>
+          <strong>SNBCを初めて知った</strong>
+          <span>初回参加・初対面でも大丈夫です。まずはアンケートだけの回答でも歓迎です。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">⚾</span>
+        <div>
+          <strong>Vol.1や今週末のVol.2が気になっていた</strong>
+          <span>第1回はサッカーユニで開催、第2回は野球ユニで今週末7/25に開催予定。次のテーマを一緒に決めませんか。</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<section id="faq">
+  <div class="container">
+    <p class="section-label">FAQ</p>
+    <h2>よくある質問</h2>
+    <div class="faq-list">
+      <details>
+        <summary>回答したら参加が確定しますか？</summary>
+        <div class="faq-body">
+          いいえ、今回は正式申込ではなく事前アンケートです。回答内容をもとに開催日・テーマを決定し、開催が確定した際にあらためて特設ページとXでご案内します。
+        </div>
+      </details>
+      <details>
+        <summary>参加希望者が1人だけの日はどうなりますか？</summary>
+        <div class="faq-body">
+          最少催行1名です。参加希望が1名でもその日は開催します。ただし参加人数が少ない日は、終了時間が早まる場合があります。
+        </div>
+      </details>
+      <details>
+        <summary>候補日は複数選んでも大丈夫ですか？</summary>
+        <div class="faq-body">
+          はい、参加できる日はすべて選んでください。希望ユニフォームも同様に複数選択できます。
+        </div>
+      </details>
+      <details>
+        <summary>「その他」を選んだユニフォームは何を書けばいいですか？</summary>
+        <div class="faq-body">
+          野球ユニ・サカユニ・陸上ユニ・競パン以外に着てみたいユニフォームがあれば、自由記入欄に具体的に書いてください。
+        </div>
+      </details>
+      <details>
+        <summary>競パンのみの回でも参加できますか？</summary>
+        <div class="faq-body">
+          今回のアンケートでは希望ユニフォームとして「競パン」も選択できます。あくまで着衣での撮影交流企画としての開催を予定しています。
+        </div>
+      </details>
+      <details>
+        <summary>参加前に質問したいことがあります</summary>
+        <div class="faq-body">
+          X（@baseballuni2022）のDMからお気軽にご連絡ください。短い質問だけでも歓迎です。
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ── DM・他ページへの導線 ── -->
+<section id="contact">
+  <div class="container">
+    <p class="section-label">Contact</p>
+    <h2>参加前に確認したい方へ</h2>
     <div class="cta-channels">
       <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="cta-channel">
         <span class="cta-channel-icon">💬</span>
