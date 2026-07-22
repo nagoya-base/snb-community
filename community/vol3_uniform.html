@@ -13,13 +13,19 @@
   <meta property="og:description" content="名古屋・上前津で開催する少人数ユニフォーム撮影交流会 Vol.3。参加可能日と希望ユニフォームを複数選択で回答できます。1人から開催予定。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://nagoya-base.github.io/snb-community/community/vol3_uniform.html">
-  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
-  <meta property="og:image:width" content="1731">
-  <meta property="og:image:height" content="909">
+  <!--
+    OGP画像はVol.3の候補日・アンケート実施中を含む告知ビジュアル。
+    回答期限（2026-07-31）を過ぎたら、この2枚(og:image/twitter:image)と
+    width/heightを images/community/top/meta-ogp-main.jpg (1731x909) へ
+    手動で差し戻すこと（静的サイトのためOGPはJSで自動切替できない）。
+  -->
+  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/community/vol3/meta-ogp-main.jpg">
+  <meta property="og:image:width" content="1672">
+  <meta property="og:image:height" content="941">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Vol.3 少人数ユニフォーム撮影交流会｜SNBコミュニティ">
   <meta name="twitter:description" content="名古屋・上前津で開催する少人数ユニフォーム撮影交流会 Vol.3。参加可能日と希望ユニフォームを複数選択で回答できます。1人から開催予定。">
-  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
+  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/vol3/meta-ogp-main.jpg">
 
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K1TJG0S9Y"></script>
@@ -192,26 +198,31 @@
     }
     .hero-img-wrap {
       width: 100%;
-      height: 62vh;
-      min-height: 380px;
+      aspect-ratio: 1672 / 941;
+      height: auto;
+      min-height: 220px;
       max-height: 560px;
       position: relative;
+      background: #001f3e; /* 画像左端の色に合わせ、レターボックス部分の継ぎ目を目立たなくする */
     }
     .hero-img-wrap img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      /* 画像内に候補日・アンケート実施中などの文字情報が全面に入っているため、
+         object-fit: cover による中央トリミングで文字が欠けないよう contain にする */
+      object-fit: contain;
       object-position: center center;
       display: block;
     }
     .hero-img-overlay {
       position: absolute;
       inset: 0;
+      /* 画像内の文字（特に下部）が暗くなりすぎないよう、以前より弱いグラデーションに調整 */
       background: linear-gradient(
         to bottom,
-        rgba(28, 26, 23, 0.05) 0%,
-        rgba(28, 26, 23, 0.45) 58%,
-        rgba(28, 26, 23, 0.95) 100%
+        rgba(28, 26, 23, 0) 0%,
+        rgba(28, 26, 23, 0.12) 75%,
+        rgba(28, 26, 23, 0.38) 100%
       );
     }
     .hero-content {
@@ -595,7 +606,6 @@
       .hamburger { display: flex; }
       .nav-cta { display: none; }
 
-      .hero-img-wrap { height: 50vw; min-height: 220px; }
       .hero-content { padding: 2.5rem 0 4rem; }
 
       .about-grid { grid-template-columns: 1fr; }
@@ -631,9 +641,9 @@
 <section class="hero" id="top">
   <div class="hero-img-wrap">
     <picture>
-      <source srcset="../images/community/top/hero-photo-main.webp" type="image/webp">
-      <img src="../images/community/top/meta-ogp-main.jpg"
-           alt="Vol.3 少人数ユニフォーム撮影交流会 名古屋・上前津｜Studio Nagoya Base" width="1731" height="909" loading="eager"
+      <source srcset="../images/community/vol3/hero-photo-main.webp" type="image/webp">
+      <img id="hero-img" src="../images/community/vol3/hero-photo-main.jpg"
+           alt="SNBC Vol.3 少人数ユニフォーム撮影交流会の開催候補日を案内するビジュアル" width="1672" height="941" loading="eager"
            fetchpriority="high">
     </picture>
     <div class="hero-img-overlay"></div>
@@ -1116,6 +1126,22 @@
   var SURVEY_DEADLINE_DATE = '2026-07-31';
   var todayJST = (window.SNBEventStatus && window.SNBEventStatus.getTodayJST) ? window.SNBEventStatus.getTodayJST() : null;
   var isSurveyClosed = !todayJST || todayJST > SURVEY_DEADLINE_DATE;
+
+  // 期限後は「アンケート実施中」と書かれた告知ビジュアルが残り続けないよう、
+  // ヒーロー画像を既存の汎用画像へ差し替える（フォームの有無に関係なく実行する）。
+  // なお静的サイトのためOGP（og:image/twitter:image）はJSでは切り替えられない。
+  // 期限後は community/vol3_uniform.html 冒頭のOGPメタタグも手動で汎用画像へ差し戻すこと。
+  if (isSurveyClosed) {
+    var heroWebpSource = document.querySelector('.hero-img-wrap source[type="image/webp"]');
+    var heroImg = document.getElementById('hero-img');
+    if (heroWebpSource) heroWebpSource.srcset = '../images/community/top/hero-photo-main.webp';
+    if (heroImg) {
+      heroImg.src = '../images/community/top/meta-ogp-main.jpg';
+      heroImg.width = 1731;
+      heroImg.height = 909;
+      heroImg.alt = 'SNBコミュニティ｜好きなユニフォームで、同じ趣味の仲間と出会う。';
+    }
+  }
 
   var form = document.getElementById('vol3-survey-form');
   if (!form) return;
