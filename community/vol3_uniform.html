@@ -666,7 +666,7 @@
     <div class="hero-content">
       <div class="limit-badge">
         <span class="limit-dot"></span>
-        <span class="js-survey-badge-label">事前アンケート実施中</span>
+        <span class="js-survey-badge-label">匿名アンケート実施中</span>
       </div>
       <h1>
         Vol.3 少人数ユニフォーム<br>
@@ -777,26 +777,27 @@
   <div class="container">
     <div class="limit-badge" style="margin-bottom: 1.5rem;">
       <span class="limit-dot"></span>
-      <span class="js-survey-badge-label">事前アンケート実施中</span>
+      <span class="js-survey-badge-label">匿名アンケート実施中</span>
     </div>
     <h2>
       参加できそうな日を、<br>
       <em>教えてください。</em>
     </h2>
     <p class="final-cta-sub">
-      正式申込ではなく、開催日・テーマを決めるための事前希望調査です。回答＝参加確定ではありません。<br>
-      候補日は複数選択できます。<br>
+      匿名・1分程度で回答できるアンケートです。回答しても参加確定やお申し込みにはなりません。<br>
+      現時点で予定が未確定でも、「この日なら参加できる可能性がある」という回答で大丈夫です。<br>
+      開催日とテーマを決めるための参考アンケートです。候補日・ユニフォームは複数選択できます。<br>
       <strong>回答期限：2026年7月31日（金）23:59（日本時間）</strong>
     </p>
 
     <form id="vol3-survey-form" class="apply-form" novalidate>
-      <input type="hidden" name="_subject" value="【SNBC Vol.3 少人数ユニフォーム撮影交流会】事前アンケート">
+      <input type="hidden" name="_subject" value="【SNBC Vol.3 少人数ユニフォーム撮影交流会】匿名事前アンケート">
       <input type="hidden" name="_template" value="table">
       <input type="hidden" name="_captcha" value="false">
       <input type="text" name="_honey" class="apply-form__honey" tabindex="-1" autocomplete="off">
 
       <fieldset class="form-field" style="border: none; padding: 0;">
-        <legend class="form-legend">参加可能日 <span class="required-mark">必須</span></legend>
+        <legend class="form-legend">参加しやすい日程 <span class="required-mark">必須</span></legend>
         <div class="checkbox-group" id="sf-dates-group" role="group" aria-describedby="sf-dates-hint sf-dates-error">
           <label class="checkbox-option">
             <input type="checkbox" name="参加可能日" value="8月8日（土）14:00〜17:00">
@@ -815,12 +816,12 @@
             <span>8月16日（日）14:00〜17:00</span>
           </label>
         </div>
-        <p class="form-hint" id="sf-dates-hint">参加できる日をすべて選んでください。参加人数が少ない日は早めに終了する場合があります。</p>
+        <p class="form-hint" id="sf-dates-hint">参加できそうな日をすべて選んでください。予定が未確定でも構いません。</p>
         <p class="field-error" id="sf-dates-error" role="alert" hidden></p>
       </fieldset>
 
       <fieldset class="form-field" style="border: none; padding: 0;">
-        <legend class="form-legend">希望ユニフォーム <span class="required-mark">必須</span></legend>
+        <legend class="form-legend">興味のあるユニフォーム <span class="required-mark">必須</span></legend>
         <div class="checkbox-group" id="sf-uniform-group" role="group" aria-describedby="sf-uniform-error">
           <label class="checkbox-option">
             <input type="checkbox" name="希望ユニフォーム" value="野球ユニフォーム">
@@ -838,142 +839,13 @@
             <input type="checkbox" name="希望ユニフォーム" value="競パン">
             <span>競パン</span>
           </label>
-          <label class="checkbox-option">
-            <input type="checkbox" id="sf-uniform-other" name="希望ユニフォーム" value="その他">
-            <span>その他</span>
-          </label>
         </div>
         <p class="field-error" id="sf-uniform-error" role="alert" hidden></p>
       </fieldset>
 
-      <div class="form-field" id="sf-uniform-other-wrap" hidden>
-        <label for="sf-uniform-other-text">「その他」の内容 <span class="required-mark">必須</span></label>
-        <input type="text" id="sf-uniform-other-text" name="その他のユニフォーム内容" placeholder="例：柔道着" disabled aria-describedby="sf-uniform-other-error">
-        <p class="field-error" id="sf-uniform-other-error" role="alert" hidden></p>
-      </div>
+      <button type="submit" class="btn btn-primary apply-form__submit" id="sf-submit-btn">匿名で回答する</button>
 
-      <div class="form-field">
-        <p class="contact-guide" id="sf-contact-guide">メールアドレスまたはXアカウントのどちらかを入力してください。</p>
-      </div>
-
-      <div class="form-field">
-        <label for="sf-email">メールアドレス <span class="optional-mark">任意</span></label>
-        <input type="email" id="sf-email" name="メールアドレス" autocomplete="email" aria-describedby="sf-email-hint sf-email-error">
-        <p class="form-hint" id="sf-email-hint">回答内容についてのご連絡に使用します。</p>
-        <p class="field-error" id="sf-email-error" role="alert" hidden></p>
-      </div>
-
-      <div class="form-field">
-        <label for="sf-x">Xアカウント <span class="optional-mark">任意</span></label>
-        <input type="text" id="sf-x" name="Xアカウント" placeholder="@baseballuni2022" autocomplete="off" aria-describedby="sf-x-error">
-        <p class="field-error" id="sf-x-error" role="alert" hidden></p>
-      </div>
-
-      <div class="form-field">
-        <label for="sf-method-email">希望する連絡方法 <span class="required-mark">必須</span></label>
-        <div class="radio-group" id="sf-method-group">
-          <label class="radio-option">
-            <input type="radio" id="sf-method-email" name="希望する連絡方法" value="メール" required>
-            <span>メール</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" id="sf-method-x" name="希望する連絡方法" value="XのDM" required>
-            <span>XのDM</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" id="sf-method-either" name="希望する連絡方法" value="どちらでもよい" required>
-            <span>どちらでもよい</span>
-          </label>
-        </div>
-        <p class="field-error" id="sf-method-error" role="alert" hidden></p>
-      </div>
-
-      <div class="form-field">
-        <label for="sf-name">名前またはハンドルネーム <span class="required-mark">必須</span></label>
-        <input type="text" id="sf-name" name="名前またはハンドルネーム" required autocomplete="name">
-      </div>
-
-      <div class="form-field">
-        <label for="sf-age">年代 <span class="optional-mark">任意</span></label>
-        <input type="text" id="sf-age" name="年代" placeholder="例：30代">
-      </div>
-
-      <fieldset class="form-field" style="border: none; padding: 0;">
-        <legend class="form-legend">参加経験 <span class="required-mark">必須</span></legend>
-        <div class="radio-group" id="sf-experience-group" role="group" aria-describedby="sf-experience-error">
-          <label class="radio-option">
-            <input type="radio" name="参加経験" value="初参加" required>
-            <span>初参加</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="参加経験" value="過去に参加したことがある" required>
-            <span>過去に参加したことがある</span>
-          </label>
-        </div>
-        <p class="field-error" id="sf-experience-error" role="alert" hidden></p>
-      </fieldset>
-
-      <div class="form-field">
-        <label id="sf-solo-label">1人開催でも参加したい <span class="optional-mark">任意</span></label>
-        <div class="radio-group" role="group" aria-labelledby="sf-solo-label">
-          <label class="radio-option">
-            <input type="radio" name="1人開催でも参加したい" value="はい">
-            <span>はい</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="1人開催でも参加したい" value="複数人集まる場合のみ">
-            <span>複数人集まる場合のみ</span>
-          </label>
-        </div>
-      </div>
-
-      <div class="form-field">
-        <label id="sf-face-label">顔出しについて <span class="optional-mark">任意</span></label>
-        <div class="radio-group" role="group" aria-labelledby="sf-face-label">
-          <label class="radio-option">
-            <input type="radio" name="顔出しについて" value="顔出し可">
-            <span>顔出し可</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="顔出しについて" value="顔出し不可">
-            <span>顔出し不可</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="顔出しについて" value="相談したい">
-            <span>相談したい</span>
-          </label>
-        </div>
-      </div>
-
-      <div class="form-field">
-        <label id="sf-sns-label">SNS掲載について <span class="optional-mark">任意</span></label>
-        <div class="radio-group" role="group" aria-labelledby="sf-sns-label">
-          <label class="radio-option">
-            <input type="radio" name="SNS掲載について" value="掲載可">
-            <span>掲載可</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="SNS掲載について" value="掲載不可">
-            <span>掲載不可</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="SNS掲載について" value="写真確認後に判断">
-            <span>写真確認後に判断</span>
-          </label>
-        </div>
-      </div>
-
-      <div class="form-field">
-        <label for="sf-other">その他の希望・質問 <span class="optional-mark">任意</span></label>
-        <textarea id="sf-other" name="その他の希望・質問" rows="3" placeholder="例：着替えの場所について教えてほしいです。"></textarea>
-      </div>
-
-      <button type="submit" class="btn btn-primary apply-form__submit" id="sf-submit-btn">回答を送信する</button>
-
-      <p class="form-privacy-note">入力された情報は、開催日・企画内容の検討および必要な連絡のためにのみ使用します。</p>
-      <p class="form-rules-note">
-        参加が確定した回については、あらためて「<a href="../legal/" target="_blank" rel="noopener noreferrer">SNBコミュニティ 共通参加規約</a>」（イベント参加の心得・撮影写真の利用規約を含みます）への同意をお願いします。
-      </p>
+      <p class="form-privacy-note">匿名アンケートです。氏名・メールアドレスなど連絡先の入力は不要で、この回答だけでは参加確定にはなりません。</p>
     </form>
 
     <div class="form-result form-result--success" id="sf-success" hidden>
@@ -1048,7 +920,7 @@
       <details>
         <summary>回答したら参加が確定しますか？</summary>
         <div class="faq-body">
-          いいえ、今回は正式申込ではなく事前アンケートです。回答内容をもとに開催日・テーマを決定し、開催が確定した際にあらためて特設ページとXでご案内します。
+          いいえ、今回は正式申込ではなく匿名の事前アンケートです。氏名や連絡先の入力は不要です。回答内容をもとに開催日・テーマを決定し、開催が確定した際にあらためて特設ページとXでご案内します。
         </div>
       </details>
       <details>
@@ -1061,12 +933,6 @@
         <summary>候補日は複数選んでも大丈夫ですか？</summary>
         <div class="faq-body">
           はい、参加できる日はすべて選んでください。希望ユニフォームも同様に複数選択できます。
-        </div>
-      </details>
-      <details>
-        <summary>「その他」を選んだユニフォームは何を書けばいいですか？</summary>
-        <div class="faq-body">
-          野球ユニ・サカユニ・陸上ユニ・競パン以外に着てみたいユニフォームがあれば、自由記入欄に具体的に書いてください。
         </div>
       </details>
       <details>
@@ -1192,24 +1058,11 @@
 
   var uniformChecks = form.querySelectorAll('input[name="希望ユニフォーム"]');
   var uniformError = document.getElementById('sf-uniform-error');
-  var uniformOtherCheckbox = document.getElementById('sf-uniform-other');
-  var uniformOtherWrap = document.getElementById('sf-uniform-other-wrap');
-  var uniformOtherText = document.getElementById('sf-uniform-other-text');
-  var uniformOtherError = document.getElementById('sf-uniform-other-error');
-
-  var emailInput = document.getElementById('sf-email');
-  var xInput = document.getElementById('sf-x');
-  var contactGuide = document.getElementById('sf-contact-guide');
-  var emailError = document.getElementById('sf-email-error');
-  var xError = document.getElementById('sf-x-error');
-  var methodRadios = form.querySelectorAll('input[name="希望する連絡方法"]');
-
-  var experienceError = document.getElementById('sf-experience-error');
 
   function setSubmitting(isSubmitting) {
     if (!submitBtn) return;
     submitBtn.disabled = isSubmitting;
-    submitBtn.textContent = isSubmitting ? '送信中…' : '回答を送信する';
+    submitBtn.textContent = isSubmitting ? '送信中…' : '匿名で回答する';
   }
 
   function showFieldError(el, message) {
@@ -1222,32 +1075,6 @@
     if (!el) return;
     el.focus({ preventScroll: true });
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  function clearUniformOtherError() {
-    if (uniformOtherError) { uniformOtherError.hidden = true; uniformOtherError.textContent = ''; }
-  }
-
-  function toggleUniformOther() {
-    var show = uniformOtherCheckbox.checked;
-    uniformOtherWrap.hidden = !show;
-    uniformOtherText.disabled = !show;
-    if (!show) {
-      uniformOtherText.value = '';
-      clearUniformOtherError();
-    }
-  }
-  uniformOtherCheckbox.addEventListener('change', toggleUniformOther);
-  uniformOtherText.addEventListener('input', clearUniformOtherError);
-
-  function validateUniformOther() {
-    clearUniformOtherError();
-    if (uniformOtherCheckbox.checked && !uniformOtherText.value.trim()) {
-      showFieldError(uniformOtherError, '「その他」を選択した場合は、内容を入力してください。');
-      focusAndScroll(uniformOtherText);
-      return false;
-    }
-    return true;
   }
 
   function clearDatesError() {
@@ -1280,78 +1107,11 @@
   }
   uniformChecks.forEach(function (c) { c.addEventListener('change', clearUniformError); });
 
-  function clearContactErrors() {
-    if (contactGuide) contactGuide.classList.remove('is-error');
-    if (emailError) { emailError.hidden = true; emailError.textContent = ''; }
-    if (xError) { xError.hidden = true; xError.textContent = ''; }
-  }
-
-  function getCheckedMethod() {
-    var checked = form.querySelector('input[name="希望する連絡方法"]:checked');
-    return checked ? checked.value : '';
-  }
-
-  function validateContact() {
-    clearContactErrors();
-
-    var emailVal = emailInput.value.trim();
-    var xVal = xInput.value.trim();
-    var methodVal = getCheckedMethod();
-
-    if (!emailVal && !xVal) {
-      if (contactGuide) contactGuide.classList.add('is-error');
-      focusAndScroll(emailInput);
-      return false;
-    }
-    if (methodVal === 'XのDM' && !xVal) {
-      showFieldError(xError, 'XのDMを選択した場合は、Xアカウントを入力してください。');
-      focusAndScroll(xInput);
-      return false;
-    }
-    if (methodVal === 'メール' && !emailVal) {
-      showFieldError(emailError, 'メールを選択した場合は、メールアドレスを入力してください。');
-      focusAndScroll(emailInput);
-      return false;
-    }
-    return true;
-  }
-
-  emailInput.addEventListener('input', clearContactErrors);
-  xInput.addEventListener('input', clearContactErrors);
-  methodRadios.forEach(function (radio) {
-    radio.addEventListener('change', clearContactErrors);
-  });
-
-  function clearExperienceError() {
-    if (experienceError) { experienceError.hidden = true; experienceError.textContent = ''; }
-  }
-  function validateExperience() {
-    clearExperienceError();
-    var checked = form.querySelector('input[name="参加経験"]:checked');
-    if (!checked) {
-      showFieldError(experienceError, '参加経験を選択してください。');
-      focusAndScroll(form.querySelector('input[name="参加経験"]'));
-      return false;
-    }
-    return true;
-  }
-  form.querySelectorAll('input[name="参加経験"]').forEach(function (radio) {
-    radio.addEventListener('change', clearExperienceError);
-  });
-
   form.addEventListener('submit', function (e) {
     e.preventDefault();
 
     if (!validateDates()) return;
     if (!validateUniforms()) return;
-    if (!validateUniformOther()) return;
-
-    if (!form.reportValidity()) {
-      return;
-    }
-
-    if (!validateContact()) return;
-    if (!validateExperience()) return;
 
     setSubmitting(true);
 
