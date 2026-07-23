@@ -303,6 +303,39 @@
     }
     .btn-lg { padding: 1.05rem 2.5rem; font-size: 0.98rem; }
 
+    /* ── お知らせ（今後の開催について） ── */
+    .notice-section {
+      padding: 2.75rem 0 3.25rem;
+      border-top: none;
+    }
+    .notice-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      background: var(--bg-card2);
+      border: 1px solid var(--accent-lt);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 1.5rem 1.75rem;
+    }
+    .notice-box-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .notice-box-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.02em;
+    }
+    .notice-box-text {
+      font-size: 0.86rem;
+      color: var(--text);
+      line-height: 1.9;
+    }
+
     /* ── About cards ── */
     .about-grid {
       display: grid;
@@ -690,6 +723,19 @@
         <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg">
           💬 参加前にDMで質問する
         </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── お知らせ：今回の取り組みについて ── -->
+<section class="notice-section" aria-label="今後の開催についてのお知らせ">
+  <div class="container">
+    <div class="notice-box">
+      <span class="notice-box-icon" aria-hidden="true">📢</span>
+      <div>
+        <p class="notice-box-title">今後の開催について</p>
+        <p class="notice-box-text">一連の実験的な取り組みは、今回が最後となります。今後どのような形で継続するかは今回の状況を踏まえて、改めて判断いたします。よろしくお願いします。</p>
       </div>
     </div>
   </div>
