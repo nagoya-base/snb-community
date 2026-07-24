@@ -19,7 +19,7 @@
       capacity: 4,
       minimum: 2,
       condition: "お気に入りの野球ユニフォーム",
-      status: "cancelled",
+      status: "recruiting",
       url: "community/vol2_0725_baseball.html"
     },
     {
@@ -70,11 +70,6 @@
       label: "活動休止中", modifier: "paused", ctaEnabled: false,
       formHeading: "現在、募集を休止しています",
       formMessage: "次回開催はXでお知らせします。"
-    },
-    cancelled: {
-      label: "開催中止", modifier: "cancelled", ctaEnabled: false,
-      formHeading: "開催中止のお知らせ",
-      formMessage: "最少催行人数に達しなかったため中止となりました。お申し込み・ご検討いただいた皆さま、ありがとうございました。"
     }
   };
 
@@ -93,7 +88,7 @@
   // 開催日を過ぎたら自動でfinishedへ切り替える（明示的なpaused/closed/finishedは上書きしない）。
   // 判定に失敗した場合は「申込可能」と誤認させない安全側（finished）に倒す。
   function computeEffectiveStatus(ev, todayISO) {
-    if (ev.status === "paused" || ev.status === "closed" || ev.status === "finished" || ev.status === "cancelled") {
+    if (ev.status === "paused" || ev.status === "closed" || ev.status === "finished") {
       return ev.status;
     }
 
@@ -149,8 +144,6 @@
         return ev.title + "は終了しました";
       case "paused":
         return "次回開催は準備中です";
-      case "cancelled":
-        return ev.title + "は中止となりました";
       default:
         return ev.title;
     }
@@ -177,9 +170,6 @@
     }
     if (status === "finished") {
       return "前回の活動は終了しました。<br>次回情報はXで案内します。";
-    }
-    if (status === "cancelled") {
-      return "最少催行人数に達しなかったため中止となりました。<br>次回情報はXで案内します。";
     }
     // paused
     return "現在、屋外活動を休止しています。<br>次回開催はXでお知らせします。";
@@ -228,7 +218,7 @@
       } else if (field === "badge-inline") {
         el.textContent = buildInlineLabel(ev, status);
       } else if (field === "heading") {
-        el.textContent = (status === "finished" || status === "closed" || status === "cancelled") ? "開催情報" : "次回開催";
+        el.textContent = (status === "finished" || status === "closed") ? "開催情報" : "次回開催";
       } else if (field === "schedule-note") {
         el.innerHTML = buildScheduleNote(ev, status);
       } else if (field === "form-gate") {

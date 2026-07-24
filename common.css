@@ -242,7 +242,7 @@ h3 {
   text-underline-offset: 2px;
 }
 
-/* ── Event status badge（募集状態: upcoming/recruiting/full/closed/finished/paused/cancelled） ── */
+/* ── Event status badge（募集状態: upcoming/recruiting/full/closed/finished/paused） ── */
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -275,11 +275,6 @@ h3 {
 }
 
 .status-badge--paused {
-  background: #FFF4E0;
-  color: #9A6A15;
-}
-
-.status-badge--cancelled {
   background: #FFF4E0;
   color: #9A6A15;
 }
