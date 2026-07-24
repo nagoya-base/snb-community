@@ -833,6 +833,7 @@
       匿名・1分程度で回答できるアンケートです。回答しても参加確定やお申し込みにはなりません。<br>
       現時点で予定が未確定でも、「この日なら参加できる可能性がある」という回答で大丈夫です。<br>
       開催日とテーマを決めるための参考アンケートです。候補日・ユニフォームは複数選択できます。<br>
+      <strong>回答はお一人1回でお願いします。</strong>回答内容を変更したい場合は、XのDMからご連絡ください。<br>
       <strong>回答期限：2026年7月31日（金）23:59（日本時間）</strong>
     </p>
 
@@ -908,6 +909,11 @@
     <div class="form-result form-result--closed" id="sf-closed" hidden>
       <p><strong>アンケートは終了しました。開催日・テーマの決定をお待ちください。</strong></p>
       <p>ご質問がある場合は、XのDMからお問い合わせください。</p>
+    </div>
+
+    <div class="form-result form-result--closed" id="sf-answered" hidden>
+      <p><strong>この端末からは回答済みです。ご協力ありがとうございました。</strong></p>
+      <p>集計結果をもとに開催日とテーマを検討します。回答内容を変更したい場合は、XのDMからご連絡ください。</p>
     </div>
   </div>
 </section>
@@ -1060,6 +1066,25 @@
 
   var FORM_ENDPOINT = 'https://formsubmit.co/ajax/bbuni.ngo@gmail.com';
 
+  // Vol.3匿名アンケート専用の再回答抑止フラグ。他フォーム・今後のアンケートには影響させない。
+  var ANSWERED_STORAGE_KEY = 'snbc_vol3_uniform_survey_answered_v1';
+
+  function hasAnsweredFlag() {
+    try {
+      return window.localStorage && window.localStorage.getItem(ANSWERED_STORAGE_KEY) === '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function setAnsweredFlag() {
+    try {
+      if (window.localStorage) window.localStorage.setItem(ANSWERED_STORAGE_KEY, '1');
+    } catch (e) {
+      // ストレージが使用できない環境では抑止できないが、回答自体は完了しているため無視する。
+    }
+  }
+
   // 回答期限：2026年7月31日（金）23:59（日本時間）。判定失敗時は回答不可の安全側に倒す。
   var SURVEY_DEADLINE_DATE = '2026-07-31';
   var todayJST = (window.SNBEventStatus && window.SNBEventStatus.getTodayJST) ? window.SNBEventStatus.getTodayJST() : null;
@@ -1088,14 +1113,26 @@
   var successBox = document.getElementById('sf-success');
   var errorBox = document.getElementById('sf-error');
   var closedBox = document.getElementById('sf-closed');
+  var answeredBox = document.getElementById('sf-answered');
   var badgeLabels = document.querySelectorAll('.js-survey-badge-label');
 
   if (isSurveyClosed) {
     form.hidden = true;
     if (successBox) successBox.hidden = true;
     if (errorBox) errorBox.hidden = true;
+    if (answeredBox) answeredBox.hidden = true;
     if (closedBox) closedBox.hidden = false;
     badgeLabels.forEach(function (el) { el.textContent = 'アンケートは終了しました'; });
+    return;
+  }
+
+  // 同じブラウザで送信済みの場合は、フォームの代わりに回答済み表示を出す（簡易的な再回答抑止）。
+  if (hasAnsweredFlag()) {
+    form.hidden = true;
+    if (successBox) successBox.hidden = true;
+    if (errorBox) errorBox.hidden = true;
+    if (closedBox) closedBox.hidden = true;
+    if (answeredBox) answeredBox.hidden = false;
     return;
   }
 
@@ -1176,6 +1213,7 @@
         form.hidden = true;
         if (successBox) successBox.hidden = false;
         if (errorBox) errorBox.hidden = true;
+        setAnsweredFlag();
         successBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
       })
       .catch(function () {
