@@ -19,7 +19,7 @@
       capacity: 4,
       minimum: 2,
       condition: "お気に入りの野球ユニフォーム",
-      status: "recruiting",
+      status: "closed",
       url: "community/vol2_0725_baseball.html"
     },
     {
@@ -85,11 +85,20 @@
     return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
   }
 
-  // 開催日を過ぎたら自動でfinishedへ切り替える（明示的なpaused/closed/finishedは上書きしない）。
-  // 判定に失敗した場合は「申込可能」と誤認させない安全側（finished）に倒す。
+  // 開催日を過ぎたら自動でfinishedへ切り替える（明示的なpaused/finishedは上書きしない）。
+  // closedは「新規受付は終了だが開催はする」状態のため、開催日を過ぎたらfinished（終了済み）へ
+  // 移行させる。日付が無い/不正な場合はclosedのまま据え置く（申込不可のため誤認のリスクはない）。
+  // 判定に失敗した場合は「申込可能」と誤認させない安全側（finishedまたはclosed）に倒す。
   function computeEffectiveStatus(ev, todayISO) {
-    if (ev.status === "paused" || ev.status === "closed" || ev.status === "finished") {
+    if (ev.status === "paused" || ev.status === "finished") {
       return ev.status;
+    }
+
+    if (ev.status === "closed") {
+      if (isValidISODate(ev.date) && todayISO && todayISO > ev.date) {
+        return "finished";
+      }
+      return "closed";
     }
 
     if (!ev.date) {
