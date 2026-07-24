@@ -525,6 +525,28 @@
       color: var(--text-muted);
     }
 
+    /* ── 開催中止のお知らせ ── */
+    .cancel-notice-wrap { padding: 2.25rem 0; }
+    .cancel-notice {
+      background: #FFF4E0;
+      border: 1px solid #EAD3A0;
+      border-left: 4px solid #9A6A15;
+      border-radius: 6px;
+      padding: 1.5rem 1.75rem;
+    }
+    .cancel-notice__heading {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #7A5410;
+      margin-bottom: 0.6rem;
+      letter-spacing: 0.02em;
+    }
+    .cancel-notice__text {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.9;
+    }
+
     /* ── 募集状態に応じたフォーム停止時の代替表示 ── */
     .form-status-fallback {
       max-width: 440px;
@@ -540,6 +562,14 @@
       color: var(--navy);
       margin-bottom: 0.75rem;
     }
+    .form-status-fallback .btn-outline {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .form-status-fallback .btn-outline:hover {
+      background: var(--accent);
+      color: #F2EFE9;
+    }
     .form-status-fallback__text {
       font-size: 0.9rem;
       color: var(--text);
@@ -553,6 +583,7 @@
     .limit-badge.status-badge--closed,
     .limit-badge.status-badge--finished { background: #EDEDED; color: #6B6B6B; }
     .limit-badge.status-badge--paused { background: #FFF4E0; color: #9A6A15; }
+    .limit-badge.status-badge--cancelled { background: #FFF4E0; color: #9A6A15; }
     .limit-badge:not(.status-badge--recruiting) .limit-dot {
       background: currentColor;
       animation: none;
@@ -561,7 +592,8 @@
     .hero .limit-badge.status-badge--full,
     .hero .limit-badge.status-badge--closed,
     .hero .limit-badge.status-badge--finished,
-    .hero .limit-badge.status-badge--paused {
+    .hero .limit-badge.status-badge--paused,
+    .hero .limit-badge.status-badge--cancelled {
       background: rgba(242, 239, 233, 0.14);
       color: #F2EFE9;
     }
@@ -771,7 +803,7 @@
     <li><a href="#pricing">参加費</a></li>
     <li><a href="#faq">FAQ</a></li>
   </ul>
-  <a href="#contact" class="btn nav-cta">このイベントに申し込む</a>
+  <a href="#cancel-notice" class="btn nav-cta">開催中止のお知らせ</a>
   <button class="hamburger" id="hamburger" aria-label="メニューを開く" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
@@ -794,7 +826,7 @@
     <div class="hero-content">
       <div class="limit-badge" data-event-id="community-vol2-0725" data-event-field="status-class">
         <span class="limit-dot"></span>
-        <span data-event-id="community-vol2-0725" data-event-field="date">2026年7月25日（土）</span>開催・<span data-event-id="community-vol2-0725" data-event-field="badge-label">受付中</span>
+        <span data-event-id="community-vol2-0725" data-event-field="date">2026年7月25日（土）</span>開催・<span data-event-id="community-vol2-0725" data-event-field="badge-label">開催中止</span>
       </div>
       <h1>
         お気に入りの野球ユニで、<br>
@@ -816,13 +848,23 @@
         <span class="hero-spec" data-event-id="community-vol2-0725" data-event-field="condition">お気に入りの野球ユニフォーム</span>
       </div>
       <div class="hero-btns">
-        <a href="#contact" class="btn btn-primary btn-lg">
-          ⚾ このイベントに申し込む
+        <a href="#cancel-notice" class="btn btn-primary btn-lg">
+          ⚾ 開催中止のお知らせを見る
         </a>
         <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg">
-          💬 参加前にDMで質問する
+          💬 次回開催の情報をXで見る
         </a>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 開催中止のお知らせ ── -->
+<section class="cancel-notice-wrap" id="cancel-notice" aria-label="開催中止のお知らせ">
+  <div class="container">
+    <div class="cancel-notice" role="alert">
+      <p class="cancel-notice__heading">開催中止のお知らせ</p>
+      <p class="cancel-notice__text">Vol.2は、最少催行人数に達しなかったため中止となりました。お申し込み・ご検討いただいた皆さま、ありがとうございました。</p>
     </div>
   </div>
 </section>
@@ -985,7 +1027,7 @@
       </div>
     </div>
     <div class="price-note">
-      定員に達し次第、募集を締め切ります。参加をご希望の方は<a href="#contact" style="color: #2E7D32; text-decoration: underline;">申込フォーム</a>から、質問だけの場合はX（@baseballuni2022）のDMからご連絡ください。
+      Vol.2は、最少催行人数に達しなかったため中止となりました。ご検討いただいた皆さま、ありがとうございました。次回開催の情報はX（@baseballuni2022）にてお知らせします。
     </div>
   </div>
 </section>
@@ -1078,7 +1120,7 @@
   <div class="container">
     <div class="limit-badge" style="margin-bottom: 1.5rem;" data-event-id="community-vol2-0725" data-event-field="status-class">
       <span class="limit-dot"></span>
-      <span data-event-id="community-vol2-0725" data-event-field="date">2026年7月25日（土）</span>開催・<span data-event-id="community-vol2-0725" data-event-field="badge-label">受付中</span>
+      <span data-event-id="community-vol2-0725" data-event-field="date">2026年7月25日（土）</span>開催・<span data-event-id="community-vol2-0725" data-event-field="badge-label">開催中止</span>
     </div>
     <div data-event-id="community-vol2-0725" data-event-field="form-gate">
       <h2>
@@ -1199,7 +1241,7 @@
           <p class="field-error" id="af-agree-error" role="alert" hidden></p>
         </div>
 
-        <button type="submit" class="btn btn-primary apply-form__submit" id="af-submit-btn">このイベントに申し込む</button>
+        <button type="submit" class="btn btn-primary apply-form__submit" id="af-submit-btn" disabled>このイベントに申し込む</button>
 
         <p class="form-privacy-note">入力された情報は、本イベントの参加確認と必要な連絡のためにのみ使用します。</p>
       </form>
