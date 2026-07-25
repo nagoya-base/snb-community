@@ -9,20 +9,6 @@
 
   window.SNB_EVENTS = [
     {
-      id: "community-vol2-0725",
-      title: "Vol.2 野球ユニ会",
-      date: "2026-07-25",
-      dateLabel: "2026年7月25日（土）",
-      timeLabel: "14:00〜17:00",
-      venue: "上前津｜Studio Nagoya Base",
-      fee: "¥4,000（現金・PayPay）",
-      capacity: 4,
-      minimum: 2,
-      condition: "お気に入りの野球ユニフォーム",
-      status: "closed",
-      url: "community/vol2_0725_baseball.html"
-    },
-    {
       id: "baseball-next-activity",
       title: "次回の活動",
       date: null,

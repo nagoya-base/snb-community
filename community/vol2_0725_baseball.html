@@ -30,6 +30,8 @@
     gtag('config', 'G-8K1TJG0S9Y');
   </script>
   <script src="../events.js"></script>
+  <!-- events.jsはVol.3アンケートの締切判定（getTodayJST）用に読み込む。Vol.2自体は終了済みのため
+       SNB_EVENTSには含まれず、このページのデータ表示はすべて静的な値を直書きしている。 -->
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -525,147 +527,6 @@
       color: var(--text-muted);
     }
 
-    /* ── 募集状態に応じたフォーム停止時の代替表示 ── */
-    .form-status-fallback {
-      max-width: 440px;
-      margin: 0 auto 2rem;
-      padding: 1.5rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      text-align: center;
-    }
-    .final-cta .form-status-fallback__heading {
-      font-size: 1.15rem;
-      color: var(--navy);
-      margin-bottom: 0.75rem;
-    }
-    .form-status-fallback .btn-outline {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    .form-status-fallback .btn-outline:hover {
-      background: var(--accent);
-      color: #F2EFE9;
-    }
-    .form-status-fallback__text {
-      font-size: 0.9rem;
-      color: var(--text);
-      line-height: 1.85;
-      margin-bottom: 1rem;
-    }
-
-    /* ── 募集状態ごとの色（.limit-badge / .limit-dot を状態クラスで上書き） ── */
-    .limit-badge.status-badge--upcoming { background: #EEF2F6; color: #46586B; }
-    .limit-badge.status-badge--full { background: #FDECEA; color: #B23B2E; }
-    .limit-badge.status-badge--closed,
-    .limit-badge.status-badge--finished { background: #EDEDED; color: #6B6B6B; }
-    .limit-badge.status-badge--paused { background: #FFF4E0; color: #9A6A15; }
-    .limit-badge:not(.status-badge--recruiting) .limit-dot {
-      background: currentColor;
-      animation: none;
-    }
-    .hero .limit-badge.status-badge--upcoming,
-    .hero .limit-badge.status-badge--full,
-    .hero .limit-badge.status-badge--closed,
-    .hero .limit-badge.status-badge--finished,
-    .hero .limit-badge.status-badge--paused {
-      background: rgba(242, 239, 233, 0.14);
-      color: #F2EFE9;
-    }
-
-    /* ── 参加申込 / 検討中の切り分け ── */
-    .cta-split {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 0.9rem;
-      max-width: 440px;
-      margin: 0 auto 2rem;
-      text-align: left;
-    }
-    @media (min-width: 640px) {
-      .cta-split { grid-template-columns: 1fr 1fr; }
-    }
-    .cta-split-item {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.1rem 1.25rem;
-    }
-    .cta-split-item--apply { border-top: 3px solid var(--accent); }
-    .cta-split-title { font-size: 0.92rem; font-weight: 800; color: var(--navy); margin-bottom: 0.4rem; }
-    .cta-split-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.75; }
-
-    /* ── 申込フォーム ── */
-    .apply-form { text-align: left; max-width: 560px; margin: 0 auto 2rem; }
-    .apply-form__honey { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-    .form-field { margin-top: 1.1rem; }
-    .form-field:first-of-type { margin-top: 0; }
-    .form-field label { display: block; font-size: 0.86rem; font-weight: 700; color: var(--navy); margin-bottom: 0.4rem; }
-    .required-mark, .optional-mark {
-      display: inline-block;
-      font-size: 0.66rem;
-      font-weight: 800;
-      padding: 0.1rem 0.45rem;
-      border-radius: 999px;
-      margin-left: 0.3rem;
-      vertical-align: middle;
-    }
-    .required-mark { background: #fde7e7; color: #b3261e; }
-    .optional-mark { background: var(--bg-card2); color: var(--text-muted); }
-    .form-field input[type="text"],
-    .form-field input[type="email"],
-    .form-field textarea {
-      width: 100%;
-      font-size: 1rem;
-      padding: 0.7rem 0.8rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: #fff;
-      color: var(--navy);
-      font-family: inherit;
-    }
-    .form-field input:focus,
-    .form-field textarea:focus {
-      outline: 2px solid var(--accent);
-      outline-offset: 1px;
-      border-color: var(--accent);
-    }
-    .form-field textarea { resize: vertical; min-height: 4rem; }
-    .form-hint { margin-top: 0.35rem; font-size: 0.76rem; color: var(--text-muted); line-height: 1.6; }
-    .contact-guide { font-size: 0.82rem; color: var(--text-muted); line-height: 1.7; }
-    .contact-guide.is-error { color: #b3261e; font-weight: 700; }
-    .field-error { margin-top: 0.35rem; font-size: 0.78rem; color: #b3261e; font-weight: 700; line-height: 1.6; }
-    .radio-group { display: flex; flex-wrap: wrap; gap: 0.5rem 1.1rem; margin-top: 0.4rem; }
-    .radio-option { display: flex; align-items: center; gap: 0.4rem; font-size: 0.86rem; color: var(--text); }
-    .radio-option input { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--accent); }
-    .checkbox-option--agree {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-    .checkbox-option--agree input { width: 18px; height: 18px; flex-shrink: 0; margin-top: 0.15rem; accent-color: var(--accent); }
-    .checkbox-option--agree a { color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
-    .apply-form__submit { display: block; width: 100%; text-align: center; margin-top: 1.5rem; padding: 0.95rem; font-size: 1rem; }
-    .apply-form__submit:disabled { opacity: 0.6; cursor: not-allowed; }
-    .form-privacy-note { margin-top: 1rem; font-size: 0.74rem; color: var(--text-muted); line-height: 1.8; }
-    .form-result {
-      border-radius: 8px;
-      padding: 1.35rem 1.25rem;
-      margin: 0 auto 2rem;
-      max-width: 560px;
-      font-size: 0.88rem;
-      line-height: 1.85;
-      text-align: left;
-    }
-    .form-result--success { background: #eaf6ec; border: 1px solid #b7ddbc; color: #1e4620; }
-    .form-result--success strong { color: #1e4620; }
-    .form-result--error { background: #fdeceb; border: 1px solid #f3b8b3; color: #7a1f17; }
-    .form-result--error strong { color: #7a1f17; }
-
     /* ── Footer ── */
     footer {
       background: #1C1A17;
@@ -800,9 +661,9 @@
   </div>
   <div class="container">
     <div class="hero-content">
-      <div class="limit-badge" data-event-id="community-vol2-0725" data-event-field="status-class">
-        <span class="limit-dot"></span>
-        <span data-event-id="community-vol2-0725" data-event-field="date">2026年7月25日（土）</span>開催・<span data-event-id="community-vol2-0725" data-event-field="badge-label">受付終了</span>
+      <div class="limit-badge" style="background: var(--bg-card, #f0ece2); border-color: var(--border, #d8cdb8); color: var(--text-muted, #8a7d68);">
+        <span class="limit-dot" style="background: var(--text-muted, #8a7d68); animation: none;"></span>
+        2026年7月25日（土）開催・終了しました
       </div>
       <h1>
         お気に入りの野球ユニで、<br>
@@ -814,21 +675,21 @@
         名古屋・上前津の小さな個室スタジオにて開催。
       </p>
       <div class="hero-specs">
-        <span class="hero-spec big">参加費 <span data-event-id="community-vol2-0725" data-event-field="fee">¥4,000（現金・PayPay）</span></span>
-        <span class="hero-spec" data-event-id="community-vol2-0725" data-event-field="date">2026年7月25日（土）</span>
-        <span class="hero-spec" data-event-id="community-vol2-0725" data-event-field="time">14:00〜17:00</span>
-        <span class="hero-spec" data-event-id="community-vol2-0725" data-event-field="capacity">定員4名</span>
-        <span class="hero-spec" data-event-id="community-vol2-0725" data-event-field="venue">上前津｜Studio Nagoya Base</span>
+        <span class="hero-spec big">参加費 ¥4,000（現金・PayPay）</span>
+        <span class="hero-spec">2026年7月25日（土）</span>
+        <span class="hero-spec">14:00〜17:00</span>
+        <span class="hero-spec">定員4名</span>
+        <span class="hero-spec">上前津｜Studio Nagoya Base</span>
         <span class="hero-spec">希望者は写真データ付き</span>
-        <span class="hero-spec" data-event-id="community-vol2-0725" data-event-field="minimum">最少催行2名</span>
-        <span class="hero-spec" data-event-id="community-vol2-0725" data-event-field="condition">お気に入りの野球ユニフォーム</span>
+        <span class="hero-spec">最少催行2名</span>
+        <span class="hero-spec">お気に入りの野球ユニフォーム</span>
       </div>
       <div class="hero-btns">
-        <a href="#about" class="btn btn-primary btn-lg">
-          ⚾ イベント詳細を見る
+        <a href="../community/" class="btn btn-primary btn-lg">
+          ⚾ 次回開催情報を見る
         </a>
         <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-lg">
-          💬 参加前にDMで質問する
+          ✉️ X @baseballuni2022 をフォロー
         </a>
       </div>
     </div>
@@ -961,22 +822,22 @@
     <div class="price-box">
       <div class="price-box-header">
         <div>
-          <div class="price-box-title">⚾ SNBC <span data-event-id="community-vol2-0725" data-event-field="title">Vol.2 野球ユニ会</span></div>
+          <div class="price-box-title">⚾ SNBC Vol.2 野球ユニ会</div>
         </div>
-        <div class="price-main"><sup>¥</sup><span data-event-id="community-vol2-0725" data-event-field="fee-amount">4,000</span></div>
+        <div class="price-main"><sup>¥</sup>4,000</div>
       </div>
       <div class="price-box-body">
         <div class="price-row">
           <span class="pr-label">日時</span>
-          <span class="pr-val"><span data-event-id="community-vol2-0725" data-event-field="date">2026年7月25日（土）</span> <span data-event-id="community-vol2-0725" data-event-field="time">14:00〜17:00</span></span>
+          <span class="pr-val">2026年7月25日（土） 14:00〜17:00</span>
         </div>
         <div class="price-row">
           <span class="pr-label">場所</span>
-          <span class="pr-val" data-event-id="community-vol2-0725" data-event-field="venue">上前津｜Studio Nagoya Base</span>
+          <span class="pr-val">上前津｜Studio Nagoya Base</span>
         </div>
         <div class="price-row">
           <span class="pr-label">定員</span>
-          <span class="pr-val"><span data-event-id="community-vol2-0725" data-event-field="capacity-amount">4</span>（最少催行<span data-event-id="community-vol2-0725" data-event-field="minimum-amount">2</span>）</span>
+          <span class="pr-val">4名（最少催行2名）</span>
         </div>
         <div class="price-row">
           <span class="pr-label">写真データ</span>
@@ -984,7 +845,7 @@
         </div>
         <div class="price-row">
           <span class="pr-label">持ち物</span>
-          <span class="pr-val" data-event-id="community-vol2-0725" data-event-field="condition">お気に入りの野球ユニフォーム</span>
+          <span class="pr-val">お気に入りの野球ユニフォーム</span>
         </div>
         <div class="price-row">
           <span class="pr-label">支払方法</span>
@@ -993,7 +854,8 @@
       </div>
     </div>
     <div class="price-note">
-      参加受付は終了しました。イベントは予定どおり開催します。<a href="#contact" style="color: #2E7D32; text-decoration: underline;">最新の開催情報</a>をご確認いただくか、ご質問はX（@baseballuni2022）のDMからご連絡ください。
+      本イベントは終了しました。ご参加・ご検討いただいた皆さま、ありがとうございました。<br>
+      次回開催の情報は<a href="../community/" style="color: #2E7D32; text-decoration: underline;">SNBCコミュニティページ</a>または X（@baseballuni2022）にてお知らせします。
     </div>
   </div>
 </section>
@@ -1003,9 +865,8 @@
   <div class="container">
     <p class="section-label">Gallery</p>
     <h2>当日の様子</h2>
-    <!-- TODO: Vol.2開催後、当日写真に差し替え -->
     <p style="font-size: 0.9rem; color: var(--text-muted);">
-      当日の様子は、Vol.2開催後にこちらへ追加予定です。
+      本イベントは終了しました。当日の写真は現時点で掲載しておりません。
     </p>
   </div>
 </section>
@@ -1030,7 +891,7 @@
       </div>
     </div>
     <p style="font-size: 0.87rem; color: var(--text-muted); margin-top: 1.25rem;">
-      「野球ユニ版もやってほしい」という声を受けて、Vol.2 野球ユニ会を開催します。
+      「野球ユニ版もやってほしい」という声を受けて、Vol.2 野球ユニ会を開催しました。
     </p>
   </div>
 </section>
@@ -1062,7 +923,7 @@
       <details>
         <summary>定員に満たない場合はどうなりますか？</summary>
         <div class="faq-body">
-          最少催行人数は2名です（参加費は当日集金）。人数に満たない場合は中止となることがあります。あらかじめご了承ください。
+          最少催行人数は2名としていました（参加費は当日集金）。Vol.2は終了しました。
         </div>
       </details>
       <details>
@@ -1084,165 +945,32 @@
 <!-- ── Final CTA ── -->
 <section id="contact" class="final-cta">
   <div class="container">
-    <div class="limit-badge" style="margin-bottom: 1.5rem;" data-event-id="community-vol2-0725" data-event-field="status-class">
-      <span class="limit-dot"></span>
-      <span data-event-id="community-vol2-0725" data-event-field="date">2026年7月25日（土）</span>開催・<span data-event-id="community-vol2-0725" data-event-field="badge-label">受付終了</span>
+    <div class="limit-badge" style="margin-bottom: 1.5rem; background: var(--bg-card, #f0ece2); border-color: var(--border, #d8cdb8);">
+      <span class="limit-dot" style="background: var(--text-muted, #8a7d68); animation: none;"></span>
+      2026年7月25日（土） 開催・終了しました
     </div>
-    <div data-event-id="community-vol2-0725" data-event-field="form-gate">
-      <h2>
-        お気に入りの野球ユニで、<br>
-        <em>参加してみませんか。</em>
-      </h2>
-      <p class="final-cta-sub">
-        参加を希望する方は下の申込フォームからお送りください。
-      </p>
-
-      <div class="cta-split">
-        <div class="cta-split-item cta-split-item--apply">
-          <p class="cta-split-title">参加申込</p>
-          <p class="cta-split-desc">申込フォームから必要事項をお送りください。</p>
-        </div>
-        <div class="cta-split-item cta-split-item--consider">
-          <p class="cta-split-title">検討中</p>
-          <p class="cta-split-desc">告知投稿へのいいね・リプだけでも歓迎です。<br>ただし、参加枠の確保には申込が必要です。</p>
-        </div>
-      </div>
-
-      <form id="vol2-apply-form" class="apply-form" novalidate>
-        <input type="hidden" name="_subject" value="【SNBC 野球ユニ会Vol.2】参加申込フォーム">
-        <input type="hidden" name="_template" value="table">
-        <input type="hidden" name="_captcha" value="false">
-        <input type="text" name="_honey" class="apply-form__honey" tabindex="-1" autocomplete="off">
-
-        <div class="form-field">
-          <label for="af-name">お名前 <span class="required-mark">必須</span></label>
-          <input type="text" id="af-name" name="お名前" required autocomplete="name">
-        </div>
-
-        <div class="form-field">
-          <p class="contact-guide" id="af-contact-guide">メールアドレスまたはXアカウントのどちらかを入力してください。</p>
-        </div>
-
-        <div class="form-field">
-          <label for="af-email">メールアドレス <span class="optional-mark">任意</span></label>
-          <input type="email" id="af-email" name="メールアドレス" autocomplete="email" aria-describedby="af-email-hint af-email-error">
-          <p class="form-hint" id="af-email-hint">参加可否のご連絡に使用します。</p>
-          <p class="field-error" id="af-email-error" role="alert" hidden></p>
-        </div>
-
-        <div class="form-field">
-          <label for="af-x">Xアカウント <span class="optional-mark">任意</span></label>
-          <input type="text" id="af-x" name="Xアカウント" placeholder="@baseballuni2022" autocomplete="off" aria-describedby="af-x-error">
-          <p class="field-error" id="af-x-error" role="alert" hidden></p>
-        </div>
-
-        <div class="form-field">
-          <label for="af-method-email">希望する連絡方法 <span class="required-mark">必須</span></label>
-          <div class="radio-group" id="af-method-group">
-            <label class="radio-option">
-              <input type="radio" id="af-method-email" name="希望する連絡方法" value="メール" required>
-              <span>メール</span>
-            </label>
-            <label class="radio-option">
-              <input type="radio" id="af-method-x" name="希望する連絡方法" value="XのDM" required>
-              <span>XのDM</span>
-            </label>
-            <label class="radio-option">
-              <input type="radio" id="af-method-either" name="希望する連絡方法" value="どちらでもよい" required>
-              <span>どちらでもよい</span>
-            </label>
-          </div>
-          <p class="field-error" id="af-method-error" role="alert" hidden></p>
-        </div>
-
-        <div class="form-field">
-          <label for="af-age">年代 <span class="required-mark">必須</span></label>
-          <input type="text" id="af-age" name="年代" placeholder="例：30代" required>
-        </div>
-
-        <div class="form-field">
-          <label for="af-intro">簡単な自己紹介 <span class="required-mark">必須</span></label>
-          <textarea id="af-intro" name="簡単な自己紹介" rows="2" placeholder="例：野球観戦が好きです。" required></textarea>
-        </div>
-
-        <div class="form-field">
-          <label for="af-uniform">好きなユニフォーム <span class="required-mark">必須</span></label>
-          <input type="text" id="af-uniform" name="好きなユニフォーム" placeholder="例：白の練習着" required>
-        </div>
-
-        <div class="form-field">
-          <label for="af-reason">参加したいと思った理由 <span class="required-mark">必須</span></label>
-          <textarea id="af-reason" name="参加したいと思った理由" rows="2" placeholder="例：同じ趣味の人と話したり、ユニフォーム姿を撮ってもらいたくて参加を希望しました。" required></textarea>
-        </div>
-
-        <div class="form-field">
-          <label id="af-photo-label">運営が撮影した写真の掲載について <span class="required-mark">必須</span></label>
-          <div class="radio-group" id="af-photo-group" role="group" aria-labelledby="af-photo-label" aria-describedby="af-photo-error">
-            <label class="radio-option">
-              <input type="radio" name="運営が撮影した写真の掲載について" value="顔を含めて掲載可" required>
-              <span>顔を含めて掲載可</span>
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="運営が撮影した写真の掲載について" value="本人が特定されにくい写真のみ掲載可" required>
-              <span>本人が特定されにくい写真のみ掲載可</span>
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="運営が撮影した写真の掲載について" value="掲載候補を事前確認した場合のみ可" required>
-              <span>掲載候補を事前確認した場合のみ可</span>
-            </label>
-            <label class="radio-option">
-              <input type="radio" name="運営が撮影した写真の掲載について" value="掲載不可" required>
-              <span>掲載不可</span>
-            </label>
-          </div>
-          <p class="form-hint">「掲載可」はイベント参加の必須条件ではありません。掲載を希望しない場合も参加いただけます。</p>
-          <p class="field-error" id="af-photo-error" role="alert" hidden></p>
-        </div>
-
-        <div class="form-field">
-          <label class="checkbox-option--agree">
-            <input type="checkbox" id="af-agree-rules" name="規約への同意" value="同意する" required aria-describedby="af-agree-error">
-            <span>「<a href="../legal/community-rules.html" target="_blank" rel="noopener noreferrer">イベント参加の心得</a>」と「<a href="../legal/photo-terms.html" target="_blank" rel="noopener noreferrer">撮影写真の利用規約</a>」を確認し、内容に同意します。</span>
-          </label>
-          <p class="field-error" id="af-agree-error" role="alert" hidden></p>
-        </div>
-
-        <button type="submit" class="btn btn-primary apply-form__submit" id="af-submit-btn">このイベントに申し込む</button>
-
-        <p class="form-privacy-note">入力された情報は、本イベントの参加確認と必要な連絡のためにのみ使用します。</p>
-      </form>
-
-      <div class="form-result form-result--success" id="af-success" hidden>
-        <p><strong>お申し込みありがとうございます。</strong></p>
-        <p>内容を確認し、通常24時間以内にご連絡します。</p>
-        <p>返信が届かない場合は、迷惑メールフォルダをご確認いただくか、XのDMからお問い合わせください。</p>
-      </div>
-
-      <div class="form-result form-result--error" id="af-error" hidden>
-        <p><strong>送信中にエラーが発生しました。</strong></p>
-        <p>お手数ですが、XのDMから直接ご連絡ください。</p>
-      </div>
-    </div>
-
-    <div class="form-status-fallback" data-event-id="community-vol2-0725" data-event-field="form-fallback" hidden>
-      <h2 class="form-status-fallback__heading" data-event-id="community-vol2-0725" data-event-field="form-fallback-heading"></h2>
-      <p class="form-status-fallback__text" data-event-id="community-vol2-0725" data-event-field="form-fallback-text"></p>
-      <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Xで最新情報を見る</a>
-    </div>
+    <h2>
+      ご参加・ご検討、<br>
+      <em>ありがとうございました。</em>
+    </h2>
+    <p class="final-cta-sub">
+      このイベントは終了しました。ご参加・ご検討いただいた皆さま、ありがとうございました。<br>
+      次回開催が決まり次第、こちらのページまたはXでお知らせします。
+    </p>
 
     <div class="cta-channels">
-      <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="cta-channel">
-        <span class="cta-channel-icon">💬</span>
-        <span>
-          <span class="cta-channel-label">参加前にDMで質問する</span>
-          <span class="cta-channel-note">X（旧Twitter）@baseballuni2022／短い質問だけでもOKです。</span>
-        </span>
-      </a>
       <a href="../community/" class="cta-channel">
         <span class="cta-channel-icon">⚾</span>
         <span>
           <span class="cta-channel-label">SNBCコミュニティページを見る</span>
-          <span class="cta-channel-note">他のイベント情報もこちら。</span>
+          <span class="cta-channel-note">次回開催情報・他のイベントもこちら。</span>
+        </span>
+      </a>
+      <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="cta-channel">
+        <span class="cta-channel-icon">✉️</span>
+        <span>
+          <span class="cta-channel-label">X（旧Twitter）@baseballuni2022 をフォロー</span>
+          <span class="cta-channel-note">次回開催の情報をXで見る。</span>
         </span>
       </a>
       <a href="vol3_uniform.html" class="cta-channel">
@@ -1286,10 +1014,6 @@
       hamburger.setAttribute('aria-expanded', 'false');
     });
   });
-
-  if (window.SNBEventStatus) {
-    window.SNBEventStatus.render('community-vol2-0725');
-  }
 </script>
 
 <script>
@@ -1306,178 +1030,5 @@
   })();
 </script>
 
-<!-- ── 参加申込フォーム制御 ── -->
-<script>
-(function () {
-  'use strict';
-
-  var FORM_ENDPOINT = 'https://formsubmit.co/ajax/bbuni.ngo@gmail.com';
-
-  var form = document.getElementById('vol2-apply-form');
-  if (!form) return;
-
-  var submitBtn = document.getElementById('af-submit-btn');
-  var successBox = document.getElementById('af-success');
-  var errorBox = document.getElementById('af-error');
-
-  var emailInput = document.getElementById('af-email');
-  var xInput = document.getElementById('af-x');
-  var contactGuide = document.getElementById('af-contact-guide');
-  var emailError = document.getElementById('af-email-error');
-  var xError = document.getElementById('af-x-error');
-  var methodRadios = form.querySelectorAll('input[name="希望する連絡方法"]');
-
-  var photoRadios = form.querySelectorAll('input[name="運営が撮影した写真の掲載について"]');
-  var photoError = document.getElementById('af-photo-error');
-  var agreeCheckbox = document.getElementById('af-agree-rules');
-  var agreeError = document.getElementById('af-agree-error');
-
-  function setSubmitting(isSubmitting) {
-    if (!submitBtn) return;
-    submitBtn.disabled = isSubmitting;
-    submitBtn.textContent = isSubmitting ? '送信中…' : 'このイベントに申し込む';
-  }
-
-  function showFieldError(el, message) {
-    if (!el) return;
-    el.textContent = message;
-    el.hidden = false;
-  }
-
-  function clearContactErrors() {
-    if (contactGuide) contactGuide.classList.remove('is-error');
-    if (emailError) { emailError.hidden = true; emailError.textContent = ''; }
-    if (xError) { xError.hidden = true; xError.textContent = ''; }
-  }
-
-  function focusAndScroll(el) {
-    if (!el) return;
-    el.focus({ preventScroll: true });
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  function getCheckedMethod() {
-    var checked = form.querySelector('input[name="希望する連絡方法"]:checked');
-    return checked ? checked.value : '';
-  }
-
-  function validateContact() {
-    clearContactErrors();
-
-    var emailVal = emailInput.value.trim();
-    var xVal = xInput.value.trim();
-    var methodVal = getCheckedMethod();
-
-    if (!emailVal && !xVal) {
-      if (contactGuide) contactGuide.classList.add('is-error');
-      focusAndScroll(emailInput);
-      return false;
-    }
-    if (methodVal === 'XのDM' && !xVal) {
-      showFieldError(xError, 'XのDMを選択した場合は、Xアカウントを入力してください。');
-      focusAndScroll(xInput);
-      return false;
-    }
-    if (methodVal === 'メール' && !emailVal) {
-      showFieldError(emailError, 'メールを選択した場合は、メールアドレスを入力してください。');
-      focusAndScroll(emailInput);
-      return false;
-    }
-    return true;
-  }
-
-  emailInput.addEventListener('input', clearContactErrors);
-  xInput.addEventListener('input', clearContactErrors);
-  methodRadios.forEach(function (radio) {
-    radio.addEventListener('change', clearContactErrors);
-  });
-
-  function getCheckedPhoto() {
-    var checked = form.querySelector('input[name="運営が撮影した写真の掲載について"]:checked');
-    return checked ? checked.value : '';
-  }
-
-  function clearPhotoError() {
-    if (photoError) { photoError.hidden = true; photoError.textContent = ''; }
-  }
-
-  function validatePhotoGroup() {
-    clearPhotoError();
-    if (!getCheckedPhoto()) {
-      showFieldError(photoError, '運営が撮影した写真の掲載について、いずれかを選択してください。');
-      focusAndScroll(photoRadios[0]);
-      return false;
-    }
-    return true;
-  }
-
-  photoRadios.forEach(function (radio) {
-    radio.addEventListener('change', clearPhotoError);
-  });
-
-  function clearAgreeError() {
-    if (agreeError) { agreeError.hidden = true; agreeError.textContent = ''; }
-  }
-
-  function validateAgreement() {
-    clearAgreeError();
-    if (!agreeCheckbox.checked) {
-      showFieldError(agreeError, '「イベント参加の心得」と「撮影写真の利用規約」への同意が必要です。');
-      focusAndScroll(agreeCheckbox);
-      return false;
-    }
-    return true;
-  }
-
-  if (agreeCheckbox) agreeCheckbox.addEventListener('change', clearAgreeError);
-
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    if (!validatePhotoGroup()) {
-      return;
-    }
-
-    if (!validateAgreement()) {
-      return;
-    }
-
-    if (!form.reportValidity()) {
-      return;
-    }
-
-    if (!validateContact()) {
-      return;
-    }
-
-    setSubmitting(true);
-
-    var formData = new FormData(form);
-
-    fetch(FORM_ENDPOINT, {
-      method: 'POST',
-      body: formData,
-      headers: { Accept: 'application/json' }
-    })
-      .then(function (response) {
-        if (!response.ok) throw new Error('送信に失敗しました');
-        return response.json();
-      })
-      .then(function () {
-        form.hidden = true;
-        if (successBox) successBox.hidden = false;
-        if (errorBox) errorBox.hidden = true;
-        successBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      })
-      .catch(function () {
-        setSubmitting(false);
-        if (errorBox) {
-          errorBox.hidden = false;
-          errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      });
-  });
-})();
-</script>
 </body>
 </html>
