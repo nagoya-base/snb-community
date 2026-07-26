@@ -13,13 +13,13 @@
   <meta property="og:description" content="名古屋・上前津のスタジオ名古屋ベースで2026年8月12日（水）14:00〜17:00開催。サッカーユニフォーム・陸上ユニフォームで集まる交流撮影会。最少催行4名、参加人数に応じて参加費が変動します。記名式の参加申込を受付中。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://nagoya-base.github.io/snb-community/community/vol4_0812_soccer_track.html">
-  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
+  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/community/vol4/meta-ogp-main.jpg">
   <meta property="og:image:width" content="1731">
   <meta property="og:image:height" content="909">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Vol.4 サカユニ・陸ユニ交流撮影会｜SNBコミュニティ">
   <meta name="twitter:description" content="名古屋・上前津のスタジオ名古屋ベースで2026年8月12日（水）14:00〜17:00開催。サッカーユニフォーム・陸上ユニフォームで集まる交流撮影会。最少催行4名、参加人数に応じて参加費が変動します。記名式の参加申込を受付中。">
-  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
+  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/vol4/meta-ogp-main.jpg">
 
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K1TJG0S9Y"></script>
@@ -192,15 +192,18 @@
     }
     .hero-img-wrap {
       width: 100%;
-      height: 62vh;
-      min-height: 320px;
-      max-height: 520px;
+      /* 画像内に日時・料金表などの文字情報が全面に入っているため、cover による
+         トリミングで文字が欠けないよう、アスペクト比どおりに全幅表示する contain にする */
+      aspect-ratio: 1731 / 909;
+      height: auto;
+      min-height: 220px;
       position: relative;
+      background: #1C1A17;
     }
     .hero-img-wrap img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       object-position: center center;
       display: block;
     }
@@ -209,9 +212,9 @@
       inset: 0;
       background: linear-gradient(
         to bottom,
-        rgba(28, 26, 23, 0.05) 0%,
-        rgba(28, 26, 23, 0.45) 58%,
-        rgba(28, 26, 23, 0.95) 100%
+        rgba(28, 26, 23, 0) 0%,
+        rgba(28, 26, 23, 0.12) 75%,
+        rgba(28, 26, 23, 0.38) 100%
       );
     }
     .hero-content {
@@ -597,7 +600,6 @@
       .hamburger { display: flex; }
       .nav-cta { display: none; }
 
-      .hero-img-wrap { height: 50vw; min-height: 220px; }
       .hero-content { padding: 2.5rem 0 4rem; }
 
       .about-grid { grid-template-columns: 1fr; }
@@ -636,8 +638,8 @@
 <section class="hero" id="top">
   <div class="hero-img-wrap">
     <picture>
-      <source srcset="../images/community/top/hero-photo-main.webp" type="image/webp">
-      <img src="../images/community/top/meta-ogp-main.jpg"
+      <source srcset="../images/community/vol4/hero-photo-main.webp" type="image/webp">
+      <img src="../images/community/vol4/hero-photo-main.jpg"
            alt="SNBC Vol.4 サカユニ・陸ユニ交流撮影会" width="1731" height="909" loading="eager"
            fetchpriority="high">
     </picture>
