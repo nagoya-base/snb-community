@@ -464,11 +464,11 @@ body.community-menu-open { overflow: hidden; }
      開閉状態に関わらず常にオーバーレイの上に表示され、操作できる。 */
   html.js .community-menu {
     position: fixed;
-    top: 51px;
+    top: var(--community-nav-height, 51px);
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 130;
+    z-index: 95;
     background: rgba(28, 26, 23, 0.45);
     padding: 0;
     border-bottom: none;

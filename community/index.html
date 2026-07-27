@@ -361,6 +361,15 @@
 
   if (!toggle || !menu) return;
 
+  /* オーバーレイの開始位置を実測のナビ高に同期する（固定51px頼みだとナビの折り返し等でズレる） */
+  var siteNav = document.querySelector('.site-nav');
+  function syncNavHeight() {
+    if (!siteNav) return;
+    document.documentElement.style.setProperty('--community-nav-height', siteNav.getBoundingClientRect().height + 'px');
+  }
+  syncNavHeight();
+  window.addEventListener('resize', syncNavHeight);
+
   function closeMenu(opts) {
     menu.classList.remove('is-open');
     menu.setAttribute('inert', '');
