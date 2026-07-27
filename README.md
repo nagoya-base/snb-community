@@ -61,6 +61,84 @@ snb-community/
 
 ---
 
+## アクセス解析（Google Analytics 4）
+
+全ページに GA4 のトラッキングコード（測定 ID: `G-8K1TJG0S9Y`）を設定しています。
+共通の計測ヘルパーは `analytics.js`（`window.SNBAnalytics`）です。
+
+### GA4 管理画面でキーイベントとして ON にするもの
+
+| イベント名 | 発火条件 |
+| --- | --- |
+| `entry_submit` | 参加申込フォームの POST が**成功した時だけ** 1 回 |
+
+設定手順：GA4 管理画面 →「管理」→「データの表示」→「イベント」→ 一覧から
+`entry_submit` を探し、「キーイベントとしてマークを付ける」を ON にします。
+イベントが一覧に表示されるのは、実際に 1 回以上計測された後です（最大 24 時間程度）。
+
+`entry_submit` は `SNBAnalytics.trackEntrySubmit()` からのみ送信され、
+以下では発火しません。
+
+- 送信ボタンを押しただけの時
+- 必須項目の未入力など、バリデーションエラーがある時
+- 送信を試みたがサーバー・通信エラーで失敗した時（`submit_failed` を送信）
+
+二重計測は、送信操作ごとに採番するトークンで防いでいます。
+
+複数の開催回は `event_slug` / `event_title` で判別します。値は各ページの
+`<body data-event-slug="..." data-event-title="...">` から自動的に付与されます。
+新しい開催ページを追加するときは、この 2 属性と `analytics.js` の読み込みを
+忘れないでください。
+
+### 実装していない成果イベント
+
+| イベント名 | 実装しない理由 |
+| --- | --- |
+| `entry_complete` | 申込完了ページが存在しない。送信成功と完了メッセージの表示が同一の瞬間に起きるため、`entry_submit` と両方送ると 1 件の申込を二重に計上することになる |
+
+将来、申込完了を独立したページやステップとして用意した場合に、はじめて実装してください。
+
+### 匿名アンケート（Vol.3）の扱い
+
+`community/vol3_uniform.html` の匿名アンケートは、回答しても参加確定・
+お申し込みにはなりません。そのため送信成功時も `entry_submit` は発火させず、
+分析用イベント `survey_submit` を送信します。
+
+### 分析用イベント（キーイベントにしない）
+
+`page_view` / `scroll` / `form_start` / `form_error` / `submit_failed` /
+`survey_submit` / `portrait_form_view` / `portrait_form_start` /
+`portrait_form_plan_select` / `portrait_form_submit_booking` /
+`portrait_form_submit_consult` / `portrait_form_success` / `portrait_form_error` /
+`portrait_select_contact_type` / `portrait_view_*` / `portrait_click_*` /
+`portrait_toggle_gallery`
+
+### 共通パラメータ
+
+個人情報（氏名・年代・メールアドレス・Xアカウント・希望ユニフォーム・
+自己紹介・備考）は一切送信しません。送信するのはカテゴリ値のみです。
+
+- `site_section`：`community` / `portrait` / `baseball`
+- `page_path`：`location.pathname`
+- `event_slug` / `event_title`：開催回の識別（`<body>` の data 属性から）
+- `form_name`：`vol4_apply_form` / `vol3_survey_form` など
+
+### 発火確認の手順
+
+1. 確認したいページを `?debug_mode=true` 付きで開きます
+   （例：`https://nagoya-base.github.io/snb-community/community/vol4_0812_soccer_track.html?debug_mode=true`）
+2. ブラウザの開発者ツールのコンソールに `[SNBAnalytics]` から始まるログが出力され、
+   イベント名とパラメータを確認できます
+3. GA4 管理画面 →「管理」→「DebugView」でも同じイベントをリアルタイムに確認できます
+4. `entry_submit` は、実際にフォームを送信して完了メッセージが表示されるところまで
+   確認してください。必須項目を空にして送信ボタンを押しても発火しないことも
+   合わせて確認します
+
+`file://` での直接表示と `localhost` では、誤計測を防ぐため送信されません
+（`?debug_mode=true` を付けた場合を除く）。
+
+---
+
 ## 関連リポジトリ
 
 | リポジトリ | 用途 |
