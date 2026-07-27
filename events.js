@@ -40,7 +40,7 @@
     full: {
       label: "満席", modifier: "full", ctaEnabled: false,
       formHeading: "満席になりました",
-      formMessage: "参加についてのご相談はXのDMからご連絡ください。"
+      formMessage: "参加についてのご相談は問い合わせフォームからご連絡ください。"
     },
     closed: {
       label: "受付終了", modifier: "closed", ctaEnabled: false,
@@ -151,14 +151,14 @@
       var when = [ev.dateLabel, ev.timeLabel].filter(Boolean).join(" ");
       if (when) lines.push(when);
       if (ev.venue) lines.push(ev.venue);
-      lines.push("参加を検討している方は、事前にDMでご連絡ください。");
+      lines.push("参加を検討している方は、事前に<a href=\"../contact/?category=baseball\">問い合わせフォーム</a>でご連絡ください。");
       return lines.join("<br>");
     }
     if (status === "upcoming") {
       return "次回の活動を準備中です。<br>詳細が決まり次第、Xでお知らせします。";
     }
     if (status === "full") {
-      return "次回の活動は定員に達しました。<br>参加についてのご相談はXのDMからご連絡ください。";
+      return "次回の活動は定員に達しました。<br>参加についてのご相談は<a href=\"../contact/?category=baseball\">問い合わせフォーム</a>からご連絡ください。";
     }
     if (status === "closed") {
       return "受付を終了しました。<br>次回情報はXで案内します。";

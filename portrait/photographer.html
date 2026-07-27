@@ -200,7 +200,7 @@
             <li>平日夜・土日に随時対応</li>
             <li>「雰囲気だけ見たい」も歓迎</li>
           </ul>
-          <div class="type-note">※ ストロボ・本格ライティングの体験は「お試し体験コース」で。DMまたはメールで事前予約を。</div>
+          <div class="type-note">※ ストロボ・本格ライティングの体験は「お試し体験コース」で。<a href="../contact/?category=portrait">問い合わせフォーム</a>から事前予約を。</div>
         </div>
         <div class="type-card featured">
           <div class="type-icon">📸</div>
@@ -346,8 +346,8 @@
       <h2>見学 or 体験を申し込む</h2>
       <p>希望内容（見学のみ／お試し体験）と希望日時をお知らせください。ご質問だけでも歓迎です。</p>
       <div class="contact-links">
-        <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer" class="contact-link">
-          X（旧Twitter）@baseballuni2022 にDMする
+        <a href="../contact/?category=portrait" class="contact-link" data-ga-event="contact_link_click" data-ga-category="portrait" data-ga-section="contact" data-ga-location="contact">
+          問い合わせフォームで申し込む
           <span class="contact-note">気軽に質問だけでもOKです。返信は通常24時間以内。</span>
         </a>
       </div>
@@ -371,6 +371,24 @@
     <p class="site-footer__copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
   </div>
 </footer>
+
+<!-- ── CTAクリック計測（data-ga-event属性を持つ要素をイベント委譲で拾う） ── -->
+<script>
+(function () {
+  'use strict';
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-ga-event]') : null;
+    if (!el || typeof gtag !== 'function') return;
+    gtag('event', el.getAttribute('data-ga-event'), {
+      site_section: 'portrait',
+      page_path: window.location.pathname,
+      contact_category: el.getAttribute('data-ga-category') || '',
+      cta_section: el.getAttribute('data-ga-section') || '',
+      cta_location: el.getAttribute('data-ga-location') || ''
+    });
+  });
+})();
+</script>
 
 </body>
 </html>

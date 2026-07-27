@@ -1099,7 +1099,7 @@
       <details>
         <summary>一人で行っても大丈夫ですか？</summary>
         <div class="faq-body">
-          はい、一人参加が基本です。友人と一緒でも可能ですが、まずはDMでご相談ください。
+          はい、一人参加が基本です。友人と一緒でも可能ですが、まずは<a href="../contact/?category=event&amp;event=event-0614">問い合わせフォーム</a>でご相談ください。
         </div>
       </details>
       <details>
@@ -1151,6 +1151,13 @@
         <span>
           <span class="cta-channel-label">撮影者向けの見学・体験を見る</span>
           <span class="cta-channel-note">スタジオ見学無料／撮影体験60分¥3,000。</span>
+        </span>
+      </a>
+      <a href="../contact/?category=event&amp;event=event-0614" class="cta-channel" data-ga-event="contact_link_click" data-ga-category="event" data-ga-section="contact" data-ga-location="contact">
+        <span class="cta-channel-icon">💬</span>
+        <span>
+          <span class="cta-channel-label">この企画について問い合わせる</span>
+          <span class="cta-channel-note">6月14日の撮影体験会についてのご質問はこちら。</span>
         </span>
       </a>
     </div>
@@ -1228,6 +1235,24 @@
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); }
     });
   });
+</script>
+
+<!-- ── CTAクリック計測（data-ga-event属性を持つ要素をイベント委譲で拾う） ── -->
+<script>
+(function () {
+  'use strict';
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-ga-event]') : null;
+    if (!el || typeof gtag !== 'function') return;
+    gtag('event', el.getAttribute('data-ga-event'), {
+      site_section: 'portrait',
+      page_path: window.location.pathname,
+      contact_category: el.getAttribute('data-ga-category') || '',
+      cta_section: el.getAttribute('data-ga-section') || '',
+      cta_location: el.getAttribute('data-ga-location') || ''
+    });
+  });
+})();
 </script>
 </body>
 </html>
