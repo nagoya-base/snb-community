@@ -1910,7 +1910,12 @@
   /* GA4イベント送出（個人情報は一切パラメータに含めない） */
   function trackEvent(name, formStatus) {
     if (typeof gtag === 'function') {
-      gtag('event', name, { page_section: 'contact', form_status: formStatus || '' });
+      gtag('event', name, {
+        page_section: 'contact',
+        form_status: formStatus || '',
+        site_section: 'portrait',
+        page_path: window.location.pathname
+      });
     }
   }
 
@@ -1964,7 +1969,12 @@
     }
 
     if (fireEvent && intent && typeof gtag === 'function') {
-      gtag('event', 'portrait_select_contact_type', { page_section: 'contact', contact_type: intent });
+      gtag('event', 'portrait_select_contact_type', {
+        page_section: 'contact',
+        contact_type: intent,
+        site_section: 'portrait',
+        page_path: window.location.pathname
+      });
     }
   }
 
@@ -2198,6 +2208,8 @@
     if (!name || typeof gtag !== 'function') return;
     var payload = params ? Object.assign({}, params) : {};
     payload.device_type = deviceType();
+    payload.site_section = 'portrait';
+    payload.page_path = window.location.pathname;
     gtag('event', name, payload);
   }
 

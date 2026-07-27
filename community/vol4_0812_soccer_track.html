@@ -611,8 +611,9 @@
 
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   </style>
+  <script src="../analytics.js"></script>
 </head>
-<body>
+<body data-site-section="community" data-event-slug="vol4-0812-soccer-track" data-event-title="Vol.4 サカユニ・陸ユニ交流撮影会">
 
 <!-- ── Nav ── -->
 <nav>
@@ -1076,6 +1077,23 @@
   var form = document.getElementById('vol4-apply-form');
   if (!form) return;
 
+  var FORM_NAME = 'vol4_apply_form';
+  /* 送信操作ごとに採番し、entry_submit の二重計測を防ぐ */
+  var submissionSeq = 0;
+
+  function analytics() {
+    return window.SNBAnalytics;
+  }
+
+  /* 入力開始（分析用イベント）。入力値そのものは送信しない。 */
+  function handleFormStart(event) {
+    var tag = event.target && event.target.tagName;
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return;
+    if (analytics()) analytics().trackFormStart(FORM_NAME);
+  }
+  form.addEventListener('input', handleFormStart);
+  form.addEventListener('change', handleFormStart);
+
   var submitBtn = document.getElementById('af-submit-btn');
   var successBox = document.getElementById('af-success');
   var errorBox = document.getElementById('af-error');
@@ -1193,18 +1211,30 @@
   form.addEventListener('submit', function (e) {
     e.preventDefault();
 
-    if (!validateWear()) return;
-
-    if (!form.reportValidity()) {
+    if (!validateWear()) {
+      if (analytics()) analytics().trackFormError(FORM_NAME, 'wear_missing');
       return;
     }
 
-    if (!validateContact()) return;
-    if (!validateStyle()) return;
+    if (!form.reportValidity()) {
+      if (analytics()) analytics().trackFormError(FORM_NAME, 'required_missing');
+      return;
+    }
+
+    if (!validateContact()) {
+      if (analytics()) analytics().trackFormError(FORM_NAME, 'contact_invalid');
+      return;
+    }
+    if (!validateStyle()) {
+      if (analytics()) analytics().trackFormError(FORM_NAME, 'style_missing');
+      return;
+    }
 
     setSubmitting(true);
 
     var formData = new FormData(form);
+    submissionSeq += 1;
+    var submissionToken = submissionSeq;
 
     fetch(FORM_ENDPOINT, {
       method: 'POST',
@@ -1212,7 +1242,11 @@
       headers: { Accept: 'application/json' }
     })
       .then(function (response) {
-        if (!response.ok) throw new Error('送信に失敗しました');
+        if (!response.ok) {
+          var httpError = new Error('送信に失敗しました');
+          httpError.failureType = 'server';
+          throw httpError;
+        }
         return response.json();
       })
       .then(function () {
@@ -1220,8 +1254,13 @@
         if (successBox) successBox.hidden = false;
         if (errorBox) errorBox.hidden = true;
         successBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        /* キーイベント：POST成功時のみ、1送信につき1回。申込内容は送信しない。 */
+        if (analytics()) analytics().trackEntrySubmit(submissionToken, { form_name: FORM_NAME });
       })
-      .catch(function () {
+      .catch(function (error) {
+        if (analytics()) {
+          analytics().trackSubmitFailed(FORM_NAME, (error && error.failureType) || 'network');
+        }
         setSubmitting(false);
         if (errorBox) {
           errorBox.hidden = false;
