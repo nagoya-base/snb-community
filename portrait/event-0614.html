@@ -27,6 +27,7 @@
     gtag('js', new Date());
     gtag('config', 'G-H9BD3KFZCR');
   </script>
+  <script src="../analytics.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -763,7 +764,7 @@
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   </style>
 </head>
-<body>
+<body data-site-section="portrait" data-page-type="detail">
 
 <!-- ── Nav ── -->
 <nav>
@@ -1099,7 +1100,7 @@
       <details>
         <summary>一人で行っても大丈夫ですか？</summary>
         <div class="faq-body">
-          はい、一人参加が基本です。友人と一緒でも可能ですが、まずはDMでご相談ください。
+          はい、一人参加が基本です。友人と一緒でも可能ですが、まずは<a href="../contact/?category=event&amp;event=event-0614">問い合わせフォーム</a>でご相談ください。
         </div>
       </details>
       <details>
@@ -1151,6 +1152,13 @@
         <span>
           <span class="cta-channel-label">撮影者向けの見学・体験を見る</span>
           <span class="cta-channel-note">スタジオ見学無料／撮影体験60分¥3,000。</span>
+        </span>
+      </a>
+      <a href="../contact/?category=event&amp;event=event-0614" class="cta-channel" data-cta-name="contact_form" data-cta-location="contact">
+        <span class="cta-channel-icon">💬</span>
+        <span>
+          <span class="cta-channel-label">この企画について問い合わせる</span>
+          <span class="cta-channel-note">6月14日の撮影体験会についてのご質問はこちら。</span>
         </span>
       </a>
     </div>
@@ -1229,5 +1237,6 @@
     });
   });
 </script>
+
 </body>
 </html>

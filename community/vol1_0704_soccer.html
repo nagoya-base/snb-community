@@ -29,6 +29,7 @@
     gtag('js', new Date());
     gtag('config', 'G-H9BD3KFZCR');
   </script>
+  <script src="../analytics.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -631,7 +632,7 @@
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   </style>
 </head>
-<body>
+<body data-site-section="community" data-page-type="detail">
 
 <!-- ── Nav ── -->
 <nav>
@@ -945,7 +946,7 @@
       <details>
         <summary>サッカーユニ以外は持ち込めますか？</summary>
         <div class="faq-body">
-          第一回はサカユニ会なので、サッカーユニフォームがメインです。他の競技のユニも悪くはないですが、まずはサカユニで来ていただけると嬉しいです。不安な方はDMでご相談ください。
+          第一回はサカユニ会なので、サッカーユニフォームがメインです。他の競技のユニも悪くはないですが、まずはサカユニで来ていただけると嬉しいです。不安な方は<a href="../contact/?category=question">問い合わせフォーム</a>でご相談ください。
         </div>
       </details>
     </div>
@@ -980,6 +981,13 @@
         <span>
           <span class="cta-channel-label">X（旧Twitter）@baseballuni2022 をフォロー</span>
           <span class="cta-channel-note">次回開催はここで告知します。</span>
+        </span>
+      </a>
+      <a href="../contact/?category=event&amp;event=vol1_0704_soccer" class="cta-channel" data-cta-name="contact_form" data-cta-location="contact">
+        <span class="cta-channel-icon">💬</span>
+        <span>
+          <span class="cta-channel-label">この企画について問い合わせる</span>
+          <span class="cta-channel-note">Vol.1についてのご質問はフォームからどうぞ。</span>
         </span>
       </a>
     </div>
@@ -1018,5 +1026,6 @@
     });
   });
 </script>
+
 </body>
 </html>

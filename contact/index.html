@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>お問い合わせ｜SNB Community</title>
+  <meta name="description" content="名古屋・上前津のSNB Community（名古屋野球ユニ部・SNBコミュニティ・男性ポートレート）への問い合わせフォーム。参加前の質問、次回開催の通知希望、運営への相談・トラブル報告はこちらから。">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://nagoya-base.github.io/snb-community/contact/">
+
+  <!-- OGP -->
+  <meta property="og:title" content="お問い合わせ｜SNB Community">
+  <meta property="og:description" content="名古屋・上前津のSNB Community（名古屋野球ユニ部・SNBコミュニティ・男性ポートレート）への問い合わせフォームです。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nagoya-base.github.io/snb-community/contact/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="お問い合わせ｜SNB Community">
+  <meta name="twitter:description" content="名古屋・上前津のSNB Community（名古屋野球ユニ部・SNBコミュニティ・男性ポートレート）への問い合わせフォームです。">
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-H9BD3KFZCR');
+  </script>
+  <script src="../analytics.js"></script>
+
+  <link rel="stylesheet" href="../common.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-site-section="contact" data-page-type="form">
+
+<!-- ── Site Nav ── -->
+<nav class="site-nav">
+  <a href="../" class="site-nav__brand">SNB Community</a>
+  <div class="site-nav__right">
+    <a href="../baseball/" class="site-nav__pillar site-nav__pillar--baseball">⚾ 野球ユニ部</a>
+    <a href="../community/" class="site-nav__pillar site-nav__pillar--community">🤝 SNBコミュニティ</a>
+    <a href="../portrait/" class="site-nav__pillar site-nav__pillar--portrait">📷 ポートレート</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="contact-hero">
+    <p class="section-label">Contact</p>
+    <h1>お問い合わせ</h1>
+    <p class="contact-hero-lead">
+      名古屋野球ユニ部、SNBコミュニティ、男性ポートレートについてのご質問・ご相談は、こちらの共通フォームからお願いします。<br>
+      各回のイベント参加申込・アンケート・男性ポートレートのご予約は、それぞれの専用フォームをご利用ください。
+    </p>
+  </div>
+
+  <div class="form-notice">
+    <p><strong>フォーム送信時点では参加・予約は確定しません。</strong>内容を確認し、通常24時間以内に返信します。</p>
+  </div>
+
+  <form id="contact-form" class="contact-form" novalidate data-section-view="contact_form">
+    <!-- FormSubmit設定用フィールド -->
+    <input type="hidden" name="_subject" value="【SNB Community】お問い合わせ">
+    <input type="hidden" name="_template" value="table">
+    <input type="hidden" name="_captcha" value="false">
+    <!-- honeypot（スパム対策・人には見えない） -->
+    <input type="text" name="_honey" class="contact-form__honey" tabindex="-1" autocomplete="off">
+
+    <fieldset class="consult-form__fieldset">
+      <legend>お問い合わせ内容</legend>
+
+      <div class="form-field">
+        <label for="cf-category">お問い合わせ種別 <span class="required-mark">必須</span></label>
+        <select id="cf-category" name="お問い合わせ種別" required>
+          <option value="" selected disabled>選択してください</option>
+          <option value="SNBコミュニティ・交流撮影会">SNBコミュニティ・交流撮影会</option>
+          <option value="名古屋野球ユニ部">名古屋野球ユニ部</option>
+          <option value="男性ポートレート">男性ポートレート</option>
+          <option value="次回開催・募集について">次回開催・募集について</option>
+          <option value="参加前の質問">参加前の質問</option>
+          <option value="運営への相談・トラブル報告">運営への相談・トラブル報告</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="cf-project">関連する企画・ページ名 <span class="optional-mark">任意</span></label>
+        <input type="text" id="cf-project" name="関連する企画・ページ名" placeholder="例：Vol.4 サッカーユニ×陸上ユニ交流会">
+      </div>
+
+      <div class="form-field">
+        <label for="cf-event-date">参加希望日・イベント名 <span class="optional-mark">任意</span></label>
+        <input type="text" id="cf-event-date" name="参加希望日・イベント名" placeholder="例：8/12開催回について">
+      </div>
+    </fieldset>
+
+    <fieldset class="consult-form__fieldset">
+      <legend>連絡先</legend>
+      <p class="form-hint form-hint--rule">メールアドレスまたはXアカウントのどちらかを入力してください。</p>
+
+      <div class="form-field">
+        <label for="cf-name">お名前またはハンドルネーム <span class="required-mark">必須</span></label>
+        <input type="text" id="cf-name" name="お名前" required autocomplete="name">
+      </div>
+
+      <div class="form-field">
+        <label for="cf-email">メールアドレス <span class="optional-mark">任意</span></label>
+        <input type="email" id="cf-email" name="メールアドレス" autocomplete="email">
+      </div>
+
+      <div class="form-field">
+        <label for="cf-x">Xアカウント <span class="optional-mark">任意</span></label>
+        <input type="text" id="cf-x" name="Xアカウント" placeholder="@baseballuni2022" autocomplete="off">
+      </div>
+
+      <div class="form-field">
+        <span class="form-field__label">希望する返信方法 <span class="required-mark">必須</span></span>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="希望する返信方法" value="メール" required> メール</label>
+          <label class="radio-option"><input type="radio" name="希望する返信方法" value="XのDM" required> XのDM</label>
+          <label class="radio-option"><input type="radio" name="希望する返信方法" value="どちらでもよい" required> どちらでもよい</label>
+        </div>
+        <p class="form-hint">XのDMを希望する場合は、Xアカウントを入力してください。</p>
+      </div>
+    </fieldset>
+
+    <fieldset class="consult-form__fieldset">
+      <legend>内容</legend>
+      <div class="form-field">
+        <label for="cf-message">お問い合わせ内容 <span class="required-mark">必須</span></label>
+        <textarea id="cf-message" name="お問い合わせ内容" rows="5" required placeholder="質問、相談したいこと、通知を希望する開催回などをご記入ください。"></textarea>
+      </div>
+    </fieldset>
+
+    <button type="submit" class="btn btn-primary contact-form__submit" id="cf-submit-btn">送信する</button>
+
+    <p class="form-privacy-note">入力された情報は、お問い合わせ対応、参加調整、必要な運営連絡のためにのみ使用します。本人の同意なく、第三者への提供や営業目的での利用は行いません。</p>
+  </form>
+
+  <div class="form-result form-result--success" id="cf-success" hidden tabindex="-1" aria-live="polite">
+    <p><strong>お問い合わせありがとうございます。</strong></p>
+    <p>内容を確認し、通常24時間以内に希望した方法で返信します。この時点では参加・予約は確定していません。</p>
+    <p>返信が届かない場合は、迷惑メールフォルダをご確認いただくか、Xのプロフィールからご連絡ください。</p>
+  </div>
+
+  <div class="form-result form-result--error" id="cf-error" hidden tabindex="-1" aria-live="assertive">
+    <p><strong>送信中にエラーが発生しました。</strong></p>
+    <p>お手数ですが、時間をおいて再度お試しいただくか、通信障害が続く場合のみ、各柱のXプロフィールから直接ご連絡ください。</p>
+  </div>
+
+  <div class="contact-methods">
+    <p>各活動の詳細は <a href="../baseball/">名古屋野球ユニ部</a>／<a href="../community/">SNBコミュニティ</a>／<a href="../portrait/">男性ポートレート</a> のページをご覧ください。参加申込・アンケート・撮影予約は、それぞれのページの専用フォームをご利用ください。</p>
+  </div>
+</div>
+
+<!-- ── Site Footer ── -->
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <nav class="site-footer__pillars">
+      <a href="../baseball/" class="site-footer__link site-footer__link--baseball">⚾ 野球ユニ部</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="../community/" class="site-footer__link site-footer__link--community">🤝 SNBコミュニティ</a>
+      <span class="site-footer__sep" aria-hidden="true">／</span>
+      <a href="../portrait/" class="site-footer__link site-footer__link--portrait">📷 ポートレート</a>
+    </nav>
+    <nav class="site-footer__legal">
+      <a href="../legal/" class="site-footer__legal-link">規約・参加ルール</a>
+    </nav>
+    <p class="site-footer__copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
+  </div>
+</footer>
+
+<!-- ── 共通問い合わせフォーム制御 ── -->
+<script>
+(function () {
+  'use strict';
+
+  var FORM_ENDPOINT = 'https://formsubmit.co/ajax/bbuni.ngo@gmail.com';
+
+  var form = document.getElementById('contact-form');
+  if (!form) return;
+
+  var categoryField = document.getElementById('cf-category');
+  var projectField = document.getElementById('cf-project');
+  var emailField = document.getElementById('cf-email');
+  var xField = document.getElementById('cf-x');
+  var methodRadios = form.querySelectorAll('input[name="希望する返信方法"]');
+  var submitBtn = document.getElementById('cf-submit-btn');
+  var successBox = document.getElementById('cf-success');
+  var errorBox = document.getElementById('cf-error');
+
+  /* ── 遷移元からのカテゴリ・企画名プリフィル（未知の値は安全に無視） ── */
+  var CATEGORY_MAP = {
+    community: 'SNBコミュニティ・交流撮影会',
+    baseball: '名古屋野球ユニ部',
+    portrait: '男性ポートレート',
+    event: '次回開催・募集について',
+    question: '参加前の質問',
+    report: '運営への相談・トラブル報告'
+  };
+  var EVENT_LABEL_MAP = {
+    vol1_0704_soccer: 'Vol.1 サッカーユニ交流会（7/4）',
+    vol2_0725_baseball: 'Vol.2 野球ユニ交流会（7/25）',
+    vol3_uniform: 'Vol.3 開催日・テーマアンケート',
+    vol4_0812_soccer_track: 'Vol.4 サッカーユニ×陸上ユニ交流会（8/12）',
+    'event-0614': '6月14日ポートレート撮影体験会（開催終了）'
+  };
+
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var category = params.get('category');
+    var eventSlug = params.get('event');
+
+    if (category && Object.prototype.hasOwnProperty.call(CATEGORY_MAP, category) && categoryField) {
+      categoryField.value = CATEGORY_MAP[category];
+    }
+    if (eventSlug && Object.prototype.hasOwnProperty.call(EVENT_LABEL_MAP, eventSlug) && projectField) {
+      projectField.value = EVENT_LABEL_MAP[eventSlug];
+    }
+  } catch (e) {
+    /* URLSearchParams非対応環境でもフォーム自体は使えるようにする */
+  }
+
+  /* GA4イベント送出は共通ヘルパー（SNBAnalytics）に委譲する。
+     section_view・cta_clickはanalytics.jsのdata-*属性自動計測に任せるため、
+     このページで個別に書く必要があるのはフォーム系イベントのみ。 */
+  var analytics = window.SNBAnalytics;
+
+  /* フォーム着手イベント（最初の入力・選択で1回だけ） */
+  var startFired = false;
+  form.addEventListener('focusin', function () {
+    if (!startFired) {
+      startFired = true;
+      if (analytics) analytics.trackFormStart('contact_form');
+    }
+  });
+
+  /* 連絡先：メールアドレスとXアカウントのどちらか一方は必須。
+     希望する返信方法と実際に入力された連絡先が矛盾する場合も送信を止める。 */
+  function getPreferredMethod() {
+    for (var i = 0; i < methodRadios.length; i++) {
+      if (methodRadios[i].checked) return methodRadios[i].value;
+    }
+    return null;
+  }
+
+  function updateContactValidity() {
+    if (!emailField || !xField) return;
+
+    var hasEmail = emailField.value.trim() !== '';
+    var hasX = xField.value.trim() !== '';
+    var preferred = getPreferredMethod();
+
+    emailField.setCustomValidity('');
+    xField.setCustomValidity('');
+
+    if (!hasEmail && !hasX) {
+      emailField.setCustomValidity('メールアドレスまたはXアカウントのどちらかを入力してください。');
+      return;
+    }
+    if (preferred === 'メール' && !hasEmail) {
+      emailField.setCustomValidity('メールでの返信を希望する場合は、メールアドレスを入力してください。');
+    }
+    if (preferred === 'XのDM' && !hasX) {
+      xField.setCustomValidity('XのDMでの返信を希望する場合は、Xアカウントを入力してください。');
+    }
+  }
+
+  if (emailField) emailField.addEventListener('input', updateContactValidity);
+  if (xField) xField.addEventListener('input', updateContactValidity);
+  methodRadios.forEach(function (radio) {
+    radio.addEventListener('change', updateContactValidity);
+  });
+
+  function setSubmitting(isSubmitting) {
+    if (!submitBtn) return;
+    submitBtn.disabled = isSubmitting;
+    submitBtn.textContent = isSubmitting ? '送信中…' : '送信する';
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    updateContactValidity();
+
+    if (!form.reportValidity()) {
+      if (analytics) analytics.trackFormError('contact_form', 'required');
+      return;
+    }
+
+    setSubmitting(true);
+
+    var formData = new FormData(form);
+    var submissionToken = Date.now() + '-' + Math.random().toString(36).slice(2);
+    var contactCategory = categoryField ? categoryField.value : '';
+
+    fetch(FORM_ENDPOINT, {
+      method: 'POST',
+      body: formData,
+      headers: { Accept: 'application/json' }
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          var err = new Error('送信に失敗しました');
+          err.errorType = 'server';
+          throw err;
+        }
+        return response.json();
+      })
+      .then(function () {
+        if (analytics) {
+          analytics.trackGenerateLead(submissionToken, {
+            lead_type: 'snbc_contact',
+            form_name: 'contact_form',
+            contact_category: contactCategory
+          });
+        }
+        form.hidden = true;
+        if (successBox) {
+          successBox.hidden = false;
+          successBox.focus();
+          successBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (errorBox) errorBox.hidden = true;
+      })
+      .catch(function (err) {
+        if (analytics) analytics.trackFormError('contact_form', (err && err.errorType) || 'network');
+        setSubmitting(false);
+        if (errorBox) {
+          errorBox.hidden = false;
+          errorBox.focus();
+          errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+  });
+})();
+</script>
+
+</body>
+</html>

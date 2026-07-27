@@ -34,6 +34,9 @@ snb-community/
 │   ├── index.html
 │   ├── photographer.html   # カメラマン向け案内
 │   └── style.css
+├── contact/                # 共通問い合わせフォーム（3柱共通の一般質問・相談窓口）
+│   ├── index.html
+│   └── style.css
 ├── images/                 # 画像（WebP中心・OGP用JPEGあり）
 ├── robots.txt
 ├── sitemap.xml
@@ -76,6 +79,7 @@ snb-community/
 | --- | --- |
 | `generate_lead`（`lead_type: snbc_event_entry`） | 参加申込フォームの POST が**成功した時だけ** 1 回 |
 | `generate_lead`（`lead_type: portrait_booking` / `portrait_consultation`） | ポートレート相談フォームの POST が成功した時だけ 1 回 |
+| `generate_lead`（`lead_type: snbc_contact`） | 共通問い合わせフォーム（`contact/`）の POST が成功した時だけ 1 回 |
 
 設定手順：GA4 管理画面 →「管理」→「データの表示」→「イベント」→ 一覧から
 `generate_lead` を探し、「キーイベントとしてマークを付ける」を ON にします。
@@ -126,7 +130,7 @@ snb-community/
 自己紹介・備考）は一切送信しません。送信するのはカテゴリ値のみです。
 
 - `site_brand`：`snbc`（固定）
-- `site_section`：`community` / `portrait` / `baseball`
+- `site_section`：`community` / `portrait` / `baseball` / `contact`
 - `page_type`：`top` / `detail` / `form` / `guide`
 - `event_slug` / `event_title`：開催回の識別（`<body>` の data 属性から）
 - `form_name`：`vol4_apply_form` / `vol3_survey_form` / `portrait_contact` など
