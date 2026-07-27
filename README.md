@@ -66,25 +66,32 @@ snb-community/
 
 ## アクセス解析（Google Analytics 4）
 
-全ページに GA4 のトラッキングコード（測定 ID: `G-8K1TJG0S9Y`）を設定しています。
+全ページに GA4 のトラッキングコード（測定 ID: `G-H9BD3KFZCR`）を設定しています。
 共通の計測ヘルパーは `analytics.js`（`window.SNBAnalytics`）です。
+
+3リポジトリ（snb-community / Studio-nagoya-base / ataru-nagoya）共通のイベント設計に
+統一しています。新規にイベント名を追加する場合は、3リポジトリ共通の設計から
+外れていないか確認してください。
 
 ### GA4 管理画面でキーイベントとして ON にするもの
 
 | イベント名 | 発火条件 |
 | --- | --- |
-| `entry_submit` | 参加申込フォームの POST が**成功した時だけ** 1 回 |
+| `generate_lead`（`lead_type: snbc_event_entry`） | 参加申込フォームの POST が**成功した時だけ** 1 回 |
+| `generate_lead`（`lead_type: portrait_booking` / `portrait_consultation`） | ポートレート相談フォームの POST が成功した時だけ 1 回 |
+| `generate_lead`（`lead_type: snbc_contact`） | 共通問い合わせフォーム（`contact/`）の POST が成功した時だけ 1 回 |
 
 設定手順：GA4 管理画面 →「管理」→「データの表示」→「イベント」→ 一覧から
-`entry_submit` を探し、「キーイベントとしてマークを付ける」を ON にします。
+`generate_lead` を探し、「キーイベントとしてマークを付ける」を ON にします。
 イベントが一覧に表示されるのは、実際に 1 回以上計測された後です（最大 24 時間程度）。
+予約／申込の種別は `lead_type` パラメータで区別するため、レポート側でセグメントしてください。
 
-`entry_submit` は `SNBAnalytics.trackEntrySubmit()` からのみ送信され、
+`generate_lead` は `SNBAnalytics.trackGenerateLead()` からのみ送信され、
 以下では発火しません。
 
 - 送信ボタンを押しただけの時
 - 必須項目の未入力など、バリデーションエラーがある時
-- 送信を試みたがサーバー・通信エラーで失敗した時（`submit_failed` を送信）
+- 送信を試みたがサーバー・通信エラーで失敗した時（`form_error` を送信）
 
 二重計測は、送信操作ごとに採番するトークンで防いでいます。
 
@@ -97,36 +104,46 @@ snb-community/
 
 | イベント名 | 実装しない理由 |
 | --- | --- |
-| `entry_complete` | 申込完了ページが存在しない。送信成功と完了メッセージの表示が同一の瞬間に起きるため、`entry_submit` と両方送ると 1 件の申込を二重に計上することになる |
+| `entry_complete` | 申込完了ページが存在しない。送信成功と完了メッセージの表示が同一の瞬間に起きるため、`generate_lead` と両方送ると 1 件の申込を二重に計上することになる |
 
 将来、申込完了を独立したページやステップとして用意した場合に、はじめて実装してください。
 
 ### 匿名アンケート（Vol.3）の扱い
 
 `community/vol3_uniform.html` の匿名アンケートは、回答しても参加確定・
-お申し込みにはなりません。そのため送信成功時も `entry_submit` は発火させず、
-分析用イベント `survey_submit` を送信します。
+お申し込みにはなりません。そのため送信成功時も `generate_lead` は発火させず、
+補助イベント `survey_submit` を送信します（3リポジトリ共通設計上の例外）。
 
-### 分析用イベント（キーイベントにしない）
+### 使用してよいイベント名（これ以外を新規に作らない）
 
-`page_view` / `scroll` / `form_start` / `form_error` / `submit_failed` /
-`survey_submit` / `portrait_form_view` / `portrait_form_start` /
-`portrait_form_plan_select` / `portrait_form_submit_booking` /
-`portrait_form_submit_consult` / `portrait_form_success` / `portrait_form_error` /
-`portrait_select_contact_type` / `portrait_view_*` / `portrait_click_*` /
-`portrait_toggle_gallery` / `contact_form_view` / `contact_form_start` /
-`contact_form_submit` / `contact_form_success` / `contact_form_error` /
-`contact_link_click`
+`page_view` / `scroll` / `section_view` / `cta_click` / `faq_open` /
+`gallery_open` / `form_start` / `form_error` / `generate_lead` /
+`survey_submit` / `booking_platform_click` / `outbound_contact_click`
+
+このうち成果イベントは `generate_lead`（主成果）と `booking_platform_click` /
+`outbound_contact_click`（補助成果）。他はすべて分析用イベントで、
+キーイベントには設定しない。
 
 ### 共通パラメータ
 
 個人情報（氏名・年代・メールアドレス・Xアカウント・希望ユニフォーム・
 自己紹介・備考）は一切送信しません。送信するのはカテゴリ値のみです。
 
-- `site_section`：`community` / `portrait` / `baseball`
-- `page_path`：`location.pathname`
+- `site_brand`：`snbc`（固定）
+- `site_section`：`community` / `portrait` / `baseball` / `contact`
+- `page_type`：`top` / `detail` / `form` / `guide`
 - `event_slug` / `event_title`：開催回の識別（`<body>` の data 属性から）
-- `form_name`：`vol4_apply_form` / `vol3_survey_form` など
+- `form_name`：`vol4_apply_form` / `vol3_survey_form` / `portrait_contact` など
+
+### data-* 属性による自動計測
+
+`analytics.js` は以下の data 属性を持つ要素を自動的に計測する。ページ側で
+個別のクリックハンドラやIntersectionObserverを書く必要はない。
+
+- `data-cta-name` + `data-cta-location` → `cta_click`
+- `data-outbound-channel`（`x` / `mail`） + `data-cta-location` → `outbound_contact_click`
+- `data-section-view="<section_id>"` → そのセクションが1回だけ画面に入った時に `section_view`
+- `data-faq-id` を持つ `<details>` → 開いた時に `faq_open`
 
 ### 発火確認の手順
 
@@ -135,7 +152,7 @@ snb-community/
 2. ブラウザの開発者ツールのコンソールに `[SNBAnalytics]` から始まるログが出力され、
    イベント名とパラメータを確認できます
 3. GA4 管理画面 →「管理」→「DebugView」でも同じイベントをリアルタイムに確認できます
-4. `entry_submit` は、実際にフォームを送信して完了メッセージが表示されるところまで
+4. `generate_lead` は、実際にフォームを送信して完了メッセージが表示されるところまで
    確認してください。必須項目を空にして送信ボタンを押しても発火しないことも
    合わせて確認します
 

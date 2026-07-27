@@ -20,13 +20,14 @@
   <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/portrait/top/meta-ogp-main.jpg">
 
   <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K1TJG0S9Y"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-8K1TJG0S9Y');
+    gtag('config', 'G-H9BD3KFZCR');
   </script>
+  <script src="../analytics.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -763,7 +764,7 @@
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   </style>
 </head>
-<body>
+<body data-site-section="portrait" data-page-type="detail">
 
 <!-- ── Nav ── -->
 <nav>
@@ -1153,7 +1154,7 @@
           <span class="cta-channel-note">スタジオ見学無料／撮影体験60分¥3,000。</span>
         </span>
       </a>
-      <a href="../contact/?category=event&amp;event=event-0614" class="cta-channel" data-ga-event="contact_link_click" data-ga-category="event" data-ga-section="contact" data-ga-location="contact">
+      <a href="../contact/?category=event&amp;event=event-0614" class="cta-channel" data-cta-name="contact_form" data-cta-location="contact">
         <span class="cta-channel-icon">💬</span>
         <span>
           <span class="cta-channel-label">この企画について問い合わせる</span>
@@ -1237,22 +1238,5 @@
   });
 </script>
 
-<!-- ── CTAクリック計測（data-ga-event属性を持つ要素をイベント委譲で拾う） ── -->
-<script>
-(function () {
-  'use strict';
-  document.addEventListener('click', function (e) {
-    var el = e.target.closest ? e.target.closest('[data-ga-event]') : null;
-    if (!el || typeof gtag !== 'function') return;
-    gtag('event', el.getAttribute('data-ga-event'), {
-      site_section: 'portrait',
-      page_path: window.location.pathname,
-      contact_category: el.getAttribute('data-ga-category') || '',
-      cta_section: el.getAttribute('data-ga-section') || '',
-      cta_location: el.getAttribute('data-ga-location') || ''
-    });
-  });
-})();
-</script>
 </body>
 </html>

@@ -18,18 +18,19 @@
   <meta name="twitter:description" content="名古屋・上前津のSNB Community（名古屋野球ユニ部・SNBコミュニティ・男性ポートレート）への問い合わせフォームです。">
 
   <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8K1TJG0S9Y"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-8K1TJG0S9Y');
+    gtag('config', 'G-H9BD3KFZCR');
   </script>
+  <script src="../analytics.js"></script>
 
   <link rel="stylesheet" href="../common.css">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body data-site-section="contact" data-page-type="form">
 
 <!-- ── Site Nav ── -->
 <nav class="site-nav">
@@ -55,7 +56,7 @@
     <p><strong>フォーム送信時点では参加・予約は確定しません。</strong>内容を確認し、通常24時間以内に返信します。</p>
   </div>
 
-  <form id="contact-form" class="contact-form" novalidate>
+  <form id="contact-form" class="contact-form" novalidate data-section-view="contact_form">
     <!-- FormSubmit設定用フィールド -->
     <input type="hidden" name="_subject" value="【SNB Community】お問い合わせ">
     <input type="hidden" name="_template" value="table">
@@ -218,64 +219,17 @@
     /* URLSearchParams非対応環境でもフォーム自体は使えるようにする */
   }
 
-  /* GA4イベント送出（個人情報は一切パラメータに含めない） */
-  function deviceType() {
-    return window.innerWidth <= 768 ? 'mobile' : 'desktop';
-  }
-
-  function referrerPath() {
-    try {
-      return document.referrer ? new URL(document.referrer).pathname : '';
-    } catch (e) {
-      return '';
-    }
-  }
-
-  function trackEvent(name, extra) {
-    if (typeof gtag !== 'function') return;
-    var payload = {
-      site_section: 'contact',
-      source_page: referrerPath(),
-      device_type: deviceType()
-    };
-    if (extra) {
-      for (var key in extra) {
-        if (Object.prototype.hasOwnProperty.call(extra, key)) payload[key] = extra[key];
-      }
-    }
-    try { gtag('event', name, payload); } catch (e) { /* 計測失敗時もフォームは継続 */ }
-  }
-
-  /* CTAクリック計測：data-ga-event属性を持つ要素をイベント委譲でまとめて拾う（フォーム内外どちらも対象） */
-  document.addEventListener('click', function (e) {
-    var el = e.target.closest ? e.target.closest('[data-ga-event="contact_link_click"]') : null;
-    if (!el) return;
-    trackEvent('contact_link_click', { contact_category: el.getAttribute('data-ga-category') || '' });
-  });
-
-  /* フォーム表示イベント（1回だけ） */
-  var viewFired = false;
-  if ('IntersectionObserver' in window) {
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting && !viewFired) {
-          viewFired = true;
-          trackEvent('contact_form_view');
-          observer.disconnect();
-        }
-      });
-    }, { threshold: 0 });
-    observer.observe(form);
-  } else {
-    trackEvent('contact_form_view');
-  }
+  /* GA4イベント送出は共通ヘルパー（SNBAnalytics）に委譲する。
+     section_view・cta_clickはanalytics.jsのdata-*属性自動計測に任せるため、
+     このページで個別に書く必要があるのはフォーム系イベントのみ。 */
+  var analytics = window.SNBAnalytics;
 
   /* フォーム着手イベント（最初の入力・選択で1回だけ） */
   var startFired = false;
   form.addEventListener('focusin', function () {
     if (!startFired) {
       startFired = true;
-      trackEvent('contact_form_start');
+      if (analytics) analytics.trackFormStart('contact_form');
     }
   });
 
@@ -328,13 +282,15 @@
     updateContactValidity();
 
     if (!form.reportValidity()) {
+      if (analytics) analytics.trackFormError('contact_form', 'required');
       return;
     }
 
-    trackEvent('contact_form_submit', { contact_category: categoryField ? categoryField.value : '' });
     setSubmitting(true);
 
     var formData = new FormData(form);
+    var submissionToken = Date.now() + '-' + Math.random().toString(36).slice(2);
+    var contactCategory = categoryField ? categoryField.value : '';
 
     fetch(FORM_ENDPOINT, {
       method: 'POST',
@@ -342,11 +298,21 @@
       headers: { Accept: 'application/json' }
     })
       .then(function (response) {
-        if (!response.ok) throw new Error('送信に失敗しました');
+        if (!response.ok) {
+          var err = new Error('送信に失敗しました');
+          err.errorType = 'server';
+          throw err;
+        }
         return response.json();
       })
       .then(function () {
-        trackEvent('contact_form_success', { contact_category: categoryField ? categoryField.value : '' });
+        if (analytics) {
+          analytics.trackGenerateLead(submissionToken, {
+            lead_type: 'snbc_contact',
+            form_name: 'contact_form',
+            contact_category: contactCategory
+          });
+        }
         form.hidden = true;
         if (successBox) {
           successBox.hidden = false;
@@ -355,8 +321,8 @@
         }
         if (errorBox) errorBox.hidden = true;
       })
-      .catch(function () {
-        trackEvent('contact_form_error', { contact_category: categoryField ? categoryField.value : '' });
+      .catch(function (err) {
+        if (analytics) analytics.trackFormError('contact_form', (err && err.errorType) || 'network');
         setSubmitting(false);
         if (errorBox) {
           errorBox.hidden = false;
