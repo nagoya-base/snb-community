@@ -34,6 +34,9 @@ snb-community/
 │   ├── index.html
 │   ├── photographer.html   # カメラマン向け案内
 │   └── style.css
+├── contact/                # 共通問い合わせフォーム（3柱共通の一般質問・相談窓口）
+│   ├── index.html
+│   └── style.css
 ├── images/                 # 画像（WebP中心・OGP用JPEGあり）
 ├── robots.txt
 ├── sitemap.xml
@@ -111,7 +114,9 @@ snb-community/
 `portrait_form_plan_select` / `portrait_form_submit_booking` /
 `portrait_form_submit_consult` / `portrait_form_success` / `portrait_form_error` /
 `portrait_select_contact_type` / `portrait_view_*` / `portrait_click_*` /
-`portrait_toggle_gallery`
+`portrait_toggle_gallery` / `contact_form_view` / `contact_form_start` /
+`contact_form_submit` / `contact_form_success` / `contact_form_error` /
+`contact_link_click`
 
 ### 共通パラメータ
 

@@ -44,6 +44,13 @@
     <priority>0.4</priority>
   </url>
 
+  <!-- お問い合わせ -->
+  <url>
+    <loc>https://nagoya-base.github.io/snb-community/contact/</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
   <!-- 規約・参加ルール -->
   <url>
     <loc>https://nagoya-base.github.io/snb-community/legal/</loc>

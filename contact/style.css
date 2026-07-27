@@ -1,0 +1,200 @@
+/* ──────────────────────────────────────────────
+   contact/ 共通問い合わせフォーム スタイルシート
+   common.css を先に読み込むこと。
+   ────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --accent:    #1D3557;
+  --accent-lt: #457B9D;
+}
+
+.container { max-width: 640px; padding: 0 1.5rem; }
+
+/* ── Hero ── */
+.contact-hero {
+  padding: 3rem 0 2rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+.contact-hero h1 {
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+.contact-hero-lead {
+  margin-top: 1rem;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  line-height: 1.95;
+}
+
+/* ── Buttons（規約ページ・トップと同一定義） ── */
+.btn {
+  display: inline-block;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 0.85rem 1.9rem;
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  border: 2px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn-primary:hover { background: var(--accent-lt); border-color: var(--accent-lt); color: #fff; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Notice ── */
+.form-notice {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0 2.5rem;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  line-height: 1.85;
+}
+.form-notice strong { color: var(--text); }
+
+/* ── Form ── */
+.contact-form { margin-bottom: 2.5rem; }
+.contact-form__honey { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+.consult-form__fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 2rem;
+}
+.consult-form__fieldset legend {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  padding: 0;
+}
+
+.form-field { margin-top: 1.1rem; }
+.consult-form__fieldset .form-field:first-of-type { margin-top: 0.25rem; }
+
+.form-field label,
+.form-field__label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.45rem;
+}
+
+.required-mark, .optional-mark {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+.required-mark { background: #fde7e7; color: #b3261e; }
+.optional-mark { background: var(--bg-tint); color: var(--text-muted); }
+
+.form-field input[type="text"],
+.form-field input[type="email"],
+.form-field input[type="date"],
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg-card);
+}
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+.form-field textarea { resize: vertical; min-height: 5.5rem; }
+
+.form-hint { margin-top: 0.4rem; font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+.form-hint--rule { margin-top: 0.25rem; font-weight: 700; color: var(--text); }
+.form-error { margin-top: 0.5rem; font-size: 0.8rem; color: #b3261e; font-weight: 700; }
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.radio-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.radio-option input { margin-top: 0.2rem; flex-shrink: 0; }
+
+.contact-form__submit {
+  width: 100%;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.form-privacy-note {
+  margin-top: 1.25rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.85;
+}
+
+.form-result {
+  border-radius: 10px;
+  padding: 1.5rem 1.6rem;
+  margin-bottom: 2.5rem;
+  font-size: 0.9rem;
+  line-height: 1.85;
+}
+.form-result p { margin-bottom: 0.6rem; }
+.form-result p:last-child { margin-bottom: 0; }
+.form-result--success {
+  background: #eaf5ec;
+  border: 1px solid #bfe3c6;
+  color: #1e4620;
+}
+.form-result--success strong { color: #1e4620; }
+.form-result--error {
+  background: #fbeceb;
+  border: 1px solid #f1c4c0;
+  color: #7a1f17;
+}
+.form-result--error strong { color: #7a1f17; }
+
+.contact-methods {
+  border-top: 1px solid var(--border);
+  padding-top: 2rem;
+  margin-top: 2rem;
+}
+.contact-methods p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.85; }
+.contact-methods a { color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+
+@media (max-width: 480px) {
+  .contact-hero { padding: 2.25rem 0 1.5rem; }
+  .consult-form__fieldset { margin-bottom: 1.75rem; }
+}
