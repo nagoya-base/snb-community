@@ -1818,7 +1818,7 @@
     </div>
 
     <div class="contact-links">
-      <a href="../contact/?category=portrait" class="contact-link" data-ga-event="portrait_click_contact_form" data-ga-section="contact" data-ga-location="contact">
+      <a href="../contact/?category=portrait" class="contact-link" data-ga-event="contact_link_click" data-ga-category="portrait" data-ga-section="contact" data-ga-location="contact">
         撮影とは関係ない一般的な質問をする
         <span class="contact-note">サイト全般についての質問は共通の問い合わせフォームからどうぞ。</span>
       </a>
@@ -2222,7 +2222,8 @@
       cta_location: el.getAttribute('data-ga-location') || '',
       plan_name: el.getAttribute('data-ga-plan') || el.getAttribute('data-plan') || '',
       gallery_category: el.getAttribute('data-ga-category') || '',
-      gallery_item: el.getAttribute('data-ga-item') || ''
+      gallery_item: el.getAttribute('data-ga-item') || '',
+      contact_category: el.getAttribute('data-ga-category') || ''
     });
   });
 

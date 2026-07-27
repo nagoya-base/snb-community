@@ -312,7 +312,7 @@
       参加前のご質問や次回開催の通知希望は、問い合わせフォームからご連絡ください。
     </p>
     <div class="contact-links">
-      <a class="contact-link" href="../contact/?category=community" data-ga-event="community_click_contact_form" data-ga-section="contact" data-ga-location="contact">
+      <a class="contact-link" href="../contact/?category=community" data-ga-event="contact_link_click" data-ga-category="community" data-ga-section="contact" data-ga-location="contact">
         参加前にフォームで質問する
         <span class="contact-note">次回開催の通知希望や、参加前のご質問もこちらから。</span>
       </a>
@@ -443,6 +443,24 @@
   }
   if (mql.addEventListener) mql.addEventListener('change', handleViewportChange);
   else if (mql.addListener) mql.addListener(handleViewportChange);
+})();
+</script>
+
+<!-- ── CTAクリック計測（data-ga-event属性を持つ要素をイベント委譲で拾う） ── -->
+<script>
+(function () {
+  'use strict';
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-ga-event]') : null;
+    if (!el || typeof gtag !== 'function') return;
+    gtag('event', el.getAttribute('data-ga-event'), {
+      site_section: 'community',
+      page_path: window.location.pathname,
+      contact_category: el.getAttribute('data-ga-category') || '',
+      cta_section: el.getAttribute('data-ga-section') || '',
+      cta_location: el.getAttribute('data-ga-location') || ''
+    });
+  });
 })();
 </script>
 

@@ -362,7 +362,7 @@
       <span class="hero-spec">👥 20〜30代中心</span>
       <span class="hero-spec">📍 名古屋市内</span>
     </div>
-    <a href="../contact/?category=baseball" class="btn btn-primary" data-ga-event="baseball_click_contact_form" data-ga-section="hero" data-ga-location="hero">参加についてフォームで質問する</a>
+    <a href="../contact/?category=baseball" class="btn btn-primary" data-ga-event="contact_link_click" data-ga-category="baseball" data-ga-section="hero" data-ga-location="hero">参加についてフォームで質問する</a>
     <a href="#activity" class="btn btn-outline">活動内容を見る</a>
   </div>
 </section>
@@ -381,7 +381,7 @@
       </p>
       <p style="margin-top: 1.5rem;">
         <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Xで次回開催を確認する</a>
-        <a href="../contact/?category=question" class="btn btn-outline" data-ga-event="baseball_click_contact_form" data-ga-section="schedule" data-ga-location="schedule">初参加についてフォームで質問する</a>
+        <a href="../contact/?category=question" class="btn btn-outline" data-ga-event="contact_link_click" data-ga-category="question" data-ga-section="schedule" data-ga-location="schedule">初参加についてフォームで質問する</a>
       </p>
       <p class="schedule-note" style="margin-top: 1.25rem; font-size: 0.82rem;">
         初参加の方は「年代・野球経験・グローブの有無」を添えてご連絡ください。
@@ -580,7 +580,7 @@
       初参加の方は「年代」と「簡単な運動経験」を添えてもらえるとスムーズです。
     </p>
     <div class="contact-links">
-      <a href="../contact/?category=baseball" class="contact-link" data-ga-event="baseball_click_contact_form" data-ga-section="contact" data-ga-location="contact">
+      <a href="../contact/?category=baseball" class="contact-link" data-ga-event="contact_link_click" data-ga-category="baseball" data-ga-section="contact" data-ga-location="contact">
         参加についてフォームで問い合わせる
         <span class="contact-note">質問だけでも、参加希望でもお気軽にどうぞ。</span>
       </a>
@@ -618,6 +618,24 @@
   if (window.SNBEventStatus) {
     window.SNBEventStatus.render('baseball-next-activity');
   }
+</script>
+
+<!-- ── CTAクリック計測（data-ga-event属性を持つ要素をイベント委譲で拾う） ── -->
+<script>
+(function () {
+  'use strict';
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-ga-event]') : null;
+    if (!el || typeof gtag !== 'function') return;
+    gtag('event', el.getAttribute('data-ga-event'), {
+      site_section: 'baseball',
+      page_path: window.location.pathname,
+      contact_category: el.getAttribute('data-ga-category') || '',
+      cta_section: el.getAttribute('data-ga-section') || '',
+      cta_location: el.getAttribute('data-ga-location') || ''
+    });
+  });
+})();
 </script>
 
 </body>

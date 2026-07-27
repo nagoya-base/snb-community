@@ -980,7 +980,7 @@
           <span class="cta-channel-note" id="vol3-cta-note">少人数ユニフォーム撮影交流会 Vol.3の事前アンケートを実施中です（回答期限：2026年7月31日）。</span>
         </span>
       </a>
-      <a href="../contact/?category=event&amp;event=vol2_0725_baseball" class="cta-channel" data-ga-event="community_click_contact_form" data-ga-section="contact" data-ga-location="contact">
+      <a href="../contact/?category=event&amp;event=vol2_0725_baseball" class="cta-channel" data-ga-event="contact_link_click" data-ga-category="event" data-ga-section="contact" data-ga-location="contact">
         <span class="cta-channel-icon">💬</span>
         <span>
           <span class="cta-channel-label">この企画について問い合わせる</span>
@@ -1035,6 +1035,24 @@
     if (label) label.textContent = '次回企画（Vol.3）のアンケートは終了しました';
     if (note) note.textContent = '少人数ユニフォーム撮影交流会 Vol.3の事前アンケートは終了しました。開催日・テーマの決定をお待ちください。';
   })();
+</script>
+
+<!-- ── CTAクリック計測（data-ga-event属性を持つ要素をイベント委譲で拾う） ── -->
+<script>
+(function () {
+  'use strict';
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-ga-event]') : null;
+    if (!el || typeof gtag !== 'function') return;
+    gtag('event', el.getAttribute('data-ga-event'), {
+      site_section: 'community',
+      page_path: window.location.pathname,
+      contact_category: el.getAttribute('data-ga-category') || '',
+      cta_section: el.getAttribute('data-ga-section') || '',
+      cta_location: el.getAttribute('data-ga-location') || ''
+    });
+  });
+})();
 </script>
 
 </body>

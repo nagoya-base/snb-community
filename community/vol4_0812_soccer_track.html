@@ -670,7 +670,7 @@
         <a href="#apply" class="btn btn-primary btn-lg">
           📝 参加を申し込む
         </a>
-        <a href="../contact/?category=question&amp;event=vol4_0812_soccer_track" class="btn btn-outline btn-lg" data-ga-event="community_click_contact_form" data-ga-section="hero" data-ga-location="hero">
+        <a href="../contact/?category=question&amp;event=vol4_0812_soccer_track" class="btn btn-outline btn-lg" data-ga-event="contact_link_click" data-ga-category="question" data-ga-section="hero" data-ga-location="hero">
           💬 参加前にフォームで質問する
         </a>
       </div>
@@ -1015,7 +1015,7 @@
     <p class="section-label">Contact</p>
     <h2>参加前に確認したい方へ</h2>
     <div class="cta-channels">
-      <a href="../contact/?category=question&amp;event=vol4_0812_soccer_track" class="cta-channel" data-ga-event="community_click_contact_form" data-ga-section="contact" data-ga-location="contact">
+      <a href="../contact/?category=question&amp;event=vol4_0812_soccer_track" class="cta-channel" data-ga-event="contact_link_click" data-ga-category="question" data-ga-section="contact" data-ga-location="contact">
         <span class="cta-channel-icon">💬</span>
         <span>
           <span class="cta-channel-label">参加前にフォームで質問する</span>
@@ -1267,6 +1267,29 @@
           errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       });
+  });
+})();
+</script>
+
+<!-- ── CTAクリック計測（data-ga-event属性を持つ要素をイベント委譲で拾う） ── -->
+<script>
+(function () {
+  'use strict';
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-ga-event]') : null;
+    if (!el) return;
+    var params = {
+      contact_category: el.getAttribute('data-ga-category') || '',
+      cta_section: el.getAttribute('data-ga-section') || '',
+      cta_location: el.getAttribute('data-ga-location') || ''
+    };
+    if (window.SNBAnalytics) {
+      window.SNBAnalytics.track(el.getAttribute('data-ga-event'), params);
+    } else if (typeof gtag === 'function') {
+      params.site_section = 'community';
+      params.page_path = window.location.pathname;
+      gtag('event', el.getAttribute('data-ga-event'), params);
+    }
   });
 })();
 </script>

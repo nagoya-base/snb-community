@@ -346,7 +346,7 @@
       <h2>見学 or 体験を申し込む</h2>
       <p>希望内容（見学のみ／お試し体験）と希望日時をお知らせください。ご質問だけでも歓迎です。</p>
       <div class="contact-links">
-        <a href="../contact/?category=portrait" class="contact-link" data-ga-event="portrait_click_contact_form" data-ga-section="contact" data-ga-location="contact">
+        <a href="../contact/?category=portrait" class="contact-link" data-ga-event="contact_link_click" data-ga-category="portrait" data-ga-section="contact" data-ga-location="contact">
           問い合わせフォームで申し込む
           <span class="contact-note">気軽に質問だけでもOKです。返信は通常24時間以内。</span>
         </a>
@@ -371,6 +371,24 @@
     <p class="site-footer__copy">© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
   </div>
 </footer>
+
+<!-- ── CTAクリック計測（data-ga-event属性を持つ要素をイベント委譲で拾う） ── -->
+<script>
+(function () {
+  'use strict';
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-ga-event]') : null;
+    if (!el || typeof gtag !== 'function') return;
+    gtag('event', el.getAttribute('data-ga-event'), {
+      site_section: 'portrait',
+      page_path: window.location.pathname,
+      contact_category: el.getAttribute('data-ga-category') || '',
+      cta_section: el.getAttribute('data-ga-section') || '',
+      cta_location: el.getAttribute('data-ga-location') || ''
+    });
+  });
+})();
+</script>
 
 </body>
 </html>
