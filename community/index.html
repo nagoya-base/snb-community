@@ -56,18 +56,43 @@
 
   <link rel="stylesheet" href="../common.css">
   <link rel="stylesheet" href="style.css">
+  <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
 
 <!-- ── Site Nav ── -->
 <nav class="site-nav">
   <a href="../" class="site-nav__brand">SNB Community</a>
+  <button type="button" class="community-menu-toggle" id="communityMenuToggle" aria-expanded="false" aria-controls="communityMenu" aria-label="メニューを開く">
+    <span class="community-menu-toggle__bar"></span>
+    <span class="community-menu-toggle__bar"></span>
+    <span class="community-menu-toggle__bar"></span>
+  </button>
   <div class="site-nav__right">
     <a href="../baseball/" class="site-nav__pillar site-nav__pillar--baseball">⚾ 野球ユニ部</a>
     <a href="../community/" class="site-nav__pillar site-nav__pillar--community" aria-current="page">🤝 SNBコミュニティ</a>
     <a href="../portrait/" class="site-nav__pillar site-nav__pillar--portrait">📷 ポートレート</a>
   </div>
 </nav>
+
+<!-- ── スマートフォン用ハンバーガーメニュー ── -->
+<div class="community-menu" id="communityMenu">
+  <div class="community-menu__panel">
+    <button type="button" class="community-menu__close" id="communityMenuClose" aria-label="メニューを閉じる">✕ 閉じる</button>
+
+    <nav class="community-menu__pillars" aria-label="サイト内ページ">
+      <a href="../baseball/" class="site-nav__pillar site-nav__pillar--baseball community-menu__pillar">⚾ 野球ユニ部</a>
+      <a href="../community/" class="site-nav__pillar site-nav__pillar--community community-menu__pillar" aria-current="page">🤝 SNBコミュニティ</a>
+      <a href="../portrait/" class="site-nav__pillar site-nav__pillar--portrait community-menu__pillar">📷 ポートレート</a>
+    </nav>
+
+    <p class="community-menu__heading">このページ内</p>
+    <a href="#schedule" class="community-menu__link">開催情報</a>
+    <a href="#about" class="community-menu__link">SNBCについて</a>
+    <a href="#format" class="community-menu__link">開催のかたち</a>
+    <a href="#access" class="community-menu__link">アクセス</a>
+  </div>
+</div>
 
 <!-- ── Hero Image ── -->
 <div class="hero-image">
@@ -211,6 +236,26 @@
   </div>
 </section>
 
+<!-- ── Access ── -->
+<section id="access">
+  <div class="container">
+    <p class="section-label">Access</p>
+    <h2>アクセス</h2>
+    <div class="access-card">
+      <p class="access-card__walk"><strong>上前津駅 徒歩7〜8分</strong></p>
+      <p class="access-card__detail">
+        名古屋市営地下鉄 鶴舞線・名城線「上前津」駅 3番出口より徒歩7〜8分。<br>
+        所在地：名古屋市中区富士見町5-24 ラウムズ富士見町<br>
+        詳細な部屋番号等は、参加確定後にご案内いたします。
+      </p>
+      <div class="access-card__links">
+        <a href="https://nagoya-base.github.io/Studio-nagoya-base/pdf/access_guide.pdf" target="_blank" rel="noopener noreferrer" class="access-card__link">📄 アクセスガイドを見る（PDF・Studio Nagoya Base）</a>
+        <a href="https://nagoya-base.github.io/Studio-nagoya-base/how-to/#access" target="_blank" rel="noopener noreferrer" class="access-card__link">🗺 詳しいアクセス・地図を見る（Studio Nagoya Base）→</a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── Achievements（開催実績） ── -->
 <section id="achievements">
   <div class="container">
@@ -300,6 +345,88 @@
     if (dot) dot.classList.remove('active');
     if (link) link.textContent = '📋 アンケートは終了しました →';
   })();
+</script>
+
+<!-- ── ハンバーガーメニュー（プログレッシブエンハンスメント） ── -->
+<script>
+(function () {
+  'use strict';
+
+  /* .js は<head>で即座に付与済み（JS有効時のみ）。
+     JS無効時は .community-menu が常に表示された状態になり、主要リンクへ到達できる。 */
+
+  var toggle = document.getElementById('communityMenuToggle');
+  var menu = document.getElementById('communityMenu');
+  var closeBtn = document.getElementById('communityMenuClose');
+
+  if (!toggle || !menu) return;
+
+  function closeMenu(opts) {
+    menu.classList.remove('is-open');
+    menu.setAttribute('inert', '');
+    menu.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', 'メニューを開く');
+    document.body.classList.remove('community-menu-open');
+    if (!opts || opts.restoreFocus !== false) toggle.focus();
+  }
+  function openMenu() {
+    menu.classList.add('is-open');
+    menu.removeAttribute('inert');
+    menu.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+    toggle.setAttribute('aria-label', 'メニューを閉じる');
+    document.body.classList.add('community-menu-open');
+    var focusTarget = closeBtn || menu.querySelector('a, button');
+    if (focusTarget) focusTarget.focus();
+  }
+
+  /* 初期状態は閉じた状態にする（JS有効時のみ実行されるためno-JSには影響しない） */
+  closeMenu({ restoreFocus: false });
+
+  toggle.addEventListener('click', function () {
+    if (menu.classList.contains('is-open')) closeMenu(); else openMenu();
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', function () { closeMenu(); });
+
+  menu.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('click', function () { closeMenu({ restoreFocus: false }); });
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && menu.classList.contains('is-open')) closeMenu();
+  });
+
+  /* オーバーレイ背景（.community-menu自身）を直接クリックした場合のみ閉じる。 */
+  menu.addEventListener('click', function (e) {
+    if (e.target === menu) closeMenu();
+  });
+
+  /* 開いている間はパネル内でTabフォーカスをループさせる（フォーカストラップ） */
+  menu.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || !menu.classList.contains('is-open')) return;
+    var focusables = Array.prototype.slice.call(menu.querySelectorAll('a, button'));
+    if (!focusables.length) return;
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
+
+  /* 画面幅変更でPC表示に戻った際、開いたモバイルメニューを残さない */
+  var mql = window.matchMedia('(min-width: 861px)');
+  function handleViewportChange(e) {
+    if (e.matches && menu.classList.contains('is-open')) closeMenu({ restoreFocus: false });
+  }
+  if (mql.addEventListener) mql.addEventListener('change', handleViewportChange);
+  else if (mql.addListener) mql.addListener(handleViewportChange);
+})();
 </script>
 
 </body>
