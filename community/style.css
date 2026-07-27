@@ -309,6 +309,196 @@
   margin-top: 4px;
 }
 
+/* ── access card ── */
+.access-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.75rem;
+}
+
+.access-card__walk {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+
+.access-card__detail {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.9;
+}
+
+.access-card__links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--divider);
+}
+
+.access-card__link {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.access-card__link:hover { color: var(--accent-lt); }
+
+/* ──────────────────────────────────────────────
+   モバイル用ハンバーガーメニュー（Issue #132）
+   ────────────────────────────────────────────── */
+
+/* ハンバーガーボタン（PCでは非表示） */
+.community-menu-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 34px;
+  height: 34px;
+  padding: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.community-menu-toggle__bar {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--text);
+  border-radius: 1px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.community-menu-toggle[aria-expanded="true"] .community-menu-toggle__bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.community-menu-toggle[aria-expanded="true"] .community-menu-toggle__bar:nth-child(2) { opacity: 0; }
+.community-menu-toggle[aria-expanded="true"] .community-menu-toggle__bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+/* モバイル用ハンバーガードロワー。
+   既定（no-JS）ではページ内に通常表示され、主要リンクへ到達できる。
+   JS有効時（html.js）のみ、固定オーバーレイの開閉式ドロワーに変わる。 */
+.community-menu { display: none; }
+
+.community-menu__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.community-menu__pillars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.5rem;
+}
+
+.community-menu__pillar {
+  padding: 0.6rem 0.2rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.community-menu__heading {
+  margin-top: 1.1rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.community-menu__link {
+  padding: 0.6rem 0.2rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+/* 閉じるボタン（JS有効時のドロワー内のみ意味を持つが、no-JS時も無害に表示） */
+.community-menu__close {
+  display: none;
+  align-self: flex-end;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+body.community-menu-open { overflow: hidden; }
+
+@media (max-width: 860px) {
+  /* ハンバーガーボタンはJS有効時のみ表示（no-JSでは動作しないボタンを出さない） */
+  html.js .community-menu-toggle { display: flex; }
+  .site-nav__right { display: none; }
+
+  .community-menu {
+    display: block;
+    background: var(--bg-tint);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem 1.5rem;
+  }
+
+  /* JS有効時：固定オーバーレイ式ドロワーに切り替え、初期状態は非表示。
+     overlayはナビバーの下端から始まるため、グローバルナビとハンバーガーボタンは
+     開閉状態に関わらず常にオーバーレイの上に表示され、操作できる。 */
+  html.js .community-menu {
+    position: fixed;
+    top: var(--community-nav-height, 51px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 95;
+    background: rgba(28, 26, 23, 0.45);
+    padding: 0;
+    border-bottom: none;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  html.js .community-menu.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  html.js .community-menu__close { display: inline-flex; align-items: center; justify-content: center; }
+  html.js .community-menu .community-menu__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: min(320px, 84vw);
+    height: 100%;
+    background: var(--bg);
+    padding: 1.5rem 1.5rem 2rem;
+    overflow-y: auto;
+    box-shadow: -10px 0 28px rgba(0, 0, 0, 0.18);
+    transform: translateX(100%);
+    transition: transform 0.22s ease;
+  }
+  html.js .community-menu.is-open .community-menu__panel {
+    transform: translateX(0);
+  }
+}
+
 /* 開催実績 */
 .past-events {
   margin-top: 24px;
