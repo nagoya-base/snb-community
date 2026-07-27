@@ -613,7 +613,7 @@
   </style>
   <script src="../analytics.js"></script>
 </head>
-<body data-site-section="community" data-event-slug="vol4-0812-soccer-track" data-event-title="Vol.4 サカユニ・陸ユニ交流撮影会">
+<body data-site-section="community" data-page-type="form" data-event-slug="vol4-0812-soccer-track" data-event-title="Vol.4 サカユニ・陸ユニ交流撮影会">
 
 <!-- ── Nav ── -->
 <nav>
@@ -1078,7 +1078,7 @@
   if (!form) return;
 
   var FORM_NAME = 'vol4_apply_form';
-  /* 送信操作ごとに採番し、entry_submit の二重計測を防ぐ */
+  /* 送信操作ごとに採番し、generate_lead の二重計測を防ぐ */
   var submissionSeq = 0;
 
   function analytics() {
@@ -1255,11 +1255,13 @@
         if (errorBox) errorBox.hidden = true;
         successBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
         /* キーイベント：POST成功時のみ、1送信につき1回。申込内容は送信しない。 */
-        if (analytics()) analytics().trackEntrySubmit(submissionToken, { form_name: FORM_NAME });
+        if (analytics()) {
+          analytics().trackGenerateLead(submissionToken, { lead_type: 'snbc_event_entry', form_name: FORM_NAME });
+        }
       })
       .catch(function (error) {
         if (analytics()) {
-          analytics().trackSubmitFailed(FORM_NAME, (error && error.failureType) || 'network');
+          analytics().trackFormError(FORM_NAME, (error && error.failureType) || 'network');
         }
         setSubmitting(false);
         if (errorBox) {

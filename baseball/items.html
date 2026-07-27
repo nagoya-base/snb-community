@@ -31,6 +31,8 @@
   </script>
 
   <!-- 共通スタイル -->
+  <script src="../analytics.js"></script>
+
   <link rel="stylesheet" href="../common.css">
   <link rel="stylesheet" href="style.css">
 
@@ -81,7 +83,7 @@
     #undershirt { background: var(--bg-tint); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
   </style>
 </head>
-<body>
+<body data-site-section="baseball" data-page-type="guide">
 
 <!-- ── Site Nav ── -->
 <nav class="site-nav">
@@ -120,7 +122,7 @@
 </section>
 
 <!-- ── 基本セット ── -->
-<section id="basics">
+<section id="basics" data-section-view="basics">
   <div class="container">
     <p class="section-label">Basics</p>
     <h2>基本セット</h2>
@@ -157,7 +159,7 @@
 </section>
 
 <!-- ── ユニパンツ ── -->
-<section id="pants">
+<section id="pants" data-section-view="pants">
   <div class="container">
     <p class="section-label">Pants</p>
     <h2>ユニパンツ</h2>
@@ -205,7 +207,7 @@
 </section>
 
 <!-- ── スラパン ── -->
-<section id="slapan">
+<section id="slapan" data-section-view="slapan">
   <div class="container">
     <p class="section-label">Sliding Pants</p>
     <h2>スラパン（インナー）</h2>
@@ -229,7 +231,7 @@
 </section>
 
 <!-- ── アンシャツ ── -->
-<section id="undershirt">
+<section id="undershirt" data-section-view="undershirt">
   <div class="container">
     <p class="section-label">Undershirt</p>
     <h2>アンシャツ</h2>

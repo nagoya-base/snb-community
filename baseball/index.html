@@ -96,6 +96,7 @@
     gtag('config', 'G-8K1TJG0S9Y');
   </script>
   <script src="../events.js"></script>
+  <script src="../analytics.js"></script>
 
   <!-- 共通スタイル -->
   <link rel="stylesheet" href="../common.css">
@@ -312,7 +313,7 @@
     }
   </style>
 </head>
-<body>
+<body data-site-section="baseball" data-page-type="top">
 
 <!-- ── Site Nav ── -->
 <nav class="site-nav">
@@ -362,13 +363,13 @@
       <span class="hero-spec">👥 20〜30代中心</span>
       <span class="hero-spec">📍 名古屋市内</span>
     </div>
-    <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-primary">参加についてDMする</a>
-    <a href="#activity" class="btn btn-outline">活動内容を見る</a>
+    <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-outbound-channel="x" data-cta-location="hero">参加についてDMする</a>
+    <a href="#activity" class="btn btn-outline" data-cta-name="activity" data-cta-location="hero">活動内容を見る</a>
   </div>
 </section>
 
 <!-- ── Schedule ── -->
-<section id="schedule">
+<section id="schedule" data-section-view="schedule">
   <div class="container">
     <p class="section-label">Schedule</p>
     <h2>次回の活動について</h2>
@@ -380,8 +381,8 @@
         次回開催はXでお知らせします。
       </p>
       <p style="margin-top: 1.5rem;">
-        <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Xで次回開催を確認する</a>
-        <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-outline">初参加についてDMする</a>
+        <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-outbound-channel="x" data-cta-location="schedule">Xで次回開催を確認する</a>
+        <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-outline" data-outbound-channel="x" data-cta-location="schedule">初参加についてDMする</a>
       </p>
       <p class="schedule-note" style="margin-top: 1.25rem; font-size: 0.82rem;">
         初参加の方は「年代・野球経験・グローブの有無」を添えてご連絡ください。
@@ -392,7 +393,7 @@
 </section>
 
 <!-- ── About ── -->
-<section id="about">
+<section id="about" data-section-view="about">
   <div class="container">
     <p class="section-label">About</p>
     <h2>名古屋野球ユニ部って？</h2>
@@ -424,7 +425,7 @@
 </section>
 
 <!-- ── History ── -->
-<section id="history">
+<section id="history" data-section-view="history">
   <div class="container">
     <p class="section-label">History</p>
     <h2>軌跡</h2>
@@ -450,7 +451,7 @@
 </section>
 
 <!-- ── Activity ── -->
-<section id="activity">
+<section id="activity" data-section-view="activity">
   <div class="container">
     <p class="section-label">Activity</p>
     <h2>活動内容</h2>
@@ -504,7 +505,7 @@
 </section>
 
 <!-- ── Join ── -->
-<section id="join">
+<section id="join" data-section-view="join">
   <div class="container">
     <p class="section-label">Join</p>
     <h2>参加方法</h2>
@@ -531,7 +532,7 @@
       </details>
       <details>
         <summary>Q. ユニフォームを持っていないのですが……</summary>
-        <p>着用は「推奨」なので、なくても参加できます。動きやすい服装でOK。ネット通販・スポーツ用品店・メルカリなどで手に入れる方が多いようです。<br><a href="./items.html">ユニフォームガイドはこちら →</a></p>
+        <p>着用は「推奨」なので、なくても参加できます。動きやすい服装でOK。ネット通販・スポーツ用品店・メルカリなどで手に入れる方が多いようです。<br><a href="./items.html" data-cta-name="items_guide" data-cta-location="join">ユニフォームガイドはこちら →</a></p>
       </details>
       <details>
         <summary>Q. 1人で参加するのが不安です</summary>
@@ -546,7 +547,7 @@
 </section>
 
 <!-- ── Gallery ── -->
-<section id="gallery">
+<section id="gallery" data-section-view="gallery">
   <div class="container">
     <p class="section-label">Gallery</p>
     <h2>活動の様子</h2>
@@ -565,13 +566,13 @@
       </div>
     </div>
     <p class="gallery-note">
-      活動写真は <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer">X（@BaseballUni_NGO）</a> でも公開中です。
+      活動写真は <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" data-outbound-channel="x" data-cta-location="gallery">X（@BaseballUni_NGO）</a> でも公開中です。
     </p>
   </div>
 </section>
 
 <!-- ── Contact ── -->
-<section id="contact">
+<section id="contact" data-section-view="contact">
   <div class="container">
     <p class="section-label">Contact</p>
     <h2>連絡先・参加申し込み</h2>
@@ -580,7 +581,7 @@
       初参加の方は「年代」と「簡単な運動経験」を添えてもらえるとスムーズです。
     </p>
     <div class="contact-links">
-      <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="contact-link">
+      <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="contact-link" data-outbound-channel="x" data-cta-location="contact">
         参加についてDMする
         <span class="contact-note">X（@BaseballUni_NGO）／いちばん早く返信できます。フォローもお気軽に！</span>
       </a>
@@ -593,7 +594,7 @@
 <!-- ── Terms Link ── -->
 <section style="padding:2rem 0 0;text-align:center;">
   <p style="font-size:0.82rem;color:var(--text-muted);">
-    参加前に「<a href="../legal/community-rules.html" style="color:var(--color-baseball);font-weight:700;text-decoration:underline;text-underline-offset:2px;">イベント参加の心得</a>」をご確認ください。お申し込み時に、内容への同意をお願いしています。
+    参加前に「<a href="../legal/community-rules.html" style="color:var(--color-baseball);font-weight:700;text-decoration:underline;text-underline-offset:2px;" data-cta-name="terms" data-cta-location="terms_link">イベント参加の心得</a>」をご確認ください。お申し込み時に、内容への同意をお願いしています。
   </p>
 </section>
 

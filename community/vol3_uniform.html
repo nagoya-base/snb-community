@@ -665,7 +665,7 @@
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   </style>
 </head>
-<body data-site-section="community" data-event-slug="vol3-uniform" data-event-title="Vol.3 少人数ユニフォーム撮影交流会">
+<body data-site-section="community" data-page-type="form" data-event-slug="vol3-uniform" data-event-title="Vol.3 少人数ユニフォーム撮影交流会">
 
 <!-- ── Nav ── -->
 <nav>
@@ -1286,12 +1286,12 @@
         setAnsweredFlag();
         successBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
         /* 分析用イベント。このフォームは匿名アンケートであり、回答しても
-           参加確定・お申し込みにはならないため entry_submit は発火させない。 */
+           参加確定・お申し込みにはならないため generate_lead は発火させない。 */
         if (analytics()) analytics().track('survey_submit', { form_name: FORM_NAME });
       })
       .catch(function (error) {
         if (analytics()) {
-          analytics().trackSubmitFailed(FORM_NAME, (error && error.failureType) || 'network');
+          analytics().trackFormError(FORM_NAME, (error && error.failureType) || 'network');
         }
         setSubmitting(false);
         if (errorBox) {

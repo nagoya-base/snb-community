@@ -53,12 +53,13 @@
     gtag('config', 'G-8K1TJG0S9Y');
   </script>
   <script src="../events.js"></script>
+  <script src="../analytics.js"></script>
 
   <link rel="stylesheet" href="../common.css">
   <link rel="stylesheet" href="style.css">
   <script>document.documentElement.classList.add('js');</script>
 </head>
-<body>
+<body data-site-section="community" data-page-type="top">
 
 <!-- ── Site Nav ── -->
 <nav class="site-nav">
@@ -121,7 +122,7 @@
 </div>
 
 <!-- ── Schedule（次回開催） ── -->
-<section id="schedule">
+<section id="schedule" data-section-view="schedule">
   <div class="container">
     <p class="section-label">Schedule</p>
     <h2>開催情報</h2>
@@ -142,7 +143,7 @@
         <p class="next-event-note">
           <span class="status-badge" id="vol3-survey-badge">アンケート実施中</span><br>
           回答期限：2026年7月31日（金）23:59（日本時間）<br>
-          <a href="vol3_uniform.html" id="vol3-survey-link">📋 参加可能日を回答する（アンケート）→</a><br>
+          <a href="vol3_uniform.html" id="vol3-survey-link" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="vol3-uniform">📋 参加可能日を回答する（アンケート）→</a><br>
           回答＝参加確定ではありません。開催日・希望ウェアの決定にご協力ください。
         </p>
       </div>
@@ -160,7 +161,7 @@
         </ul>
         <p class="next-event-note">
           <span class="status-badge status-badge--recruiting">記名式で参加受付中</span><br>
-          <a href="vol4_0812_soccer_track.html">📝 参加を申し込む（記名式）→</a><br>
+          <a href="vol4_0812_soccer_track.html" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="vol4-0812-soccer-track">📝 参加を申し込む（記名式）→</a><br>
           Vol.4はVol.3のアンケートとは別企画です。参加にはVol.4の申込フォームから改めてお申し込みが必要です。
         </p>
       </div>
@@ -168,13 +169,13 @@
 
     <div class="next-event-note" style="margin-top:1.25rem;padding:1rem 1.25rem;background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--accent-lt);border-radius:0 8px 8px 0;">
       <strong>旧Vol.3アンケートで8/12・サッカーユニフォーム・陸上ユニフォームを選んだ方へ</strong><br>
-      8/12開催およびサカユニ・陸ユニは、Vol.4として独立した別企画になりました。旧アンケートの回答は、Vol.4への申込みとして自動的に引き継がれません。Vol.4への参加をご希望の場合は、お手数ですが<a href="vol4_0812_soccer_track.html">Vol.4の記名式申込フォーム</a>から改めてお申し込みください。
+      8/12開催およびサカユニ・陸ユニは、Vol.4として独立した別企画になりました。旧アンケートの回答は、Vol.4への申込みとして自動的に引き継がれません。Vol.4への参加をご希望の場合は、お手数ですが<a href="vol4_0812_soccer_track.html" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="vol4-0812-soccer-track">Vol.4の記名式申込フォーム</a>から改めてお申し込みください。
     </div>
   </div>
 </section>
 
 <!-- ── About ── -->
-<section id="about">
+<section id="about" data-section-view="about">
   <div class="container">
     <p class="section-label">About</p>
     <h2>同じ趣味の仲間と集まる場</h2>
@@ -199,7 +200,7 @@
 </section>
 
 <!-- ── Format ── -->
-<section id="format">
+<section id="format" data-section-view="format">
   <div class="container">
     <p class="section-label">Format</p>
     <h2>開催のかたち</h2>
@@ -245,7 +246,7 @@
 </section>
 
 <!-- ── Access ── -->
-<section id="access">
+<section id="access" data-section-view="access">
   <div class="container">
     <p class="section-label">Access</p>
     <h2>アクセス</h2>
@@ -265,7 +266,7 @@
 </section>
 
 <!-- ── Achievements（開催実績） ── -->
-<section id="achievements">
+<section id="achievements" data-section-view="achievements">
   <div class="container">
     <p class="section-label">Achievements</p>
     <h2>開催実績</h2>
@@ -273,19 +274,19 @@
       <div class="past-event-item">
         <p class="past-event-title">Vol.1 サカユニ会</p>
         <p class="past-event-detail">2026年7月4日（土）・5日（日）開催・上前津（Studio Nagoya Base）</p>
-        <a href="vol1_0704_soccer.html" style="display:inline-block;margin-top:4px;font-size:0.85rem;font-weight:700;color:#C62828;text-decoration:underline;text-underline-offset:3px;">⚽ 特設ページを見る（アーカイブ）→</a>
+        <a href="vol1_0704_soccer.html" style="display:inline-block;margin-top:4px;font-size:0.85rem;font-weight:700;color:#C62828;text-decoration:underline;text-underline-offset:3px;" data-cta-name="event_detail" data-cta-location="past_event_card" data-event-slug="vol1-0704-soccer">⚽ 特設ページを見る（アーカイブ）→</a>
       </div>
       <div class="past-event-item">
         <p class="past-event-title">Vol.2 野球ユニ会</p>
         <p class="past-event-detail">2026年7月25日（土）開催・上前津（Studio Nagoya Base）</p>
-        <a href="vol2_0725_baseball.html" style="display:inline-block;margin-top:4px;font-size:0.85rem;font-weight:700;color:#2E7D32;text-decoration:underline;text-underline-offset:3px;">⚾ 特設ページを見る（アーカイブ）→</a>
+        <a href="vol2_0725_baseball.html" style="display:inline-block;margin-top:4px;font-size:0.85rem;font-weight:700;color:#2E7D32;text-decoration:underline;text-underline-offset:3px;" data-cta-name="event_detail" data-cta-location="past_event_card" data-event-slug="vol2-0725-baseball">⚾ 特設ページを見る（アーカイブ）→</a>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ── Rules ── -->
-<section id="rules">
+<section id="rules" data-section-view="rules">
   <div class="container">
     <p class="section-label">Rules</p>
     <h2>参加にあたって</h2>
@@ -297,13 +298,13 @@
       <li>安心して楽しめる場を全員で作ります</li>
     </ul>
     <p style="margin-top:1rem;font-size:0.85rem;color:var(--text-muted);">
-      参加前に「<a href="../legal/community-rules.html" style="color:var(--color-community);text-decoration:underline;text-underline-offset:2px;">イベント参加の心得</a>」と「<a href="../legal/photo-terms.html" style="color:var(--color-community);text-decoration:underline;text-underline-offset:2px;">撮影写真の利用規約</a>」をご確認ください。お申し込み時に、内容への同意をお願いしています。
+      参加前に「<a href="../legal/community-rules.html" style="color:var(--color-community);text-decoration:underline;text-underline-offset:2px;" data-cta-name="terms" data-cta-location="rules">イベント参加の心得</a>」と「<a href="../legal/photo-terms.html" style="color:var(--color-community);text-decoration:underline;text-underline-offset:2px;" data-cta-name="terms" data-cta-location="rules">撮影写真の利用規約</a>」をご確認ください。お申し込み時に、内容への同意をお願いしています。
     </p>
   </div>
 </section>
 
 <!-- ── Contact ── -->
-<section id="contact">
+<section id="contact" data-section-view="contact">
   <div class="container">
     <p class="section-label">Contact</p>
     <h2>参加・問い合わせ</h2>
@@ -312,7 +313,7 @@
       参加前のご質問や次回開催の通知希望は、XのDMにてご連絡ください。
     </p>
     <div class="contact-links">
-      <a class="contact-link" href="https://x.com/baseballuni2022" target="_blank" rel="noopener">
+      <a class="contact-link" href="https://x.com/baseballuni2022" target="_blank" rel="noopener" data-outbound-channel="x" data-cta-location="contact">
         参加前にDMで質問する
         <span class="contact-note">X（旧Twitter）@baseballuni2022／短い質問だけでもOKです。</span>
       </a>
