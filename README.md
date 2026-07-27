@@ -66,7 +66,7 @@ snb-community/
 
 ## アクセス解析（Google Analytics 4）
 
-全ページに GA4 のトラッキングコード（測定 ID: `G-H9BD3KFZCR`）を設定しています。
+全ページに GA4 のトラッキングコード（測定 ID: `G-FGYCHQ1WVD`）を設定しています。
 共通の計測ヘルパーは `analytics.js`（`window.SNBAnalytics`）です。
 
 3リポジトリ（snb-community / Studio-nagoya-base / ataru-nagoya）共通のイベント設計に
