@@ -292,6 +292,15 @@
       color: #F2EFE9;
     }
     .btn-lg { padding: 1.05rem 2.5rem; font-size: 0.98rem; }
+    .btn-outline-light {
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      background: transparent;
+    }
+    .btn-outline-light:hover {
+      background: var(--accent);
+      color: #F2EFE9;
+    }
 
     /* ── About cards ── */
     .about-grid {
@@ -389,6 +398,37 @@
       margin-top: 0.75rem;
       font-size: 0.78rem;
       color: var(--text-muted);
+    }
+
+    /* ── Vol.1開催写真ギャラリー ── */
+    .vol1-gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .vol1-gallery-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .vol1-gallery-item img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .vol1-gallery-item figcaption {
+      padding: 0.6rem 0.75rem;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .vol1-gallery-note {
+      margin-top: 1.5rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.9;
     }
 
     /* ── お知らせ・注意ボックス ── */
@@ -603,6 +643,7 @@
       .hero-content { padding: 2.5rem 0 4rem; }
 
       .about-grid { grid-template-columns: 1fr; }
+      .vol1-gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
       .price-row { flex-direction: column; align-items: flex-start; gap: 0.15rem; }
       .price-row .pr-val { text-align: left; }
 
@@ -619,6 +660,8 @@
 <nav>
   <div class="nav-brand"><span>⚽🏃</span>SNBC Vol.4 交流撮影会</div>
   <ul class="nav-links" id="nav-links">
+    <li><a href="#first-time">初参加の方へ</a></li>
+    <li><a href="#vol1-gallery">第一回の様子</a></li>
     <li><a href="#overview">開催概要</a></li>
     <li><a href="#mix">サカユニ×陸ユニ</a></li>
     <li><a href="#enjoy">楽しみ方</a></li>
@@ -626,8 +669,9 @@
     <li><a href="#food">飲食</a></li>
     <li><a href="#rules">規約</a></li>
     <li><a href="#contact">問い合わせ</a></li>
+    <li><a href="#apply">参加申込</a></li>
   </ul>
-  <a href="#apply" class="btn nav-cta">参加を申し込む</a>
+  <a href="#first-time" class="btn nav-cta" data-cta-name="first_time_info" data-cta-location="nav">初参加の方へ</a>
   <button class="hamburger" id="hamburger" aria-label="メニューを開く" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
@@ -667,14 +711,143 @@
         <span class="hero-spec">参加人数に応じて料金変動</span>
       </div>
       <div class="hero-btns">
-        <a href="#apply" class="btn btn-primary btn-lg">
-          📝 参加を申し込む
+        <a href="#first-time" class="btn btn-primary btn-lg" data-cta-name="first_time_info" data-cta-location="hero">
+          🙋 初参加の方へ
         </a>
         <a href="../contact/?category=question&amp;event=vol4_0812_soccer_track" class="btn btn-outline btn-lg" data-cta-name="contact_form" data-cta-location="hero">
           💬 参加前にフォームで質問する
         </a>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ── こんな方のための会です ── -->
+<section id="relate">
+  <div class="container">
+    <p class="section-label">For You</p>
+    <h2>名古屋で、同じ趣味の人と出会いにくい方へ</h2>
+    <p style="font-size: 0.95rem; color: var(--text); line-height: 2; margin-top: -1.25rem;">
+      名古屋でサカユニや陸ユニが好きだけれど、同じ趣味の知り合いがいない。<br>
+      ユニフォームを着て集まれる場所もなく、一人ではなかなか楽しむ機会がない。<br>
+      この会は、そんな方が一人でも参加できる、少人数の交流撮影会です。
+    </p>
+  </div>
+</section>
+
+<!-- ── 初参加の方へ／現在の申込状況 ── -->
+<section id="first-time">
+  <div class="container">
+    <p class="section-label">First Time</p>
+    <h2>初参加の方へ</h2>
+    <p style="font-size: 0.87rem; color: var(--text-muted); margin-top: -1.25rem; margin-bottom: 0;">
+      初めての方、一人での参加を歓迎しています。申込前に気になりやすい点をまとめました。
+    </p>
+    <div class="target-list">
+      <div class="target-item">
+        <span class="ti-icon">🙋</span>
+        <div>
+          <strong>一人参加・初参加、歓迎です</strong>
+          <span>お一人での参加も歓迎しています。知り合いがいなくても参加できます。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">⚽</span>
+        <div>
+          <strong>競技経験は問いません</strong>
+          <span>サッカーや陸上の競技経験がなくても参加できます。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">🧢</span>
+        <div>
+          <strong>知識量を競う会ではありません</strong>
+          <span>ユニフォームに詳しいかどうかは関係ありません。好きな気持ちがあれば十分です。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">📸</span>
+        <div>
+          <strong>撮影中心・交流中心、どちらでも</strong>
+          <span>撮影メインでも、おしゃべりメインでも参加できます（詳しくは「撮影と交流の楽しみ方」で紹介しています）。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">🧭</span>
+        <div>
+          <strong>撮影が初めてでも大丈夫</strong>
+          <span>撮影に慣れていなくても、当日の流れは運営がその場でご案内します。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">🔒</span>
+        <div>
+          <strong>写真の扱いは既存の規約に沿います</strong>
+          <span>当日撮影した写真をSNS等へ掲載する場合は、<a href="../legal/photo-terms.html" target="_blank" rel="noopener noreferrer">撮影写真の利用規約</a>に沿って扱います。</span>
+        </div>
+      </div>
+      <div class="target-item">
+        <span class="ti-icon">❓</span>
+        <div>
+          <strong>不安な点は申込前に質問できます</strong>
+          <span>参加を迷っている場合も、フォームから気軽にご質問ください。</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="notice-box">
+      <span class="notice-box-icon" aria-hidden="true">📣</span>
+      <div>
+        <p class="notice-box-title">現在の申込状況</p>
+        <p class="notice-box-text">
+          現在、一人参加でのお申し込みをいただいています。<br>
+          初参加・一人参加の方を歓迎しています。
+        </p>
+        <p class="notice-box-text" style="margin-top: 0.6rem; font-size: 0.76rem;">
+          ※ 申込人数は今後変動します。最新の状況が分かり次第、この表示を更新します。
+        </p>
+      </div>
+    </div>
+
+    <div class="schedule-cta">
+      <a href="../contact/?category=question&amp;event=vol4_0812_soccer_track" class="btn btn-outline-light btn-lg" data-cta-name="contact_form" data-cta-location="first_time">
+        💬 参加前にフォームで質問する
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── 第一回はこんな雰囲気でした ── -->
+<section id="vol1-gallery">
+  <div class="container">
+    <p class="section-label">Vol.1 Report</p>
+    <h2>第一回はこんな雰囲気でした</h2>
+    <p style="font-size: 0.87rem; color: var(--text-muted); margin-top: -1.25rem; line-height: 1.9;">
+      第一回のサカユニ会も、少人数でユニフォームの話をしたり、お互いに写真を撮ったりしながら過ごしました。<br>
+      撮影だけを続ける会ではなく、休憩しながら話したり、ほかの参加者のユニフォームを見たり、それぞれのペースで楽しめます。<br>
+      今回も、初参加の方や一人で参加する方が入りやすいよう、運営が当日の流れをご案内します。
+    </p>
+    <div class="vol1-gallery-grid">
+      <figure class="vol1-gallery-item">
+        <img src="../images/community/soccer-vol1/gallery-photo-04.webp" alt="参加者が円卓を囲んで交流している様子。机の上にはカメラも置かれている" width="1200" height="675" loading="lazy" decoding="async">
+        <figcaption>会場に集まって、ユニフォームの話をしながら過ごす参加者たち</figcaption>
+      </figure>
+      <figure class="vol1-gallery-item">
+        <img src="../images/community/soccer-vol1/gallery-photo-01.webp" alt="サッカーユニフォーム姿で撮影に応じる参加者" width="800" height="1200" loading="lazy" decoding="async">
+        <figcaption>お気に入りのユニフォーム姿で一枚</figcaption>
+      </figure>
+      <figure class="vol1-gallery-item">
+        <img src="../images/community/soccer-vol1/gallery-photo-02.webp" alt="白いサッカーユニフォーム姿の参加者" width="1200" height="800" loading="lazy" decoding="async">
+        <figcaption>思い思いのユニフォームで参加</figcaption>
+      </figure>
+      <figure class="vol1-gallery-item">
+        <img src="../images/community/soccer-vol1/gallery-photo-03.webp" alt="落ち着いた雰囲気でユニフォーム姿を撮影される参加者" width="1200" height="800" loading="lazy" decoding="async">
+        <figcaption>リラックスした雰囲気で撮影</figcaption>
+      </figure>
+    </div>
+    <p class="vol1-gallery-note">
+      掲載写真は、第一回開催「サカユニ会 Vol.1」時のものです。Vol.1はサッカーユニフォームのみの回のため、Vol.4（サッカーユニフォーム・陸上ユニフォーム）とは対象ウェアが一部異なりますが、過去開催の雰囲気を知っていただく参考としてご覧ください。
+    </p>
   </div>
 </section>
 
@@ -842,6 +1015,51 @@
   </div>
 </section>
 
+<!-- ── 共通参加規約への案内 ── -->
+<section id="rules">
+  <div class="container">
+    <p class="section-label">Rules</p>
+    <h2>共通参加規約について</h2>
+    <div class="notice-box">
+      <span class="notice-box-icon" aria-hidden="true">📋</span>
+      <div>
+        <p class="notice-box-title">参加前にご確認ください</p>
+        <p class="notice-box-text">
+          Vol.4への参加にあたっては、SNBコミュニティ共通の「<a href="../legal/community-rules.html" target="_blank" rel="noopener noreferrer">イベント参加の心得</a>」と「<a href="../legal/photo-terms.html" target="_blank" rel="noopener noreferrer">撮影写真の利用規約</a>」への同意が必要です。下の申込フォーム内のチェックボックスでご同意をお願いします。<br>
+          その他の規約・参加ルール全体は「<a href="../legal/" target="_blank" rel="noopener noreferrer">規約・参加ルール一覧</a>」からご確認いただけます。
+        </p>
+        <p class="notice-box-text" style="margin-top: 1rem;">
+          会場はスペースに限りがあるため、荷物はできるだけ最小限でお越しください。アンダーシャツやスパッツなど、ユニフォームの下に着用するインナーは、可能な範囲であらかじめ着用してのご来場にご協力をお願いします。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 問い合わせ導線 ── -->
+<section id="contact">
+  <div class="container">
+    <p class="section-label">Contact</p>
+    <h2>参加前に確認したい方へ</h2>
+    <div class="cta-channels">
+      <a href="../contact/?category=question&amp;event=vol4_0812_soccer_track" class="cta-channel" data-cta-name="contact_form" data-cta-location="contact">
+        <span class="cta-channel-icon">💬</span>
+        <span>
+          <span class="cta-channel-label">参加前にフォームで質問する</span>
+          <span class="cta-channel-note">短い質問だけでもOKです。</span>
+        </span>
+      </a>
+      <a href="../community/" class="cta-channel">
+        <span class="cta-channel-icon">🤝</span>
+        <span>
+          <span class="cta-channel-label">SNBCコミュニティページを見る</span>
+          <span class="cta-channel-note">他のイベント情報もこちら。</span>
+        </span>
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- ── 記名式参加申込フォーム ── -->
 <section id="apply" class="final-cta">
   <div class="container">
@@ -853,6 +1071,9 @@
       Vol.4への参加を、<br>
       <em>申し込む。</em>
     </h2>
+    <p class="final-cta-sub">
+      内容と雰囲気をご確認いただき、参加してみたいと感じた方は、以下からお申し込みください。
+    </p>
     <p class="final-cta-sub">
       Vol.4は、参加者を特定できる記名式の参加申込フォームです。Xアカウントまたはメールアドレスのどちらか一方を必ずご入力ください。<br>
       <strong>最少催行4名。3名以下の場合は開催しません。</strong>参加人数が増えるほど、参加費は安くなります。<br>
@@ -984,51 +1205,6 @@
     <div class="form-result form-result--error" id="af-error" hidden>
       <p><strong>送信中にエラーが発生しました。</strong></p>
       <p>お手数ですが、XのDMから直接ご連絡ください。</p>
-    </div>
-  </div>
-</section>
-
-<!-- ── 共通参加規約への案内 ── -->
-<section id="rules">
-  <div class="container">
-    <p class="section-label">Rules</p>
-    <h2>共通参加規約について</h2>
-    <div class="notice-box">
-      <span class="notice-box-icon" aria-hidden="true">📋</span>
-      <div>
-        <p class="notice-box-title">参加前にご確認ください</p>
-        <p class="notice-box-text">
-          Vol.4への参加にあたっては、SNBコミュニティ共通の「<a href="../legal/community-rules.html" target="_blank" rel="noopener noreferrer">イベント参加の心得</a>」と「<a href="../legal/photo-terms.html" target="_blank" rel="noopener noreferrer">撮影写真の利用規約</a>」への同意が必要です。上の申込フォーム内のチェックボックスでご同意をお願いします。<br>
-          その他の規約・参加ルール全体は「<a href="../legal/" target="_blank" rel="noopener noreferrer">規約・参加ルール一覧</a>」からご確認いただけます。
-        </p>
-        <p class="notice-box-text" style="margin-top: 1rem;">
-          会場はスペースに限りがあるため、荷物はできるだけ最小限でお越しください。アンダーシャツやスパッツなど、ユニフォームの下に着用するインナーは、可能な範囲であらかじめ着用してのご来場にご協力をお願いします。
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── 問い合わせ導線 ── -->
-<section id="contact">
-  <div class="container">
-    <p class="section-label">Contact</p>
-    <h2>参加前に確認したい方へ</h2>
-    <div class="cta-channels">
-      <a href="../contact/?category=question&amp;event=vol4_0812_soccer_track" class="cta-channel" data-cta-name="contact_form" data-cta-location="contact">
-        <span class="cta-channel-icon">💬</span>
-        <span>
-          <span class="cta-channel-label">参加前にフォームで質問する</span>
-          <span class="cta-channel-note">短い質問だけでもOKです。</span>
-        </span>
-      </a>
-      <a href="../community/" class="cta-channel">
-        <span class="cta-channel-icon">🤝</span>
-        <span>
-          <span class="cta-channel-label">SNBCコミュニティページを見る</span>
-          <span class="cta-channel-note">他のイベント情報もこちら。</span>
-        </span>
-      </a>
     </div>
   </div>
 </section>
