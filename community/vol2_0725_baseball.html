@@ -979,11 +979,11 @@
           <span class="cta-channel-note">次回開催の情報をXで見る。</span>
         </span>
       </a>
-      <a href="vol3_uniform.html" class="cta-channel">
+      <a href="vol3-4.html" class="cta-channel" data-cta-name="event_detail" data-cta-location="related_event" data-event-slug="vol3-4">
         <span class="cta-channel-icon">📋</span>
         <span>
-          <span class="cta-channel-label" id="vol3-cta-label">次回企画（Vol.3）の参加可能日を回答する</span>
-          <span class="cta-channel-note" id="vol3-cta-note">少人数ユニフォーム撮影交流会 Vol.3の事前アンケートを実施中です（回答期限：2026年7月31日）。</span>
+          <span class="cta-channel-label">Vol.3-4｜2026年8月 ユニフォーム交流撮影会に申し込む</span>
+          <span class="cta-channel-note">Vol.3・Vol.4を統合した交流撮影会を開催します（一次締切：8月5日23:59）。</span>
         </span>
       </a>
       <a href="../contact/?category=event&amp;event=vol2_0725_baseball" class="cta-channel" data-cta-name="contact_form" data-cta-location="contact">
@@ -1027,20 +1027,6 @@
       hamburger.setAttribute('aria-expanded', 'false');
     });
   });
-</script>
-
-<script>
-  (function () {
-    // Vol.3事前アンケートの回答期限：2026年7月31日（金）23:59（日本時間）。判定失敗時は終了扱いにする。
-    var todayJST = (window.SNBEventStatus && window.SNBEventStatus.getTodayJST) ? window.SNBEventStatus.getTodayJST() : null;
-    var isSurveyClosed = !todayJST || todayJST > '2026-07-31';
-    if (!isSurveyClosed) return;
-
-    var label = document.getElementById('vol3-cta-label');
-    var note = document.getElementById('vol3-cta-note');
-    if (label) label.textContent = '次回企画（Vol.3）のアンケートは終了しました';
-    if (note) note.textContent = '少人数ユニフォーム撮影交流会 Vol.3の事前アンケートは終了しました。開催日・テーマの決定をお待ちください。';
-  })();
 </script>
 
 </body>
