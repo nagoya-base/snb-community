@@ -967,12 +967,12 @@
     <div class="notice-box">
       <span class="notice-box-icon" aria-hidden="true">📣</span>
       <div>
-        <p class="notice-box-title">現在の申込状況</p>
-        <p class="notice-box-text">
+        <p class="notice-box-title" id="af-status-title">現在の申込状況</p>
+        <p class="notice-box-text" id="af-status-text">
           只今、参加申込を受付中です。<br>
           初参加・一人参加の方を歓迎しています。
         </p>
-        <p class="notice-box-text" style="margin-top: 0.6rem; font-size: 0.76rem;">
+        <p class="notice-box-text" id="af-status-subtext" style="margin-top: 0.6rem; font-size: 0.76rem;">
           ※ 申込人数は今後変動します。最新の状況が分かり次第、この表示を更新します。
         </p>
       </div>
@@ -1555,12 +1555,21 @@
   var errorBox = document.getElementById('af-error');
   var badgeLabels = document.querySelectorAll('.js-apply-badge-label');
 
+  var statusTitle = document.getElementById('af-status-title');
+  var statusText = document.getElementById('af-status-text');
+  var statusSubtext = document.getElementById('af-status-subtext');
+
   if (isBeforeOpen) {
     if (form) form.hidden = true;
     if (successBox) successBox.hidden = true;
     if (errorBox) errorBox.hidden = true;
     if (beforeOpenBox) beforeOpenBox.hidden = false;
     badgeLabels.forEach(function (el) { el.textContent = '申込受付は8/1(土)0:00から'; });
+    /* 「初参加の方へ」セクションの申込状況表示も日付ゲートと連動させる。
+       ここが「受付中」のまま残ると、フォーム側の「8/1から」表示と矛盾するため。 */
+    if (statusTitle) statusTitle.textContent = '受付開始前です';
+    if (statusText) statusText.innerHTML = '参加申込は8月1日（土）0:00から開始します。<br>初参加・一人参加の方も歓迎する予定です。';
+    if (statusSubtext) statusSubtext.textContent = '受付開始後、申込状況が分かり次第この表示を更新します。';
   } else if (beforeOpenBox) {
     beforeOpenBox.hidden = true;
   }
