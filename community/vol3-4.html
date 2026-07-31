@@ -1913,6 +1913,28 @@
     submitBtn.textContent = isSubmitting ? '送信中…' : '参加を申し込む';
   }
 
+  /* ── 複数選択項目の集約（Issue #171） ──
+     FormSubmitの_template=tableは同名キーの複数値を1件しか整形できないため、
+     送信直前に選択済みの値を「、」で連結した単一キーへ置き換える。 */
+  var MULTI_VALUE_FIELD_NAMES = [
+    '参加希望日',
+    '8/8_着用予定ユニフォーム',
+    '8/11_着用予定ユニフォーム',
+    '8/12_着用予定ユニフォーム',
+    '8/16_着用予定ユニフォーム'
+  ];
+
+  function replaceMultiValueField(formData, name) {
+    var values = Array.prototype.map.call(
+      form.querySelectorAll('input[name="' + name + '"]:checked'),
+      function (input) { return input.value; }
+    );
+    formData.delete(name);
+    if (values.length) {
+      formData.append(name, values.join('、'));
+    }
+  }
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
 
@@ -1952,6 +1974,9 @@
     setSubmitting(true);
 
     var formData = new FormData(form);
+    MULTI_VALUE_FIELD_NAMES.forEach(function (name) {
+      replaceMultiValueField(formData, name);
+    });
     submissionSeq += 1;
     var submissionToken = submissionSeq;
 
