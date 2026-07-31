@@ -1432,6 +1432,31 @@
       </div>
 
       <div class="form-field">
+        <label for="af-style-photo">参加スタイル <span class="required-mark">必須</span></label>
+        <div class="radio-group" id="af-style-group">
+          <label class="radio-option">
+            <input type="radio" id="af-style-photo" name="参加スタイル" value="撮影中心">
+            <span>撮影中心</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" id="af-style-talk" name="参加スタイル" value="交流中心">
+            <span>交流中心</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" id="af-style-either" name="参加スタイル" value="どちらでもよい">
+            <span>どちらでもよい</span>
+          </label>
+        </div>
+        <p class="field-error" id="af-style-error" role="alert" hidden></p>
+      </div>
+
+      <div class="form-field">
+        <label for="af-intro">簡単な自己紹介 <span class="optional-mark">任意</span></label>
+        <textarea id="af-intro" name="簡単な自己紹介" rows="4" maxlength="300" placeholder="例：好きなユニフォーム、参加目的、撮影経験などを教えてください。"></textarea>
+        <p class="form-hint">300文字程度で、好きなユニフォームや参加目的、撮影経験などをご自由にご記入ください。</p>
+      </div>
+
+      <div class="form-field">
         <label for="af-note">備考 <span class="optional-mark">任意</span></label>
         <textarea id="af-note" name="備考" rows="3" placeholder="例：当日の集合方法について教えてほしいです。"></textarea>
       </div>
@@ -1738,6 +1763,28 @@
     radio.addEventListener('change', clearContactErrors);
   });
 
+  /* ── 参加スタイル（必須） ── */
+  var styleRadios = form.querySelectorAll('input[name="参加スタイル"]');
+  var styleError = document.getElementById('af-style-error');
+
+  function clearStyleError() {
+    if (styleError) { styleError.hidden = true; styleError.textContent = ''; }
+  }
+  styleRadios.forEach(function (radio) {
+    radio.addEventListener('change', clearStyleError);
+  });
+
+  function validateStyle() {
+    clearStyleError();
+    var checked = form.querySelector('input[name="参加スタイル"]:checked');
+    if (!checked) {
+      showFieldError(styleError, '参加スタイルを選択してください。');
+      focusAndScroll(styleRadios[0]);
+      return false;
+    }
+    return true;
+  }
+
   function setSubmitting(isSubmitting) {
     if (!submitBtn) return;
     submitBtn.disabled = isSubmitting;
@@ -1759,6 +1806,11 @@
 
     if (!validateContact()) {
       if (analytics()) analytics().trackFormError(FORM_NAME, 'contact_invalid');
+      return;
+    }
+
+    if (!validateStyle()) {
+      if (analytics()) analytics().trackFormError(FORM_NAME, 'style_missing');
       return;
     }
 
