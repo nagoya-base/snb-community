@@ -121,13 +121,29 @@
   <meta name="twitter:description" content="名古屋・上前津のスタジオ名古屋ベースで2026年8月8日・11日・12日・16日に開催するユニフォーム交流撮影会 Vol.3-4。野球・スイム・ラグビー/アメフト・シングレット・サッカー・陸上ユニフォームで参加できます。参加希望日・ユニフォームは複数選択可。各日4名で開催決定、申込期限8月5日23:59。">
   <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
 
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR"></script>
+  <!-- テストモード判定（?test=1 の場合のみ有効。test=0・空文字・他の値は通常モード） -->
   <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-H9BD3KFZCR');
+    window.SNB_TEST_MODE = (function () {
+      try {
+        return new URLSearchParams(window.location.search).get('test') === '1';
+      } catch (e) {
+        return false;
+      }
+    })();
+  </script>
+
+  <!-- Google Analytics（テストモード中はスクリプトの読み込み・計測を一切行わない） -->
+  <script>
+    if (!window.SNB_TEST_MODE) {
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () { window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      window.gtag('config', 'G-H9BD3KFZCR');
+      var snbGtagScript = document.createElement('script');
+      snbGtagScript.async = true;
+      snbGtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR';
+      document.head.appendChild(snbGtagScript);
+    }
   </script>
   <script src="../events.js"></script>
   <script src="../analytics.js"></script>
@@ -730,6 +746,34 @@
     .form-result--error strong { color: #7a1f17; }
     .form-result--closed { background: var(--bg-card2); border: 1px solid var(--border); color: var(--text); }
     .form-result--closed strong { color: var(--navy); }
+    .form-result--test { background: #FFF3CD; border: 1px solid #E0A800; color: #7A5B00; }
+    .form-result--test strong { color: #7A5B00; }
+
+    /* ── テストモード表示（?test=1 専用。本番申込との誤認を防ぐ） ── */
+    .test-mode-banner {
+      background: #FFF3CD;
+      color: #7A5B00;
+      border-bottom: 2px solid #E0A800;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 0.7rem 1rem;
+      letter-spacing: 0.02em;
+      line-height: 1.6;
+    }
+    .test-mode-note {
+      background: #FFF3CD;
+      border: 1px solid #E0A800;
+      border-left: 4px solid #E0A800;
+      color: #7A5B00;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.4rem;
+      font-size: 0.84rem;
+      font-weight: 700;
+      line-height: 1.8;
+      text-align: left;
+    }
 
     /* ── 日程ごとのユニフォーム選択ブロック ── */
     .date-block {
@@ -820,6 +864,10 @@
   </style>
 </head>
 <body data-site-section="community" data-page-type="unified_form" data-event-slug="vol3-4" data-event-title="Vol.3-4 ユニフォーム交流撮影会">
+
+<div class="test-mode-banner" id="snb-test-banner-top" hidden>
+  ⚠️ テストモード：このページのフォームからは実際の申込・メール送信・GA4計測は行われません。
+</div>
 
 <!-- ── Nav ── -->
 <nav>
@@ -1302,6 +1350,10 @@
       参加希望日とユニフォームは複数選択できます。ユニフォームは申込時点での着用・持参予定であり、当日の着用を確約するものではありません。
     </div>
 
+    <div class="test-mode-note" id="snb-test-banner-form" hidden>
+      ⚠️ テストモード表示：このフォームは動作確認用です。送信しても実際の申込・メール送信・GA4計測は行われません。
+    </div>
+
     <form id="vol34-apply-form" class="apply-form" novalidate>
       <input type="hidden" name="_subject" value="【SNBC Vol.3-4 ユニフォーム交流撮影会】参加申込">
       <input type="hidden" name="_template" value="table">
@@ -1500,6 +1552,12 @@
       <p><strong>送信中にエラーが発生しました。</strong></p>
       <p>お手数ですが、XのDMから直接ご連絡ください。</p>
     </div>
+
+    <div class="form-result form-result--test" id="af-test-success" hidden>
+      <p><strong>テスト送信に成功しました。</strong></p>
+      <p>入力内容は実際には送信されておらず、参加申込として受け付けられていません。メール送信・外部APIへの送信・GA4への計測は行われていません。</p>
+      <p>本番のお申し込みは、<code>?test=1</code>を付けない通常のURLから、受付開始後にお願いします。</p>
+    </div>
   </div>
 </section>
 
@@ -1547,19 +1605,33 @@
   // 申込開始：2026年8月1日（土）0:00（日本時間）。判定失敗時は受付前の安全側に倒す。
   var SUBMISSION_START_DATE = '2026-08-01';
   var todayJST = (window.SNBEventStatus && window.SNBEventStatus.getTodayJST) ? window.SNBEventStatus.getTodayJST() : null;
-  var isBeforeOpen = !todayJST || todayJST < SUBMISSION_START_DATE;
+
+  // ?test=1 の場合のみ、受付開始前でも動作確認のためフォームを表示する（Issue #162）。
+  // 通常URL（test=1が付かない・test=0・空文字・他の値）では既存の日付ゲートを維持する。
+  var isTestMode = window.SNB_TEST_MODE === true;
+  var isBeforeOpen = !isTestMode && (!todayJST || todayJST < SUBMISSION_START_DATE);
 
   var form = document.getElementById('vol34-apply-form');
   var beforeOpenBox = document.getElementById('af-before-open');
   var successBox = document.getElementById('af-success');
   var errorBox = document.getElementById('af-error');
+  var testSuccessBox = document.getElementById('af-test-success');
   var badgeLabels = document.querySelectorAll('.js-apply-badge-label');
 
   var statusTitle = document.getElementById('af-status-title');
   var statusText = document.getElementById('af-status-text');
   var statusSubtext = document.getElementById('af-status-subtext');
 
-  if (isBeforeOpen) {
+  // テストモード表示は、日付ゲートの判定結果に関わらず常にtest=1の有無だけで切り替える。
+  var testBannerTop = document.getElementById('snb-test-banner-top');
+  var testBannerForm = document.getElementById('snb-test-banner-form');
+  if (testBannerTop) testBannerTop.hidden = !isTestMode;
+  if (testBannerForm) testBannerForm.hidden = !isTestMode;
+
+  if (isTestMode) {
+    badgeLabels.forEach(function (el) { el.textContent = 'テストモード（実際の送信は行われません）'; });
+    if (beforeOpenBox) beforeOpenBox.hidden = true;
+  } else if (isBeforeOpen) {
     if (form) form.hidden = true;
     if (successBox) successBox.hidden = true;
     if (errorBox) errorBox.hidden = true;
@@ -1580,7 +1652,11 @@
   /* 送信操作ごとに採番し、generate_lead の二重計測を防ぐ */
   var submissionSeq = 0;
 
+  // テストモード中は、既存の共通計測スクリプト（analytics.js）が自動発火する
+  // form_start / form_error / generate_lead / schedule_toggle / CTAクリック等も
+  // すべてここで抑止する（gtag自体も読み込んでいないため二重に安全側）。
   function analytics() {
+    if (isTestMode) return null;
     return window.SNBAnalytics;
   }
 
@@ -1748,6 +1824,19 @@
 
     if (!validateContact()) {
       if (analytics()) analytics().trackFormError(FORM_NAME, 'contact_invalid');
+      return;
+    }
+
+    // テストモードでは、ここでバリデーション成功後の送信を打ち切り、
+    // FormSubmitへのfetchやGA4計測を一切行わずに成功表示のみ模擬する（Issue #162）。
+    if (isTestMode) {
+      form.hidden = true;
+      if (successBox) successBox.hidden = true;
+      if (errorBox) errorBox.hidden = true;
+      if (testSuccessBox) {
+        testSuccessBox.hidden = false;
+        testSuccessBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
       return;
     }
 
