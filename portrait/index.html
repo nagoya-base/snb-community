@@ -2108,6 +2108,26 @@
 
   if (agreeCheckbox) agreeCheckbox.addEventListener('change', clearAgreeError);
 
+  /* 複数選択項目（name="○○[]"）は、そのままFormSubmitへ送ると受信メールで1件しか表示されないため、
+     送信直前に選択済みの値を「、」で連結した単一キーへ集約する。未選択の場合はキー自体を追加しない。 */
+  var MULTI_SELECT_FIELDS = ['撮りたい衣装・テーマ', '撮りたい雰囲気', '特に見せたい部分'];
+
+  function aggregateMultiSelectField(formData, fieldName) {
+    var values = formData.getAll(fieldName + '[]');
+    formData.delete(fieldName + '[]');
+    if (values.length > 0) {
+      formData.append(fieldName, values.join('、'));
+    }
+  }
+
+  function buildSubmissionFormData(formEl) {
+    var data = new FormData(formEl);
+    MULTI_SELECT_FIELDS.forEach(function (fieldName) {
+      aggregateMultiSelectField(data, fieldName);
+    });
+    return data;
+  }
+
   function submitLabelForIntent(intent) {
     if (intent === 'booking') return SUBMIT_LABEL_BOOKING;
     if (intent === 'consult') return SUBMIT_LABEL_CONSULT;
@@ -2145,7 +2165,7 @@
     var submitIntent = getContactIntent();
     setSubmitting(true);
 
-    var formData = new FormData(form);
+    var formData = buildSubmissionFormData(form);
 
     fetch(FORM_ENDPOINT, {
       method: 'POST',
