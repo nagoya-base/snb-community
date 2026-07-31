@@ -148,7 +148,7 @@ snb-community/
 ### 発火確認の手順
 
 1. 確認したいページを `?debug_mode=true` 付きで開きます
-   （例：`https://nagoya-base.github.io/snb-community/community/vol4_0812_soccer_track.html?debug_mode=true`）
+   （例：`https://nagoya-base.github.io/snb-community/community/vol3-4.html?debug_mode=true`）
 2. ブラウザの開発者ツールのコンソールに `[SNBAnalytics]` から始まるログが出力され、
    イベント名とパラメータを確認できます
 3. GA4 管理画面 →「管理」→「DebugView」でも同じイベントをリアルタイムに確認できます
