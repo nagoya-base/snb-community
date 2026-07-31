@@ -581,6 +581,97 @@
     }
     .gallery-round-label:first-of-type { margin-top: 0; }
 
+    /* ── 初参加の不安対策セクション ── */
+    .reassurance-lead {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-top: -1rem;
+      margin-bottom: 1rem;
+      line-height: 1.7;
+    }
+    .reassurance-note {
+      font-size: 0.87rem;
+      color: var(--text-muted);
+      line-height: 1.9;
+      margin-bottom: 2rem;
+    }
+    .reassurance-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .reassurance-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--accent);
+      border-radius: 0 0 8px 8px;
+      padding: 1.6rem 1.5rem;
+    }
+    .reassurance-card-title {
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 0.7rem;
+    }
+    .reassurance-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.9;
+    }
+    .reassurance-card p + p { margin-top: 0.6rem; }
+    .reassurance-photo {
+      margin-bottom: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .reassurance-photo img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .reassurance-photo figcaption {
+      padding: 0.8rem 1.1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+    .reassurance-support {
+      background: var(--bg-card2);
+      border: 1px solid var(--accent-lt);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 1.5rem 1.75rem;
+    }
+    .reassurance-support-title {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 0.8rem;
+    }
+    .reassurance-support ul {
+      list-style: none;
+      display: grid;
+      gap: 0.6rem;
+    }
+    .reassurance-support li {
+      font-size: 0.85rem;
+      color: var(--text);
+      line-height: 1.8;
+      padding-left: 1.3rem;
+      position: relative;
+    }
+    .reassurance-support li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
     /* ── お知らせ・注意ボックス ── */
     .notice-box {
       display: flex;
@@ -893,6 +984,7 @@
 
       .about-grid { grid-template-columns: 1fr; }
       .schedule-grid { grid-template-columns: 1fr; }
+      .reassurance-grid { grid-template-columns: 1fr; }
       .vol1-gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
       .price-row { flex-direction: column; align-items: flex-start; gap: 0.15rem; }
       .price-row .pr-val { text-align: left; }
@@ -967,7 +1059,7 @@
         <a href="#apply" class="btn btn-primary btn-lg" data-cta-name="apply_form" data-cta-location="hero">
           📝 参加を申し込む
         </a>
-        <a href="#first-time" class="btn btn-outline btn-lg" data-cta-name="first_time_info" data-cta-location="hero">
+        <a href="#first-time-reassurance" class="btn btn-outline btn-lg" data-cta-name="first_time_info" data-cta-location="hero">
           🙋 初参加の方へ
         </a>
         <a href="../contact/?category=question&amp;event=vol3-4" class="btn btn-outline btn-lg" data-cta-name="contact_form" data-cta-location="hero">
@@ -991,23 +1083,60 @@
   </div>
 </section>
 
+<!-- ── 初参加で不安な方へ ── -->
+<section id="first-time-reassurance">
+  <div class="container">
+    <p class="section-label">For First-Timers</p>
+    <h2>初参加で不安な方へ</h2>
+    <p class="reassurance-lead">
+      「一人参加で浮きそう」「撮られる自信がない」という方へ
+    </p>
+    <p class="reassurance-note">
+      事前アンケートでは、「一人参加で浮かないか」「撮影や体型に自信がない」という声が多く寄せられました。そのため、当日は運営が参加スタイルに合わせて進行をサポートします。
+    </p>
+
+    <div class="reassurance-grid">
+      <div class="reassurance-card">
+        <div class="reassurance-card-title">一人で参加しても浮きません</div>
+        <p>これまでの開催も、一人で参加する方を前提に進行しています。</p>
+        <p>最初から会話の輪に入ったり、自分から撮影をお願いしたりする必要はありません。運営が当日の流れや、撮影・交流のきっかけをご案内します。休憩しながら、自分のペースで過ごせます。</p>
+      </div>
+      <div class="reassurance-card">
+        <div class="reassurance-card-title">体型や撮影経験は問いません</div>
+        <p>体型や見た目を競う会ではなく、本格的なポーズを求める撮影会でもありません。</p>
+        <p>撮られることに慣れていない方には、立ち位置や簡単なポーズを運営がご案内します。撮影中心・交流中心・どちらでもよい、から自分に合う参加スタイルを選べます。</p>
+      </div>
+    </div>
+
+    <figure class="reassurance-photo">
+      <img src="../images/community/soccer-vol1/gallery-photo-04.webp" alt="参加者が円卓を囲んで交流している様子。机の上にはカメラも置かれている" width="1200" height="675" loading="lazy" decoding="async">
+      <figcaption>過去開催時の様子。初参加者を含め、休憩や会話を挟みながら進行しました。</figcaption>
+    </figure>
+
+    <div class="reassurance-support">
+      <p class="reassurance-support-title">当日、運営が行うこと</p>
+      <ul>
+        <li>開始時に、当日の流れをご案内します</li>
+        <li>一人で孤立している参加者がいないか気を配ります</li>
+        <li>必要に応じて、撮影の組み合わせや順番をご案内します</li>
+        <li>撮られたくない時間は、見学・交流だけでも構いません</li>
+        <li>申込時の「撮影中心／交流中心／どちらでもよい」を、進行の参考にします</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 <!-- ── 過去開催はこんな雰囲気でした ── -->
 <section id="vol1-gallery">
   <div class="container">
     <p class="section-label">Past Events</p>
     <h2>過去開催はこんな雰囲気でした</h2>
     <p style="font-size: 0.87rem; color: var(--text-muted); margin-top: -1.25rem; line-height: 1.9;">
-      これまでのSNBコミュニティ交流撮影会も、少人数でユニフォームの話をしたり、お互いに写真を撮ったりしながら過ごしました。<br>
-      撮影だけを続ける会ではなく、休憩しながら話したり、ほかの参加者のユニフォームを見たり、それぞれのペースで楽しめます。<br>
-      今回も、初参加の方や一人で参加する方が入りやすいよう、運営が当日の流れをご案内します。
+      過去開催の雰囲気です。日程によって対象ユニフォームが異なるため、写真とあわせてご確認ください。
     </p>
 
     <p class="gallery-round-label">第一回：サカユニ会 Vol.1</p>
     <div class="vol1-gallery-grid">
-      <figure class="vol1-gallery-item">
-        <img src="../images/community/soccer-vol1/gallery-photo-04.webp" alt="参加者が円卓を囲んで交流している様子。机の上にはカメラも置かれている" width="1200" height="675" loading="lazy" decoding="async">
-        <figcaption>会場に集まって、ユニフォームの話をしながら過ごす参加者たち</figcaption>
-      </figure>
       <figure class="vol1-gallery-item">
         <img src="../images/community/soccer-vol1/gallery-photo-01.webp" alt="サッカーユニフォーム姿で撮影に応じる参加者" width="800" height="1200" loading="lazy" decoding="async">
         <figcaption>お気に入りのユニフォーム姿で一枚</figcaption>
@@ -1152,8 +1281,7 @@
       <details id="first-time" data-faq-id="first_time">
         <summary>初参加の方へ</summary>
         <div class="faq-body">
-          <p>一人参加・初参加も歓迎です。</p>
-          <p>当日の流れは運営がご案内します。撮影だけでなく、休憩や交流をしながら、それぞれのペースで過ごせます。</p>
+          <p>一人参加・初参加の不安への回答は「<a href="#first-time-reassurance">初参加で不安な方へ</a>」にまとめています。</p>
         </div>
       </details>
 
