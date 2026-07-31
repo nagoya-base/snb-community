@@ -618,6 +618,41 @@
     }
     .notice-box-text a { color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
 
+    /* ── 詳細・開催条件アコーディオン ── */
+    .faq-list { margin-top: 2rem; display: grid; gap: 0.6rem; }
+    .faq-list details {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .faq-list details[open] { border-color: var(--accent); }
+    .faq-list summary {
+      padding: 1.2rem 1.5rem;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--navy);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      user-select: none;
+    }
+    .faq-list summary::-webkit-details-marker { display: none; }
+    .faq-list summary::after {
+      content: '+';
+      font-size: 1.3rem;
+      font-weight: 400;
+      color: var(--accent);
+      flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    .faq-list details[open] summary::after { content: '−'; }
+    .faq-body { padding: 0 1.5rem 1.4rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.9; }
+    .faq-body p + p { margin-top: 0.75rem; }
+
     /* ── Final CTA ── */
     .final-cta {
       text-align: center;
@@ -887,10 +922,8 @@
   <ul class="nav-links" id="nav-links">
     <li><a href="#first-time">初参加の方へ</a></li>
     <li><a href="#vol1-gallery">過去開催の様子</a></li>
-    <li><a href="#schedule">日程・ユニフォーム</a></li>
-    <li><a href="#mix">ミックス開催</a></li>
-    <li><a href="#conditions">開催条件</a></li>
-    <li><a href="#pricing">料金</a></li>
+    <li><a href="#schedule">日程・対象ユニフォーム</a></li>
+    <li><a href="#details">詳細・開催条件</a></li>
     <li><a href="#food">飲食</a></li>
     <li><a href="#rules">規約</a></li>
     <li><a href="#contact">問い合わせ</a></li>
@@ -930,10 +963,10 @@
         野球ユニフォーム・スイムウェア・ラグビー／アメフトウェア・シングレット・サッカーユニフォーム・陸上ユニフォームまで、日程ごとに対象ウェアの中から好きなものを選んで参加できます。
       </p>
       <div class="hero-specs">
-        <span class="hero-spec big">各日4名で開催決定</span>
+        <span class="hero-spec big">各日4名以上・定員12名</span>
         <span class="hero-spec">8月8日・11日・12日・16日 14:00〜17:00</span>
-        <span class="hero-spec">申込開始：8月1日（土）</span>
-        <span class="hero-spec">一次締切：8月5日（水）23:59</span>
+        <span class="hero-spec">参加費 2,000〜4,000円／人</span>
+        <span class="hero-spec">申込期限：8月5日（水）23:59</span>
         <span class="hero-spec">上前津・スタジオ名古屋ベース</span>
       </div>
       <div class="hero-btns">
@@ -961,88 +994,6 @@
       ユニフォームを着て集まれる場所もなく、一人ではなかなか楽しむ機会がない。<br>
       この会は、そんな方が一人でも参加できる、少人数の交流撮影会です。
     </p>
-  </div>
-</section>
-
-<!-- ── 初参加の方へ／現在の申込状況 ── -->
-<section id="first-time">
-  <div class="container">
-    <p class="section-label">First Time</p>
-    <h2>初参加の方へ</h2>
-    <p style="font-size: 0.87rem; color: var(--text-muted); margin-top: -1.25rem; margin-bottom: 0;">
-      初めての方、一人での参加を歓迎しています。申込前に気になりやすい点をまとめました。
-    </p>
-    <div class="target-list">
-      <div class="target-item">
-        <span class="ti-icon">🙋</span>
-        <div>
-          <strong>一人参加・初参加、歓迎です</strong>
-          <span>お一人での参加も歓迎しています。知り合いがいなくても参加できます。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">👕</span>
-        <div>
-          <strong>競技経験は問いません</strong>
-          <span>野球・サッカー・陸上・ラグビー／アメフトなどの競技経験がなくても参加できます。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">🧢</span>
-        <div>
-          <strong>知識量を競う会ではありません</strong>
-          <span>ユニフォームに詳しいかどうかは関係ありません。好きな気持ちがあれば十分です。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">📸</span>
-        <div>
-          <strong>撮影中心・交流中心、どちらでも</strong>
-          <span>撮影メインでも、おしゃべりメインでも参加できます。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">🧭</span>
-        <div>
-          <strong>撮影が初めてでも大丈夫</strong>
-          <span>撮影に慣れていなくても、当日の流れは運営がその場でご案内します。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">🔒</span>
-        <div>
-          <strong>写真の扱いは既存の規約に沿います</strong>
-          <span>当日撮影した写真をSNS等へ掲載する場合は、<a href="../legal/photo-terms.html" target="_blank" rel="noopener noreferrer">撮影写真の利用規約</a>に沿って扱います。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">❓</span>
-        <div>
-          <strong>不安な点は申込前に質問できます</strong>
-          <span>参加を迷っている場合も、フォームから気軽にご質問ください。</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="notice-box">
-      <span class="notice-box-icon" aria-hidden="true">📣</span>
-      <div>
-        <p class="notice-box-title" id="af-status-title">現在の申込状況</p>
-        <p class="notice-box-text" id="af-status-text">
-          只今、参加申込を受付中です。<br>
-          初参加・一人参加の方を歓迎しています。
-        </p>
-        <p class="notice-box-text" id="af-status-subtext" style="margin-top: 0.6rem; font-size: 0.76rem;">
-          ※ 申込人数は今後変動します。最新の状況が分かり次第、この表示を更新します。
-        </p>
-      </div>
-    </div>
-
-    <div class="schedule-cta">
-      <a href="../contact/?category=question&amp;event=vol3-4" class="btn btn-outline-light btn-lg" data-cta-name="contact_form" data-cta-location="first_time">
-        💬 参加前にフォームで質問する
-      </a>
-    </div>
   </div>
 </section>
 
@@ -1166,7 +1117,7 @@
       </div>
     </div>
     <div class="price-note">
-      最少催行人数は各日4名です。全日程の合計ではなく、日程ごとに4名以上の正式申込が集まったかどうかで開催を判定します。3名以下の日程は開催しません。開催が決定した日程は、空きがある場合に限り引き続き追加のお申し込みを受け付けます。
+      最少催行人数は各日4名、定員は各日12名です。全日程の合計ではなく、日程ごとの人数で開催・定員を判定します。3名以下の日程は開催せず、12名に達した日程はその時点で受付を終了します。開催が決定した日程は、定員に達するまで締切後も引き続き追加のお申し込みを受け付けます。日程内では対象ウェアの中から好きな組み合わせで参加できます（1つのウェアに統一する会ではありません）。開催条件・料金の詳細は「<a href="#details">詳細・開催条件</a>」をご確認ください。
     </div>
     <div class="schedule-cta">
       <a href="#apply" class="btn btn-primary btn-lg" data-cta-name="apply_form" data-cta-location="schedule">参加を申し込む</a>
@@ -1175,125 +1126,50 @@
   </div>
 </section>
 
-<!-- ── ミックス開催の説明 ── -->
-<section id="mix">
+<!-- ── 詳細・開催条件（アコーディオン） ── -->
+<section id="details">
   <div class="container">
-    <p class="section-label">Mix Style</p>
-    <h2>1つのウェアに統一する会ではありません</h2>
+    <p class="section-label">Details</p>
+    <h2>詳細・開催条件</h2>
     <p style="font-size: 0.87rem; color: var(--text-muted); margin-top: -1.25rem; margin-bottom: 0; line-height: 1.9;">
-      Vol.3-4は、参加者全員が同じウェアで揃えるイベントではありません。日程ごとに対象カテゴリーが決まっており、その中から好きなユニフォームを選んで参加できます。
+      申込前に知っておきたい内容をまとめました。気になる項目を開いてご確認ください。
     </p>
-    <div class="about-grid">
-      <div class="about-card">
-        <div class="about-icon">🔀</div>
-        <div class="about-title">日程内は好きな組み合わせでOK</div>
-        <div class="about-desc">8月8日・11日・16日は、野球・スイム・ラグビー／アメフト・シングレットの中から好きなウェアを選べます。8月12日はサッカー・陸上ユニフォームが対象です。</div>
-      </div>
-      <div class="about-card">
-        <div class="about-icon">🎽</div>
-        <div class="about-title">1人で複数種類を持参してもOK</div>
-        <div class="about-desc">1日の中で、対象カテゴリー内の複数のウェアを持参・着用して参加することもできます。</div>
-      </div>
-      <div class="about-card">
-        <div class="about-icon">📅</div>
-        <div class="about-title">複数日程への参加もOK</div>
-        <div class="about-desc">参加できそうな日程はすべて選んで申し込めます。日程ごとに開催が決まるため、日によって着用予定ウェアを変えても構いません。</div>
-      </div>
-    </div>
-    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2rem; line-height: 1.9;">
-      これまでVol.1はサッカーユニ、Vol.2は野球ユニで開催しました。Vol.3-4では、複数のウェアが好きな方・複数日程で参加したい方が、より柔軟に参加できる形にしています。
-    </p>
-  </div>
-</section>
+    <div class="faq-list">
+      <details data-faq-id="venue_luggage">
+        <summary>会場・持ち物について</summary>
+        <div class="faq-body">
+          <p>会場スペースに限りがあるため、荷物はできるだけ最小限でお越しください。</p>
+          <p>アンダーシャツやスパッツなどのインナーは、可能な範囲であらかじめ着用してください。</p>
+          <p>参加人数が多い場合は、撮影・更衣・休憩を交代制で行います。</p>
+        </div>
+      </details>
 
-<!-- ── 開催条件 ── -->
-<section id="conditions">
-  <div class="container">
-    <p class="section-label">Conditions</p>
-    <h2>開催条件</h2>
-    <div class="target-list">
-      <div class="target-item">
-        <span class="ti-icon">👥</span>
-        <div>
-          <strong>各日4名以上で開催</strong>
-          <span>日程ごとに4名以上の正式申込が集まった場合に開催します。3名以下の日程は開催しません。</span>
+      <details data-faq-id="pricing_conditions">
+        <summary>料金・開催条件について</summary>
+        <div class="faq-body">
+          <p>各日4名以上で開催します。3名以下の日程は開催しません。</p>
+          <p>4名は4,000円、5〜7名は3,000円、8〜12名は2,000円です（1人あたり）。</p>
+          <p>各日程の定員は12名です。全日程の合計ではなく、日程ごとに12名に達した時点で、その日程の受付を終了します。</p>
+          <p>正式申込は2026年8月1日（土）0:00から受け付けます。一次締切は2026年8月5日（水）23:59で、開催可否は8月6日（木）までにご連絡します。</p>
+          <p>開催が決定した日程は、定員に達するまで締切後も追加のお申し込みを受け付けます。参加費は一次締切時点の人数で決定し、その後キャンセルが出ても原則変更しません。締切後に参加者が増えて料金区分が下がった場合は、より安い料金を適用します。</p>
         </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">📅</span>
-        <div>
-          <strong>申込開始は8月1日（土）</strong>
-          <span>正式申込は2026年8月1日（土）0:00から受け付けます。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">⏰</span>
-        <div>
-          <strong>一次締切は8月5日（水）23:59</strong>
-          <span>各日程の開催判定は、2026年8月5日（水）23:59までの申込状況をもとに行います。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">📩</span>
-        <div>
-          <strong>開催可否は8月6日（木）までに連絡</strong>
-          <span>各日程の開催が決定するかどうかは、2026年8月6日（木）までに申込者へご連絡します。</span>
-        </div>
-      </div>
-      <div class="target-item">
-        <span class="ti-icon">➕</span>
-        <div>
-          <strong>開催決定後も空きがあれば追加申込可</strong>
-          <span>4名に達し開催が決定した日程は、空きがある場合に限り、締切後も引き続き追加のお申し込みを受け付けます。</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+      </details>
 
-<!-- ── 人数別料金表 ── -->
-<section id="pricing">
-  <div class="container">
-    <p class="section-label">Pricing</p>
-    <h2>人数別料金表</h2>
-    <div class="price-box">
-      <div class="price-box-header">
-        <div class="price-box-title">参加人数による料金変動制（日程ごとに算定）</div>
-      </div>
-      <div class="price-box-body">
-        <div class="price-row">
-          <span class="pr-label">4名（最少催行）</span>
-          <span class="pr-val">4,000円／人</span>
+      <details id="first-time" data-faq-id="first_time">
+        <summary>初参加の方へ</summary>
+        <div class="faq-body">
+          <p>一人参加・初参加も歓迎です。</p>
+          <p>当日の流れは運営がご案内します。撮影だけでなく、休憩や交流をしながら、それぞれのペースで過ごせます。</p>
         </div>
-        <div class="price-row">
-          <span class="pr-label">5〜7名</span>
-          <span class="pr-val">3,000円／人</span>
+      </details>
+
+      <details data-faq-id="future_plans">
+        <summary>今後の開催について</summary>
+        <div class="faq-body">
+          <p>今回のVol.3-4をもって、複数の日程とユニフォームをまとめて募集する現在の形式は、いったん一区切りとします。</p>
+          <p>SNBコミュニティの活動を終了するものではなく、今後はテーマや人数、募集方法を見直して形を変えていく予定です。</p>
         </div>
-        <div class="price-row">
-          <span class="pr-label">8名以上</span>
-          <span class="pr-val">2,000円／人</span>
-        </div>
-      </div>
-    </div>
-    <div class="price-note">
-      料金は、参加する日程ごとの参加人数をもとに決定します。複数日程に参加する場合、料金は日程ごとに個別に算定します。人数の上限は設けていません。人数が多い場合は交代で撮影を行い、更衣・撮影・休憩の動線は運営側で調整します。
-    </div>
-    <div class="price-note">
-      参加費は、各日程の一次締切（8月5日23:59）時点で参加が確定した人数をもとに決定します。開催決定後にキャンセルが発生し人数が減った場合でも、原則としてご案内済みの参加費は変更しません。締切後に参加者が増えて料金区分が下がった場合は、より安い料金を適用します。
-    </div>
-    <div class="notice-box" style="margin-top: 1.25rem;">
-      <span class="notice-box-icon" aria-hidden="true">📅</span>
-      <div>
-        <p class="notice-box-title">申込期限・開催可否のご連絡について</p>
-        <p class="notice-box-text">
-          <strong>申込開始：8月1日（土）／一次締切：8月5日（水）23:59</strong><br>
-          日程ごとに、期限までに最少催行人数4名に達しない場合は、その日程は中止とします。<br>
-          開催可否は8月6日（木）までに、申込者へご連絡します。
-        </p>
-      </div>
-    </div>
-    <div class="schedule-cta">
-      <a href="#apply" class="btn btn-primary btn-lg" data-cta-name="apply_form" data-cta-location="pricing">参加を申し込む</a>
+      </details>
     </div>
   </div>
 </section>
@@ -1336,7 +1212,7 @@
           その他の規約・参加ルール全体は「<a href="../legal/" target="_blank" rel="noopener noreferrer">規約・参加ルール一覧</a>」からご確認いただけます。
         </p>
         <p class="notice-box-text" style="margin-top: 1rem;">
-          会場はスペースに限りがあるため、荷物はできるだけ最小限でお越しください。アンダーシャツやスパッツなど、ユニフォームの下に着用するインナーは、可能な範囲であらかじめ着用してのご来場にご協力をお願いします。
+          会場・持ち物についての注意事項は「<a href="#details">詳細・開催条件</a>」の「会場・持ち物について」をご確認ください。
         </p>
       </div>
     </div>
@@ -1383,12 +1259,11 @@
     </p>
     <p class="final-cta-sub">
       Vol.3-4は、参加者を特定できる記名式の参加申込フォームです。Xアカウントまたはメールアドレスのどちらか一方を必ずご入力ください。<br>
-      <strong>各日、最少催行4名。3名以下の場合はその日程を開催しません。</strong>参加人数が増えるほど、参加費は安くなります。<br>
       Vol.3の匿名アンケートにご回答済みの方も、あらためてこちらのフォームからお申し込みください。
     </p>
 
     <div class="form-note-box">
-      参加希望日とユニフォームは複数選択できます。ユニフォームは申込時点での着用・持参予定であり、当日の着用を確約するものではありません。
+      参加希望日とユニフォームは複数選択できます（複数日程・複数ウェアを選んでも構いません）。各日定員12名で、定員に達した日程は受付を終了します。参加費は2,000〜4,000円で、詳しい条件は「<a href="#details">詳細・開催条件</a>」をご確認ください。ユニフォームは申込時点での着用・持参予定であり、当日の着用を確約するものではありません。
     </div>
 
     <div class="test-mode-note" id="snb-test-banner-form" hidden>
@@ -1632,6 +1507,25 @@
       hamburger.setAttribute('aria-expanded', 'false');
     });
   });
+</script>
+
+<!-- ── アコーディオンへのリンクは、対象を開いた状態でスクロールする ── -->
+<script>
+  (function () {
+    function openTargetDetails() {
+      var hash = window.location.hash;
+      if (!hash) return;
+      var target;
+      try {
+        target = document.querySelector(hash);
+      } catch (e) {
+        return;
+      }
+      if (target && target.tagName === 'DETAILS') target.open = true;
+    }
+    openTargetDetails();
+    window.addEventListener('hashchange', openTargetDetails);
+  })();
 </script>
 
 <!-- ── 統合参加申込フォーム制御 ── -->
