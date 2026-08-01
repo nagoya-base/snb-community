@@ -280,6 +280,7 @@
   border: 1px solid var(--border);
   border-left: 4px solid var(--accent-lt);
   border-radius: 10px;
+  scroll-margin-top: 72px;
 }
 
 .legal-tips-label {
@@ -297,7 +298,6 @@
   letter-spacing: 0.02em;
   color: var(--text);
   margin-bottom: 0.75rem;
-  scroll-margin-top: 72px;
 }
 
 .legal-tips-intro {
