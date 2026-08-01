@@ -166,6 +166,25 @@
   text-underline-offset: 3px;
 }
 
+/* ── 規約本文ページ：目次の補助リンク（ルールではなく参考情報のため番号なし） ── */
+.legal-toc-extra {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border);
+}
+
+.legal-toc-extra a {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-lt);
+  text-decoration: none;
+}
+
+.legal-toc-extra a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* ── 規約本文ページ：本文セクション ── */
 .legal-body {
   max-width: 100%;
@@ -253,6 +272,62 @@
   margin-top: 1rem;
 }
 
+/* ── 規約本文ページ：初めて参加する方へ（TIPS。ルール本文とは別枠のカード） ── */
+.legal-tips {
+  margin-top: 3rem;
+  padding: 1.75rem 1.9rem;
+  background: var(--bg-tint);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent-lt);
+  border-radius: 10px;
+}
+
+.legal-tips-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+
+.legal-tips h2 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+  scroll-margin-top: 72px;
+}
+
+.legal-tips-intro {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.9;
+  margin-bottom: 1.25rem;
+}
+
+.legal-tips-list {
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.legal-tips-list > li {
+  font-size: 0.95rem;
+  line-height: 1.9;
+  color: var(--text);
+  padding-left: 1.3rem;
+  position: relative;
+}
+
+.legal-tips-list > li::before {
+  content: '・';
+  position: absolute;
+  left: 0;
+  color: var(--accent-lt);
+}
+
 /* ── 規約本文ページ：ページ下部ナビゲーション ── */
 .legal-nav-footer {
   display: flex;
@@ -306,6 +381,7 @@
   .legal-hero, .legal-doc-header { padding: 2.25rem 0 1.5rem; }
   .legal-card { padding: 1.35rem 1.4rem; }
   .legal-toc { padding: 1.25rem 1.4rem; }
+  .legal-tips { padding: 1.35rem 1.4rem; }
   .legal-nav-footer { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
 }
 
