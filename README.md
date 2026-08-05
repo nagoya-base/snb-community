@@ -86,6 +86,10 @@ snb-community/
 イベントが一覧に表示されるのは、実際に 1 回以上計測された後です（最大 24 時間程度）。
 予約／申込の種別は `lead_type` パラメータで区別するため、レポート側でセグメントしてください。
 
+Vol.3-4（8月11日回）のキャンセル待ち受付フォームは、通常の参加申込と同じ
+`lead_type: snbc_event_entry` に加えて `entry_type: waitlist` を送信します。
+通常申込とキャンセル待ちは `entry_type` の有無でセグメントしてください。
+
 `generate_lead` は `SNBAnalytics.trackGenerateLead()` からのみ送信され、
 以下では発火しません。
 

@@ -44,30 +44,16 @@
   <meta name="twitter:description" content="東京や大阪にはある。名古屋にはまだ少ない。野球ユニ・競パン・スーツ好きが集まる少人数交流撮影会、名古屋・上前津で不定期開催。主催アタル。">
   <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
 
-  <!-- プレビューモード判定（?test=closed の場合のみ有効。実際の時刻に関わらずVol.3-4の一次募集
-       締切後の表示を強制する。レビュー・確認用であり、GA4計測は行わない） -->
+  <!-- Google tag (gtag.js) -->
   <script>
-    window.SNB_PREVIEW_CLOSED_MODE = (function () {
-      try {
-        return new URLSearchParams(window.location.search).get('test') === 'closed';
-      } catch (e) {
-        return false;
-      }
-    })();
-  </script>
-
-  <!-- Google tag (gtag.js)（プレビューモード中はスクリプトの読み込み・計測を一切行わない） -->
-  <script>
-    if (!window.SNB_PREVIEW_CLOSED_MODE) {
-      window.dataLayer = window.dataLayer || [];
-      window.gtag = function () { window.dataLayer.push(arguments); };
-      window.gtag('js', new Date());
-      window.gtag('config', 'G-H9BD3KFZCR');
-      var snbGtagScript = document.createElement('script');
-      snbGtagScript.async = true;
-      snbGtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR';
-      document.head.appendChild(snbGtagScript);
-    }
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', 'G-H9BD3KFZCR');
+    var snbGtagScript = document.createElement('script');
+    snbGtagScript.async = true;
+    snbGtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR';
+    document.head.appendChild(snbGtagScript);
   </script>
   <script src="../events.js"></script>
   <script src="../analytics.js"></script>
@@ -144,7 +130,7 @@
     <p class="section-label">Schedule</p>
     <h2>開催情報</h2>
     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.85;">
-      2026年8月開催分をまとめて募集しています。参加希望日・ユニフォームは複数選択できます。
+      2026年8月開催分の結果をお知らせします。
     </p>
 
     <div class="next-banner" id="vol34-apply-banner">
@@ -152,15 +138,15 @@
       <div class="next-event">
         <p class="next-event-title"><strong>Vol.3-4｜2026年8月 ユニフォーム交流撮影会</strong></p>
         <ul class="next-event-detail">
-          <li>日程：2026年8月8日（土）／11日（火・祝）／16日（日）　各日14:00〜17:00</li>
-          <li>対象ウェア：野球ユニフォーム・スイムウェア・ラグビー/アメフトウェア・シングレット・サッカーユニフォーム・陸上ユニフォーム</li>
-          <li>複数日選択可・ユニフォーム複数選択可（日程ごとに選択）</li>
-          <li>各日4名で開催決定（定員12名）・上前津・スタジオ名古屋ベース</li>
+          <li>日程：2026年8月11日（火・祝）14:00〜17:00　開催決定</li>
+          <li>8月8日（土）・16日（日）は不開催となりました</li>
+          <li>対象ウェア：野球ユニフォーム・サッカーユニフォーム・陸上ユニフォーム・スイムウェア・ラグビー/アメフトウェア・シングレット（複数選択可）</li>
+          <li>定員12名・上前津・スタジオ名古屋ベース</li>
         </ul>
         <p class="next-event-note">
-          <span class="status-badge status-badge--recruiting" id="vol34-status-badge">参加申込受付中</span><br>
-          <span id="vol34-deadline-line">一次締切：2026年8月5日（水）23:59（日本時間）</span><br>
-          <a href="vol3-4.html" id="vol34-cta-link" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="vol3-4">📝 参加を申し込む →</a>
+          <span class="status-badge status-badge--full" id="vol34-status-badge">キャンセル待ち受付中</span><br>
+          <span id="vol34-deadline-line">定員到達のため、現在はキャンセル待ちとして受け付けています。</span><br>
+          <a href="vol3-4.html#apply" id="vol34-cta-link" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="vol3-4">📝 キャンセル待ちに申し込む →</a>
         </p>
       </div>
     </div>
@@ -418,40 +404,6 @@
   }
   if (mql.addEventListener) mql.addEventListener('change', handleViewportChange);
   else if (mql.addListener) mql.addListener(handleViewportChange);
-})();
-</script>
-
-<!-- ── Vol.3-4 一次募集締切ゲート（詳細ページ vol3-4.html と同一基準で判定） ── -->
-<script>
-(function () {
-  'use strict';
-
-  // 一次募集締切：2026年8月5日（水）23:59（日本時間）。オフセット付きISO文字列で
-  // パースするため、閲覧端末のローカルタイムゾーンに関わらず日本時間基準の判定になる。
-  // 判定失敗時は「申込可能」と誤認させない安全側（締切済み扱い）に倒す。
-  var PRIMARY_DEADLINE_ISO = '2026-08-05T23:59:00+09:00';
-  var primaryDeadlineMs = new Date(PRIMARY_DEADLINE_ISO).getTime();
-  // ?test=closed の場合は、実際の時刻に関わらず締切後の表示を強制する（Issue #181 追加分）。
-  var isPreviewClosedMode = window.SNB_PREVIEW_CLOSED_MODE === true;
-  var isPastPrimaryDeadline = isPreviewClosedMode || isNaN(primaryDeadlineMs) || Date.now() >= primaryDeadlineMs;
-
-  if (!isPastPrimaryDeadline) return;
-
-  var badge = document.getElementById('vol34-status-badge');
-  var deadlineLine = document.getElementById('vol34-deadline-line');
-  var ctaLink = document.getElementById('vol34-cta-link');
-
-  if (badge) {
-    badge.textContent = '一次募集は終了しました';
-    badge.classList.remove('status-badge--recruiting');
-    badge.classList.add('status-badge--closed');
-  }
-  if (deadlineLine) {
-    deadlineLine.textContent = '二次募集をお待ちください。';
-  }
-  if (ctaLink) {
-    ctaLink.textContent = '📋 開催内容を見る →';
-  }
 })();
 </script>
 
