@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vol.3-4｜2026年8月 ユニフォーム交流撮影会｜SNBコミュニティ</title>
-  <meta name="description" content="名古屋・上前津のスタジオ名古屋ベースで2026年8月8日・11日・16日に開催するユニフォーム交流撮影会 Vol.3-4。野球・スイム・ラグビー/アメフト・シングレット・サッカー・陸上ユニフォームで参加できます。参加希望日・ユニフォームは複数選択可。各日4名で開催決定、一次締切8月5日23:59。">
+  <meta name="description" content="名古屋・上前津で2026年8月8日・11日・16日に開催するユニフォーム交流撮影会 Vol.3-4。野球・サッカー・陸上・スイムウェア・ラグビー／アメフト・シングレットから複数選択できます。最新の募集状況はページ内でご確認ください。">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://nagoya-base.github.io/snb-community/community/vol3-4.html">
 
@@ -91,7 +91,7 @@
 
   <!-- OGP -->
   <meta property="og:title" content="Vol.3-4｜2026年8月 ユニフォーム交流撮影会｜SNBコミュニティ">
-  <meta property="og:description" content="名古屋・上前津のスタジオ名古屋ベースで2026年8月8日・11日・16日に開催するユニフォーム交流撮影会 Vol.3-4。野球・スイム・ラグビー/アメフト・シングレット・サッカー・陸上ユニフォームで参加できます。参加希望日・ユニフォームは複数選択可。各日4名で開催決定、一次締切8月5日23:59。">
+  <meta property="og:description" content="名古屋・上前津で2026年8月8日・11日・16日に開催するユニフォーム交流撮影会 Vol.3-4。野球・サッカー・陸上・スイムウェア・ラグビー／アメフト・シングレットから複数選択できます。最新の募集状況はページ内でご確認ください。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://nagoya-base.github.io/snb-community/community/vol3-4.html">
   <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
@@ -99,7 +99,7 @@
   <meta property="og:image:height" content="909">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Vol.3-4｜2026年8月 ユニフォーム交流撮影会｜SNBコミュニティ">
-  <meta name="twitter:description" content="名古屋・上前津のスタジオ名古屋ベースで2026年8月8日・11日・16日に開催するユニフォーム交流撮影会 Vol.3-4。野球・スイム・ラグビー/アメフト・シングレット・サッカー・陸上ユニフォームで参加できます。参加希望日・ユニフォームは複数選択可。各日4名で開催決定、一次締切8月5日23:59。">
+  <meta name="twitter:description" content="名古屋・上前津で2026年8月8日・11日・16日に開催するユニフォーム交流撮影会 Vol.3-4。野球・サッカー・陸上・スイムウェア・ラグビー／アメフト・シングレットから複数選択できます。最新の募集状況はページ内でご確認ください。">
   <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
 
   <!-- テストモード判定（?test=1 の場合のみ有効。test=0・空文字・他の値は通常モード） -->
@@ -113,9 +113,21 @@
     })();
   </script>
 
-  <!-- Google Analytics（テストモード中はスクリプトの読み込み・計測を一切行わない） -->
+  <!-- プレビューモード判定（?test=closed の場合のみ有効。実際の時刻に関わらず一次募集締切後の
+       表示を強制する。レビュー・確認用であり、実際の申込・メール送信・GA4計測は行わない） -->
   <script>
-    if (!window.SNB_TEST_MODE) {
+    window.SNB_PREVIEW_CLOSED_MODE = (function () {
+      try {
+        return new URLSearchParams(window.location.search).get('test') === 'closed';
+      } catch (e) {
+        return false;
+      }
+    })();
+  </script>
+
+  <!-- Google Analytics（テストモード・プレビューモード中はスクリプトの読み込み・計測を一切行わない） -->
+  <script>
+    if (!window.SNB_TEST_MODE && !window.SNB_PREVIEW_CLOSED_MODE) {
       window.dataLayer = window.dataLayer || [];
       window.gtag = function () { window.dataLayer.push(arguments); };
       window.gtag('js', new Date());
@@ -1049,7 +1061,7 @@
         <span class="hero-spec big">各日4名以上・定員12名</span>
         <span class="hero-spec">8月8日・11日・16日 14:00〜17:00</span>
         <span class="hero-spec">参加費 2,000〜4,000円／人</span>
-        <span class="hero-spec">一次締切：8月5日（水）23:59</span>
+        <span class="hero-spec" id="hero-spec-deadline">一次締切：8月5日（水）23:59</span>
         <span class="hero-spec">上前津・スタジオ名古屋ベース</span>
       </div>
       <div class="hero-btns">
@@ -1604,6 +1616,12 @@
       <p>開始後、あらためてこのページから申込みできます。参加前のご質問は、<a href="../contact/?category=question&amp;event=vol3-4">問い合わせフォーム</a>からお気軽にどうぞ。</p>
     </div>
 
+    <div class="form-result form-result--closed" id="af-primary-closed" hidden>
+      <p><strong>一次募集は終了しました。二次募集をお待ちください。</strong></p>
+      <p>一次募集は8月5日23:59で締め切りました。開催可否と空き状況を確認後、必要に応じて二次募集を行います。</p>
+      <p>参加前のご質問は、<a href="../contact/?category=question&amp;event=vol3-4">問い合わせフォーム</a>からお気軽にどうぞ。</p>
+    </div>
+
     <div class="form-result form-result--success" id="af-success" hidden>
       <p><strong>お申し込みありがとうございます。</strong></p>
       <p>いただいた内容を確認のうえ、参加費や開催可否についてメールまたはXのDMでご連絡します。</p>
@@ -1687,17 +1705,28 @@
   var SUBMISSION_START_DATE = '2026-08-01';
   var todayJST = (window.SNBEventStatus && window.SNBEventStatus.getTodayJST) ? window.SNBEventStatus.getTodayJST() : null;
 
-  // ?test=1 の場合のみ、受付開始前でも動作確認のためフォームを表示する（Issue #162）。
+  // 一次募集締切：2026年8月5日（水）23:59（日本時間）。オフセット付きISO文字列で
+  // パースするため、閲覧端末のローカルタイムゾーンに関わらず日本時間基準の判定になる。
+  // 判定失敗時は「申込可能」と誤認させない安全側（締切済み扱い）に倒す。
+  var PRIMARY_DEADLINE_ISO = '2026-08-05T23:59:00+09:00';
+  var primaryDeadlineMs = new Date(PRIMARY_DEADLINE_ISO).getTime();
+
+  // ?test=1 の場合のみ、受付開始前・締切後でも動作確認のためフォームを表示する（Issue #162）。
   // 通常URL（test=1が付かない・test=0・空文字・他の値）では既存の日付ゲートを維持する。
   var isTestMode = window.SNB_TEST_MODE === true;
-  var isBeforeOpen = !isTestMode && (!todayJST || todayJST < SUBMISSION_START_DATE);
+  // ?test=closed の場合は、実際の時刻に関わらず一次募集締切後の表示を強制する（Issue #181 追加分）。
+  var isPreviewClosedMode = window.SNB_PREVIEW_CLOSED_MODE === true;
+  var isBeforeOpen = !isTestMode && !isPreviewClosedMode && (!todayJST || todayJST < SUBMISSION_START_DATE);
+  var isPastPrimaryDeadline = !isTestMode && (isPreviewClosedMode || isNaN(primaryDeadlineMs) || Date.now() >= primaryDeadlineMs);
 
   var form = document.getElementById('vol34-apply-form');
   var beforeOpenBox = document.getElementById('af-before-open');
+  var primaryClosedBox = document.getElementById('af-primary-closed');
   var successBox = document.getElementById('af-success');
   var errorBox = document.getElementById('af-error');
   var testSuccessBox = document.getElementById('af-test-success');
   var badgeLabels = document.querySelectorAll('.js-apply-badge-label');
+  var heroDeadlineSpec = document.getElementById('hero-spec-deadline');
 
   var statusTitle = document.getElementById('af-status-title');
   var statusText = document.getElementById('af-status-text');
@@ -1712,22 +1741,36 @@
   if (isTestMode) {
     badgeLabels.forEach(function (el) { el.textContent = 'テストモード（実際の送信は行われません）'; });
     if (beforeOpenBox) beforeOpenBox.hidden = true;
+    if (primaryClosedBox) primaryClosedBox.hidden = true;
   } else if (isBeforeOpen) {
     if (form) form.hidden = true;
     if (successBox) successBox.hidden = true;
     if (errorBox) errorBox.hidden = true;
     if (beforeOpenBox) beforeOpenBox.hidden = false;
+    if (primaryClosedBox) primaryClosedBox.hidden = true;
     badgeLabels.forEach(function (el) { el.textContent = '申込受付は8/1(土)0:00から'; });
     /* 「初参加の方へ」セクションの申込状況表示も日付ゲートと連動させる。
        ここが「受付中」のまま残ると、フォーム側の「8/1から」表示と矛盾するため。 */
     if (statusTitle) statusTitle.textContent = '受付開始前です';
     if (statusText) statusText.innerHTML = '参加申込は8月1日（土）0:00から開始します。<br>初参加・一人参加の方も歓迎する予定です。';
     if (statusSubtext) statusSubtext.textContent = '受付開始後、申込状況が分かり次第この表示を更新します。';
-  } else if (beforeOpenBox) {
-    beforeOpenBox.hidden = true;
+  } else if (isPastPrimaryDeadline) {
+    if (form) form.hidden = true;
+    if (successBox) successBox.hidden = true;
+    if (errorBox) errorBox.hidden = true;
+    if (beforeOpenBox) beforeOpenBox.hidden = true;
+    if (primaryClosedBox) primaryClosedBox.hidden = false;
+    badgeLabels.forEach(function (el) { el.textContent = '一次募集は終了しました'; });
+    if (heroDeadlineSpec) heroDeadlineSpec.textContent = '一次募集は終了しました';
+    if (statusTitle) statusTitle.textContent = '一次募集は終了しました';
+    if (statusText) statusText.innerHTML = '一次募集は8月5日23:59で締め切りました。<br>二次募集の開始までしばらくお待ちください。';
+    if (statusSubtext) statusSubtext.textContent = '二次募集の開始時期が決まり次第、この表示を更新します。';
+  } else {
+    if (beforeOpenBox) beforeOpenBox.hidden = true;
+    if (primaryClosedBox) primaryClosedBox.hidden = true;
   }
 
-  if (!form || isBeforeOpen) return;
+  if (!form || isBeforeOpen || isPastPrimaryDeadline) return;
 
   var FORM_NAME = 'vol34_apply_form';
   /* 送信操作ごとに採番し、generate_lead の二重計測を防ぐ */
