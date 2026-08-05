@@ -44,16 +44,30 @@
   <meta name="twitter:description" content="東京や大阪にはある。名古屋にはまだ少ない。野球ユニ・競パン・スーツ好きが集まる少人数交流撮影会、名古屋・上前津で不定期開催。主催アタル。">
   <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
 
-  <!-- Google tag (gtag.js) -->
+  <!-- プレビューモード判定（?test=closed の場合のみ有効。実際の時刻に関わらずVol.3-4の
+       キャンセル待ち受付締切後の表示を強制する。レビュー・確認用であり、GA4計測は行わない） -->
   <script>
-    window.dataLayer = window.dataLayer || [];
-    window.gtag = function () { window.dataLayer.push(arguments); };
-    window.gtag('js', new Date());
-    window.gtag('config', 'G-H9BD3KFZCR');
-    var snbGtagScript = document.createElement('script');
-    snbGtagScript.async = true;
-    snbGtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR';
-    document.head.appendChild(snbGtagScript);
+    window.SNB_PREVIEW_CLOSED_MODE = (function () {
+      try {
+        return new URLSearchParams(window.location.search).get('test') === 'closed';
+      } catch (e) {
+        return false;
+      }
+    })();
+  </script>
+
+  <!-- Google tag (gtag.js)（プレビューモード中はスクリプトの読み込み・計測を一切行わない） -->
+  <script>
+    if (!window.SNB_PREVIEW_CLOSED_MODE) {
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () { window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      window.gtag('config', 'G-H9BD3KFZCR');
+      var snbGtagScript = document.createElement('script');
+      snbGtagScript.async = true;
+      snbGtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR';
+      document.head.appendChild(snbGtagScript);
+    }
   </script>
   <script src="../events.js"></script>
   <script src="../analytics.js"></script>
@@ -145,7 +159,7 @@
         </ul>
         <p class="next-event-note">
           <span class="status-badge status-badge--full" id="vol34-status-badge">キャンセル待ち受付中</span><br>
-          <span id="vol34-deadline-line">定員到達のため、現在はキャンセル待ちとして受け付けています。</span><br>
+          <span id="vol34-deadline-line">定員到達のため、現在はキャンセル待ちとして受け付けています。受付締切：2026年8月9日（日）23:59</span><br>
           <a href="vol3-4.html#apply" id="vol34-cta-link" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="vol3-4">📝 キャンセル待ちに申し込む →</a>
         </p>
       </div>
@@ -404,6 +418,41 @@
   }
   if (mql.addEventListener) mql.addEventListener('change', handleViewportChange);
   else if (mql.addListener) mql.addListener(handleViewportChange);
+})();
+</script>
+
+<!-- ── Vol.3-4 キャンセル待ち受付締切ゲート（詳細ページ vol3-4.html と同一基準で判定） ── -->
+<script>
+(function () {
+  'use strict';
+
+  // キャンセル待ち（二次募集）締切：2026年8月9日（日）23:59（日本時間）。オフセット付きISO文字列で
+  // パースするため、閲覧端末のローカルタイムゾーンに関わらず日本時間基準の判定になる。
+  // 判定失敗時は「受付中」と誤認させない安全側（締切済み扱い）に倒す（Issue #185）。
+  var WAITLIST_DEADLINE_ISO = '2026-08-09T23:59:00+09:00';
+  var waitlistDeadlineMs = new Date(WAITLIST_DEADLINE_ISO).getTime();
+  // ?test=closed の場合は、実際の時刻に関わらず締切後の表示を強制する（Issue #185）。
+  var isPreviewClosedMode = window.SNB_PREVIEW_CLOSED_MODE === true;
+  var isPastDeadline = isPreviewClosedMode || isNaN(waitlistDeadlineMs) || Date.now() >= waitlistDeadlineMs;
+
+  if (!isPastDeadline) return;
+
+  var badge = document.getElementById('vol34-status-badge');
+  var deadlineLine = document.getElementById('vol34-deadline-line');
+  var ctaLink = document.getElementById('vol34-cta-link');
+
+  if (badge) {
+    badge.textContent = 'キャンセル待ち受付終了';
+    badge.classList.remove('status-badge--full');
+    badge.classList.add('status-badge--closed');
+  }
+  if (deadlineLine) {
+    deadlineLine.textContent = 'キャンセル待ちの新規受付は終了しました（締切：2026年8月9日23:59）。8月11日回は予定どおり開催します。';
+  }
+  if (ctaLink) {
+    ctaLink.textContent = '📋 開催内容を見る →';
+    ctaLink.setAttribute('href', 'vol3-4.html');
+  }
 })();
 </script>
 

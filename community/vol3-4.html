@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vol.3-4｜8月11日開催決定・キャンセル待ち受付中｜SNBコミュニティ</title>
-  <meta name="description" content="名古屋・上前津で2026年8月11日（火・祝）に開催するユニフォーム交流撮影会 Vol.3-4。8月8日・16日は不開催となりました。野球・サッカー・陸上・スイムウェア・ラグビー／アメフト・シングレットの6カテゴリーで、現在は8月11日回のキャンセル待ちを受け付けています。">
+  <meta name="description" content="名古屋・上前津で2026年8月11日（火・祝）に開催するユニフォーム交流撮影会 Vol.3-4。8月8日・16日は不開催となりました。野球・サッカー・陸上・スイムウェア・ラグビー／アメフト・シングレットの6カテゴリー。キャンセル待ち受付締切：8月9日（日）23:59。最新の受付状況はページ内でご確認ください。">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://nagoya-base.github.io/snb-community/community/vol3-4.html">
 
@@ -65,7 +65,7 @@
 
   <!-- OGP -->
   <meta property="og:title" content="Vol.3-4｜8月11日開催決定・キャンセル待ち受付中｜SNBコミュニティ">
-  <meta property="og:description" content="名古屋・上前津で2026年8月11日（火・祝）に開催するユニフォーム交流撮影会 Vol.3-4。8月8日・16日は不開催となりました。野球・サッカー・陸上・スイムウェア・ラグビー／アメフト・シングレットの6カテゴリーで、現在は8月11日回のキャンセル待ちを受け付けています。">
+  <meta property="og:description" content="名古屋・上前津で2026年8月11日（火・祝）に開催するユニフォーム交流撮影会 Vol.3-4。8月8日・16日は不開催となりました。野球・サッカー・陸上・スイムウェア・ラグビー／アメフト・シングレットの6カテゴリー。キャンセル待ち受付締切：8月9日（日）23:59。最新の受付状況はページ内でご確認ください。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://nagoya-base.github.io/snb-community/community/vol3-4.html">
   <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
@@ -73,7 +73,7 @@
   <meta property="og:image:height" content="909">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Vol.3-4｜8月11日開催決定・キャンセル待ち受付中｜SNBコミュニティ">
-  <meta name="twitter:description" content="名古屋・上前津で2026年8月11日（火・祝）に開催するユニフォーム交流撮影会 Vol.3-4。8月8日・16日は不開催となりました。野球・サッカー・陸上・スイムウェア・ラグビー／アメフト・シングレットの6カテゴリーで、現在は8月11日回のキャンセル待ちを受け付けています。">
+  <meta name="twitter:description" content="名古屋・上前津で2026年8月11日（火・祝）に開催するユニフォーム交流撮影会 Vol.3-4。8月8日・16日は不開催となりました。野球・サッカー・陸上・スイムウェア・ラグビー／アメフト・シングレットの6カテゴリー。キャンセル待ち受付締切：8月9日（日）23:59。最新の受付状況はページ内でご確認ください。">
   <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
 
   <!-- テストモード判定（?test=1 の場合のみ有効。test=0・空文字・他の値は通常モード） -->
@@ -87,9 +87,21 @@
     })();
   </script>
 
-  <!-- Google Analytics（テストモード中はスクリプトの読み込み・計測を一切行わない） -->
+  <!-- プレビューモード判定（?test=closed の場合のみ有効。実際の時刻に関わらずキャンセル待ち
+       受付締切後の表示を強制する。レビュー・確認用であり、実際の送信・GA4計測は行わない） -->
   <script>
-    if (!window.SNB_TEST_MODE) {
+    window.SNB_PREVIEW_CLOSED_MODE = (function () {
+      try {
+        return new URLSearchParams(window.location.search).get('test') === 'closed';
+      } catch (e) {
+        return false;
+      }
+    })();
+  </script>
+
+  <!-- Google Analytics（テストモード・プレビューモード中はスクリプトの読み込み・計測を一切行わない） -->
+  <script>
+    if (!window.SNB_TEST_MODE && !window.SNB_PREVIEW_CLOSED_MODE) {
       window.dataLayer = window.dataLayer || [];
       window.gtag = function () { window.dataLayer.push(arguments); };
       window.gtag('js', new Date());
@@ -1005,13 +1017,13 @@
       </h1>
       <p class="hero-sub">
         野球、サッカー、陸上、スイムウェア、ラグビー／アメフト、シングレット。好きなユニフォームを持ち寄って、撮影と交流を楽しむ少人数イベントです。<br>
-        Vol.3-4は、8月11日（火・祝）14:00〜17:00に開催します。8月8日・16日は不開催となりました。現在は8月11日回のキャンセル待ちを受け付けています。
+        Vol.3-4は、8月11日（火・祝）14:00〜17:00に開催します。8月8日・16日は不開催となりました。現在は8月11日回のキャンセル待ちを受け付けています。キャンセル待ち受付締切：2026年8月9日（日）23:59。
       </p>
       <div class="hero-specs">
         <span class="hero-spec big">8月11日（火・祝）開催決定</span>
         <span class="hero-spec">14:00〜17:00</span>
         <span class="hero-spec">参加費 2,000〜4,000円／人</span>
-        <span class="hero-spec" id="hero-spec-deadline">定員12名・キャンセル待ち受付中</span>
+        <span class="hero-spec" id="hero-spec-deadline">定員12名・キャンセル待ち受付〜8/9(日)23:59</span>
         <span class="hero-spec">上前津・スタジオ名古屋ベース</span>
       </div>
       <div class="hero-btns">
@@ -1167,7 +1179,7 @@
           <span class="wear-tag">ラグビー／アメフトウェア</span>
           <span class="wear-tag">シングレット</span>
         </div>
-        <p class="schedule-card-note">定員に達したため、現在はキャンセル待ちとして受け付けています。空きが出た場合のみ、申込順にご連絡します。</p>
+        <p class="schedule-card-note" id="schedule-waitlist-note">定員に達したため、現在はキャンセル待ちとして受け付けています。空きが出た場合のみ、申込順にご連絡します。キャンセル待ち受付締切：2026年8月9日（日）23:59。</p>
       </div>
       <div class="schedule-card schedule-card--cancelled">
         <div class="schedule-card-status schedule-card-status--cancelled">不開催</div>
@@ -1182,8 +1194,8 @@
         <p class="schedule-card-note">今回は不開催となりました。</p>
       </div>
     </div>
-    <div class="price-note">
-      8月11日は定員12名に達したため、現在はキャンセル待ちの受付のみとなっています。キャンセル待ちへの登録だけでは参加確定になりません。開催条件・料金の詳細は「<a href="#details">詳細・開催条件</a>」をご確認ください。
+    <div class="price-note" id="schedule-price-note">
+      8月11日は定員12名に達したため、現在はキャンセル待ちの受付のみとなっています。受付締切は2026年8月9日（日）23:59です。キャンセル待ちへの登録だけでは参加確定になりません。開催条件・料金の詳細は「<a href="#details">詳細・開催条件</a>」をご確認ください。
     </div>
     <div class="schedule-cta">
       <a href="#apply" class="btn btn-primary btn-lg" data-cta-name="apply_form" data-cta-location="schedule">キャンセル待ちに申し込む</a>
@@ -1215,7 +1227,7 @@
         <div class="faq-body">
           <p>8月11日（火・祝）は4名以上の正式申込が集まり、開催が決定しました。8月8日（土）・16日（日）は開催基準に届かず、不開催となりました。</p>
           <p>4名は4,000円、5〜7名は3,000円、8〜12名は2,000円です（1人あたり）。8月11日の参加費は、一次締切時点の人数で確定しています。</p>
-          <p>8月11日の定員は12名で、すでに定員に達しています。現在は、空きが出た場合のみキャンセル待ちから申込順にご連絡する形で受け付けています。キャンセル待ちへの登録だけでは参加確定になりません。</p>
+          <p>8月11日の定員は12名で、すでに定員に達しています。現在は、空きが出た場合のみキャンセル待ちから申込順にご連絡する形で受け付けています。キャンセル待ちの受付締切は2026年8月9日（日）23:59です。キャンセル待ちへの登録だけでは参加確定になりません。</p>
         </div>
       </details>
 
@@ -1311,22 +1323,27 @@
   <div class="container">
     <div class="limit-badge" style="margin-bottom: 1.5rem;">
       <span class="limit-dot"></span>
-      <span class="js-apply-badge-label">キャンセル待ち受付中</span>
+      <span class="js-apply-badge-label" id="af-badge-label">キャンセル待ち受付中</span>
     </div>
     <h2>
       Vol.3-4のキャンセル待ちに、<br>
       <em>申し込む。</em>
     </h2>
-    <p class="final-cta-sub">
-      8月11日回は開催決定・定員到達のため、現在はキャンセル待ちとして受け付けています。空きが出た場合のみ、申込順にご連絡します。キャンセル待ちへの登録だけでは参加確定になりません。
+    <p class="final-cta-sub" id="apply-deadline-notice" style="font-weight: 800; color: var(--accent);">
+      キャンセル待ち受付締切：2026年8月9日（日）23:59
     </p>
-    <p class="final-cta-sub">
-      Vol.3-4は、参加者を特定できる記名式のキャンセル待ち受付フォームです。Xアカウントまたはメールアドレスのどちらか一方を必ずご入力ください。<br>
-      Vol.3の匿名アンケートにご回答済みの方も、あらためてこちらのフォームからお申し込みください。
-    </p>
+    <div id="apply-active-info">
+      <p class="final-cta-sub">
+        8月11日回は開催決定・定員到達のため、キャンセル待ちとして受け付けています。受付は8月9日（日）23:59までです。空きが出た場合のみ、申込順にご連絡します。キャンセル待ちへの登録だけでは参加確定になりません。
+      </p>
+      <p class="final-cta-sub">
+        Vol.3-4は、参加者を特定できる記名式のキャンセル待ち受付フォームです。Xアカウントまたはメールアドレスのどちらか一方を必ずご入力ください。<br>
+        Vol.3の匿名アンケートにご回答済みの方も、あらためてこちらのフォームからお申し込みください。
+      </p>
 
-    <div class="form-note-box">
-      着用予定ユニフォームは複数選択できます（複数のウェアを選んでも構いません）。参加費は2,000〜4,000円で、詳しい条件は「<a href="#details">詳細・開催条件</a>」をご確認ください。ユニフォームは申込時点での着用・持参予定であり、当日の着用を確約するものではありません。この登録は参加確定ではありません。
+      <div class="form-note-box">
+        着用予定ユニフォームは複数選択できます（複数のウェアを選んでも構いません）。参加費は2,000〜4,000円で、詳しい条件は「<a href="#details">詳細・開催条件</a>」をご確認ください。ユニフォームは申込時点での着用・持参予定であり、当日の着用を確約するものではありません。この登録は参加確定ではありません。キャンセル待ち受付締切：2026年8月9日（日）23:59。
+      </div>
     </div>
 
     <div class="test-mode-note" id="snb-test-banner-form" hidden>
@@ -1451,6 +1468,7 @@
         </label>
       </div>
 
+      <p class="form-hint" style="font-weight: 700; text-align: center;">キャンセル待ち受付締切：2026年8月9日（日）23:59</p>
       <button type="submit" class="btn btn-primary apply-form__submit" id="af-submit-btn">キャンセル待ちに申し込む</button>
 
       <p class="form-privacy-note">
@@ -1460,6 +1478,12 @@
         キャンセル待ちへの登録だけでは参加確定になりません。空きが出た場合のみ、申込順にメールまたはXのDMでご連絡します。
       </p>
     </form>
+
+    <div class="form-result form-result--closed" id="af-closed" hidden>
+      <p><strong>キャンセル待ち受付は終了しました。</strong></p>
+      <p>8月11日回は予定どおり開催します。キャンセル待ちへの新規受付は終了しました。</p>
+      <p>ご質問がある場合は、<a href="../contact/?category=question&amp;event=vol3-4">問い合わせフォーム</a>からお問い合わせください。</p>
+    </div>
 
     <div class="form-result form-result--success" id="af-success" hidden>
       <p><strong>キャンセル待ちを受け付けました。</strong></p>
@@ -1540,14 +1564,30 @@
   // 連絡先情報をもとに運営側が手動で確認する（vol4踏襲）。
   var FORM_ENDPOINT = 'https://formsubmit.co/ajax/bbuni.ngo@gmail.com';
 
+  // キャンセル待ち（二次募集）締切：2026年8月9日（日）23:59（日本時間）。オフセット付きISO文字列で
+  // パースするため、閲覧端末のローカルタイムゾーンに関わらず日本時間基準の判定になる。
+  // 判定失敗時は「受付中」と誤認させない安全側（締切済み扱い）に倒す（Issue #185）。
+  var WAITLIST_DEADLINE_ISO = '2026-08-09T23:59:00+09:00';
+  var waitlistDeadlineMs = new Date(WAITLIST_DEADLINE_ISO).getTime();
+
   // ?test=1 の場合のみ、動作確認のため実送信・GA4計測を行わずに成功表示のみ模擬する（Issue #162）。
   var isTestMode = window.SNB_TEST_MODE === true;
+  // ?test=closed の場合は、実際の時刻に関わらず締切後の表示を強制する（Issue #185）。
+  var isPreviewClosedMode = window.SNB_PREVIEW_CLOSED_MODE === true;
+  var isPastDeadline = !isTestMode && (isPreviewClosedMode || isNaN(waitlistDeadlineMs) || Date.now() >= waitlistDeadlineMs);
 
   var form = document.getElementById('vol34-apply-form');
   var successBox = document.getElementById('af-success');
   var errorBox = document.getElementById('af-error');
+  var closedBox = document.getElementById('af-closed');
   var testSuccessBox = document.getElementById('af-test-success');
   var badgeLabels = document.querySelectorAll('.js-apply-badge-label');
+  var afBadgeLabel = document.getElementById('af-badge-label');
+  var heroDeadlineSpec = document.getElementById('hero-spec-deadline');
+  var applyDeadlineNotice = document.getElementById('apply-deadline-notice');
+  var applyActiveInfo = document.getElementById('apply-active-info');
+  var scheduleWaitlistNote = document.getElementById('schedule-waitlist-note');
+  var schedulePriceNote = document.getElementById('schedule-price-note');
 
   // テストモード表示は常にtest=1の有無だけで切り替える。
   var testBannerTop = document.getElementById('snb-test-banner-top');
@@ -1557,9 +1597,22 @@
 
   if (isTestMode) {
     badgeLabels.forEach(function (el) { el.textContent = 'テストモード（実際の送信は行われません）'; });
+  } else if (isPastDeadline) {
+    if (form) form.hidden = true;
+    if (successBox) successBox.hidden = true;
+    if (errorBox) errorBox.hidden = true;
+    if (closedBox) closedBox.hidden = false;
+    if (afBadgeLabel) afBadgeLabel.textContent = 'キャンセル待ち受付終了';
+    if (heroDeadlineSpec) heroDeadlineSpec.textContent = 'キャンセル待ち受付は終了しました';
+    if (applyDeadlineNotice) applyDeadlineNotice.hidden = true;
+    if (applyActiveInfo) applyActiveInfo.hidden = true;
+    if (scheduleWaitlistNote) scheduleWaitlistNote.textContent = 'キャンセル待ちの受付は終了しました（締切：2026年8月9日23:59）。';
+    if (schedulePriceNote) schedulePriceNote.innerHTML = '8月11日のキャンセル待ち受付は、2026年8月9日（日）23:59をもって終了しました。開催条件・料金の詳細は「<a href="#details">詳細・開催条件</a>」をご確認ください。';
   }
 
-  if (!form) return;
+  // 締切後はフォームを非表示にするだけでなく、submitリスナー自体をアタッチしない
+  // 早期returnにより、直接submitイベントを発火させても送信処理へ到達しない（Issue #185）。
+  if (!form || isPastDeadline) return;
 
   var FORM_NAME = 'vol34_waitlist_form';
   /* 送信操作ごとに採番し、generate_lead の二重計測を防ぐ */
