@@ -141,9 +141,9 @@
           <li>各日4名で開催決定（定員12名）・上前津・スタジオ名古屋ベース</li>
         </ul>
         <p class="next-event-note">
-          <span class="status-badge status-badge--recruiting">参加申込受付中</span><br>
-          一次締切：2026年8月5日（水）23:59（日本時間）<br>
-          <a href="vol3-4.html" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="vol3-4">📝 参加を申し込む →</a>
+          <span class="status-badge status-badge--recruiting" id="vol34-status-badge">参加申込受付中</span><br>
+          <span id="vol34-deadline-line">一次締切：2026年8月5日（水）23:59（日本時間）</span><br>
+          <a href="vol3-4.html" id="vol34-cta-link" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="vol3-4">📝 参加を申し込む →</a>
         </p>
       </div>
     </div>
@@ -401,6 +401,38 @@
   }
   if (mql.addEventListener) mql.addEventListener('change', handleViewportChange);
   else if (mql.addListener) mql.addListener(handleViewportChange);
+})();
+</script>
+
+<!-- ── Vol.3-4 一次募集締切ゲート（詳細ページ vol3-4.html と同一基準で判定） ── -->
+<script>
+(function () {
+  'use strict';
+
+  // 一次募集締切：2026年8月5日（水）23:59（日本時間）。オフセット付きISO文字列で
+  // パースするため、閲覧端末のローカルタイムゾーンに関わらず日本時間基準の判定になる。
+  // 判定失敗時は「申込可能」と誤認させない安全側（締切済み扱い）に倒す。
+  var PRIMARY_DEADLINE_ISO = '2026-08-05T23:59:00+09:00';
+  var primaryDeadlineMs = new Date(PRIMARY_DEADLINE_ISO).getTime();
+  var isPastPrimaryDeadline = isNaN(primaryDeadlineMs) || Date.now() >= primaryDeadlineMs;
+
+  if (!isPastPrimaryDeadline) return;
+
+  var badge = document.getElementById('vol34-status-badge');
+  var deadlineLine = document.getElementById('vol34-deadline-line');
+  var ctaLink = document.getElementById('vol34-cta-link');
+
+  if (badge) {
+    badge.textContent = '一次募集は終了しました';
+    badge.classList.remove('status-badge--recruiting');
+    badge.classList.add('status-badge--closed');
+  }
+  if (deadlineLine) {
+    deadlineLine.textContent = '二次募集をお待ちください。';
+  }
+  if (ctaLink) {
+    ctaLink.textContent = '📋 開催内容を見る →';
+  }
 })();
 </script>
 
