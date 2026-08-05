@@ -1179,7 +1179,7 @@
           <span class="wear-tag">ラグビー／アメフトウェア</span>
           <span class="wear-tag">シングレット</span>
         </div>
-        <p class="schedule-card-note" id="schedule-card-waitlist-note">現在、参加人数を調整しているため、キャンセル待ちとして受け付けています。空きが出た場合のみ、申込順にご連絡します。受付締切：8月9日（日）23:59。</p>
+        <p class="schedule-card-note" id="schedule-card-waitlist-note">現在、参加人数を調整しているため、キャンセル待ちとして受け付けています。参加可能となった場合のみ、申込順にご連絡します。受付締切：8月9日（日）23:59。</p>
       </div>
       <div class="schedule-card schedule-card--cancelled">
         <div class="schedule-card-status schedule-card-status--cancelled">不開催</div>
@@ -1227,7 +1227,7 @@
         <div class="faq-body">
           <p>8月11日（火・祝）は4名以上の正式申込が集まり、開催が決定しました。8月8日（土）・16日（日）は開催基準に届かず、不開催となりました。</p>
           <p>4名は4,000円、5〜7名は3,000円、8〜12名は2,000円です（1人あたり）。8月11日の参加費は、一次締切時点の人数で確定しています。</p>
-          <p id="faq-capacity-note">8月11日の定員は12名です。現在は、参加人数を調整しているため、空きが出た場合のみキャンセル待ちから申込順にご連絡する形で受け付けています（受付締切：8月9日（日）23:59）。キャンセル待ちへの登録だけでは参加確定になりません。</p>
+          <p id="faq-capacity-note">8月11日の定員は12名です。現在は、参加人数を調整しているため、参加可能となった場合のみキャンセル待ちから申込順にご連絡する形で受け付けています（受付締切：8月9日（日）23:59）。キャンセル待ちへの登録だけでは参加確定になりません。</p>
         </div>
       </details>
 
@@ -1471,7 +1471,7 @@
         入力された情報は、キャンセル待ちの管理・空き枠が出た場合のご連絡のためにのみ使用します。同じ連絡先からの重複したお申し込みは、運営にて内容を確認のうえ、まとめてご案内する場合があります。
       </p>
       <p class="form-rules-note">
-        キャンセル待ちへの登録だけでは参加確定になりません。空きが出た場合のみ、申込順にメールまたはXのDMでご連絡します。
+        キャンセル待ちへの登録だけでは参加確定になりません。参加可能となった場合のみ、申込順にメールまたはXのDMでご連絡します。
       </p>
     </form>
 
@@ -1483,7 +1483,7 @@
 
     <div class="form-result form-result--success" id="af-success" hidden>
       <p><strong>キャンセル待ちを受け付けました。</strong></p>
-      <p>空きが出た場合のみ、申込順にご連絡します。この時点では参加確定ではありません。</p>
+      <p>参加可能となった場合のみ、申込順にご連絡します。この時点では参加確定ではありません。</p>
       <p>ご質問がある場合は、<a href="../contact/?category=question&amp;event=vol3-4">問い合わせフォーム</a>からお問い合わせください。</p>
     </div>
 
@@ -1612,9 +1612,9 @@
     if (applyStatusBadge) applyStatusBadge.textContent = 'キャンセル待ち受付終了';
     if (heroDeadlineSpec) heroDeadlineSpec.textContent = 'キャンセル待ち受付終了';
     if (scheduleIntroNote) scheduleIntroNote.textContent = '8月11日（火・祝）は予定どおり開催します。キャンセル待ちの新規受付は終了しました。8月8日・16日は不開催となりました。';
-    if (scheduleCardNote) scheduleCardNote.textContent = 'キャンセル待ちの新規受付は終了しました。すでにご登録の方には、空きが出た場合のみ申込順にご連絡します。';
-    if (schedulePriceNote) schedulePriceNote.textContent = '8月11日回のキャンセル待ち受付は終了しました。すでにご登録の方には、空きが出た場合のみ申込順にご連絡します。開催条件・料金の詳細は「詳細・開催条件」をご確認ください。';
-    if (faqCapacityNote) faqCapacityNote.textContent = '8月11日の定員は12名です。キャンセル待ちの新規受付は終了しました。すでにご登録の方には、空きが出た場合のみ申込順にご連絡します。';
+    if (scheduleCardNote) scheduleCardNote.textContent = 'キャンセル待ちの新規受付は終了しました。すでにご登録の方には、参加可能となった場合のみ申込順にご連絡します。';
+    if (schedulePriceNote) schedulePriceNote.textContent = '8月11日回のキャンセル待ち受付は終了しました。すでにご登録の方には、参加可能となった場合のみ申込順にご連絡します。開催条件・料金の詳細は「詳細・開催条件」をご確認ください。';
+    if (faqCapacityNote) faqCapacityNote.textContent = '8月11日の定員は12名です。キャンセル待ちの新規受付は終了しました。すでにご登録の方には、参加可能となった場合のみ申込順にご連絡します。';
     if (applyLeadNote) applyLeadNote.textContent = 'キャンセル待ち受付は終了しました。8月11日回は予定どおり開催します。キャンセル待ちへの新規受付は終了しました。';
     if (navApplyCta) navApplyCta.textContent = '受付状況を確認する';
     if (heroApplyCta) heroApplyCta.textContent = '📋 受付状況を確認する';
