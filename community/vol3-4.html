@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vol.3-4｜8月11日開催決定・キャンセル待ち受付中｜SNBコミュニティ</title>
+  <title>Vol.3-4｜8月11日開催決定｜SNBコミュニティ</title>
   <meta name="description" content="名古屋・上前津で2026年8月11日（火・祝）に開催するユニフォーム交流撮影会 Vol.3-4。8月8日・16日は不開催となりました。野球・サッカー・陸上・スイムウェア・ラグビー／アメフト・シングレットの6カテゴリー。キャンセル待ち受付締切：8月9日（日）23:59。最新の受付状況はページ内でご確認ください。">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://nagoya-base.github.io/snb-community/community/vol3-4.html">
@@ -64,7 +64,7 @@
   </script>
 
   <!-- OGP -->
-  <meta property="og:title" content="Vol.3-4｜8月11日開催決定・キャンセル待ち受付中｜SNBコミュニティ">
+  <meta property="og:title" content="Vol.3-4｜8月11日開催決定｜SNBコミュニティ">
   <meta property="og:description" content="名古屋・上前津で2026年8月11日（火・祝）に開催するユニフォーム交流撮影会 Vol.3-4。8月8日・16日は不開催となりました。野球・サッカー・陸上・スイムウェア・ラグビー／アメフト・シングレットの6カテゴリー。キャンセル待ち受付締切：8月9日（日）23:59。最新の受付状況はページ内でご確認ください。">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://nagoya-base.github.io/snb-community/community/vol3-4.html">
@@ -72,7 +72,7 @@
   <meta property="og:image:width" content="1731">
   <meta property="og:image:height" content="909">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Vol.3-4｜8月11日開催決定・キャンセル待ち受付中｜SNBコミュニティ">
+  <meta name="twitter:title" content="Vol.3-4｜8月11日開催決定｜SNBコミュニティ">
   <meta name="twitter:description" content="名古屋・上前津で2026年8月11日（火・祝）に開催するユニフォーム交流撮影会 Vol.3-4。8月8日・16日は不開催となりました。野球・サッカー・陸上・スイムウェア・ラグビー／アメフト・シングレットの6カテゴリー。キャンセル待ち受付締切：8月9日（日）23:59。最新の受付状況はページ内でご確認ください。">
   <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
 
@@ -1468,7 +1468,7 @@
       <button type="submit" class="btn btn-primary apply-form__submit" id="af-submit-btn">キャンセル待ちに申し込む</button>
 
       <p class="form-privacy-note">
-        入力された情報は、キャンセル待ちの管理・空き枠が出た場合のご連絡のためにのみ使用します。同じ連絡先からの重複したお申し込みは、運営にて内容を確認のうえ、まとめてご案内する場合があります。
+        入力された情報は、キャンセル待ちの管理・参加可能となった場合のご連絡のためにのみ使用します。同じ連絡先からの重複したお申し込みは、運営にて内容を確認のうえ、まとめてご案内する場合があります。
       </p>
       <p class="form-rules-note">
         キャンセル待ちへの登録だけでは参加確定になりません。参加可能となった場合のみ、申込順にメールまたはXのDMでご連絡します。
@@ -1579,10 +1579,12 @@
     badgeLabels.forEach(function (el) { el.textContent = 'テストモード（実際の送信は行われません）'; });
   }
 
-  // キャンセル待ち受付締切：2026年8月9日（日）23:59（日本時間）。オフセット付きISO文字列で
-  // パースするため、閲覧端末のローカルタイムゾーンに関わらず日本時間基準の判定になる。
-  // 判定失敗時は「受付中」と誤認させない安全側（受付終了扱い）に倒す。
-  var WAITLIST_DEADLINE_ISO = '2026-08-09T23:59:00+09:00';
+  // キャンセル待ち受付締切：2026年8月9日（日）23:59（日本時間）＝2026年8月10日0:00の
+  // 直前まで受付可能。境界値は翌日0:00で判定し、23:59台の1分間を受付終了にしてしまう
+  // ズレを避ける。オフセット付きISO文字列でパースするため、閲覧端末のローカル
+  // タイムゾーンに関わらず日本時間基準の判定になる。判定失敗時は「受付中」と
+  // 誤認させない安全側（受付終了扱い）に倒す。
+  var WAITLIST_DEADLINE_ISO = '2026-08-10T00:00:00+09:00';
   var waitlistDeadlineMs = new Date(WAITLIST_DEADLINE_ISO).getTime();
   // ?test=closed の場合は、実際の時刻に関わらず受付終了後の表示を強制する（レビュー・確認用）。
   var isPreviewClosedMode = window.SNB_PREVIEW_CLOSED_MODE === true;
