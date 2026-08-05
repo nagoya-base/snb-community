@@ -44,13 +44,30 @@
   <meta name="twitter:description" content="東京や大阪にはある。名古屋にはまだ少ない。野球ユニ・競パン・スーツ好きが集まる少人数交流撮影会、名古屋・上前津で不定期開催。主催アタル。">
   <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
 
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR"></script>
+  <!-- プレビューモード判定（?test=closed の場合のみ有効。実際の時刻に関わらずVol.3-4の一次募集
+       締切後の表示を強制する。レビュー・確認用であり、GA4計測は行わない） -->
   <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-H9BD3KFZCR');
+    window.SNB_PREVIEW_CLOSED_MODE = (function () {
+      try {
+        return new URLSearchParams(window.location.search).get('test') === 'closed';
+      } catch (e) {
+        return false;
+      }
+    })();
+  </script>
+
+  <!-- Google tag (gtag.js)（プレビューモード中はスクリプトの読み込み・計測を一切行わない） -->
+  <script>
+    if (!window.SNB_PREVIEW_CLOSED_MODE) {
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () { window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      window.gtag('config', 'G-H9BD3KFZCR');
+      var snbGtagScript = document.createElement('script');
+      snbGtagScript.async = true;
+      snbGtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR';
+      document.head.appendChild(snbGtagScript);
+    }
   </script>
   <script src="../events.js"></script>
   <script src="../analytics.js"></script>
@@ -414,7 +431,9 @@
   // 判定失敗時は「申込可能」と誤認させない安全側（締切済み扱い）に倒す。
   var PRIMARY_DEADLINE_ISO = '2026-08-05T23:59:00+09:00';
   var primaryDeadlineMs = new Date(PRIMARY_DEADLINE_ISO).getTime();
-  var isPastPrimaryDeadline = isNaN(primaryDeadlineMs) || Date.now() >= primaryDeadlineMs;
+  // ?test=closed の場合は、実際の時刻に関わらず締切後の表示を強制する（Issue #181 追加分）。
+  var isPreviewClosedMode = window.SNB_PREVIEW_CLOSED_MODE === true;
+  var isPastPrimaryDeadline = isPreviewClosedMode || isNaN(primaryDeadlineMs) || Date.now() >= primaryDeadlineMs;
 
   if (!isPastPrimaryDeadline) return;
 

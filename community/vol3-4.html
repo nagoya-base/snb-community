@@ -113,9 +113,21 @@
     })();
   </script>
 
-  <!-- Google Analytics（テストモード中はスクリプトの読み込み・計測を一切行わない） -->
+  <!-- プレビューモード判定（?test=closed の場合のみ有効。実際の時刻に関わらず一次募集締切後の
+       表示を強制する。レビュー・確認用であり、実際の申込・メール送信・GA4計測は行わない） -->
   <script>
-    if (!window.SNB_TEST_MODE) {
+    window.SNB_PREVIEW_CLOSED_MODE = (function () {
+      try {
+        return new URLSearchParams(window.location.search).get('test') === 'closed';
+      } catch (e) {
+        return false;
+      }
+    })();
+  </script>
+
+  <!-- Google Analytics（テストモード・プレビューモード中はスクリプトの読み込み・計測を一切行わない） -->
+  <script>
+    if (!window.SNB_TEST_MODE && !window.SNB_PREVIEW_CLOSED_MODE) {
       window.dataLayer = window.dataLayer || [];
       window.gtag = function () { window.dataLayer.push(arguments); };
       window.gtag('js', new Date());
@@ -1605,8 +1617,8 @@
     </div>
 
     <div class="form-result form-result--closed" id="af-primary-closed" hidden>
-      <p><strong>一次募集は終了しました。</strong></p>
-      <p>一次募集は8月5日23:59で締め切りました。開催可否と空き状況を確認後、必要に応じて二次募集を行います。二次募集の開始までしばらくお待ちください。</p>
+      <p><strong>一次募集は終了しました。二次募集をお待ちください。</strong></p>
+      <p>一次募集は8月5日23:59で締め切りました。開催可否と空き状況を確認後、必要に応じて二次募集を行います。</p>
       <p>参加前のご質問は、<a href="../contact/?category=question&amp;event=vol3-4">問い合わせフォーム</a>からお気軽にどうぞ。</p>
     </div>
 
@@ -1702,8 +1714,10 @@
   // ?test=1 の場合のみ、受付開始前・締切後でも動作確認のためフォームを表示する（Issue #162）。
   // 通常URL（test=1が付かない・test=0・空文字・他の値）では既存の日付ゲートを維持する。
   var isTestMode = window.SNB_TEST_MODE === true;
-  var isBeforeOpen = !isTestMode && (!todayJST || todayJST < SUBMISSION_START_DATE);
-  var isPastPrimaryDeadline = !isTestMode && (isNaN(primaryDeadlineMs) || Date.now() >= primaryDeadlineMs);
+  // ?test=closed の場合は、実際の時刻に関わらず一次募集締切後の表示を強制する（Issue #181 追加分）。
+  var isPreviewClosedMode = window.SNB_PREVIEW_CLOSED_MODE === true;
+  var isBeforeOpen = !isTestMode && !isPreviewClosedMode && (!todayJST || todayJST < SUBMISSION_START_DATE);
+  var isPastPrimaryDeadline = !isTestMode && (isPreviewClosedMode || isNaN(primaryDeadlineMs) || Date.now() >= primaryDeadlineMs);
 
   var form = document.getElementById('vol34-apply-form');
   var beforeOpenBox = document.getElementById('af-before-open');
