@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>次回SNBC企画アンケート｜2026年9月開催分｜SNBコミュニティ</title>
+  <meta name="description" content="SNBコミュニティ（SNBC）の次回企画（野球ユニ交流会・サカユニ交流会・ユニミックス交流会・学校セット撮影会）を決めるためのアンケートです。参加意向と2026年9月の参加可能日をお伺いします。回答は参加申込みにはなりません。">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://nagoya-base.github.io/snb-community/community/enquete_202609.html">
+
+  <!-- OGP -->
+  <meta property="og:title" content="次回SNBC企画アンケート｜2026年9月開催分">
+  <meta property="og:description" content="野球ユニ・サカユニ・ユニミックス・学校セット撮影会の4企画から、次に参加したい企画と9月の参加可能日を教えてください。回答は参加申込みにはなりません。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nagoya-base.github.io/snb-community/community/enquete_202609.html">
+  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
+  <meta property="og:image:width" content="1731">
+  <meta property="og:image:height" content="909">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="次回SNBC企画アンケート｜2026年9月開催分">
+  <meta name="twitter:description" content="野球ユニ・サカユニ・ユニミックス・学校セット撮影会の4企画から、次に参加したい企画と9月の参加可能日を教えてください。">
+  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
+
+  <!-- テストモード判定（?test=1 の場合のみ有効。GASへの通信は一切行わずフロントのみで模擬する） -->
+  <script>
+    window.SNB_TEST_MODE = (function () {
+      try {
+        return new URLSearchParams(window.location.search).get('test') === '1';
+      } catch (e) {
+        return false;
+      }
+    })();
+  </script>
+
+  <!-- プレビューモード判定（?test=closed の場合のみ有効。回答期間終了後の表示を強制する） -->
+  <script>
+    window.SNB_PREVIEW_CLOSED_MODE = (function () {
+      try {
+        return new URLSearchParams(window.location.search).get('test') === 'closed';
+      } catch (e) {
+        return false;
+      }
+    })();
+  </script>
+
+  <!-- Google Analytics（テストモード・プレビューモード中はスクリプトの読み込み・計測を一切行わない） -->
+  <script>
+    if (!window.SNB_TEST_MODE && !window.SNB_PREVIEW_CLOSED_MODE) {
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () { window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      window.gtag('config', 'G-H9BD3KFZCR');
+      var snbGtagScript = document.createElement('script');
+      snbGtagScript.async = true;
+      snbGtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR';
+      document.head.appendChild(snbGtagScript);
+    }
+  </script>
+  <script src="../analytics.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #F2EFE9;
+      --bg-card:    #FDFCF9;
+      --bg-card2:   #FCE8E8;
+      --accent:     #C62828;
+      --accent-lt:  #E57373;
+      --navy:       #C62828;
+      --text:       #1C1A17;
+      --text-muted: #6A6258;
+      --border:     #DDD8CF;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
+      font-size: 15px;
+      line-height: 1.8;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: var(--navy); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--text); }
+    .container { max-width: 640px; margin: 0 auto; padding: 0 1.5rem; }
+
+    header.top-bar {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 0;
+      font-size: 0.85rem;
+    }
+    header.top-bar a { font-weight: 700; }
+
+    main { flex: 1; padding: 2.5rem 0 3.5rem; }
+
+    .section-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 0.65rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      line-height: 1.6;
+      margin-bottom: 1.1rem;
+      color: var(--text);
+    }
+    .lead-text { font-size: 0.92rem; color: var(--text); line-height: 1.9; margin-bottom: 0.9rem; }
+    .lead-note {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+      padding: 0.9rem 1.1rem;
+      margin-bottom: 2rem;
+      line-height: 1.9;
+    }
+
+    .apply-form { text-align: left; }
+    .apply-form__honey { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .form-field { margin-top: 1.6rem; }
+    .form-field:first-of-type { margin-top: 0; }
+    .form-field label,
+    .form-field > .form-legend { display: block; font-size: 0.86rem; font-weight: 700; color: var(--navy); margin-bottom: 0.4rem; }
+    .required-mark { font-size: 0.68rem; font-weight: 700; color: #FFF; background: var(--accent); padding: 0.1rem 0.4rem; border-radius: 3px; margin-left: 0.3rem; vertical-align: 1px; }
+    .optional-mark { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); background: var(--bg-tint, #EDEAE3); padding: 0.1rem 0.4rem; border-radius: 3px; margin-left: 0.3rem; vertical-align: 1px; }
+
+    .form-field input[type="text"],
+    .form-field input[type="email"],
+    .form-field textarea {
+      width: 100%;
+      padding: 0.7rem 0.85rem;
+      font-size: 0.92rem;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #FFF;
+    }
+    .form-field textarea { resize: vertical; min-height: 4rem; }
+    .form-field input[type="text"]:focus,
+    .form-field input[type="email"]:focus,
+    .form-field textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .form-hint { margin-top: 0.35rem; font-size: 0.76rem; color: var(--text-muted); line-height: 1.6; }
+
+    .radio-group,
+    .checkbox-group { display: flex; flex-wrap: wrap; gap: 0.6rem 1.1rem; margin-top: 0.5rem; }
+    .radio-option,
+    .checkbox-option {
+      display: flex; align-items: flex-start; gap: 0.45rem;
+      font-size: 0.86rem; color: var(--text);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.55rem 0.8rem;
+      flex: 1 1 100%;
+    }
+    .radio-option input,
+    .checkbox-option input { width: 17px; height: 17px; flex-shrink: 0; accent-color: var(--accent); margin-top: 0.15rem; }
+    .checkbox-option--exclusive { border-color: var(--accent); background: var(--bg-card2); font-weight: 700; }
+    .radio-option:has(input:disabled),
+    .checkbox-option:has(input:disabled) { opacity: 0.45; }
+
+    .field-error { margin-top: 0.4rem; font-size: 0.8rem; color: #B3261E; font-weight: 700; }
+
+    .apply-form__submit {
+      display: block; width: 100%; text-align: center; margin-top: 2rem;
+      padding: 0.95rem; font-size: 1rem; font-weight: 700; letter-spacing: 0.04em;
+      background: var(--accent); color: #F2EFE9; border: none; border-radius: 4px;
+      cursor: pointer; text-decoration: none;
+    }
+    .apply-form__submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .form-privacy-note { margin-top: 1rem; font-size: 0.74rem; color: var(--text-muted); line-height: 1.8; }
+    .form-note-box {
+      font-size: 0.8rem; color: var(--text-muted); background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.1rem;
+      margin-bottom: 1.75rem; line-height: 1.9;
+    }
+
+    .form-result { border-radius: 8px; padding: 1.5rem 1.4rem; text-align: left; font-size: 0.9rem; line-height: 1.85; }
+    .form-result--success { background: #eaf6ec; border: 1px solid #b7ddbc; color: #1e4620; }
+    .form-result--success strong { color: #1e4620; }
+    .form-result--error { background: #fdeceb; border: 1px solid #f3b8b3; color: #7a1f17; }
+    .form-result--error strong { color: #7a1f17; }
+    .form-result--closed { background: var(--bg-card2); border: 1px solid var(--border); color: var(--text); }
+    .form-result--closed strong { color: var(--navy); }
+    .form-result--test { background: #FFF3CD; border: 1px solid #E0A800; color: #7A5B00; }
+    .form-result--test strong { color: #7A5B00; }
+
+    .test-mode-note {
+      font-size: 0.8rem; font-weight: 700; color: #7A5B00; background: #FFF3CD;
+      border: 1px solid #E0A800; border-radius: 6px; padding: 0.8rem 1rem; margin-bottom: 1.5rem;
+    }
+
+    footer {
+      background: #1C1A17; color: #F2EFE9; padding: 2rem 0; text-align: center; font-size: 0.78rem;
+    }
+    footer a { color: #F2EFE9; }
+    footer p { color: rgba(242, 239, 233, 0.62); margin-top: 0.5rem; }
+
+    @media (min-width: 480px) {
+      .radio-option, .checkbox-option { flex: 1 1 calc(50% - 0.55rem); }
+    }
+
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  </style>
+</head>
+<body data-site-section="community" data-page-type="survey" data-event-slug="enquete_202609" data-event-title="次回SNBC企画アンケート（2026年9月開催分）">
+
+<header class="top-bar">
+  <div class="container">
+    <a href="../community/" data-cta-name="community_top" data-cta-location="survey_header">← SNBコミュニティに戻る</a>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <section id="intro" data-section-view="intro">
+      <p class="section-label">Enquete</p>
+      <h1>次に参加したい企画を教えてください</h1>
+      <p class="lead-text">
+        次回以降の企画を決める参考にするためのアンケートです。<br>
+        「興味がある企画」だけでなく、「実際に参加できる日」まで把握したいため、9月の参加可能日も教えてください。<br>
+        学校セット撮影会は制服・スポーツユニフォーム・体操服・私服など服装自由です。<br>
+        回答だけで参加申込みになることはありません。開催候補決定時の連絡を希望する方のみ、任意で連絡先をご記入ください。
+      </p>
+      <div class="lead-note">
+        回答期間：2026年8月28日（金）23:59まで
+      </div>
+    </section>
+
+    <section id="survey" data-section-view="survey">
+
+      <div class="test-mode-note" id="snb-test-banner-top" hidden>
+        ⚠️ テストモード表示：このページは動作確認用です。送信してもGoogleスプレッドシートへの保存・GA4計測は行われません。
+      </div>
+
+      <div class="form-result form-result--closed" id="sv-closed" hidden>
+        <strong>回答期間は終了しました。</strong><br>
+        ご協力ありがとうございました。次回開催のお知らせはXでご確認ください。
+      </div>
+
+      <form id="enquete-form" class="apply-form" novalidate>
+        <!-- スパム対策用ハニーポット（人には見えない・自動入力するボットのみ引っかかる） -->
+        <input type="text" name="website" class="apply-form__honey" tabindex="-1" autocomplete="off">
+
+        <div class="test-mode-note" id="snb-test-banner-form" hidden>
+          ⚠️ テストモード表示：送信してもGoogleスプレッドシートへの保存・GA4計測は行われません。
+        </div>
+
+        <div class="form-note-box">
+          必須項目には「必須」マークがあります。それ以外は任意です。
+        </div>
+
+        <!-- Q1 -->
+        <fieldset class="form-field" style="border: none; padding: 0;">
+          <legend class="form-legend">Q1. 最も参加したい企画 <span class="required-mark">必須</span></legend>
+          <div class="radio-group" id="sv-q1-group">
+            <label class="radio-option"><input type="radio" name="最も参加したい企画" value="野球ユニ交流会"><span>野球ユニ交流会</span></label>
+            <label class="radio-option"><input type="radio" name="最も参加したい企画" value="サカユニ交流会"><span>サカユニ交流会</span></label>
+            <label class="radio-option"><input type="radio" name="最も参加したい企画" value="ユニミックス交流会"><span>ユニミックス交流会</span></label>
+            <label class="radio-option"><input type="radio" name="最も参加したい企画" value="学校セット撮影会（服装自由）"><span>学校セット撮影会（服装自由：制服・ユニ・体操服など）</span></label>
+            <label class="radio-option"><input type="radio" name="最も参加したい企画" value="今回は特にない" id="sv-q1-none"><span>今回は特にない</span></label>
+          </div>
+          <p class="field-error" id="sv-q1-error" role="alert" hidden></p>
+        </fieldset>
+
+        <!-- Q2 -->
+        <fieldset class="form-field" style="border: none; padding: 0;">
+          <legend class="form-legend">Q2. 2番目に参加したい企画 <span class="optional-mark">任意</span></legend>
+          <div class="radio-group" id="sv-q2-group">
+            <label class="radio-option"><input type="radio" name="2番目に参加したい企画" value="野球ユニ交流会"><span>野球ユニ交流会</span></label>
+            <label class="radio-option"><input type="radio" name="2番目に参加したい企画" value="サカユニ交流会"><span>サカユニ交流会</span></label>
+            <label class="radio-option"><input type="radio" name="2番目に参加したい企画" value="ユニミックス交流会"><span>ユニミックス交流会</span></label>
+            <label class="radio-option"><input type="radio" name="2番目に参加したい企画" value="学校セット撮影会（服装自由）"><span>学校セット撮影会（服装自由：制服・ユニ・体操服など）</span></label>
+            <label class="radio-option"><input type="radio" name="2番目に参加したい企画" value="特になし"><span>特になし</span></label>
+          </div>
+        </fieldset>
+
+        <!-- Q3（Q1が「今回は特にない」の場合はスキップ） -->
+        <fieldset class="form-field" id="sv-q3-fieldset" style="border: none; padding: 0;">
+          <legend class="form-legend">Q3. Q1で選んだ企画が実際に開催された場合の参加可能性 <span class="required-mark">必須（Q1が「今回は特にない」の場合は不要）</span></legend>
+          <p class="form-hint" id="sv-q3-skip-note" hidden>Q1で「今回は特にない」を選んだため、この項目はスキップされます。</p>
+          <div class="radio-group" id="sv-q3-group">
+            <label class="radio-option"><input type="radio" name="参加可能性" value="日程が合えばかなり参加したい"><span>日程が合えばかなり参加したい</span></label>
+            <label class="radio-option"><input type="radio" name="参加可能性" value="条件（料金・人数など）が合えば参加を検討したい"><span>条件（料金・人数など）が合えば参加を検討したい</span></label>
+            <label class="radio-option"><input type="radio" name="参加可能性" value="興味はあるが参加までは分からない"><span>興味はあるが参加までは分からない</span></label>
+            <label class="radio-option"><input type="radio" name="参加可能性" value="見るだけ・投票だけ"><span>見るだけ・投票だけ</span></label>
+          </div>
+          <p class="field-error" id="sv-q3-error" role="alert" hidden></p>
+        </fieldset>
+
+        <!-- Q4 -->
+        <fieldset class="form-field" style="border: none; padding: 0;">
+          <legend class="form-legend">Q4. 参加しやすい料金（3時間程度を想定） <span class="required-mark">必須</span></legend>
+          <div class="radio-group" id="sv-q4-group">
+            <label class="radio-option"><input type="radio" name="参加しやすい料金" value="2,000円"><span>2,000円</span></label>
+            <label class="radio-option"><input type="radio" name="参加しやすい料金" value="3,000円"><span>3,000円</span></label>
+            <label class="radio-option"><input type="radio" name="参加しやすい料金" value="4,000円"><span>4,000円</span></label>
+            <label class="radio-option"><input type="radio" name="参加しやすい料金" value="5,000円でも内容次第"><span>5,000円でも内容次第</span></label>
+          </div>
+          <p class="field-error" id="sv-q4-error" role="alert" hidden></p>
+        </fieldset>
+
+        <!-- Q5 -->
+        <fieldset class="form-field" style="border: none; padding: 0;">
+          <legend class="form-legend">Q5. 2026年9月に実際に参加できる日（複数選択可） <span class="required-mark">必須</span></legend>
+          <p class="form-hint">「参加できない」を選ぶと、他の日付の選択は解除されます。</p>
+          <div class="checkbox-group" id="sv-q5-group">
+            <label class="checkbox-option"><input type="checkbox" name="9月参加可能日" value="9/5（土）" data-sheet-key="date_0905"><span>9月5日（土）</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="9月参加可能日" value="9/6（日）" data-sheet-key="date_0906"><span>9月6日（日）</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="9月参加可能日" value="9/12（土）" data-sheet-key="date_0912"><span>9月12日（土）</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="9月参加可能日" value="9/13（日）" data-sheet-key="date_0913"><span>9月13日（日）</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="9月参加可能日" value="9/19（土）" data-sheet-key="date_0919"><span>9月19日（土）</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="9月参加可能日" value="9/20（日）" data-sheet-key="date_0920"><span>9月20日（日）</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="9月参加可能日" value="9/26（土）" data-sheet-key="date_0926"><span>9月26日（土）</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="9月参加可能日" value="9/27（日）" data-sheet-key="date_0927"><span>9月27日（日）</span></label>
+            <label class="checkbox-option checkbox-option--exclusive"><input type="checkbox" name="9月参加可能日" value="9月の土日は参加できない" id="sv-q5-none" data-sheet-key="no_available_weekend"><span>9月の土日は参加できない</span></label>
+          </div>
+          <p class="field-error" id="sv-q5-error" role="alert" hidden></p>
+        </fieldset>
+
+        <!-- Q6 -->
+        <fieldset class="form-field" style="border: none; padding: 0;">
+          <legend class="form-legend">Q6. 参加する上で気になること（複数選択可） <span class="optional-mark">任意</span></legend>
+          <p class="form-hint">「特になし」を選ぶと、他の項目の選択は解除されます。</p>
+          <div class="checkbox-group" id="sv-q6-group">
+            <label class="checkbox-option"><input type="checkbox" name="気になること" value="一人参加が不安"><span>一人参加が不安</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="気になること" value="初対面の人との交流が不安"><span>初対面の人との交流が不安</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="気になること" value="撮られるのが苦手"><span>撮られるのが苦手</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="気になること" value="衣装を持っていない"><span>衣装を持っていない</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="気になること" value="料金"><span>料金</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="気になること" value="日程"><span>日程</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="気になること" value="会場の広さ"><span>会場の広さ</span></label>
+            <label class="checkbox-option checkbox-option--exclusive"><input type="checkbox" name="気になること" value="特になし" id="sv-q6-none"><span>特になし</span></label>
+            <label class="checkbox-option"><input type="checkbox" name="気になること" value="その他"><span>その他</span></label>
+          </div>
+        </fieldset>
+
+        <!-- 自由記述 -->
+        <div class="form-field">
+          <label for="sv-free">こんな企画なら参加したい、など <span class="optional-mark">任意</span></label>
+          <textarea id="sv-free" name="自由記述" rows="4" maxlength="300" placeholder="ご自由にご記入ください（300文字程度）"></textarea>
+        </div>
+
+        <!-- Q7：フォローアップ用連絡先（任意・メール／Xそれぞれ独立して任意） -->
+        <fieldset class="form-field" style="border: none; padding: 0;">
+          <legend class="form-legend">Q7. フォローアップ用の連絡先 <span class="optional-mark">任意</span></legend>
+          <p class="form-hint">開催候補が決まった際に連絡を希望する方のみご記入ください。未記入でもアンケートには回答できます。メール・Xのどちらか一方、両方、またはどちらも未入力でも送信できます。</p>
+
+          <div class="form-field">
+            <label for="sv-q7-email">メールアドレス <span class="optional-mark">任意</span></label>
+            <input type="email" id="sv-q7-email" name="メールアドレス" autocomplete="email" placeholder="example@example.com" maxlength="200">
+            <p class="field-error" id="sv-q7-email-error" role="alert" hidden></p>
+          </div>
+
+          <div class="form-field">
+            <label for="sv-q7-x">Xアカウント <span class="optional-mark">任意</span></label>
+            <input type="text" id="sv-q7-x" name="Xアカウント" autocomplete="off" placeholder="@baseballuni2022" maxlength="200">
+            <p class="form-hint">XのDMで連絡する場合があります。DMを受け取れる設定にしておいてください。</p>
+          </div>
+        </fieldset>
+
+        <button type="submit" class="apply-form__submit" id="sv-submit-btn">アンケートに回答する</button>
+
+        <p class="form-privacy-note">
+          このアンケートは匿名でご回答いただけます。Q7の連絡先（任意項目）は、アンケート回答の集計と、開催候補決定時のご案内以外の用途には使用しません。分析目的（GA4）には連絡先を含む個人情報を一切送信しません。
+        </p>
+      </form>
+
+      <div class="form-result form-result--success" id="sv-success" hidden>
+        <strong>回答ありがとうございました！</strong><br>
+        次回企画の検討材料として活用します。開催が決まりましたら、Xでお知らせします（Q7にご記入の方には個別にご連絡することがあります）。
+      </div>
+
+      <div class="form-result form-result--error" id="sv-error" hidden>
+        <strong>送信に失敗しました。</strong><br>
+        通信環境をご確認のうえ、もう一度お試しください。改善しない場合は<a href="../contact/?category=question">問い合わせフォーム</a>からご連絡ください。
+      </div>
+
+      <div class="form-result form-result--test" id="sv-test-success" hidden>
+        <strong>テストモード：回答を受け付けました（模擬表示）。</strong><br>
+        実際の保存・GA4計測は行われていません。
+      </div>
+
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <p>SNB Community｜名古屋・上前津</p>
+    <p><a href="../community/">SNBコミュニティ</a>／<a href="../legal/">規約・参加ルール</a></p>
+    <p>© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── 設定値（散在させず、この1箇所にまとめる） ──
+     GASのウェブアプリをデプロイした後、実際の exec URL に置き換えること。
+     置き換え忘れを検知できるよう、プレースホルダー文字列を含めている。 */
+  var GAS_ENDPOINT_URL = 'https://script.google.com/macros/s/PLACEHOLDER_REPLACE_WITH_DEPLOYED_WEB_APP_URL/exec';
+  var FORM_NAME = 'enquete_202609_form';
+
+  var isTestMode = window.SNB_TEST_MODE === true;
+
+  var testBannerTop = document.getElementById('snb-test-banner-top');
+  var testBannerForm = document.getElementById('snb-test-banner-form');
+  if (testBannerTop) testBannerTop.hidden = !isTestMode;
+  if (testBannerForm) testBannerForm.hidden = !isTestMode;
+
+  if (!isTestMode && GAS_ENDPOINT_URL.indexOf('PLACEHOLDER_REPLACE_WITH') !== -1) {
+    // 本番URLに置き換え忘れている場合の開発者向け警告（利用者には表示しない）。
+    console.error('[enquete_202609] GAS_ENDPOINT_URL がプレースホルダーのままです。デプロイ済みのWebアプリURLに置き換えてください。');
+  }
+
+  // 回答期間：2026年8月28日（金）23:59（日本時間）＝8月29日0:00の直前まで受付可能。
+  // 判定失敗時は「受付中」と誤認させない安全側（受付終了扱い）に倒す。
+  var SURVEY_DEADLINE_ISO = '2026-08-29T00:00:00+09:00';
+  var deadlineMs = new Date(SURVEY_DEADLINE_ISO).getTime();
+  var isPreviewClosedMode = window.SNB_PREVIEW_CLOSED_MODE === true;
+  var isPastDeadline = !isTestMode &&
+    (isPreviewClosedMode || isNaN(deadlineMs) || Date.now() >= deadlineMs);
+
+  var form = document.getElementById('enquete-form');
+  var closedBox = document.getElementById('sv-closed');
+  var successBox = document.getElementById('sv-success');
+  var errorBox = document.getElementById('sv-error');
+  var testSuccessBox = document.getElementById('sv-test-success');
+
+  if (!isTestMode && isPastDeadline) {
+    if (form) form.hidden = true;
+    if (successBox) successBox.hidden = true;
+    if (errorBox) errorBox.hidden = true;
+    if (testSuccessBox) testSuccessBox.hidden = true;
+    if (closedBox) closedBox.hidden = false;
+    return; // submitリスナー自体をアタッチしない（GASへのfetch・survey_submit発火を防ぐ）
+  }
+  if (closedBox) closedBox.hidden = true;
+  if (!form) return;
+
+  function analytics() {
+    if (isTestMode) return null;
+    return window.SNBAnalytics;
+  }
+
+  var startedTracked = false;
+  function handleFormStart(e) {
+    var tag = e.target && e.target.tagName;
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return;
+    if (startedTracked) return;
+    startedTracked = true;
+    if (analytics()) analytics().trackFormStart(FORM_NAME);
+  }
+  form.addEventListener('input', handleFormStart);
+  form.addEventListener('change', handleFormStart);
+
+  function showFieldError(el, message) {
+    if (!el) return;
+    el.textContent = message;
+    el.hidden = false;
+  }
+  function focusAndScroll(el) {
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  /* ── Q1 ── */
+  var q1Radios = form.querySelectorAll('input[name="最も参加したい企画"]');
+  var q1Error = document.getElementById('sv-q1-error');
+  var q1NoneRadio = document.getElementById('sv-q1-none');
+
+  /* ── Q3（Q1が「今回は特にない」の場合はスキップ対象。
+     修正：disabledにするだけでなくcheckedも解除する。解除しないと、
+     一度Q3を選んだ後にQ1を「今回は特にない」→別の企画に戻した際、
+     古いQ3回答が復活してしまう事故が起きるため（レビュー指摘）。 ── */
+  var q3Fieldset = document.getElementById('sv-q3-fieldset');
+  var q3SkipNote = document.getElementById('sv-q3-skip-note');
+  var q3Group = document.getElementById('sv-q3-group');
+  var q3Radios = form.querySelectorAll('input[name="参加可能性"]');
+  var q3Error = document.getElementById('sv-q3-error');
+
+  function isQ1None() {
+    return !!(q1NoneRadio && q1NoneRadio.checked);
+  }
+
+  function syncQ3State() {
+    var skip = isQ1None();
+    if (q3Group) q3Group.style.opacity = skip ? '0.45' : '1';
+    if (q3SkipNote) q3SkipNote.hidden = !skip;
+    if (skip) {
+      q3Radios.forEach(function (r) {
+        r.checked = false;
+        r.disabled = true;
+      });
+      if (q3Error) { q3Error.hidden = true; q3Error.textContent = ''; }
+    } else {
+      q3Radios.forEach(function (r) { r.disabled = false; });
+    }
+  }
+
+  q1Radios.forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      if (q1Error) { q1Error.hidden = true; q1Error.textContent = ''; }
+      syncQ3State();
+    });
+  });
+  syncQ3State();
+
+  function validateQ1() {
+    var checked = form.querySelector('input[name="最も参加したい企画"]:checked');
+    if (!checked) {
+      showFieldError(q1Error, '最も参加したい企画を選択してください。');
+      focusAndScroll(q1Radios[0]);
+      return false;
+    }
+    return true;
+  }
+
+  function validateQ3() {
+    if (isQ1None()) return true; // Q1が「今回は特にない」の場合は対象外（保存時は not_applicable）
+    var checked = form.querySelector('input[name="参加可能性"]:checked');
+    if (!checked) {
+      showFieldError(q3Error, '参加可能性を選択してください。');
+      focusAndScroll(q3Radios[0]);
+      return false;
+    }
+    return true;
+  }
+
+  /* ── Q4 ── */
+  var q4Radios = form.querySelectorAll('input[name="参加しやすい料金"]');
+  var q4Error = document.getElementById('sv-q4-error');
+  q4Radios.forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      if (q4Error) { q4Error.hidden = true; q4Error.textContent = ''; }
+    });
+  });
+  function validateQ4() {
+    var checked = form.querySelector('input[name="参加しやすい料金"]:checked');
+    if (!checked) {
+      showFieldError(q4Error, '参加しやすい料金を選択してください。');
+      focusAndScroll(q4Radios[0]);
+      return false;
+    }
+    return true;
+  }
+
+  /* ── Q5（複数選択・「参加できない」は排他） ── */
+  var q5Checkboxes = form.querySelectorAll('input[name="9月参加可能日"]');
+  var q5DateCheckboxes = form.querySelectorAll('input[name="9月参加可能日"]:not(#sv-q5-none)');
+  var q5NoneCheckbox = document.getElementById('sv-q5-none');
+  var q5Error = document.getElementById('sv-q5-error');
+
+  if (q5NoneCheckbox) {
+    q5NoneCheckbox.addEventListener('change', function () {
+      if (q5NoneCheckbox.checked) {
+        q5DateCheckboxes.forEach(function (cb) { cb.checked = false; cb.disabled = true; });
+      } else {
+        q5DateCheckboxes.forEach(function (cb) { cb.disabled = false; });
+      }
+      if (q5Error) { q5Error.hidden = true; q5Error.textContent = ''; }
+    });
+  }
+  q5DateCheckboxes.forEach(function (cb) {
+    cb.addEventListener('change', function () {
+      if (q5Error) { q5Error.hidden = true; q5Error.textContent = ''; }
+    });
+  });
+
+  function validateQ5() {
+    var anyChecked = Array.prototype.some.call(q5Checkboxes, function (cb) { return cb.checked; });
+    if (!anyChecked) {
+      showFieldError(q5Error, '参加できる日、または「参加できない」を選択してください。');
+      focusAndScroll(q5Checkboxes[0]);
+      return false;
+    }
+    return true;
+  }
+
+  /* ── Q6（複数選択・「特になし」は排他。レビュー指摘により追加） ── */
+  var q6NoneCheckbox = document.getElementById('sv-q6-none');
+  var q6OtherCheckboxes = form.querySelectorAll('input[name="気になること"]:not(#sv-q6-none)');
+  if (q6NoneCheckbox) {
+    q6NoneCheckbox.addEventListener('change', function () {
+      if (q6NoneCheckbox.checked) {
+        q6OtherCheckboxes.forEach(function (cb) { cb.checked = false; cb.disabled = true; });
+      } else {
+        q6OtherCheckboxes.forEach(function (cb) { cb.disabled = false; });
+      }
+    });
+  }
+
+  /* ── Q7（メールアドレス：任意項目だが、入力がある場合のみ形式チェックする） ──
+     フォームには novalidate を付けているため、ブラウザ標準の送信時ブロックは働かない。
+     ただし input.validity（Constraint Validation API）自体はnovalidateの影響を受けず
+     参照できるため、type="email"の形式チェックだけを手動で流用する（レビュー指摘）。 */
+  var q7EmailInput = document.getElementById('sv-q7-email');
+  var q7EmailError = document.getElementById('sv-q7-email-error');
+  if (q7EmailInput) {
+    q7EmailInput.addEventListener('input', function () {
+      if (q7EmailError) { q7EmailError.hidden = true; q7EmailError.textContent = ''; }
+    });
+  }
+  function validateQ7Email() {
+    if (!q7EmailInput) return true;
+    if (!q7EmailInput.value.trim()) return true; // 空欄は任意項目のためOK
+    if (!q7EmailInput.validity.valid) {
+      showFieldError(q7EmailError, 'メールアドレスの形式が正しくないようです（空欄でも送信できます）。');
+      focusAndScroll(q7EmailInput);
+      return false;
+    }
+    return true;
+  }
+
+  function setSubmitting(isSubmitting) {
+    var btn = document.getElementById('sv-submit-btn');
+    if (!btn) return;
+    btn.disabled = isSubmitting;
+    btn.textContent = isSubmitting ? '送信中…' : 'アンケートに回答する';
+  }
+
+  var submissionInFlight = false; // 二重送信防止（連打・多重イベント対策）
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    if (submissionInFlight) return; // 送信処理中の再送信をブロック
+
+    // ハニーポットが埋まっていたら（ボットの自動入力）、何もせず成功風に見せて終了する。
+    var honeyInput = form.querySelector('input[name="website"]');
+    if (honeyInput && honeyInput.value) {
+      form.hidden = true;
+      if (successBox) successBox.hidden = false;
+      return;
+    }
+
+    if (!validateQ1()) {
+      if (analytics()) analytics().trackFormError(FORM_NAME, 'q1_missing');
+      return;
+    }
+    if (!validateQ3()) {
+      if (analytics()) analytics().trackFormError(FORM_NAME, 'q3_missing');
+      return;
+    }
+    if (!validateQ4()) {
+      if (analytics()) analytics().trackFormError(FORM_NAME, 'q4_missing');
+      return;
+    }
+    if (!validateQ5()) {
+      if (analytics()) analytics().trackFormError(FORM_NAME, 'q5_missing');
+      return;
+    }
+    if (!validateQ7Email()) {
+      if (analytics()) analytics().trackFormError(FORM_NAME, 'q7_email_invalid');
+      return;
+    }
+
+    var q1Value = (form.querySelector('input[name="最も参加したい企画"]:checked') || {}).value || '';
+    var q2Checked = form.querySelector('input[name="2番目に参加したい企画"]:checked');
+    var q2Value = q2Checked ? q2Checked.value : '';
+    var q3Checked = form.querySelector('input[name="参加可能性"]:checked');
+    // Q1が「今回は特にない」の場合、通常回答と混ざらないよう明示的な値で保存する（Issue要件）。
+    var q3Value = isQ1None() ? 'not_applicable' : (q3Checked ? q3Checked.value : '');
+    var q4Value = (form.querySelector('input[name="参加しやすい料金"]:checked') || {}).value || '';
+
+    // Q5：日付ごとに機械集計しやすいTRUE/FALSE列として保存する（Issue要件）。
+    var q5Payload = {};
+    q5DateCheckboxes.forEach(function (cb) {
+      var key = cb.getAttribute('data-sheet-key');
+      if (key) q5Payload[key] = cb.checked;
+    });
+    var noAvailableWeekend = !!(q5NoneCheckbox && q5NoneCheckbox.checked);
+
+    var q6Values = Array.prototype.map.call(
+      form.querySelectorAll('input[name="気になること"]:checked'),
+      function (input) { return input.value; }
+    );
+
+    var emailVal = (document.getElementById('sv-q7-email') || {}).value || '';
+    var xVal = (document.getElementById('sv-q7-x') || {}).value || '';
+    var freeVal = (document.getElementById('sv-free') || {}).value || '';
+
+    var payload = {
+      q1_first_choice: q1Value,
+      q2_second_choice: q2Value,
+      q3_participation_intent: q3Value,
+      q4_price: q4Value,
+      no_available_weekend: noAvailableWeekend,
+      q6_concerns: q6Values.join('、'),
+      contact_email: emailVal.trim(),
+      contact_x: xVal.trim(),
+      free_comment: freeVal
+    };
+    for (var key in q5Payload) {
+      if (Object.prototype.hasOwnProperty.call(q5Payload, key)) payload[key] = q5Payload[key];
+    }
+
+    if (isTestMode) {
+      form.hidden = true;
+      if (successBox) successBox.hidden = true;
+      if (errorBox) errorBox.hidden = true;
+      if (testSuccessBox) {
+        testSuccessBox.hidden = false;
+        testSuccessBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
+
+    submissionInFlight = true;
+    setSubmitting(true);
+
+    /* text/plain指定はCORSプリフライト（OPTIONSリクエスト）を発生させないための意図的な指定。
+       GAS Web AppはOPTIONSに正しく応答しないため、application/jsonにするとブラウザでブロックされる。
+       サーバー側（doPost）ではe.postData.contentsを自前でJSON.parseする。 */
+    fetch(GAS_ENDPOINT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          var httpError = new Error('送信に失敗しました');
+          httpError.failureType = 'server';
+          throw httpError;
+        }
+        return response.json();
+      })
+      .then(function (result) {
+        if (!result || result.ok !== true) {
+          var resultError = new Error((result && result.error) || 'unknown');
+          resultError.failureType = (result && result.error) || 'unknown';
+          throw resultError;
+        }
+        form.hidden = true;
+        if (successBox) successBox.hidden = false;
+        if (errorBox) errorBox.hidden = true;
+        if (successBox) successBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        /* survey_submitは補助イベント（参加確定を意味しないためgenerate_leadは使わない）。
+           送信するのはカテゴリ値のみ（連絡先・自由記述は送信しない）。
+           企画×日付×参加意向の主たる集計基盤はGoogleスプレッドシート側（本イベントは補助分析用）。 */
+        if (analytics()) {
+          analytics().track('survey_submit', {
+            form_name: FORM_NAME,
+            q1_plan: q1Value,
+            q3_intent: q3Value,
+            q4_price: q4Value,
+            q5_date_count: Object.keys(q5Payload).filter(function (k) { return q5Payload[k]; }).length,
+            q6_concern_count: q6Values.length
+          });
+        }
+      })
+      .catch(function (error) {
+        submissionInFlight = false;
+        if (analytics()) {
+          analytics().trackFormError(FORM_NAME, (error && error.failureType) || 'network');
+        }
+        setSubmitting(false);
+        if (errorBox) {
+          errorBox.hidden = false;
+          errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+  });
+})();
+</script>
+
+</body>
+</html>
