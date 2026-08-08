@@ -446,7 +446,7 @@ function buildNotificationBody(data, timestamp) {
  * （Issue #192の「メール失敗時の扱い」）。
  */
 function sendNotificationEmailSafely(data, timestamp) {
-  if (NOTIFICATION_EMAIL === 'bbuni_ngo@gmail.com') {
+  if (NOTIFICATION_EMAIL === 'bbuni.ngo@gmail.com') {
     // プレースホルダーのまま送信を試みると「無効な宛先」的なエラーがMailApp失敗ログに
     // 紛れて分かりにくくなるため、原因が一目で分かる専用のログを出して送信自体は行わない
     // （レビュー指摘 / PR #193）。doGetの[WARNING]表示と合わせて設定忘れに気付けるようにする。
