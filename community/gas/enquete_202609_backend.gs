@@ -11,30 +11,32 @@
  * 3. デフォルトで生成される Code.gs の内容を全て削除し、このファイルの内容を貼り付ける。
  * 4. SHEET_NAME（下記）が実際に使うシート（タブ）名と一致していることを確認する
  *    （既定 "responses"。スプレッドシート下部のタブ名をこれに合わせるか、コード側を変更する）。
- * 5. Apps Scriptエディタ左側の関数選択で setupHeaderRow を選び、実行ボタン（▶）を押す。
+ * 5. NOTIFICATION_EMAIL（下記）を、新しい回答があった際に通知を受け取りたい運営者の
+ *    実際のメールアドレスに書き換える（新しい回答が保存されるたびにこの宛先へメール通知が届く）。
+ * 6. Apps Scriptエディタ左側の関数選択で setupHeaderRow を選び、実行ボタン（▶）を押す。
  *    初回はGoogleの権限承認画面が出るので、自分のアカウントで承認する。
  *    これで1行目にヘッダー（列名）が書き込まれる。
- * 6. 右上「デプロイ」→「新しいデプロイ」。
+ * 7. 右上「デプロイ」→「新しいデプロイ」。
  *    - 種類の選択：ウェブアプリ
  *    - 説明：任意（例：enquete_202609 v1）
  *    - 次のユーザーとして実行：自分
  *    - アクセスできるユーザー：全員
- * 7. 「デプロイ」を押すと「ウェブアプリのURL」が表示される（.../exec で終わるURL）。これをコピーする。
- * 8. コピーしたURLを community/enquete_202609.html 内の
+ * 8. 「デプロイ」を押すと「ウェブアプリのURL」が表示される（.../exec で終わるURL）。これをコピーする。
+ * 9. コピーしたURLを community/enquete_202609.html 内の
  *    `GAS_ENDPOINT_URL = 'https://script.google.com/macros/s/PLACEHOLDER_REPLACE_WITH_DEPLOYED_WEB_APP_URL/exec'`
  *    の PLACEHOLDER_REPLACE_WITH_DEPLOYED_WEB_APP_URL 部分と置き換える。
- * 9. ブラウザで手順7のURLをそのまま開き、「SNBC enquete_202609 backend: OK」と表示されることを確認する
- *    （doGetの動作確認。POST自体はブラウザから直接テストできないため、実際のフォーム送信で確認する）。
- * 10. コードを後から修正した場合は、「デプロイ」→「デプロイを管理」→ 対象デプロイの編集（鉛筆アイコン）→
+ * 10. ブラウザで手順8のURLをそのまま開き、「SNBC enquete_202609 backend: OK」と表示されることを確認する
+ *     （doGetの動作確認。POST自体はブラウザから直接テストできないため、実際のフォーム送信で確認する）。
+ * 11. コードを後から修正した場合は、「デプロイ」→「デプロイを管理」→ 対象デプロイの編集（鉛筆アイコン）→
  *     バージョン「新バージョン」を選んで再デプロイする（URLを変えずにコードだけ更新するため）。
- * 11. 【submission_id列を追加した今回の更新を、既にデプロイ済みのシートに反映する場合】
+ * 12. 【submission_id列を追加した今回の更新を、既にデプロイ済みのシートに反映する場合】
  *     COLUMNS配列に'submission_id'列が増えたが、データが既にあるシートで setupHeaderRow を
  *     再実行すると、1行目（ヘッダー）だけが上書きされ既存のデータ行とは列がズレてしまうため
  *     絶対に再実行しないこと。代わりに、スプレッドシート上で timestamp列（A列）の右隣に
  *     列を1列手動で挿入し（該当列を右クリック→「左に1列を挿入」）、ヘッダーセル（1行目）に
  *     半角で「submission_id」と入力すること。データが無い新規シートの場合のみ、
  *     引き続き setupHeaderRow の実行で問題ない（何もない状態にヘッダーを書き込むだけのため）。
- *     コード側は貼り替えた後、手順10の通り「新バージョン」で再デプロイする
+ *     コード側は貼り替えた後、手順11の通り「新バージョン」で再デプロイする
  *     （URLは変わらないためHTML側の再修正は不要）。
  *
  * ── 既知の制約（正直な申告） ──
@@ -50,11 +52,24 @@
  *   件数が少ないアンケートを前提にしている（数千件規模の応答には向かない）。
  * ・submission_id列の位置はCOLUMNS配列の並び順を決め打ちにせず、ヘッダー行（1行目）を
  *   毎回検索して求める。ヘッダーに「submission_id」という列が見つからない場合は
- *   （手順11の対応漏れ等）、重複判定ができないまま追記してしまう事故を防ぐため、
+ *   （手順12の対応漏れ等）、重複判定ができないまま追記してしまう事故を防ぐため、
  *   保存を行わずエラー（submission_id_column_not_found）を返す。
+ * ・新しい回答がSheetsへ保存されたときのみ、NOTIFICATION_EMAIL宛に確認用の通知メールを送る
+ *   （Issue #192）。Sheetsへの保存が主処理、メール通知はあくまで補助処理であり、メール送信が
+ *   失敗しても保存が完了していれば回答自体は成功として扱う（失敗はApps Scriptログに残すのみ）。
+ *   同一submission_idの再送（重複）と判定された場合は、Sheetsへの追記と同様にメールも送らない
+ *   （回答1件につきメール1通を保証する）。通知メール本文にはcontact_email／contact_x／
+ *   free_comment／submission_idを含めない（個人情報の保存場所を増やさないため。詳細はSheets参照）。
+ * ・GASの MailApp にはGoogleアカウント側の送信クォータがあるため、大量送信は想定していない
+ *   （本アンケートのような少数回答の運用を前提にしている）。
  */
 
 var SHEET_NAME = 'responses';
+
+/* 新しい回答が保存されたときの通知先。デプロイ手順5の通り、実際の運営者アドレスに書き換えること。 */
+var NOTIFICATION_EMAIL = 'YOUR_NOTIFICATION_EMAIL';
+
+var NOTIFICATION_EMAIL_SUBJECT = '【SNBC】9月企画アンケートに新しい回答があります';
 
 var COLUMNS = [
   'timestamp',
@@ -82,6 +97,19 @@ var DATE_KEYS = [
   'date_0905', 'date_0906', 'date_0912', 'date_0913',
   'date_0919', 'date_0920', 'date_0926', 'date_0927'
 ];
+
+/* 通知メール本文でQ5の参加可能日を人が読める形式で表示するためのラベル
+   （community/enquete_202609.html の日付選択肢と1対1で一致させること）。 */
+var DATE_LABELS = {
+  date_0905: '9/5（土）',
+  date_0906: '9/6（日）',
+  date_0912: '9/12（土）',
+  date_0913: '9/13（日）',
+  date_0919: '9/19（土）',
+  date_0920: '9/20（日）',
+  date_0926: '9/26（土）',
+  date_0927: '9/27（日）'
+};
 
 /* ── 許可値のallowlist（フロント側HTMLの選択肢と1対1で一致させること。
    選択肢の文言をHTML側で変更した場合、ここも必ず同時に更新する） ── */
@@ -282,8 +310,9 @@ function doPost(e) {
       return jsonResponse({ ok: true, duplicate: true });
     }
 
+    var now = new Date();
     var row = COLUMNS.map(function (key) {
-      if (key === 'timestamp') return new Date();
+      if (key === 'timestamp') return now;
       var value = data[key];
       if (value === undefined || value === null) return '';
       if (key === 'contact_email' || key === 'contact_x' || key === 'free_comment' || key === 'submission_id') {
@@ -293,6 +322,11 @@ function doPost(e) {
     });
 
     sheet.appendRow(row);
+
+    // 通知メールはSheets保存に対して補助処理であり、失敗しても回答自体は成功として返す
+    // （Issue #192）。重複判定は上のisDuplicateSubmissionで既に完了しているため、
+    // ここに到達するのは新規保存のときだけ＝メール送信は新規保存と1対1になる。
+    sendNotificationEmailSafely(data, now);
 
     return jsonResponse({ ok: true, duplicate: false });
   } catch (err) {
@@ -309,9 +343,77 @@ function jsonResponse(obj) {
 }
 
 /**
+ * Q5（参加可能日）を通知メール向けの短い文字列に整形する。
+ * 「9月の土日は参加できない」が選ばれている場合はそちらを優先して表示する
+ * （validatePayloadにより日付側とは排他であることが保証されている）。
+ */
+function formatQ5ForNotification(data) {
+  if (data.no_available_weekend === true) return '9月の土日は参加できない';
+  var selected = [];
+  for (var i = 0; i < DATE_KEYS.length; i++) {
+    var key = DATE_KEYS[i];
+    if (data[key] === true) selected.push(DATE_LABELS[key]);
+  }
+  return selected.length > 0 ? selected.join('、') : '（未選択）';
+}
+
+/**
+ * Q3（参加可能性）を通知メール向けの短い文字列に整形する。
+ * Q1が「今回は特にない」の場合、Q3は常に 'not_applicable' で保存されている（validatePayload参照）
+ * ため、そのまま出すと分かりにくい文字列になる。表示用に補足を添える。
+ */
+function formatQ3ForNotification(data) {
+  if (data.q3_participation_intent === 'not_applicable') {
+    return '（Q1で「今回は特にない」を選択のため対象外）';
+  }
+  return data.q3_participation_intent;
+}
+
+/**
+ * 通知メール本文を組み立てる。
+ * 個人情報の保存場所を増やさないため、contact_email / contact_x / free_comment / submission_id は
+ * 意図的に含めない（Issue #192）。詳細な内容はGoogleスプレッドシート側で確認する運用とする。
+ */
+function buildNotificationBody(data, timestamp) {
+  var receivedAt = Utilities.formatDate(timestamp, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  var lines = [
+    'SNBC 次回企画アンケートに新しい回答がありました。',
+    '',
+    '受付日時: ' + receivedAt,
+    'Q1 最も参加したい企画: ' + data.q1_first_choice,
+    'Q3 参加可能性: ' + formatQ3ForNotification(data),
+    'Q4 参加しやすい料金: ' + data.q4_price,
+    'Q5 参加可能日: ' + formatQ5ForNotification(data),
+    'Q6 気になる点: ' + (data.q6_concerns || '（該当なし）'),
+    '',
+    '詳細はGoogleスプレッドシートで確認してください。'
+  ];
+  return lines.join('\n');
+}
+
+/**
+ * 運営者への通知メールを送る。呼び出し元（doPost）はisDuplicateSubmissionによる重複判定を
+ * appendRowより前に済ませており、この関数は新規保存が確定した後にしか呼ばれないため、
+ * 通知メールは新規保存1件につき1回だけ送られる。
+ * メール送信失敗を回答送信失敗として扱わないため、失敗は握りつぶしログに残すだけにする
+ * （Issue #192の「メール失敗時の扱い」）。
+ */
+function sendNotificationEmailSafely(data, timestamp) {
+  try {
+    MailApp.sendEmail({
+      to: NOTIFICATION_EMAIL,
+      subject: NOTIFICATION_EMAIL_SUBJECT,
+      body: buildNotificationBody(data, timestamp)
+    });
+  } catch (mailError) {
+    console.error('[enquete_202609] notification mail failed: ' + mailError);
+  }
+}
+
+/**
  * 初回セットアップ用ヘルパー。Apps Scriptエディタでこの関数を選んで実行すると、
  * SHEET_NAME のシートの1行目にヘッダー行を書き込む（シートが無ければ作成する）。
- * 手動で1回だけ実行すればよい（デプロイ手順5を参照）。
+ * 手動で1回だけ実行すればよい（デプロイ手順6を参照）。
  */
 function setupHeaderRow() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
