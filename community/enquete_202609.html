@@ -778,8 +778,11 @@
         if (successBox) successBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
         /* survey_submitは補助イベント（参加確定を意味しないためgenerate_leadは使わない）。
            送信するのはカテゴリ値のみ（連絡先・自由記述は送信しない）。
-           企画×日付×参加意向の主たる集計基盤はGoogleスプレッドシート側（本イベントは補助分析用）。 */
-        if (analytics()) {
+           企画×日付×参加意向の主たる集計基盤はGoogleスプレッドシート側（本イベントは補助分析用）。
+           result.duplicate === true（同一submission_idの再送）の場合は、GAS側でシートへの
+           追記自体を行っていないため、GA4側でも二重計上しないようイベント発火を抑止する
+           （レビュー指摘）。 */
+        if (analytics() && result.duplicate !== true) {
           analytics().track('survey_submit', {
             form_name: FORM_NAME,
             q1_plan: q1Value,

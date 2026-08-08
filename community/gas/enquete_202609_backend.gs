@@ -28,12 +28,14 @@
  * 10. コードを後から修正した場合は、「デプロイ」→「デプロイを管理」→ 対象デプロイの編集（鉛筆アイコン）→
  *     バージョン「新バージョン」を選んで再デプロイする（URLを変えずにコードだけ更新するため）。
  * 11. 【submission_id列を追加した今回の更新を、既にデプロイ済みのシートに反映する場合】
- *     COLUMNS配列に'submission_id'列が増えたため、Apps Scriptエディタでコードを貼り替えた後、
- *     setupHeaderRow をもう一度実行してヘッダー行を更新すること。
- *     ただし setupHeaderRow は1行目（ヘッダー）のみを上書きし、既存のデータ行は移動しないため、
- *     もしテスト送信等で2行目以降にデータが既に入っている場合は、列がヘッダーとずれる。
- *     本番運用を始める前であれば、テスト行を削除してからヘッダーを更新すること。
- *     その後、手順10の通り「新バージョン」で再デプロイする（URLは変わらないためHTML側の再修正は不要）。
+ *     COLUMNS配列に'submission_id'列が増えたが、データが既にあるシートで setupHeaderRow を
+ *     再実行すると、1行目（ヘッダー）だけが上書きされ既存のデータ行とは列がズレてしまうため
+ *     絶対に再実行しないこと。代わりに、スプレッドシート上で timestamp列（A列）の右隣に
+ *     列を1列手動で挿入し（該当列を右クリック→「左に1列を挿入」）、ヘッダーセル（1行目）に
+ *     半角で「submission_id」と入力すること。データが無い新規シートの場合のみ、
+ *     引き続き setupHeaderRow の実行で問題ない（何もない状態にヘッダーを書き込むだけのため）。
+ *     コード側は貼り替えた後、手順10の通り「新バージョン」で再デプロイする
+ *     （URLは変わらないためHTML側の再修正は不要）。
  *
  * ── 既知の制約（正直な申告） ──
  * ・GAS Web AppのCORS挙動はGoogle側の実装に依存する。本コードは「text/plainでPOSTしプリフライトを
@@ -46,6 +48,10 @@
  *   新しい submission_id になるため、それは「別の送信」として扱われる（意図通り）。
  * ・この重複判定はシート上の submission_id 列を毎回スキャンして行う簡易な実装であり、
  *   件数が少ないアンケートを前提にしている（数千件規模の応答には向かない）。
+ * ・submission_id列の位置はCOLUMNS配列の並び順を決め打ちにせず、ヘッダー行（1行目）を
+ *   毎回検索して求める。ヘッダーに「submission_id」という列が見つからない場合は
+ *   （手順11の対応漏れ等）、重複判定ができないまま追記してしまう事故を防ぐため、
+ *   保存を行わずエラー（submission_id_column_not_found）を返す。
  */
 
 var SHEET_NAME = 'responses';
@@ -197,15 +203,28 @@ function validatePayload(data) {
 }
 
 /**
+ * ヘッダー行（1行目）を実際に読み取り、submission_id列の位置を探す。
+ * COLUMNS配列の並び順を決め打ちにしない（レビュー指摘）。これにより、既存シートに
+ * 手動で列を追加した場合でも、ヘッダーのラベルさえ一致していれば安全に動作する。
+ * 見つからない場合は -1 を返す。
+ */
+function findSubmissionIdColumnIndex(sheet) {
+  var lastColumn = sheet.getLastColumn();
+  if (lastColumn < 1) return -1;
+  var header = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+  var idx = header.indexOf('submission_id');
+  return idx === -1 ? -1 : idx + 1; // シートの列番号は1始まり
+}
+
+/**
  * 指定したsubmission_idが既にシートに保存済みかどうかを調べる。
  * データ行が無い（ヘッダーのみ／空シート）場合は即falseを返し、無駄な読み取りを避ける。
  * 呼び出し元はLockServiceのロックを保持した状態で呼ぶこと（同時リクエストでの
  * 二重書き込みを防ぐため）。
  */
-function isDuplicateSubmission(sheet, submissionId) {
+function isDuplicateSubmission(sheet, submissionId, columnIndex) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return false; // ヘッダー行のみ、またはデータなし
-  var columnIndex = COLUMNS.indexOf('submission_id') + 1;
   var existingIds = sheet.getRange(2, columnIndex, lastRow - 1, 1).getValues();
   for (var i = 0; i < existingIds.length; i++) {
     if (existingIds[i][0] === submissionId) return true;
@@ -248,10 +267,19 @@ function doPost(e) {
       return jsonResponse({ ok: false, error: 'sheet_not_found' });
     }
 
+    // 冪等性の前提として、シートのヘッダーに submission_id 列が実在することを確認する。
+    // 列が見つからない状態で処理を続けると、重複判定ができないまま無条件に追記して
+    // しまう（＝冪等性が黙って効かなくなる）ため、事故を防ぐために明示的にエラーとする。
+    var submissionIdColumn = findSubmissionIdColumnIndex(sheet);
+    if (submissionIdColumn === -1) {
+      return jsonResponse({ ok: false, error: 'submission_id_column_not_found' });
+    }
+
     // 冪等性：同じsubmission_idが既に保存済みなら、再送とみなし追記せず成功として返す。
     // LockService保持中に判定するため、同時リクエスト間でも競合しない。
-    if (isDuplicateSubmission(sheet, data.submission_id)) {
-      return jsonResponse({ ok: true });
+    // duplicateフラグはフロント側がGA4のsurvey_submitを再計上しないために使う。
+    if (isDuplicateSubmission(sheet, data.submission_id, submissionIdColumn)) {
+      return jsonResponse({ ok: true, duplicate: true });
     }
 
     var row = COLUMNS.map(function (key) {
@@ -266,7 +294,7 @@ function doPost(e) {
 
     sheet.appendRow(row);
 
-    return jsonResponse({ ok: true });
+    return jsonResponse({ ok: true, duplicate: false });
   } catch (err) {
     return jsonResponse({ ok: false, error: 'server_error', message: String(err) });
   } finally {
