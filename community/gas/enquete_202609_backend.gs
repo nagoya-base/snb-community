@@ -27,8 +27,14 @@
  *    の PLACEHOLDER_REPLACE_WITH_DEPLOYED_WEB_APP_URL 部分と置き換える。
  * 10. ブラウザで手順8のURLをそのまま開き、「SNBC enquete_202609 backend: OK」と表示されることを確認する
  *     （doGetの動作確認。POST自体はブラウザから直接テストできないため、実際のフォーム送信で確認する）。
+ *     このとき2行目に「[WARNING] NOTIFICATION_EMAILが未設定です」等の警告が出ていないかも
+ *     必ず確認すること。出ている場合は手順5のNOTIFICATION_EMAIL書き換えが漏れており、
+ *     このままではSheets保存は成功する一方で運営者への通知メールが一切届かない。
  * 11. コードを後から修正した場合は、「デプロイ」→「デプロイを管理」→ 対象デプロイの編集（鉛筆アイコン）→
  *     バージョン「新バージョン」を選んで再デプロイする（URLを変えずにコードだけ更新するため）。
+ *     このメール通知機能（Issue #192）を、メール送信を使っていなかった既存デプロイに反映する場合、
+ *     MailApp（メール送信）の権限が新たに必要になるため、新バージョンの実行時にGoogleの追加の
+ *     権限承認画面が表示されることがある。表示されたら内容を確認し、自分のアカウントで承認すること。
  * 12. 【submission_id列を追加した今回の更新を、既にデプロイ済みのシートに反映する場合】
  *     COLUMNS配列に'submission_id'列が増えたが、データが既にあるシートで setupHeaderRow を
  *     再実行すると、1行目（ヘッダー）だけが上書きされ既存のデータ行とは列がズレてしまうため
@@ -62,6 +68,14 @@
  *   free_comment／submission_idを含めない（個人情報の保存場所を増やさないため。詳細はSheets参照）。
  * ・GASの MailApp にはGoogleアカウント側の送信クォータがあるため、大量送信は想定していない
  *   （本アンケートのような少数回答の運用を前提にしている）。
+ * ・NOTIFICATION_EMAILが手順5の書き換えを忘れてプレースホルダー（'YOUR_NOTIFICATION_EMAIL'）の
+ *   ままの場合、送信自体を試みずスキップし専用のエラーをApps Scriptログに残す（レビュー指摘 /
+ *   PR #193）。doGetのレスポンスにも[WARNING]を出すため、手順10の確認で気付けるようにしている。
+ *   ただしSheets保存自体は成功として扱われるため、ログ／doGetを見ない限り気付けない点に注意。
+ * ・重複判定・Sheetsへの追記はLockService保持中に行うが、MailApp.sendEmail()はロック解放後に
+ *   呼ぶ（レビュー指摘 / PR #193）。メール送信の遅延で後続リクエストの待ち時間が延び busy に
+ *   なりやすくなることを避けるためで、通知が新規保存と1対1になる保証（processSubmissionが
+ *   新規保存確定時にのみnotify情報を返す）は変えていない。
  */
 
 var SHEET_NAME = 'responses';
@@ -155,7 +169,15 @@ function sanitizeForSheet(value) {
 }
 
 function doGet(e) {
-  return ContentService.createTextOutput('SNBC enquete_202609 backend: OK');
+  var message = 'SNBC enquete_202609 backend: OK';
+  if (NOTIFICATION_EMAIL === 'YOUR_NOTIFICATION_EMAIL') {
+    // デプロイ手順10でこのURLを開いて確認する際に、NOTIFICATION_EMAILの設定忘れに
+    // 気付けるようにする（レビュー指摘 / PR #193）。利用者向けのdoPostレスポンスには
+    // 影響しないが、ここに出れば本番運用前に気付ける。
+    message += '\n[WARNING] NOTIFICATION_EMAIL が未設定です（プレースホルダーのままです）。' +
+      'このままでは運営者への通知メールが送信されません。デプロイ手順5の通り書き換えてください。';
+  }
+  return ContentService.createTextOutput(message);
 }
 
 /**
@@ -260,39 +282,35 @@ function isDuplicateSubmission(sheet, submissionId, columnIndex) {
   return false;
 }
 
-function doPost(e) {
-  var lock = LockService.getScriptLock();
-  var gotLock = false;
-  try {
-    gotLock = lock.tryLock(10000); // 最大10秒待機
-  } catch (lockAcquireError) {
-    gotLock = false;
-  }
-
-  if (!gotLock) {
-    return jsonResponse({ ok: false, error: 'busy' });
-  }
-
+/**
+ * ロック保持中に行う本体処理（payload検証・重複判定・Sheetsへの追記まで）。
+ * メール送信はここでは行わない。MailApp.sendEmail()はネットワーク呼び出しを伴い遅延しうるため、
+ * ロックを保持したまま呼ぶと後続リクエストの待ち時間が延び、busyになりやすくなる
+ * （レビュー指摘 / PR #193）。そのため通知が必要な場合は data/timestamp を呼び出し元に返すだけに
+ * とどめ、実際の送信は doPost 側でロック解放後に行う。
+ * 戻り値：{ response: ContentServiceのレスポンス, notify: 新規保存時は{data, timestamp}、それ以外はnull }
+ */
+function processSubmission(e) {
   try {
     if (!e || !e.postData || !e.postData.contents) {
-      return jsonResponse({ ok: false, error: 'no_payload' });
+      return { response: jsonResponse({ ok: false, error: 'no_payload' }), notify: null };
     }
 
     var data;
     try {
       data = JSON.parse(e.postData.contents);
     } catch (parseError) {
-      return jsonResponse({ ok: false, error: 'invalid_json' });
+      return { response: jsonResponse({ ok: false, error: 'invalid_json' }), notify: null };
     }
 
     var validationError = validatePayload(data);
     if (validationError) {
-      return jsonResponse({ ok: false, error: validationError });
+      return { response: jsonResponse({ ok: false, error: validationError }), notify: null };
     }
 
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
     if (!sheet) {
-      return jsonResponse({ ok: false, error: 'sheet_not_found' });
+      return { response: jsonResponse({ ok: false, error: 'sheet_not_found' }), notify: null };
     }
 
     // 冪等性の前提として、シートのヘッダーに submission_id 列が実在することを確認する。
@@ -300,14 +318,14 @@ function doPost(e) {
     // しまう（＝冪等性が黙って効かなくなる）ため、事故を防ぐために明示的にエラーとする。
     var submissionIdColumn = findSubmissionIdColumnIndex(sheet);
     if (submissionIdColumn === -1) {
-      return jsonResponse({ ok: false, error: 'submission_id_column_not_found' });
+      return { response: jsonResponse({ ok: false, error: 'submission_id_column_not_found' }), notify: null };
     }
 
     // 冪等性：同じsubmission_idが既に保存済みなら、再送とみなし追記せず成功として返す。
     // LockService保持中に判定するため、同時リクエスト間でも競合しない。
     // duplicateフラグはフロント側がGA4のsurvey_submitを再計上しないために使う。
     if (isDuplicateSubmission(sheet, data.submission_id, submissionIdColumn)) {
-      return jsonResponse({ ok: true, duplicate: true });
+      return { response: jsonResponse({ ok: true, duplicate: true }), notify: null };
     }
 
     var now = new Date();
@@ -323,17 +341,46 @@ function doPost(e) {
 
     sheet.appendRow(row);
 
-    // 通知メールはSheets保存に対して補助処理であり、失敗しても回答自体は成功として返す
-    // （Issue #192）。重複判定は上のisDuplicateSubmissionで既に完了しているため、
-    // ここに到達するのは新規保存のときだけ＝メール送信は新規保存と1対1になる。
-    sendNotificationEmailSafely(data, now);
-
-    return jsonResponse({ ok: true, duplicate: false });
+    // 通知が必要（＝新規保存が確定した）ことを呼び出し元に伝える。
+    // ここに到達するのは新規保存のときだけ（重複はすでに上でreturn済み）のため、
+    // メール送信は新規保存と1対1のままになる。
+    return {
+      response: jsonResponse({ ok: true, duplicate: false }),
+      notify: { data: data, timestamp: now }
+    };
   } catch (err) {
-    return jsonResponse({ ok: false, error: 'server_error', message: String(err) });
-  } finally {
-    if (gotLock) lock.releaseLock();
+    return { response: jsonResponse({ ok: false, error: 'server_error', message: String(err) }), notify: null };
   }
+}
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  var gotLock = false;
+  try {
+    gotLock = lock.tryLock(10000); // 最大10秒待機
+  } catch (lockAcquireError) {
+    gotLock = false;
+  }
+
+  if (!gotLock) {
+    return jsonResponse({ ok: false, error: 'busy' });
+  }
+
+  var result;
+  try {
+    result = processSubmission(e);
+  } finally {
+    lock.releaseLock();
+  }
+
+  // 通知メールはSheets保存に対して補助処理であり、失敗しても回答自体は成功として返す
+  // （Issue #192）。ロック解放後に送ることで、メール送信の遅延が後続リクエストの
+  // busy化に響かないようにする（レビュー指摘 / PR #193）。
+  if (result.notify) {
+    sendNotificationEmailSafely(result.notify.data, result.notify.timestamp);
+  }
+
+  return result.response;
 }
 
 function jsonResponse(obj) {
@@ -399,6 +446,13 @@ function buildNotificationBody(data, timestamp) {
  * （Issue #192の「メール失敗時の扱い」）。
  */
 function sendNotificationEmailSafely(data, timestamp) {
+  if (NOTIFICATION_EMAIL === 'YOUR_NOTIFICATION_EMAIL') {
+    // プレースホルダーのまま送信を試みると「無効な宛先」的なエラーがMailApp失敗ログに
+    // 紛れて分かりにくくなるため、原因が一目で分かる専用のログを出して送信自体は行わない
+    // （レビュー指摘 / PR #193）。doGetの[WARNING]表示と合わせて設定忘れに気付けるようにする。
+    console.error('[enquete_202609] NOTIFICATION_EMAIL がプレースホルダーのままのため、通知メール送信をスキップしました。デプロイ手順5の通り実際の運営者アドレスに書き換えてください。');
+    return;
+  }
   try {
     MailApp.sendEmail({
       to: NOTIFICATION_EMAIL,
