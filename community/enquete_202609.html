@@ -338,29 +338,28 @@
           <p class="form-hint">参加人数に応じて「参加費・撮影時間・ソフトドリンク有無」がセットで変わります。価格だけでなく、参加したいスタイルを選んでください（3時間程度を想定）。</p>
           <div class="style-group" id="sv-q4-group">
             <label class="style-card">
-              <input type="radio" name="開催スタイル" value="style_2000_8to12_nodrink">
+              <input type="radio" name="開催スタイル" value="style_2000_9to12_nodrink">
               <span class="style-card__inner">
                 <span class="style-card__header">
                   <span class="style-card__price">2,000円</span>
-                  <span class="style-card__people">目安8〜12人</span>
+                  <span class="style-card__people">目安9〜12人</span>
                 </span>
                 <ul class="style-card__points">
                   <li>交流メイン</li>
-                  <li>撮影時間なし（各自のスマホ等でのスナップ程度は可）</li>
+                  <li>撮影時間なし</li>
                 </ul>
                 <span class="style-card__drink style-card__drink--no">ソフトドリンク：なし</span>
               </span>
             </label>
             <label class="style-card">
-              <input type="radio" name="開催スタイル" value="style_3000_6to8_nodrink">
+              <input type="radio" name="開催スタイル" value="style_3000_7to8_nodrink">
               <span class="style-card__inner">
                 <span class="style-card__header">
                   <span class="style-card__price">3,000円</span>
-                  <span class="style-card__people">目安6〜8人</span>
+                  <span class="style-card__people">目安7〜8人</span>
                 </span>
                 <ul class="style-card__points">
-                  <li>交流＋軽い撮影</li>
-                  <li>希望者同士で撮影できる時間を少し設ける</li>
+                  <li>交流メイン＋希望者のみ撮影</li>
                 </ul>
                 <span class="style-card__drink style-card__drink--no">ソフトドリンク：なし</span>
               </span>
@@ -373,8 +372,8 @@
                   <span class="style-card__people">目安5〜6人</span>
                 </span>
                 <ul class="style-card__points">
+                  <li>交流＋希望者のみ撮影</li>
                   <li>撮影時間をしっかり確保</li>
-                  <li>交流と撮影の両方を重視</li>
                 </ul>
                 <span class="style-card__drink style-card__drink--yes">ソフトドリンク：あり</span>
               </span>
@@ -387,8 +386,8 @@
                   <span class="style-card__people">目安4人</span>
                 </span>
                 <ul class="style-card__points">
-                  <li>少人数・撮影時間多め</li>
-                  <li>一人あたりの撮られる時間を最も多く確保</li>
+                  <li>少人数・希望者のみ撮影</li>
+                  <li>撮影時間多め</li>
                 </ul>
                 <span class="style-card__drink style-card__drink--yes">ソフトドリンク：あり</span>
               </span>
@@ -783,7 +782,8 @@
     var q3Checked = form.querySelector('input[name="参加可能性"]:checked');
     // Q1が「今回は特にない」の場合、通常回答と混ざらないよう明示的な値で保存する（Issue要件）。
     var q3Value = isQ1None() ? 'not_applicable' : (q3Checked ? q3Checked.value : '');
-    // Q4の値は「開催スタイル」の固定コード（例：style_3500_5to6_drink）。単純な価格ではない（Issue #194）。
+    // Q4の値は「開催スタイル」の固定コード（例：style_3000_7to8_nodrink）。単純な価格ではない（Issue #194）。
+    // 人数帯は4人／5〜6人／7〜8人／9〜12人の4区分で重複させない（PR #195レビュー指摘）。
     var q4Value = (form.querySelector('input[name="開催スタイル"]:checked') || {}).value || '';
 
     // Q5：日付ごとに機械集計しやすいTRUE/FALSE列として保存する（Issue要件）。
