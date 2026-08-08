@@ -91,7 +91,7 @@ var COLUMNS = [
   'q1_first_choice',
   'q2_second_choice',
   'q3_participation_intent',
-  'q4_price',
+  'q4_price', // 列名は既存互換のため維持。保存値は「開催スタイル」の固定コード（Issue #194 / ALLOWED_Q4参照）。
   'date_0905',
   'date_0906',
   'date_0912',
@@ -142,7 +142,24 @@ var ALLOWED_Q3 = [
   '見るだけ・投票だけ',
   'not_applicable'
 ];
-var ALLOWED_Q4 = ['2,500円', '3,000円', '3,500円', '4,000円'];
+/* Q4：単純な希望価格ではなく「開催スタイル」の固定コード（Issue #194）。
+   列名は既存Sheets互換のためq4_priceのまま維持しているが、値は価格だけを意味しない。
+   HTML側（community/enquete_202609.html）の各カードのvalueと1対1で一致させること。 */
+var ALLOWED_Q4 = [
+  'style_2000_8to12_nodrink',
+  'style_3000_6to8_nodrink',
+  'style_3500_5to6_drink',
+  'style_4000_4_drink'
+];
+
+/* Q4の固定コードを通知メール向けの人が読める表記に変換するための対応表
+   （community/enquete_202609.html の各カードの内容と1対1で一致させること。Issue #194）。 */
+var Q4_STYLE_LABELS = {
+  style_2000_8to12_nodrink: '2,000円｜8〜12人｜撮影時間なし｜ソフトドリンクなし',
+  style_3000_6to8_nodrink: '3,000円｜6〜8人｜交流＋軽い撮影｜ソフトドリンクなし',
+  style_3500_5to6_drink: '3,500円｜5〜6人｜撮影時間しっかり｜ソフトドリンクあり',
+  style_4000_4_drink: '4,000円｜4人｜撮影時間多め｜ソフトドリンクあり'
+};
 var ALLOWED_Q6_ITEMS = [
   '一人参加が不安', '初対面の人との交流が不安', '撮られるのが苦手',
   'ユニフォームを持っていない', 'お酒も飲めると良い', '料金', '日程', '会場の広さ', '特になし', 'その他'
@@ -417,6 +434,15 @@ function formatQ3ForNotification(data) {
 }
 
 /**
+ * Q4（開催スタイルの固定コード）を通知メール向けの人が読める表記に変換する。
+ * Q4_STYLE_LABELSに無い値（想定外の値）が来た場合も、通知自体は落とさず
+ * コードをそのまま表示する（validatePayloadで既にallowlist検証済みのため通常は発生しない）。
+ */
+function formatQ4ForNotification(data) {
+  return Q4_STYLE_LABELS[data.q4_price] || data.q4_price;
+}
+
+/**
  * 通知メール本文を組み立てる。
  * 個人情報の保存場所を増やさないため、contact_email / contact_x / free_comment / submission_id は
  * 意図的に含めない（Issue #192）。詳細な内容はGoogleスプレッドシート側で確認する運用とする。
@@ -429,7 +455,7 @@ function buildNotificationBody(data, timestamp) {
     '受付日時: ' + receivedAt,
     'Q1 最も参加したい企画: ' + data.q1_first_choice,
     'Q3 参加可能性: ' + formatQ3ForNotification(data),
-    'Q4 参加しやすい料金: ' + data.q4_price,
+    'Q4 希望する開催スタイル: ' + formatQ4ForNotification(data),
     'Q5 参加可能日: ' + formatQ5ForNotification(data),
     'Q6 気になる点: ' + (data.q6_concerns || '（該当なし）'),
     '',

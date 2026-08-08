@@ -173,6 +173,34 @@
     .radio-option:has(input:disabled),
     .checkbox-option:has(input:disabled) { opacity: 0.45; }
 
+    /* Q4：単純な価格ラジオではなく「開催スタイル」を比較できるカード（Issue #194） */
+    .style-group { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.5rem; }
+    .style-card {
+      display: flex; align-items: flex-start; gap: 0.7rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      cursor: pointer;
+    }
+    .style-card input { width: 17px; height: 17px; flex-shrink: 0; accent-color: var(--accent); margin-top: 0.2rem; }
+    .style-card:has(input:checked) { border-color: var(--accent); background: var(--bg-card2); }
+    .style-card__inner { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+    .style-card__header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 0.7rem; }
+    /* 価格だけが強調されすぎないよう、人数と同程度のウェイトにする（Issue #194要件） */
+    .style-card__price { font-size: 0.95rem; font-weight: 700; color: var(--navy); }
+    .style-card__people { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+    .style-card__points { list-style: none; font-size: 0.82rem; color: var(--text-muted); line-height: 1.7; }
+    .style-card__points li { padding-left: 0.9em; position: relative; }
+    .style-card__points li::before { content: "・"; position: absolute; left: 0; }
+    .style-card__drink {
+      align-self: flex-start;
+      font-size: 0.76rem; font-weight: 700;
+      padding: 0.2rem 0.6rem; border-radius: 999px;
+    }
+    .style-card__drink--no { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+    .style-card__drink--yes { background: #E6F4EA; color: #1E7B34; border: 1px solid #B7DDBC; }
+
     .field-error { margin-top: 0.4rem; font-size: 0.8rem; color: #B3261E; font-weight: 700; }
 
     .apply-form__submit {
@@ -304,14 +332,67 @@
           <p class="field-error" id="sv-q3-error" role="alert" hidden></p>
         </fieldset>
 
-        <!-- Q4 -->
+        <!-- Q4（参加人数に応じて料金・撮影時間・ソフトドリンク有無がセットで変わる。Issue #194） -->
         <fieldset class="form-field" style="border: none; padding: 0;">
-          <legend class="form-legend">Q4. 参加しやすい料金（3時間程度を想定） <span class="required-mark">必須</span></legend>
-          <div class="radio-group" id="sv-q4-group">
-            <label class="radio-option"><input type="radio" name="参加しやすい料金" value="2,500円"><span>2,500円</span></label>
-            <label class="radio-option"><input type="radio" name="参加しやすい料金" value="3,000円"><span>3,000円</span></label>
-            <label class="radio-option"><input type="radio" name="参加しやすい料金" value="3,500円"><span>3,500円</span></label>
-            <label class="radio-option"><input type="radio" name="参加しやすい料金" value="4,000円"><span>4,000円</span></label>
+          <legend class="form-legend">Q4. どの開催スタイルなら参加したいですか？ <span class="required-mark">必須</span></legend>
+          <p class="form-hint">参加人数に応じて「参加費・撮影時間・ソフトドリンク有無」がセットで変わります。価格だけでなく、参加したいスタイルを選んでください（3時間程度を想定）。</p>
+          <div class="style-group" id="sv-q4-group">
+            <label class="style-card">
+              <input type="radio" name="開催スタイル" value="style_2000_8to12_nodrink">
+              <span class="style-card__inner">
+                <span class="style-card__header">
+                  <span class="style-card__price">2,000円</span>
+                  <span class="style-card__people">目安8〜12人</span>
+                </span>
+                <ul class="style-card__points">
+                  <li>交流メイン</li>
+                  <li>撮影時間なし（各自のスマホ等でのスナップ程度は可）</li>
+                </ul>
+                <span class="style-card__drink style-card__drink--no">ソフトドリンク：なし</span>
+              </span>
+            </label>
+            <label class="style-card">
+              <input type="radio" name="開催スタイル" value="style_3000_6to8_nodrink">
+              <span class="style-card__inner">
+                <span class="style-card__header">
+                  <span class="style-card__price">3,000円</span>
+                  <span class="style-card__people">目安6〜8人</span>
+                </span>
+                <ul class="style-card__points">
+                  <li>交流＋軽い撮影</li>
+                  <li>希望者同士で撮影できる時間を少し設ける</li>
+                </ul>
+                <span class="style-card__drink style-card__drink--no">ソフトドリンク：なし</span>
+              </span>
+            </label>
+            <label class="style-card">
+              <input type="radio" name="開催スタイル" value="style_3500_5to6_drink">
+              <span class="style-card__inner">
+                <span class="style-card__header">
+                  <span class="style-card__price">3,500円</span>
+                  <span class="style-card__people">目安5〜6人</span>
+                </span>
+                <ul class="style-card__points">
+                  <li>撮影時間をしっかり確保</li>
+                  <li>交流と撮影の両方を重視</li>
+                </ul>
+                <span class="style-card__drink style-card__drink--yes">ソフトドリンク：あり</span>
+              </span>
+            </label>
+            <label class="style-card">
+              <input type="radio" name="開催スタイル" value="style_4000_4_drink">
+              <span class="style-card__inner">
+                <span class="style-card__header">
+                  <span class="style-card__price">4,000円</span>
+                  <span class="style-card__people">目安4人</span>
+                </span>
+                <ul class="style-card__points">
+                  <li>少人数・撮影時間多め</li>
+                  <li>一人あたりの撮られる時間を最も多く確保</li>
+                </ul>
+                <span class="style-card__drink style-card__drink--yes">ソフトドリンク：あり</span>
+              </span>
+            </label>
           </div>
           <p class="field-error" id="sv-q4-error" role="alert" hidden></p>
         </fieldset>
@@ -548,8 +629,8 @@
     return true;
   }
 
-  /* ── Q4 ── */
-  var q4Radios = form.querySelectorAll('input[name="参加しやすい料金"]');
+  /* ── Q4（開催スタイル。Issue #194で単純な価格ラジオから変更） ── */
+  var q4Radios = form.querySelectorAll('input[name="開催スタイル"]');
   var q4Error = document.getElementById('sv-q4-error');
   q4Radios.forEach(function (radio) {
     radio.addEventListener('change', function () {
@@ -557,9 +638,9 @@
     });
   });
   function validateQ4() {
-    var checked = form.querySelector('input[name="参加しやすい料金"]:checked');
+    var checked = form.querySelector('input[name="開催スタイル"]:checked');
     if (!checked) {
-      showFieldError(q4Error, '参加しやすい料金を選択してください。');
+      showFieldError(q4Error, '参加したい開催スタイルを選択してください。');
       focusAndScroll(q4Radios[0]);
       return false;
     }
@@ -702,7 +783,8 @@
     var q3Checked = form.querySelector('input[name="参加可能性"]:checked');
     // Q1が「今回は特にない」の場合、通常回答と混ざらないよう明示的な値で保存する（Issue要件）。
     var q3Value = isQ1None() ? 'not_applicable' : (q3Checked ? q3Checked.value : '');
-    var q4Value = (form.querySelector('input[name="参加しやすい料金"]:checked') || {}).value || '';
+    // Q4の値は「開催スタイル」の固定コード（例：style_3500_5to6_drink）。単純な価格ではない（Issue #194）。
+    var q4Value = (form.querySelector('input[name="開催スタイル"]:checked') || {}).value || '';
 
     // Q5：日付ごとに機械集計しやすいTRUE/FALSE列として保存する（Issue要件）。
     var q5Payload = {};
@@ -726,6 +808,8 @@
       q1_first_choice: q1Value,
       q2_second_choice: q2Value,
       q3_participation_intent: q3Value,
+      // GAS/Sheets側の列名(q4_price)は既存互換のため維持しているが、保存される値は
+      // 「開催スタイル」の固定コードであり、単純な価格ではない（Issue #194）。
       q4_price: q4Value,
       no_available_weekend: noAvailableWeekend,
       q6_concerns: q6Values.join('、'),
@@ -788,7 +872,9 @@
             form_name: FORM_NAME,
             q1_plan: q1Value,
             q3_intent: q3Value,
-            q4_price: q4Value,
+            // GA4側は価格だけの指標ではないことを明示するため、開催スタイルの固定コードを
+            // q4_style として送る（q4_priceという名称は使わない。Issue #194）。
+            q4_style: q4Value,
             q5_date_count: Object.keys(q5Payload).filter(function (k) { return q5Payload[k]; }).length,
             q6_concern_count: q6Values.length
           });
