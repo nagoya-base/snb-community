@@ -81,7 +81,7 @@
 var SHEET_NAME = 'responses';
 
 /* 新しい回答が保存されたときの通知先。デプロイ手順5の通り、実際の運営者アドレスに書き換えること。 */
-var NOTIFICATION_EMAIL = 'bbuni_ngo@gmail.com';
+var NOTIFICATION_EMAIL = 'bbuni.ngo@gmail.com';
 
 var NOTIFICATION_EMAIL_SUBJECT = '【SNBC】9月企画アンケートに新しい回答があります';
 
