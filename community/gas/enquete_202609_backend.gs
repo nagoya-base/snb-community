@@ -27,22 +27,32 @@
  *    （doGetの動作確認。POST自体はブラウザから直接テストできないため、実際のフォーム送信で確認する）。
  * 10. コードを後から修正した場合は、「デプロイ」→「デプロイを管理」→ 対象デプロイの編集（鉛筆アイコン）→
  *     バージョン「新バージョン」を選んで再デプロイする（URLを変えずにコードだけ更新するため）。
+ * 11. 【submission_id列を追加した今回の更新を、既にデプロイ済みのシートに反映する場合】
+ *     COLUMNS配列に'submission_id'列が増えたため、Apps Scriptエディタでコードを貼り替えた後、
+ *     setupHeaderRow をもう一度実行してヘッダー行を更新すること。
+ *     ただし setupHeaderRow は1行目（ヘッダー）のみを上書きし、既存のデータ行は移動しないため、
+ *     もしテスト送信等で2行目以降にデータが既に入っている場合は、列がヘッダーとずれる。
+ *     本番運用を始める前であれば、テスト行を削除してからヘッダーを更新すること。
+ *     その後、手順10の通り「新バージョン」で再デプロイする（URLは変わらないためHTML側の再修正は不要）。
  *
  * ── 既知の制約（正直な申告） ──
  * ・GAS Web AppのCORS挙動はGoogle側の実装に依存する。本コードは「text/plainでPOSTしプリフライトを
  *   発生させない」という広く使われる回避策を前提にしているが、実際にfetchでレスポンスを読めるかは
  *   環境依存の可能性がゼロではない。手順9のdoGet確認に加え、実際にフォームから送信して
  *   スプレッドシートに1行追加されること・ブラウザ側で成功表示が出ることの両方を必ず確認すること。
- * ・通信が途中で切れた場合（サーバー側の追記は成功したがレスポンスをブラウザが受け取れなかった場合）、
- *   利用者が「送信に失敗しました」を見て再送信すると、同じ回答が2行保存される可能性がある。
- *   本コードはLockServiceで同時書き込みの競合は防いでいるが、この種の低頻度な重複は防げない。
- *   件数が少ないアンケートのため、集計時に目視で重複を除外する運用を前提とする。
+ * ・通信が途中で切れた場合（サーバー側の追記は成功したがレスポンスをブラウザが受け取れなかった場合）に
+ *   利用者が再送信しても、フロント側が同じ submission_id を使い回すため、GAS側で重複と判定し
+ *   追記せず成功扱いを返す（冪等性）。ページを再読み込みして最初から回答し直した場合は
+ *   新しい submission_id になるため、それは「別の送信」として扱われる（意図通り）。
+ * ・この重複判定はシート上の submission_id 列を毎回スキャンして行う簡易な実装であり、
+ *   件数が少ないアンケートを前提にしている（数千件規模の応答には向かない）。
  */
 
 var SHEET_NAME = 'responses';
 
 var COLUMNS = [
   'timestamp',
+  'submission_id',
   'q1_first_choice',
   'q2_second_choice',
   'q3_participation_intent',
@@ -93,6 +103,7 @@ var ALLOWED_Q6_ITEMS = [
 var MAX_FREE_COMMENT_LENGTH = 300; // フロントのmaxlengthと一致させる
 var MAX_CONTACT_LENGTH = 200; // フロントのmaxlengthとも一致させる（HTML側にも設定必須）
 var EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // 簡易チェック（RFC完全準拠ではない）
+var MAX_SUBMISSION_ID_LENGTH = 100; // crypto.randomUUID()は36文字、フォールバック生成でも数十文字程度のため十分な余裕
 
 /**
  * Googleスプレッドシートの数式インジェクション対策。
@@ -121,6 +132,13 @@ function doGet(e) {
  * 戻り値：問題なければnull、問題があればエラーコード文字列。
  */
 function validatePayload(data) {
+  // submission_id：冪等性のキーとして使うため、型・長さだけ検証する（文字の内容自体は
+  // allowlist化できない自由な識別子のため、シート書き込み時にsanitizeForSheetで防御する）。
+  if (typeof data.submission_id !== 'string') return 'submission_id_invalid_type';
+  if (data.submission_id.length === 0 || data.submission_id.length > MAX_SUBMISSION_ID_LENGTH) {
+    return 'submission_id_invalid_length';
+  }
+
   if (ALLOWED_Q1.indexOf(data.q1_first_choice) === -1) return 'q1_invalid';
   if (ALLOWED_Q2.indexOf(data.q2_second_choice || '') === -1) return 'q2_invalid';
 
@@ -178,6 +196,23 @@ function validatePayload(data) {
   return null; // 問題なし
 }
 
+/**
+ * 指定したsubmission_idが既にシートに保存済みかどうかを調べる。
+ * データ行が無い（ヘッダーのみ／空シート）場合は即falseを返し、無駄な読み取りを避ける。
+ * 呼び出し元はLockServiceのロックを保持した状態で呼ぶこと（同時リクエストでの
+ * 二重書き込みを防ぐため）。
+ */
+function isDuplicateSubmission(sheet, submissionId) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return false; // ヘッダー行のみ、またはデータなし
+  var columnIndex = COLUMNS.indexOf('submission_id') + 1;
+  var existingIds = sheet.getRange(2, columnIndex, lastRow - 1, 1).getValues();
+  for (var i = 0; i < existingIds.length; i++) {
+    if (existingIds[i][0] === submissionId) return true;
+  }
+  return false;
+}
+
 function doPost(e) {
   var lock = LockService.getScriptLock();
   var gotLock = false;
@@ -213,11 +248,17 @@ function doPost(e) {
       return jsonResponse({ ok: false, error: 'sheet_not_found' });
     }
 
+    // 冪等性：同じsubmission_idが既に保存済みなら、再送とみなし追記せず成功として返す。
+    // LockService保持中に判定するため、同時リクエスト間でも競合しない。
+    if (isDuplicateSubmission(sheet, data.submission_id)) {
+      return jsonResponse({ ok: true });
+    }
+
     var row = COLUMNS.map(function (key) {
       if (key === 'timestamp') return new Date();
       var value = data[key];
       if (value === undefined || value === null) return '';
-      if (key === 'contact_email' || key === 'contact_x' || key === 'free_comment') {
+      if (key === 'contact_email' || key === 'contact_x' || key === 'free_comment' || key === 'submission_id') {
         return sanitizeForSheet(value);
       }
       return value;

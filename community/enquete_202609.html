@@ -641,6 +641,26 @@
 
   var submissionInFlight = false; // 二重送信防止（連打・多重イベント対策）
 
+  /* ── submission_id（1回の回答送信操作につき1つだけ発行し、以後は使い回す） ──
+     通信が途中で切れてエラー表示になり利用者が再送信した場合でも、同じIDを送ることで
+     GAS側が「同一送信の再送」と判定して重複保存を防げるようにする（レビュー指摘）。
+     ページを再読み込みして最初から回答し直した場合は新しいIDになるため、
+     「別の送信」として扱われる（意図通り。同一人物の別回答まで防ぐものではない）。 */
+  var submissionId = null;
+  function getSubmissionId() {
+    if (!submissionId) {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        submissionId = window.crypto.randomUUID();
+      } else {
+        submissionId =
+          Date.now().toString(36) + '-' +
+          Math.random().toString(36).slice(2) + '-' +
+          Math.random().toString(36).slice(2);
+      }
+    }
+    return submissionId;
+  }
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
 
@@ -701,6 +721,7 @@
     var freeVal = (document.getElementById('sv-free') || {}).value || '';
 
     var payload = {
+      submission_id: getSubmissionId(),
       q1_first_choice: q1Value,
       q2_second_choice: q2Value,
       q3_participation_intent: q3Value,
