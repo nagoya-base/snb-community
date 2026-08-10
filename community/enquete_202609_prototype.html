@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>次回SNBC企画アンケート - 回答しやすさ試作</title>
+  <title>学校セット撮影会｜開催テーマアンケート - SNBC・回答しやすさ試作</title>
   <style>
     :root {
       --ink: #161819;
@@ -99,7 +99,7 @@
       inset: 0;
       z-index: -2;
       background: linear-gradient(100deg, rgba(11, 13, 14, .95) 8%, rgba(11, 13, 14, .72) 48%, rgba(11, 13, 14, .34) 100%),
-                  url("https://nagoya-base.github.io/snb-community/images/community/enquete-202609/hero-photo-main.jpg") center / cover no-repeat;
+                  url("../images/community/enquete-202609-classroom/hero-photo-main.webp") right center / auto 100% no-repeat;
       transform: scale(1.02);
     }
     .hero::after {
@@ -251,7 +251,6 @@
     }
     .progress li.is-current .progress__bar, .progress li.is-done .progress__bar { background: var(--red); }
     .progress li.is-current .progress__label { color: var(--ink); }
-    .progress li.is-skipped { opacity: .42; }
 
     .step { padding: clamp(1.55rem, 5vw, 2.7rem); }
     .question-kicker {
@@ -300,22 +299,12 @@
       box-shadow: 0 6px 20px rgba(198,40,40,.12);
     }
     .choice:has(input:focus-visible) .choice__body { outline: 3px solid #1c72c5; outline-offset: 3px; }
-    .choice--wide { grid-column: 1 / -1; min-height: auto; }
-    .choice--wide .choice__body { flex-direction: row; align-items: center; }
     .choice__top { display: flex; align-items: flex-start; gap: .7rem; }
     .choice__number { flex: 0 0 auto; color: var(--red); font-size: .7rem; font-weight: 900; letter-spacing: .08em; }
     .choice__title { display: block; font-size: 1rem; font-weight: 800; line-height: 1.35; }
     .choice__description { display: block; margin-top: .24rem; color: var(--muted); font-size: .75rem; line-height: 1.55; }
     .choice__mark { align-self: flex-end; color: #b5afa7; font-size: 1.15rem; font-weight: 700; }
     .choice:has(input:checked) .choice__mark { color: var(--red); }
-    .choice--plain .choice__body { min-height: 68px; padding: .85rem 1rem; background: #fbfaf8; }
-    .choice--plain .choice__title { font-size: .9rem; }
-
-    details.secondary-choice { margin-top: 1.1rem; border-top: 1px solid var(--line); }
-    details.secondary-choice summary { padding: .9rem 0; color: var(--muted); cursor: pointer; font-size: .84rem; font-weight: 700; }
-    .secondary-choice__inner { padding: .1rem 0 .25rem; }
-    .secondary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
-
     .subquestion { margin-top: 1.8rem; padding-top: 1.65rem; border-top: 1px solid var(--line); }
     .subquestion__title { margin: 0; font-size: 1.05rem; line-height: 1.5; }
     .subquestion__lead { margin: .35rem 0 .85rem; color: var(--muted); font-size: .8rem; }
@@ -402,6 +391,7 @@
     .switch-row strong { display: block; font-size: .9rem; }
     .switch-row small { display: block; margin-top: .08rem; color: var(--muted); font-size: .74rem; }
     .contact-fields { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+    .contact-help { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: .74rem; line-height: 1.5; }
     .contact-field label { display: block; margin-bottom: .35rem; font-size: .76rem; font-weight: 800; }
     .contact-field input, .free-field textarea {
       width: 100%;
@@ -500,7 +490,7 @@
       .brand small { display: none; }
       .hero { min-height: 410px; }
       .hero__inner { min-height: 410px; padding-top: 3rem; }
-      .hero::before { background-position: 62% center; }
+      .hero::before { background-position: center, 85% center; }
       .hero::after { width: 95vw; height: 95vw; inset: auto -45% -32% auto; }
       .survey-shell { margin-top: -1rem; }
       .trust-note { margin-bottom: .8rem; }
@@ -508,8 +498,6 @@
       .plan-grid, .intent-grid, .style-grid, .contact-fields { grid-template-columns: 1fr; }
       .choice { min-height: auto; }
       .choice__body { min-height: 108px; }
-      .choice--wide .choice__body { min-height: 68px; }
-      .secondary-grid { grid-template-columns: 1fr; }
       .date-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .date-choice__body { min-height: 72px; }
       .answer-summary div { grid-template-columns: 1fr; gap: .12rem; }
@@ -531,9 +519,9 @@
     <section class="hero" aria-labelledby="page-title">
       <div class="hero__inner">
         <div class="hero__copy">
-          <p class="eyebrow">NEXT EVENT / SEPTEMBER 2026</p>
-          <h1 id="page-title">次に行きたい会を、<br>ひとつ選ぶだけ。</h1>
-          <p class="hero__lead">開催候補を決めるためのアンケートです。まずは気になる企画を選んでください。申込みや参加確定にはなりません。</p>
+          <p class="eyebrow">SNBC / CLASSROOM PHOTO EVENT</p>
+          <h1 id="page-title">学校セット撮影会</h1>
+          <p class="hero__lead">学校セットで開催する撮影会の衣装テーマを決めるためのアンケートです。いちばん参加してみたいテーマを1つ選んでください。申込みや参加確定にはなりません。</p>
           <div class="hero__meta" aria-label="アンケートの特徴">
             <span class="meta-chip"><strong>約1分</strong>で完了</span>
             <span class="meta-chip">匿名で回答可</span>
@@ -544,7 +532,7 @@
       </div>
     </section>
 
-    <section class="survey-shell" id="survey" aria-label="次回SNBC企画アンケート">
+    <section class="survey-shell" id="survey" aria-label="SNBC 学校セット撮影会の開催テーマアンケート">
       <div class="trust-note">
         <span class="trust-note__icon" aria-hidden="true">i</span>
         <div><strong>回答だけで申込みにはなりません。</strong>開催決定時の連絡を希望する方だけ、最後に連絡先を入力できます。</div>
@@ -552,11 +540,11 @@
 
       <div class="survey-card" id="survey-card">
         <div class="survey-card__top">
-          <p class="step-reading" id="step-reading">STEP <strong>行きたい企画を選ぶ</strong></p>
+          <p class="step-reading" id="step-reading">STEP <strong>衣装テーマを選ぶ</strong></p>
           <span class="completion" id="completion">1 / 4</span>
         </div>
         <ol class="progress" aria-label="回答の進行状況">
-          <li data-progress="1" class="is-current"><span class="progress__bar"></span><span class="progress__label">企画</span></li>
+          <li data-progress="1" class="is-current"><span class="progress__bar"></span><span class="progress__label">テーマ</span></li>
           <li data-progress="2"><span class="progress__bar"></span><span class="progress__label">条件</span></li>
           <li data-progress="3"><span class="progress__bar"></span><span class="progress__label">日程</span></li>
           <li data-progress="4"><span class="progress__bar"></span><span class="progress__label">通知</span></li>
@@ -565,56 +553,39 @@
         <form id="survey-form" novalidate>
           <section class="step" id="step-1" data-step="1" aria-labelledby="step-1-title">
             <p class="question-kicker">01 / まずは直感で</p>
-            <h2 class="question-title" id="step-1-title">いちばん行きたい企画は？ <span class="required">必須</span></h2>
-            <p class="question-lead">迷ったら、いちばん気になるものを1つだけ選んでください。</p>
+            <h2 class="question-title" id="step-1-title">どの衣装テーマで参加したい？ <span class="required">必須</span></h2>
+            <p class="question-lead">いちばん参加してみたいテーマを1つだけ選んでください。</p>
             <fieldset class="plan-grid" aria-describedby="plan-help">
               <label class="choice">
-                <input type="radio" name="plan" value="学校セット撮影会（服装自由）">
+                <input type="radio" name="plan" value="制服・体操服・私服">
                 <span class="choice__body">
-                  <span class="choice__top"><span class="choice__number">01</span><span><span class="choice__title">学校セット撮影会</span><span class="choice__description">制服・ユニ・体操服・私服など、服装自由</span></span></span>
+                  <span class="choice__top"><span class="choice__number">01</span><span><span class="choice__title">制服・体操服・私服</span><span class="choice__description">教室セットに合う服装で、自由に撮影と交流を楽しむ会</span></span></span>
                   <span class="choice__mark" aria-hidden="true">＋</span>
                 </span>
               </label>
               <label class="choice">
-                <input type="radio" name="plan" value="野球ユニ撮影交流会">
+                <input type="radio" name="plan" value="野球ユニフォーム">
                 <span class="choice__body">
-                  <span class="choice__top"><span class="choice__number">02</span><span><span class="choice__title">野球ユニ撮影交流会</span><span class="choice__description">野球ユニフォームで、撮影と交流を楽しむ会</span></span></span>
+                  <span class="choice__top"><span class="choice__number">02</span><span><span class="choice__title">野球ユニフォーム</span><span class="choice__description">野球ユニフォームで、学校セットを使った撮影と交流</span></span></span>
                   <span class="choice__mark" aria-hidden="true">＋</span>
                 </span>
               </label>
               <label class="choice">
-                <input type="radio" name="plan" value="サカユニ撮影交流会">
+                <input type="radio" name="plan" value="サッカーユニフォーム">
                 <span class="choice__body">
-                  <span class="choice__top"><span class="choice__number">03</span><span><span class="choice__title">サカユニ撮影交流会</span><span class="choice__description">サッカーユニフォームで、気軽な交流と撮影</span></span></span>
+                  <span class="choice__top"><span class="choice__number">03</span><span><span class="choice__title">サッカーユニフォーム</span><span class="choice__description">サッカーユニフォームで、学校セットを使った撮影と交流</span></span></span>
                   <span class="choice__mark" aria-hidden="true">＋</span>
                 </span>
               </label>
               <label class="choice">
-                <input type="radio" name="plan" value="ユニミックス撮影交流会">
+                <input type="radio" name="plan" value="ユニフォームミックス">
                 <span class="choice__body">
-                  <span class="choice__top"><span class="choice__number">04</span><span><span class="choice__title">ユニミックス撮影交流会</span><span class="choice__description">好きなスポーツユニで参加できる交流会</span></span></span>
+                  <span class="choice__top"><span class="choice__number">04</span><span><span class="choice__title">ユニフォームミックス</span><span class="choice__description">競技を問わず、好きなユニフォームで集まる会</span></span></span>
                   <span class="choice__mark" aria-hidden="true">＋</span>
                 </span>
-              </label>
-              <label class="choice choice--wide choice--plain">
-                <input type="radio" name="plan" value="今回は特にない" id="plan-none">
-                <span class="choice__body"><span class="choice__title">今回は特にない / まだ決められない</span><span class="choice__mark" aria-hidden="true">＋</span></span>
               </label>
             </fieldset>
-            <p class="form-help" id="plan-help">どの企画にも回答しても、参加申込みにはなりません。</p>
-
-            <details class="secondary-choice">
-              <summary>第二候補も入れる（任意）</summary>
-              <div class="secondary-choice__inner">
-                <div class="secondary-grid">
-                  <label class="choice choice--plain"><input type="radio" name="second-plan" value="学校セット撮影会（服装自由）"><span class="choice__body"><span class="choice__title">学校セット撮影会</span></span></label>
-                  <label class="choice choice--plain"><input type="radio" name="second-plan" value="野球ユニ撮影交流会"><span class="choice__body"><span class="choice__title">野球ユニ撮影交流会</span></span></label>
-                  <label class="choice choice--plain"><input type="radio" name="second-plan" value="サカユニ撮影交流会"><span class="choice__body"><span class="choice__title">サカユニ撮影交流会</span></span></label>
-                  <label class="choice choice--plain"><input type="radio" name="second-plan" value="ユニミックス撮影交流会"><span class="choice__body"><span class="choice__title">ユニミックス撮影交流会</span></span></label>
-                  <label class="choice choice--plain"><input type="radio" name="second-plan" value="特になし"><span class="choice__body"><span class="choice__title">特になし</span></span></label>
-                </div>
-              </div>
-            </details>
+            <p class="form-help" id="plan-help">回答は開催テーマの集計にだけ使います。参加申込みにはなりません。</p>
             <p class="step-error" id="error-1" role="alert" aria-live="polite"></p>
           </section>
 
@@ -684,14 +655,15 @@
             </fieldset>
 
             <div class="notify-panel">
-              <label class="switch-row"><input type="checkbox" id="notify"><span><strong>開催候補が決まったら連絡がほしい</strong><small>希望者だけ。連絡先を残さなくても回答できます。</small></span></label>
+              <label class="switch-row"><input type="checkbox" id="notify"><span><strong>開催候補が決まったら連絡がほしい</strong><small>希望する場合だけ、連絡先を1つ入力してください。</small></span></label>
               <div class="contact-fields" id="contact-fields" hidden>
-                <div class="contact-field"><label for="email">メールアドレス <span class="optional">任意</span></label><input type="email" id="email" autocomplete="email" placeholder="example@email.com"></div>
-                <div class="contact-field"><label for="x-account">Xアカウント <span class="optional">任意</span></label><input type="text" id="x-account" autocomplete="off" placeholder="@account"></div>
+                <p class="contact-help" id="contact-help">メールアドレスまたはXアカウントの、どちらか1つを入力してください。</p>
+                <div class="contact-field"><label for="email">メールアドレス <span class="optional">いずれか必須</span></label><input type="email" id="email" autocomplete="email" aria-describedby="contact-help" placeholder="example@email.com"></div>
+                <div class="contact-field"><label for="x-account">Xアカウント <span class="optional">いずれか必須</span></label><input type="text" id="x-account" autocomplete="off" aria-describedby="contact-help" placeholder="@account"></div>
               </div>
             </div>
 
-            <div class="free-field"><label for="comment">ひとこと <span class="optional">任意</span></label><textarea id="comment" placeholder="やってみたい企画、こうなら参加しやすいことなど"></textarea></div>
+            <div class="free-field"><label for="comment">ひとこと <span class="optional">任意</span></label><textarea id="comment" placeholder="やってみたいテーマ、こうなら参加しやすいことなど"></textarea></div>
             <p class="step-error" id="error-4" role="alert" aria-live="polite"></p>
           </section>
 
@@ -722,9 +694,9 @@
     <details class="design-notes">
       <summary>この試作で変えたこと（確認用）</summary>
       <ul>
-        <li>長い説明と全設問の一括表示をやめ、最初に「企画を1つ選ぶ」だけの入口に変更。</li>
+        <li>長い説明と全設問の一括表示をやめ、最初に「衣装テーマを1つ選ぶ」だけの入口に変更。</li>
         <li>必須の判断を1画面ずつに分割し、日程はカレンダー感覚の大きな選択面に変更。</li>
-        <li>第二候補・不安・自由記述は任意として後ろへ寄せ、連絡先は「通知希望」を選んだ時だけ開く。</li>
+        <li>不安・自由記述は任意として後ろへ寄せ、連絡先は「通知希望」を選んだ時だけ開く。</li>
         <li>スマホでは常に画面下に次の行動を置き、選択後の迷子を減らす。</li>
       </ul>
     </details>
@@ -735,10 +707,9 @@
       'use strict';
 
       var form = document.getElementById('survey-form');
-      var planNone = document.getElementById('plan-none');
       var currentStep = 1;
       var flow = [1, 2, 3, 4];
-      var stepLabels = { 1: '行きたい企画を選ぶ', 2: '参加の条件を選ぶ', 3: '参加できる日を選ぶ', 4: '通知の希望を選ぶ' };
+      var stepLabels = { 1: '衣装テーマを選ぶ', 2: '参加の条件を選ぶ', 3: '参加できる日を選ぶ', 4: '通知の希望を選ぶ' };
       var reading = document.getElementById('step-reading');
       var completion = document.getElementById('completion');
       var next = document.getElementById('next');
@@ -754,14 +725,11 @@
       var concernInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="concern"]'));
       var notify = document.getElementById('notify');
       var contactFields = document.getElementById('contact-fields');
+      var email = document.getElementById('email');
+      var xAccount = document.getElementById('x-account');
 
       function chosen(name) {
         return form.querySelector('input[name="' + name + '"]:checked');
-      }
-
-      function setFlow() {
-        flow = planNone.checked ? [1, 4] : [1, 2, 3, 4];
-        if (flow.indexOf(currentStep) === -1) currentStep = flow[flow.length - 1];
       }
 
       function updateProgress() {
@@ -772,14 +740,12 @@
           var flowIndex = flow.indexOf(step);
           item.classList.toggle('is-current', step === currentStep);
           item.classList.toggle('is-done', flowIndex !== -1 && flowIndex < index);
-          item.classList.toggle('is-skipped', flowIndex === -1);
         });
         reading.innerHTML = 'STEP <strong>' + stepLabels[currentStep] + '</strong>';
         completion.textContent = (index + 1) + ' / ' + flow.length;
       }
 
       function showStep(step, shouldScroll) {
-        setFlow();
         currentStep = step;
         form.querySelectorAll('.step').forEach(function (section) {
           section.hidden = Number(section.getAttribute('data-step')) !== step;
@@ -805,7 +771,7 @@
       function validateStep(step) {
         clearError(step);
         if (step === 1 && !chosen('plan')) {
-          showError(step, 'まず、いちばん行きたい企画を1つ選んでください。');
+          showError(step, 'まず、参加してみたい衣装テーマを1つ選んでください。');
           return false;
         }
         if (step === 2 && (!chosen('intent') || !chosen('style'))) {
@@ -816,10 +782,19 @@
           showError(step, '参加できる日、または「9月の土日は難しい」を選んでください。');
           return false;
         }
+        if (step === 4 && notify.checked) {
+          if (!email.value.trim() && !xAccount.value.trim()) {
+            showError(step, '通知を希望する場合は、メールアドレスまたはXアカウントを1つ入力してください。');
+            return false;
+          }
+          if (email.value.trim() && !email.validity.valid) {
+            showError(step, 'メールアドレスの形式を確認してください。');
+            return false;
+          }
+        }
         return true;
       }
 
-      function textOrDash(value) { return value || '未選択'; }
       function selectedLabels(selector) {
         return Array.prototype.slice.call(form.querySelectorAll(selector + ':checked')).map(function (input) {
           return input.parentNode.textContent.replace(/\s+/g, ' ').trim();
@@ -838,19 +813,17 @@
       function buildSummary() {
         summary.innerHTML = '';
         var plan = chosen('plan');
-        var second = chosen('second-plan');
-        addSummary('第一希望', plan ? plan.value : '未選択');
-        if (!planNone.checked) {
-          var intent = chosen('intent');
-          var style = chosen('style');
-          addSummary('参加の温度感', intent ? intent.value : '未選択');
-          addSummary('開催スタイル', style ? (style.dataset.summary || style.value) : '未選択');
-          addSummary('参加できる日', unavailable.checked ? '9月の土日は難しい' : dateInputs.filter(function (input) { return input.checked; }).map(function (input) { return input.value; }).join('、'));
-        }
-        if (second) addSummary('第二候補', second.value);
+        addSummary('希望テーマ', plan ? plan.value : '未選択');
+        var intent = chosen('intent');
+        var style = chosen('style');
+        addSummary('参加の温度感', intent ? intent.value : '未選択');
+        addSummary('開催スタイル', style ? (style.dataset.summary || style.value) : '未選択');
+        addSummary('参加できる日', unavailable.checked ? '9月の土日は難しい' : dateInputs.filter(function (input) { return input.checked; }).map(function (input) { return input.value; }).join('、'));
         var concerns = selectedLabels('input[name="concern"]');
         if (concerns.length) addSummary('気になること', concerns.join('、'));
         addSummary('開催連絡', notify.checked ? '希望する' : '希望しない');
+        if (notify.checked && email.value.trim()) addSummary('メールアドレス', email.value.trim());
+        if (notify.checked && xAccount.value.trim()) addSummary('Xアカウント', xAccount.value.trim());
       }
 
       function showConfirmation() {
@@ -887,12 +860,6 @@
       form.querySelectorAll('input[name="plan"]').forEach(function (input) {
         input.addEventListener('change', function () {
           clearError(1);
-          if (planNone.checked) {
-            form.querySelectorAll('input[name="intent"], input[name="style"], input[name="date"]').forEach(function (field) { field.checked = false; });
-            unavailable.checked = false;
-            updateDateState();
-          }
-          setFlow();
           updateProgress();
         });
       });
@@ -929,7 +896,10 @@
         });
       });
 
-      notify.addEventListener('change', function () { contactFields.hidden = !notify.checked; });
+      notify.addEventListener('change', function () {
+        contactFields.hidden = !notify.checked;
+        clearError(4);
+      });
 
       document.getElementById('edit-answer').addEventListener('click', function () { showStep(flow[flow.length - 1], true); });
       document.getElementById('complete-demo').addEventListener('click', function () {
@@ -940,7 +910,6 @@
       document.getElementById('start-again').addEventListener('click', function () {
         form.reset();
         currentStep = 1;
-        setFlow();
         contactFields.hidden = true;
         updateDateState();
         concernInputs.forEach(function (input) { input.disabled = false; });
