@@ -1,81 +1,26 @@
 /**
- * SNBC 次回企画アンケート（2026年9月開催分）バックエンド
- * Issue #188 対応。community/enquete_202609.html から呼び出される。
+ * SNBC 学校セット撮影会｜2026年9月開催テーマアンケート バックエンド
+ * Issue #205 対応。community/enquete_202609.html から呼び出される。
  *
- * このファイルはリポジトリ内には保存されるが、実行環境はGoogle Apps Script側であり、
- * ここに置いたコードを直接pushしても動作しない。以下の手順で先輩が手動でデプロイすること。
+ * このファイルはリポジトリ内の正本だが、実行環境はGoogle Apps Script側。
+ * GitHubへpushするだけでは反映されないため、次の順で手動反映する。
  *
- * ── デプロイ手順（先輩が実施） ──
- * 1. 保存先にしたいGoogleスプレッドシートを新規作成する（例：「SNBCアンケート_202609」）。
- * 2. スプレッドシートのメニュー「拡張機能」→「Apps Script」を開く。
- * 3. デフォルトで生成される Code.gs の内容を全て削除し、このファイルの内容を貼り付ける。
- * 4. SHEET_NAME（下記）が実際に使うシート（タブ）名と一致していることを確認する
- *    （既定 "responses"。スプレッドシート下部のタブ名をこれに合わせるか、コード側を変更する）。
- * 5. NOTIFICATION_EMAIL（下記）を、新しい回答があった際に通知を受け取りたい運営者の
- *    実際のメールアドレスに書き換える（新しい回答が保存されるたびにこの宛先へメール通知が届く）。
- * 6. Apps Scriptエディタ左側の関数選択で setupHeaderRow を選び、実行ボタン（▶）を押す。
- *    初回はGoogleの権限承認画面が出るので、自分のアカウントで承認する。
- *    これで1行目にヘッダー（列名）が書き込まれる。
- * 7. 右上「デプロイ」→「新しいデプロイ」。
- *    - 種類の選択：ウェブアプリ
- *    - 説明：任意（例：enquete_202609 v1）
- *    - 次のユーザーとして実行：自分
- *    - アクセスできるユーザー：全員
- * 8. 「デプロイ」を押すと「ウェブアプリのURL」が表示される（.../exec で終わるURL）。これをコピーする。
- * 9. コピーしたURLを community/enquete_202609.html 内の
- *    `GAS_ENDPOINT_URL = 'https://script.google.com/macros/s/PLACEHOLDER_REPLACE_WITH_DEPLOYED_WEB_APP_URL/exec'`
- *    の PLACEHOLDER_REPLACE_WITH_DEPLOYED_WEB_APP_URL 部分と置き換える。
- * 10. ブラウザで手順8のURLをそのまま開き、「SNBC enquete_202609 backend: OK」と表示されることを確認する
- *     （doGetの動作確認。POST自体はブラウザから直接テストできないため、実際のフォーム送信で確認する）。
- *     このとき2行目に「[WARNING] NOTIFICATION_EMAILが未設定です」等の警告が出ていないかも
- *     必ず確認すること。出ている場合は手順5のNOTIFICATION_EMAIL書き換えが漏れており、
- *     このままではSheets保存は成功する一方で運営者への通知メールが一切届かない。
- * 11. コードを後から修正した場合は、「デプロイ」→「デプロイを管理」→ 対象デプロイの編集（鉛筆アイコン）→
- *     バージョン「新バージョン」を選んで再デプロイする（URLを変えずにコードだけ更新するため）。
- *     このメール通知機能（Issue #192）を、メール送信を使っていなかった既存デプロイに反映する場合、
- *     MailApp（メール送信）の権限が新たに必要になるため、新バージョンの実行時にGoogleの追加の
- *     権限承認画面が表示されることがある。表示されたら内容を確認し、自分のアカウントで承認すること。
- * 12. 【submission_id列を追加した今回の更新を、既にデプロイ済みのシートに反映する場合】
- *     COLUMNS配列に'submission_id'列が増えたが、データが既にあるシートで setupHeaderRow を
- *     再実行すると、1行目（ヘッダー）だけが上書きされ既存のデータ行とは列がズレてしまうため
- *     絶対に再実行しないこと。代わりに、スプレッドシート上で timestamp列（A列）の右隣に
- *     列を1列手動で挿入し（該当列を右クリック→「左に1列を挿入」）、ヘッダーセル（1行目）に
- *     半角で「submission_id」と入力すること。データが無い新規シートの場合のみ、
- *     引き続き setupHeaderRow の実行で問題ない（何もない状態にヘッダーを書き込むだけのため）。
- *     コード側は貼り替えた後、手順11の通り「新バージョン」で再デプロイする
- *     （URLは変わらないためHTML側の再修正は不要）。
+ * ── デプロイ手順 ──
+ * 1. 対象Googleスプレッドシートの「拡張機能」→「Apps Script」を開き、Code.gsをこの内容に置き換える。
+ * 2. SHEET_NAME と NOTIFICATION_EMAIL が実運用の値であることを確認する。
+ * 3. 現時点の回答は0件のため、setupHeaderRow を1回実行する。
+ *    1件でも回答があるシートでは、この関数は安全のためエラーで停止する。
+ * 4. 「デプロイ」→「デプロイを管理」→既存ウェブアプリの編集（鉛筆）で、
+ *    バージョンに「新バージョン」を選んで再デプロイする。/exec URLは変更しない。
+ * 5. /exec URLを開き、backend: OK と表示されることを確認する。
+ * 6. GitHub Pages公開後、公開フォームから1件だけ疎通し、Sheets保存内容と通知を確認する。
  *
- * ── 既知の制約（正直な申告） ──
- * ・GAS Web AppのCORS挙動はGoogle側の実装に依存する。本コードは「text/plainでPOSTしプリフライトを
- *   発生させない」という広く使われる回避策を前提にしているが、実際にfetchでレスポンスを読めるかは
- *   環境依存の可能性がゼロではない。手順9のdoGet確認に加え、実際にフォームから送信して
- *   スプレッドシートに1行追加されること・ブラウザ側で成功表示が出ることの両方を必ず確認すること。
- * ・通信が途中で切れた場合（サーバー側の追記は成功したがレスポンスをブラウザが受け取れなかった場合）に
- *   利用者が再送信しても、フロント側が同じ submission_id を使い回すため、GAS側で重複と判定し
- *   追記せず成功扱いを返す（冪等性）。ページを再読み込みして最初から回答し直した場合は
- *   新しい submission_id になるため、それは「別の送信」として扱われる（意図通り）。
- * ・この重複判定はシート上の submission_id 列を毎回スキャンして行う簡易な実装であり、
- *   件数が少ないアンケートを前提にしている（数千件規模の応答には向かない）。
- * ・submission_id列の位置はCOLUMNS配列の並び順を決め打ちにせず、ヘッダー行（1行目）を
- *   毎回検索して求める。ヘッダーに「submission_id」という列が見つからない場合は
- *   （手順12の対応漏れ等）、重複判定ができないまま追記してしまう事故を防ぐため、
- *   保存を行わずエラー（submission_id_column_not_found）を返す。
- * ・新しい回答がSheetsへ保存されたときのみ、NOTIFICATION_EMAIL宛に確認用の通知メールを送る
- *   （Issue #192）。Sheetsへの保存が主処理、メール通知はあくまで補助処理であり、メール送信が
- *   失敗しても保存が完了していれば回答自体は成功として扱う（失敗はApps Scriptログに残すのみ）。
- *   同一submission_idの再送（重複）と判定された場合は、Sheetsへの追記と同様にメールも送らない
- *   （回答1件につきメール1通を保証する）。通知メール本文にはcontact_email／contact_x／
- *   free_comment／submission_idを含めない（個人情報の保存場所を増やさないため。詳細はSheets参照）。
- * ・GASの MailApp にはGoogleアカウント側の送信クォータがあるため、大量送信は想定していない
- *   （本アンケートのような少数回答の運用を前提にしている）。
- * ・NOTIFICATION_EMAILが手順5の書き換えを忘れてプレースホルダー（'YOUR_NOTIFICATION_EMAIL'）の
- *   ままの場合、送信自体を試みずスキップし専用のエラーをApps Scriptログに残す（レビュー指摘 /
- *   PR #193）。doGetのレスポンスにも[WARNING]を出すため、手順10の確認で気付けるようにしている。
- *   ただしSheets保存自体は成功として扱われるため、ログ／doGetを見ない限り気付けない点に注意。
- * ・重複判定・Sheetsへの追記はLockService保持中に行うが、MailApp.sendEmail()はロック解放後に
- *   呼ぶ（レビュー指摘 / PR #193）。メール送信の遅延で後続リクエストの待ち時間が延び busy に
- *   なりやすくなることを避けるためで、通知が新規保存と1対1になる保証（processSubmissionが
- *   新規保存確定時にのみnotify情報を返す）は変えていない。
+ * ── この版の仕様 ──
+ * ・Q1は学校セット撮影会用の4択のみを受け付ける。
+ * ・notification_requested は厳密なboolean。false時の連絡先は空欄のみ許可する。
+ * ・自由入力は数式インジェクション対策をしてSheetsへ保存する。
+ * ・submission_id、LockService、重複送信時の保存・通知抑止を維持する。
+ * ・通知メール本文には連絡先、自由記述、submission_id を含めない。
  */
 
 var SHEET_NAME = 'responses';
@@ -83,15 +28,14 @@ var SHEET_NAME = 'responses';
 /* 新しい回答が保存されたときの通知先。デプロイ手順5の通り、実際の運営者アドレスに書き換えること。 */
 var NOTIFICATION_EMAIL = 'bbuni.ngo@gmail.com';
 
-var NOTIFICATION_EMAIL_SUBJECT = '【SNBC】9月企画アンケートに新しい回答があります';
+var NOTIFICATION_EMAIL_SUBJECT = '【SNBC】学校セット撮影会アンケートに新しい回答があります';
 
 var COLUMNS = [
   'timestamp',
   'submission_id',
   'q1_first_choice',
-  'q2_second_choice',
   'q3_participation_intent',
-  'q4_price', // 列名は既存互換のため維持。保存値は「開催スタイル」の固定コード（Issue #194 / ALLOWED_Q4参照）。
+  'q4_price', // 保存値は開催スタイルの固定コード。
   'date_0905',
   'date_0906',
   'date_0912',
@@ -102,6 +46,7 @@ var COLUMNS = [
   'date_0927',
   'no_available_weekend',
   'q6_concerns',
+  'notification_requested',
   'contact_email',
   'contact_x',
   'free_comment'
@@ -128,26 +73,15 @@ var DATE_LABELS = {
 /* ── 許可値のallowlist（フロント側HTMLの選択肢と1対1で一致させること。
    選択肢の文言をHTML側で変更した場合、ここも必ず同時に更新する） ── */
 var ALLOWED_Q1 = [
-  '学校セット撮影会（服装自由）', '野球ユニ撮影交流会', 'サカユニ撮影交流会',
-  'ユニミックス撮影交流会', '今回は特にない'
-];
-var ALLOWED_Q2 = [
-  '学校セット撮影会（服装自由）', '野球ユニ撮影交流会', 'サカユニ撮影交流会',
-  'ユニミックス撮影交流会', '特になし', ''
+  '制服・体操服・私服', '野球ユニフォーム', 'サッカーユニフォーム', 'ユニフォームミックス'
 ];
 var ALLOWED_Q3 = [
   '日程が合えばかなり参加したい',
   '条件（料金・人数など）が合えば参加を検討したい',
   '興味はあるが参加までは分からない',
-  '見るだけ・投票だけ',
-  'not_applicable'
+  '見るだけ・投票だけ'
 ];
-/* Q4：単純な希望価格ではなく「開催スタイル」の固定コード（Issue #194）。
-   列名は既存Sheets互換のためq4_priceのまま維持しているが、値は価格だけを意味しない。
-   人数帯は4人／5〜6人／7〜8人／9〜12人の4区分で重複させない（PR #195レビュー指摘により
-   6〜8人・8〜12人という重複区分から変更）。
-   HTML側（community/enquete_202609.html）の各カードのvalueと1対1で一致させること。
-   旧コード style_2000_8to12_nodrink / style_3000_6to8_nodrink は許可しない。 */
+/* Q4：価格だけではなく、人数・撮影時間・ドリンクを含む開催スタイルの固定コード。 */
 var ALLOWED_Q4 = [
   'style_2000_9to12_nodrink',
   'style_3000_7to8_nodrink',
@@ -155,15 +89,12 @@ var ALLOWED_Q4 = [
   'style_4000_4_drink'
 ];
 
-/* Q4の固定コードを通知メール向けの人が読める表記に変換するための対応表
-   （community/enquete_202609.html の各カードの内容と1対1で一致させること。Issue #194）。
-   「希望者同士で撮影」という表現は、参加者間の相互撮影を当然の前提と受け取られる
-   おそれがあるため使用せず、「希望者のみ撮影」に統一する（PR #195レビュー指摘）。 */
+/* Q4の固定コードを通知メール向けの人が読める表記に変換する対応表。 */
 var Q4_STYLE_LABELS = {
-  style_2000_9to12_nodrink: '2,000円｜9〜12人｜撮影時間なし｜ソフトドリンクなし',
-  style_3000_7to8_nodrink: '3,000円｜7〜8人｜希望者のみ撮影｜ソフトドリンクなし',
-  style_3500_5to6_drink: '3,500円｜5〜6人｜希望者のみ撮影｜ソフトドリンクあり',
-  style_4000_4_drink: '4,000円｜4人｜希望者のみ撮影｜ソフトドリンクあり'
+  style_2000_9to12_nodrink: '2,000円｜9〜12人｜交流メイン｜撮影時間なし｜ドリンクなし',
+  style_3000_7to8_nodrink: '3,000円｜7〜8人｜交流＋希望者撮影｜ドリンクなし',
+  style_3500_5to6_drink: '3,500円｜5〜6人｜交流＋希望者撮影｜撮影時間しっかり｜ドリンクあり',
+  style_4000_4_drink: '4,000円｜4人｜少人数｜撮影時間多め｜ドリンクあり'
 };
 var ALLOWED_Q6_ITEMS = [
   '一人参加が不安', '初対面の人との交流が不安', '撮られるのが苦手',
@@ -193,11 +124,8 @@ function sanitizeForSheet(value) {
 function doGet(e) {
   var message = 'SNBC enquete_202609 backend: OK';
   if (NOTIFICATION_EMAIL === 'YOUR_NOTIFICATION_EMAIL') {
-    // デプロイ手順10でこのURLを開いて確認する際に、NOTIFICATION_EMAILの設定忘れに
-    // 気付けるようにする（レビュー指摘 / PR #193）。利用者向けのdoPostレスポンスには
-    // 影響しないが、ここに出れば本番運用前に気付ける。
     message += '\n[WARNING] NOTIFICATION_EMAIL が未設定です（プレースホルダーのままです）。' +
-      'このままでは運営者への通知メールが送信されません。デプロイ手順5の通り書き換えてください。';
+      'このままでは運営者への通知メールが送信されません。実際の宛先へ書き換えてください。';
   }
   return ContentService.createTextOutput(message);
 }
@@ -210,6 +138,8 @@ function doGet(e) {
  * 戻り値：問題なければnull、問題があればエラーコード文字列。
  */
 function validatePayload(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return 'payload_invalid';
+
   // submission_id：冪等性のキーとして使うため、型・長さだけ検証する（文字の内容自体は
   // allowlist化できない自由な識別子のため、シート書き込み時にsanitizeForSheetで防御する）。
   if (typeof data.submission_id !== 'string') return 'submission_id_invalid_type';
@@ -218,17 +148,7 @@ function validatePayload(data) {
   }
 
   if (ALLOWED_Q1.indexOf(data.q1_first_choice) === -1) return 'q1_invalid';
-  if (ALLOWED_Q2.indexOf(data.q2_second_choice || '') === -1) return 'q2_invalid';
-
-  var q1IsNone = data.q1_first_choice === '今回は特にない';
-  if (q1IsNone) {
-    // Q1が「今回は特にない」の場合、Q3は必ずnot_applicableで保存する（通常回答と混在させない）。
-    if (data.q3_participation_intent !== 'not_applicable') return 'q3_should_be_not_applicable';
-  } else {
-    // Q1が具体的な企画の場合、Q3はnot_applicable以外の許可値のいずれかである必要がある。
-    if (data.q3_participation_intent === 'not_applicable') return 'q3_not_applicable_not_allowed';
-    if (ALLOWED_Q3.indexOf(data.q3_participation_intent) === -1) return 'q3_invalid';
-  }
+  if (ALLOWED_Q3.indexOf(data.q3_participation_intent) === -1) return 'q3_invalid';
 
   if (ALLOWED_Q4.indexOf(data.q4_price) === -1) return 'q4_invalid';
 
@@ -259,7 +179,10 @@ function validatePayload(data) {
   // Q6の排他関係：「特になし」を含む場合、他の項目と同時には保存できない。
   if (q6Items.indexOf('特になし') !== -1 && q6Items.length > 1) return 'q6_exclusive_violation';
 
-  // 連絡先・自由記述：型チェック（同様の理由）→ 文字数上限 → メールの簡易形式チェック。
+  // 通知希望は文字列"true"等を受け入れず、厳密なbooleanだけを許可する。
+  if (typeof data.notification_requested !== 'boolean') return 'notification_requested_not_boolean';
+
+  // 連絡先・自由記述：型チェック → 文字数上限 → メールの簡易形式チェック。
   if (typeof data.contact_email !== 'string') return 'contact_email_invalid_type';
   if (typeof data.contact_x !== 'string') return 'contact_x_invalid_type';
   if (typeof data.free_comment !== 'string') return 'free_comment_invalid_type';
@@ -271,13 +194,35 @@ function validatePayload(data) {
   if (freeComment.length > MAX_FREE_COMMENT_LENGTH) return 'free_comment_too_long';
   if (email !== '' && !EMAIL_PATTERN.test(email)) return 'contact_email_invalid_format';
 
+  if (data.notification_requested === true && email === '' && xAccount === '') {
+    return 'notification_contact_required';
+  }
+  // 通知を希望しない回答に連絡先を保存しない。フロントもoffに切り替えた時点で空欄に戻す。
+  if (data.notification_requested === false && (email !== '' || xAccount !== '')) {
+    return 'notification_contact_must_be_blank';
+  }
+
   return null; // 問題なし
 }
 
 /**
- * ヘッダー行（1行目）を実際に読み取り、submission_id列の位置を探す。
- * COLUMNS配列の並び順を決め打ちにしない（レビュー指摘）。これにより、既存シートに
- * 手動で列を追加した場合でも、ヘッダーのラベルさえ一致していれば安全に動作する。
+ * 現在のヘッダーがCOLUMNSと完全一致するか確認する。
+ * 今回の列構成で旧ヘッダーのままappendすると列がずれるため、
+ * setupHeaderRowの実行漏れを保存前に明示的に止める。
+ */
+function hasExpectedHeader(sheet) {
+  var lastColumn = sheet.getLastColumn();
+  if (lastColumn !== COLUMNS.length) return false;
+  var header = sheet.getRange(1, 1, 1, COLUMNS.length).getValues()[0];
+  for (var i = 0; i < COLUMNS.length; i++) {
+    if (header[i] !== COLUMNS[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * ヘッダー行（1行目）からsubmission_id列の位置を探す。
+ * hasExpectedHeader()を通過した後に呼び出すため、ここは冪等性の確認だけを担う。
  * 見つからない場合は -1 を返す。
  */
 function findSubmissionIdColumnIndex(sheet) {
@@ -335,9 +280,12 @@ function processSubmission(e) {
       return { response: jsonResponse({ ok: false, error: 'sheet_not_found' }), notify: null };
     }
 
-    // 冪等性の前提として、シートのヘッダーに submission_id 列が実在することを確認する。
-    // 列が見つからない状態で処理を続けると、重複判定ができないまま無条件に追記して
-    // しまう（＝冪等性が黙って効かなくなる）ため、事故を防ぐために明示的にエラーとする。
+    // 旧ヘッダーのまま保存して列がずれる事故を防ぐ。まずsetupHeaderRowを実行すること。
+    if (!hasExpectedHeader(sheet)) {
+      return { response: jsonResponse({ ok: false, error: 'header_mismatch' }), notify: null };
+    }
+
+    // 冪等性の前提としてsubmission_id列が実在することを確認する。
     var submissionIdColumn = findSubmissionIdColumnIndex(sheet);
     if (submissionIdColumn === -1) {
       return { response: jsonResponse({ ok: false, error: 'submission_id_column_not_found' }), notify: null };
@@ -427,18 +375,6 @@ function formatQ5ForNotification(data) {
 }
 
 /**
- * Q3（参加可能性）を通知メール向けの短い文字列に整形する。
- * Q1が「今回は特にない」の場合、Q3は常に 'not_applicable' で保存されている（validatePayload参照）
- * ため、そのまま出すと分かりにくい文字列になる。表示用に補足を添える。
- */
-function formatQ3ForNotification(data) {
-  if (data.q3_participation_intent === 'not_applicable') {
-    return '（Q1で「今回は特にない」を選択のため対象外）';
-  }
-  return data.q3_participation_intent;
-}
-
-/**
  * Q4（開催スタイルの固定コード）を通知メール向けの人が読める表記に変換する。
  * Q4_STYLE_LABELSに無い値（想定外の値）が来た場合も、通知自体は落とさず
  * コードをそのまま表示する（validatePayloadで既にallowlist検証済みのため通常は発生しない）。
@@ -455,14 +391,15 @@ function formatQ4ForNotification(data) {
 function buildNotificationBody(data, timestamp) {
   var receivedAt = Utilities.formatDate(timestamp, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
   var lines = [
-    'SNBC 次回企画アンケートに新しい回答がありました。',
+    'SNBC 学校セット撮影会アンケートに新しい回答がありました。',
     '',
     '受付日時: ' + receivedAt,
-    'Q1 最も参加したい企画: ' + data.q1_first_choice,
-    'Q3 参加可能性: ' + formatQ3ForNotification(data),
+    'Q1 希望テーマ: ' + data.q1_first_choice,
+    'Q3 参加の温度感: ' + data.q3_participation_intent,
     'Q4 希望する開催スタイル: ' + formatQ4ForNotification(data),
     'Q5 参加可能日: ' + formatQ5ForNotification(data),
     'Q6 気になる点: ' + (data.q6_concerns || '（該当なし）'),
+    '開催決定時の連絡: ' + (data.notification_requested ? '希望する' : '希望しない'),
     '',
     '詳細はGoogleスプレッドシートで確認してください。'
   ];
@@ -496,15 +433,21 @@ function sendNotificationEmailSafely(data, timestamp) {
 }
 
 /**
- * 初回セットアップ用ヘルパー。Apps Scriptエディタでこの関数を選んで実行すると、
- * SHEET_NAME のシートの1行目にヘッダー行を書き込む（シートが無ければ作成する）。
- * 手動で1回だけ実行すればよい（デプロイ手順6を参照）。
+ * ヘッダー再作成用。回答が0件のときだけ実行できる。
+ * データ行がある場合は、列ずれによる破損を避けるため明示的に停止する。
  */
 function setupHeaderRow() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
+  }
+  if (sheet.getLastRow() > 1) {
+    throw new Error('既存の回答があるためsetupHeaderRowは実行できません。ヘッダーを上書きしないでください。');
+  }
+  var existingColumnCount = sheet.getLastColumn();
+  if (existingColumnCount > 0) {
+    sheet.getRange(1, 1, 1, existingColumnCount).clearContent();
   }
   sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
 }
