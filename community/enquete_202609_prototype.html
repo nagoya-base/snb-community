@@ -636,10 +636,10 @@
               <legend class="subquestion__title">希望する開催スタイル <span class="required">必須</span></legend>
               <p class="subquestion__lead">参加費だけでなく、人数・撮影時間・ドリンクをセットで比較できます。</p>
               <div class="style-grid">
-                <label class="choice style"><input type="radio" name="style" value="style_2000_9to12_nodrink"><span class="choice__body"><span><span class="style__price">2,000円</span><span class="style__people">9〜12人</span><ul class="style__points"><li>交流メイン</li><li>撮影時間なし</li></ul></span><span class="style__drink">ドリンクなし</span></span></label>
-                <label class="choice style"><input type="radio" name="style" value="style_3000_7to8_nodrink"><span class="choice__body"><span><span class="style__price">3,000円</span><span class="style__people">7〜8人</span><ul class="style__points"><li>交流＋希望者撮影</li></ul></span><span class="style__drink">ドリンクなし</span></span></label>
-                <label class="choice style"><input type="radio" name="style" value="style_3500_5to6_drink"><span class="choice__body"><span><span class="style__price">3,500円</span><span class="style__people">5〜6人</span><ul class="style__points"><li>交流＋希望者撮影</li><li>撮影時間しっかり</li></ul></span><span class="style__drink style__drink--yes">ドリンクあり</span></span></label>
-                <label class="choice style"><input type="radio" name="style" value="style_4000_4_drink"><span class="choice__body"><span><span class="style__price">4,000円</span><span class="style__people">4人</span><ul class="style__points"><li>少人数</li><li>撮影時間多め</li></ul></span><span class="style__drink style__drink--yes">ドリンクあり</span></span></label>
+                <label class="choice style"><input type="radio" name="style" value="style_2000_9to12_nodrink" data-summary="2,000円・9〜12人・交流メイン・撮影時間なし・ドリンクなし"><span class="choice__body"><span><span class="style__price">2,000円</span><span class="style__people">9〜12人</span><ul class="style__points"><li>交流メイン</li><li>撮影時間なし</li></ul></span><span class="style__drink">ドリンクなし</span></span></label>
+                <label class="choice style"><input type="radio" name="style" value="style_3000_7to8_nodrink" data-summary="3,000円・7〜8人・交流＋希望者撮影・ドリンクなし"><span class="choice__body"><span><span class="style__price">3,000円</span><span class="style__people">7〜8人</span><ul class="style__points"><li>交流＋希望者撮影</li></ul></span><span class="style__drink">ドリンクなし</span></span></label>
+                <label class="choice style"><input type="radio" name="style" value="style_3500_5to6_drink" data-summary="3,500円・5〜6人・交流＋希望者撮影・撮影時間しっかり・ドリンクあり"><span class="choice__body"><span><span class="style__price">3,500円</span><span class="style__people">5〜6人</span><ul class="style__points"><li>交流＋希望者撮影</li><li>撮影時間しっかり</li></ul></span><span class="style__drink style__drink--yes">ドリンクあり</span></span></label>
+                <label class="choice style"><input type="radio" name="style" value="style_4000_4_drink" data-summary="4,000円・4人・少人数・撮影時間多め・ドリンクあり"><span class="choice__body"><span><span class="style__price">4,000円</span><span class="style__people">4人</span><ul class="style__points"><li>少人数</li><li>撮影時間多め</li></ul></span><span class="style__drink style__drink--yes">ドリンクあり</span></span></label>
               </div>
             </fieldset>
             <p class="step-error" id="error-2" role="alert" aria-live="polite"></p>
@@ -844,8 +844,8 @@
           var intent = chosen('intent');
           var style = chosen('style');
           addSummary('参加の温度感', intent ? intent.value : '未選択');
-          addSummary('開催スタイル', style ? style.parentNode.textContent.replace(/\s+/g, ' ').trim() : '未選択');
-          addSummary('参加できる日', unavailable.checked ? '9月の土日は難しい' : selectedLabels('input[name="date"]').join('、'));
+          addSummary('開催スタイル', style ? (style.dataset.summary || style.value) : '未選択');
+          addSummary('参加できる日', unavailable.checked ? '9月の土日は難しい' : dateInputs.filter(function (input) { return input.checked; }).map(function (input) { return input.value; }).join('、'));
         }
         if (second) addSummary('第二候補', second.value);
         var concerns = selectedLabels('input[name="concern"]');
