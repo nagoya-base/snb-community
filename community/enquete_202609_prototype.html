@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>次回SNBC企画アンケート - 回答しやすさ試作</title>
+  <style>
+    :root {
+      --ink: #161819;
+      --ink-soft: #25282a;
+      --paper: #f5f1eb;
+      --card: #ffffff;
+      --muted: #6d6962;
+      --line: #ded8cf;
+      --red: #c62828;
+      --red-dark: #9f1e1e;
+      --red-pale: #fff1ee;
+      --green: #176b48;
+      --green-pale: #edf8f1;
+      --shadow: 0 18px 45px rgba(25, 22, 18, 0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, textarea { font: inherit; }
+    button { touch-action: manipulation; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible {
+      outline: 3px solid #1c72c5;
+      outline-offset: 3px;
+    }
+    [hidden] { display: none !important; }
+
+    .prototype-ribbon {
+      position: fixed;
+      z-index: 20;
+      top: 0;
+      left: 0;
+      right: 0;
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.35rem 1rem;
+      background: #f6cb3d;
+      color: #332500;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-align: center;
+    }
+
+    .site-header {
+      min-height: 58px;
+      margin-top: 34px;
+      background: rgba(22, 24, 25, 0.98);
+      color: #fff;
+    }
+    .site-header__inner {
+      width: min(1100px, calc(100% - 2.5rem));
+      min-height: 58px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand { font-size: 0.92rem; font-weight: 800; letter-spacing: 0.07em; }
+    .brand small { margin-left: 0.55rem; color: rgba(255,255,255,.62); font-size: 0.66rem; letter-spacing: .15em; }
+    .prototype-label {
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 999px;
+      padding: .26rem .65rem;
+      font-size: .67rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+    }
+
+    .hero {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      min-height: 390px;
+      color: #fff;
+      background: var(--ink);
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background: linear-gradient(100deg, rgba(11, 13, 14, .95) 8%, rgba(11, 13, 14, .72) 48%, rgba(11, 13, 14, .34) 100%),
+                  url("https://nagoya-base.github.io/snb-community/images/community/enquete-202609/hero-photo-main.jpg") center / cover no-repeat;
+      transform: scale(1.02);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -10% -55% 35%;
+      z-index: -1;
+      width: 55vw;
+      height: 55vw;
+      border-radius: 50%;
+      background: rgba(198, 40, 40, .52);
+      filter: blur(2px);
+    }
+    .hero__inner {
+      width: min(1100px, calc(100% - 2.5rem));
+      min-height: 390px;
+      margin: 0 auto;
+      padding: clamp(3.2rem, 9vw, 5.6rem) 0 3.2rem;
+      display: flex;
+      align-items: center;
+    }
+    .hero__copy { max-width: 660px; }
+    .eyebrow {
+      margin: 0 0 1rem;
+      color: #f8cfca;
+      font-size: .76rem;
+      font-weight: 800;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    h1 {
+      max-width: 640px;
+      margin: 0;
+      font-size: clamp(2rem, 6vw, 4.1rem);
+      line-height: 1.12;
+      letter-spacing: -.04em;
+    }
+    .hero__lead {
+      max-width: 510px;
+      margin: 1.25rem 0 1.6rem;
+      color: rgba(255,255,255,.88);
+      font-size: clamp(.96rem, 2.2vw, 1.06rem);
+    }
+    .hero__meta { display: flex; flex-wrap: wrap; gap: .55rem; }
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .36rem;
+      min-height: 32px;
+      padding: .28rem .72rem;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 999px;
+      background: rgba(0,0,0,.22);
+      font-size: .76rem;
+      font-weight: 700;
+    }
+    .meta-chip strong { color: #fff; }
+    .hero__cta {
+      margin-top: 2rem;
+      min-width: 216px;
+      border: 0;
+      border-radius: 999px;
+      padding: .95rem 1.35rem;
+      background: #fff;
+      color: var(--ink);
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0,0,0,.22);
+    }
+    .hero__cta:hover { transform: translateY(-2px); }
+
+    .survey-shell {
+      width: min(920px, calc(100% - 2.5rem));
+      margin: -1.65rem auto 0;
+      padding-bottom: 4rem;
+      position: relative;
+    }
+    .trust-note {
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      margin: 0 auto 1.15rem;
+      padding: .85rem 1rem;
+      border: 1px solid #ead8c8;
+      border-radius: 12px;
+      background: #fffaf4;
+      color: #5f483a;
+      font-size: .83rem;
+    }
+    .trust-note__icon {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: #f4e0ce;
+      color: #7c4221;
+      font-size: .9rem;
+      font-weight: 900;
+    }
+    .trust-note strong { color: #4b3120; }
+
+    .survey-card {
+      overflow: hidden;
+      border: 1px solid rgba(29, 27, 23, .12);
+      border-radius: 20px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+    .survey-card__top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.05rem clamp(1.1rem, 3vw, 2.1rem);
+      border-bottom: 1px solid var(--line);
+      background: #fffdfa;
+    }
+    .step-reading { margin: 0; color: var(--muted); font-size: .78rem; font-weight: 700; }
+    .step-reading strong { display: block; margin-top: .06rem; color: var(--ink); font-size: .92rem; }
+    .completion { color: var(--muted); font-size: .76rem; font-weight: 700; white-space: nowrap; }
+
+    .progress {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .35rem;
+      padding: .9rem clamp(1.1rem, 3vw, 2.1rem) 0;
+      list-style: none;
+      margin: 0;
+    }
+    .progress li { min-width: 0; }
+    .progress__bar {
+      display: block;
+      height: 4px;
+      border-radius: 999px;
+      background: #e6e1da;
+      transition: background .2s ease;
+    }
+    .progress__label {
+      display: block;
+      overflow: hidden;
+      margin-top: .38rem;
+      color: #928c84;
+      font-size: .68rem;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .progress li.is-current .progress__bar, .progress li.is-done .progress__bar { background: var(--red); }
+    .progress li.is-current .progress__label { color: var(--ink); }
+    .progress li.is-skipped { opacity: .42; }
+
+    .step { padding: clamp(1.55rem, 5vw, 2.7rem); }
+    .question-kicker {
+      margin: 0 0 .55rem;
+      color: var(--red);
+      font-size: .73rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+    }
+    .question-title {
+      margin: 0;
+      font-size: clamp(1.48rem, 4vw, 2.15rem);
+      line-height: 1.3;
+      letter-spacing: -.025em;
+    }
+    .question-lead { margin: .55rem 0 1.5rem; color: var(--muted); font-size: .91rem; }
+    .required { display: inline-flex; align-items: center; margin-left: .38rem; border-radius: 999px; padding: .12rem .45rem; background: #fce5e3; color: var(--red); font-size: .62rem; font-weight: 800; letter-spacing: .06em; vertical-align: middle; }
+    .optional { display: inline-flex; align-items: center; margin-left: .38rem; border-radius: 999px; padding: .12rem .45rem; background: #efede9; color: #706b64; font-size: .62rem; font-weight: 800; letter-spacing: .06em; vertical-align: middle; }
+
+    fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+    .plan-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+    .choice {
+      position: relative;
+      display: block;
+      min-height: 134px;
+      cursor: pointer;
+    }
+    .choice input { position: absolute; opacity: 0; pointer-events: none; }
+    .choice__body {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: .55rem;
+      padding: 1.05rem;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease, background .16s ease;
+    }
+    .choice:hover .choice__body { border-color: #b7ada3; transform: translateY(-2px); }
+    .choice:has(input:checked) .choice__body {
+      border: 2px solid var(--red);
+      padding: calc(1.05rem - 1px);
+      background: var(--red-pale);
+      box-shadow: 0 6px 20px rgba(198,40,40,.12);
+    }
+    .choice:has(input:focus-visible) .choice__body { outline: 3px solid #1c72c5; outline-offset: 3px; }
+    .choice--wide { grid-column: 1 / -1; min-height: auto; }
+    .choice--wide .choice__body { flex-direction: row; align-items: center; }
+    .choice__top { display: flex; align-items: flex-start; gap: .7rem; }
+    .choice__number { flex: 0 0 auto; color: var(--red); font-size: .7rem; font-weight: 900; letter-spacing: .08em; }
+    .choice__title { display: block; font-size: 1rem; font-weight: 800; line-height: 1.35; }
+    .choice__description { display: block; margin-top: .24rem; color: var(--muted); font-size: .75rem; line-height: 1.55; }
+    .choice__mark { align-self: flex-end; color: #b5afa7; font-size: 1.15rem; font-weight: 700; }
+    .choice:has(input:checked) .choice__mark { color: var(--red); }
+    .choice--plain .choice__body { min-height: 68px; padding: .85rem 1rem; background: #fbfaf8; }
+    .choice--plain .choice__title { font-size: .9rem; }
+
+    details.secondary-choice { margin-top: 1.1rem; border-top: 1px solid var(--line); }
+    details.secondary-choice summary { padding: .9rem 0; color: var(--muted); cursor: pointer; font-size: .84rem; font-weight: 700; }
+    .secondary-choice__inner { padding: .1rem 0 .25rem; }
+    .secondary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
+
+    .subquestion { margin-top: 1.8rem; padding-top: 1.65rem; border-top: 1px solid var(--line); }
+    .subquestion__title { margin: 0; font-size: 1.05rem; line-height: 1.5; }
+    .subquestion__lead { margin: .35rem 0 .85rem; color: var(--muted); font-size: .8rem; }
+    .intent-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+    .intent .choice__body { min-height: 100px; justify-content: center; }
+    .intent .choice__title { font-size: .9rem; }
+    .intent .choice__description { font-size: .72rem; }
+
+    .style-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+    .style .choice__body { min-height: 154px; }
+    .style__price { color: var(--red); font-size: 1.02rem; font-weight: 900; }
+    .style__people { display: inline-block; margin-left: .4rem; color: var(--ink); font-size: .75rem; font-weight: 800; }
+    .style__points { margin: .35rem 0 0; padding: 0; color: var(--muted); font-size: .73rem; line-height: 1.65; list-style: none; }
+    .style__points li::before { content: "•"; margin-right: .35rem; color: var(--red); }
+    .style__drink { display: inline-block; align-self: flex-start; margin-top: .2rem; border-radius: 999px; padding: .18rem .52rem; background: #f0eee9; color: #635d56; font-size: .66rem; font-weight: 800; }
+    .style__drink--yes { background: #e5f5ea; color: var(--green); }
+
+    .date-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .8rem;
+      margin-bottom: .9rem;
+      padding: .75rem .8rem;
+      border-radius: 10px;
+      background: #f7f5f1;
+      color: var(--muted);
+      font-size: .8rem;
+    }
+    .date-count { color: var(--ink); font-size: .83rem; font-weight: 800; white-space: nowrap; }
+    .date-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; }
+    .date-choice { position: relative; display: block; cursor: pointer; }
+    .date-choice input { position: absolute; opacity: 0; pointer-events: none; }
+    .date-choice__body {
+      display: grid;
+      min-height: 82px;
+      place-content: center;
+      gap: .05rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--ink);
+      text-align: center;
+      transition: border-color .16s, background .16s, transform .16s;
+    }
+    .date-choice:hover .date-choice__body { transform: translateY(-2px); border-color: #b7ada3; }
+    .date-choice:has(input:checked) .date-choice__body { border: 2px solid var(--red); background: var(--red-pale); }
+    .date-choice:has(input:focus-visible) .date-choice__body { outline: 3px solid #1c72c5; outline-offset: 3px; }
+    .date-choice:has(input:disabled) { opacity: .36; pointer-events: none; }
+    .date-choice__date { font-size: 1rem; font-weight: 900; }
+    .date-choice__day { color: var(--muted); font-size: .66rem; font-weight: 700; }
+    .date-choice--unavailable { grid-column: 1 / -1; margin-top: .3rem; }
+    .date-choice--unavailable .date-choice__body { min-height: 54px; display: flex; flex-direction: row; align-items: center; gap: .55rem; padding: .7rem .9rem; color: #80522a; background: #fff8ef; text-align: left; }
+    .date-choice--unavailable:has(input:checked) .date-choice__body { border-color: #aa6e37; background: #fff1df; }
+
+    .concern-grid { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .chip-choice { position: relative; cursor: pointer; }
+    .chip-choice input { position: absolute; opacity: 0; pointer-events: none; }
+    .chip-choice span {
+      display: block;
+      min-height: 38px;
+      padding: .44rem .7rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: #504c47;
+      font-size: .77rem;
+      font-weight: 700;
+      transition: border-color .16s, background .16s;
+    }
+    .chip-choice:has(input:checked) span { border-color: var(--red); background: var(--red-pale); color: var(--red-dark); }
+    .chip-choice:has(input:focus-visible) span { outline: 3px solid #1c72c5; outline-offset: 3px; }
+    .chip-choice:has(input:disabled) { opacity: .36; pointer-events: none; }
+
+    .notify-panel {
+      margin-top: 1.45rem;
+      padding: 1rem;
+      border: 1px solid #dfddd8;
+      border-radius: 14px;
+      background: #fbfaf8;
+    }
+    .switch-row { display: flex; align-items: center; gap: .75rem; cursor: pointer; }
+    .switch-row input { width: 1.15rem; height: 1.15rem; accent-color: var(--red); }
+    .switch-row strong { display: block; font-size: .9rem; }
+    .switch-row small { display: block; margin-top: .08rem; color: var(--muted); font-size: .74rem; }
+    .contact-fields { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+    .contact-field label { display: block; margin-bottom: .35rem; font-size: .76rem; font-weight: 800; }
+    .contact-field input, .free-field textarea {
+      width: 100%;
+      padding: .65rem .75rem;
+      border: 1px solid #cfc8be;
+      border-radius: 9px;
+      background: #fff;
+      color: var(--ink);
+      font-size: .86rem;
+    }
+    .contact-field input:focus, .free-field textarea:focus { border-color: var(--red); outline: 2px solid rgba(198,40,40,.2); }
+    .free-field { margin-top: 1.35rem; }
+    .free-field label { display: block; margin-bottom: .36rem; font-size: .83rem; font-weight: 800; }
+    .free-field textarea { min-height: 82px; resize: vertical; }
+    .form-help { margin: .35rem 0 0; color: var(--muted); font-size: .72rem; }
+
+    .step-error { min-height: 1.5em; margin: 1.1rem 0 0; color: #ae2020; font-size: .82rem; font-weight: 800; }
+    .survey-actions {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      margin: 0;
+      padding: 1rem clamp(1.1rem, 3vw, 2.1rem);
+      border-top: 1px solid var(--line);
+      background: rgba(255,255,255,.94);
+      backdrop-filter: blur(12px);
+    }
+    .button {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: .78rem 1.2rem;
+      font-size: .9rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+    .button:hover { transform: translateY(-1px); }
+    .button--back { border-color: #cfc8be; background: #fff; color: var(--ink); }
+    .button--next { flex: 1; background: var(--red); color: #fff; }
+    .button--next:hover { background: var(--red-dark); }
+    .button--next::after { content: "→"; margin-left: .55rem; font-size: 1.05rem; }
+
+    .confirmation { padding: clamp(1.55rem, 5vw, 2.7rem); }
+    .confirmation__mark {
+      display: grid;
+      place-items: center;
+      width: 50px;
+      height: 50px;
+      margin-bottom: 1rem;
+      border-radius: 50%;
+      background: var(--green-pale);
+      color: var(--green);
+      font-size: 1.4rem;
+      font-weight: 900;
+    }
+    .confirmation h2 { margin: 0; font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.3; }
+    .confirmation__lead { margin: .55rem 0 1.25rem; color: var(--muted); font-size: .91rem; }
+    .answer-summary { display: grid; gap: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; }
+    .answer-summary div { display: grid; grid-template-columns: 8.6rem 1fr; gap: .8rem; padding: .78rem .9rem; border-top: 1px solid var(--line); font-size: .82rem; }
+    .answer-summary div:first-child { border-top: 0; }
+    .answer-summary dt { color: var(--muted); font-weight: 700; }
+    .answer-summary dd { margin: 0; font-weight: 800; }
+    .confirmation__notice { margin: 1rem 0 0; padding: .75rem .9rem; border-radius: 9px; background: #fff5d7; color: #665016; font-size: .78rem; font-weight: 700; }
+    .confirmation-actions { display: flex; gap: .65rem; margin-top: 1.3rem; }
+    .confirmation-actions .button { flex: 1; }
+    .button--complete { background: var(--ink); color: #fff; }
+
+    .done { padding: clamp(2rem, 7vw, 4rem) clamp(1.55rem, 5vw, 2.7rem); text-align: center; }
+    .done__mark { display: grid; place-items: center; width: 66px; height: 66px; margin: 0 auto 1.1rem; border-radius: 50%; background: var(--green-pale); color: var(--green); font-size: 1.9rem; font-weight: 900; }
+    .done h2 { margin: 0; font-size: clamp(1.55rem, 4vw, 2rem); }
+    .done p { max-width: 480px; margin: .7rem auto 0; color: var(--muted); font-size: .9rem; }
+    .done__again { margin-top: 1.5rem; border: 0; background: transparent; color: var(--red); font-size: .82rem; font-weight: 800; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+    .design-notes {
+      width: min(920px, calc(100% - 2.5rem));
+      margin: 0 auto 4rem;
+      padding: 1.2rem 1.3rem;
+      border: 1px dashed #bdb5aa;
+      border-radius: 13px;
+      color: #555049;
+      font-size: .81rem;
+    }
+    .design-notes summary { color: var(--ink); cursor: pointer; font-weight: 800; }
+    .design-notes ul { margin: .8rem 0 0; padding-left: 1.2rem; }
+    .design-notes li + li { margin-top: .35rem; }
+
+    @media (max-width: 640px) {
+      .site-header__inner, .hero__inner, .survey-shell, .design-notes { width: min(100% - 1.5rem, 1100px); }
+      .brand small { display: none; }
+      .hero { min-height: 410px; }
+      .hero__inner { min-height: 410px; padding-top: 3rem; }
+      .hero::before { background-position: 62% center; }
+      .hero::after { width: 95vw; height: 95vw; inset: auto -45% -32% auto; }
+      .survey-shell { margin-top: -1rem; }
+      .trust-note { margin-bottom: .8rem; }
+      .survey-card { border-radius: 15px; }
+      .plan-grid, .intent-grid, .style-grid, .contact-fields { grid-template-columns: 1fr; }
+      .choice { min-height: auto; }
+      .choice__body { min-height: 108px; }
+      .choice--wide .choice__body { min-height: 68px; }
+      .secondary-grid { grid-template-columns: 1fr; }
+      .date-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .date-choice__body { min-height: 72px; }
+      .answer-summary div { grid-template-columns: 1fr; gap: .12rem; }
+      .confirmation-actions { flex-direction: column-reverse; }
+    }
+  </style>
+</head>
+<body>
+  <div class="prototype-ribbon">回答データは保存・送信されないデザイン試作です</div>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <div class="brand">SNB COMMUNITY <small>NAGOYA · KAMIMAEZU</small></div>
+      <span class="prototype-label">DESIGN PROTOTYPE</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero__inner">
+        <div class="hero__copy">
+          <p class="eyebrow">NEXT EVENT / SEPTEMBER 2026</p>
+          <h1 id="page-title">次に行きたい会を、<br>ひとつ選ぶだけ。</h1>
+          <p class="hero__lead">開催候補を決めるためのアンケートです。まずは気になる企画を選んでください。申込みや参加確定にはなりません。</p>
+          <div class="hero__meta" aria-label="アンケートの特徴">
+            <span class="meta-chip"><strong>約1分</strong>で完了</span>
+            <span class="meta-chip">匿名で回答可</span>
+            <span class="meta-chip">締切 8/28（金）23:59</span>
+          </div>
+          <button class="hero__cta" id="start-survey" type="button">アンケートをはじめる</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="survey-shell" id="survey" aria-label="次回SNBC企画アンケート">
+      <div class="trust-note">
+        <span class="trust-note__icon" aria-hidden="true">i</span>
+        <div><strong>回答だけで申込みにはなりません。</strong>開催決定時の連絡を希望する方だけ、最後に連絡先を入力できます。</div>
+      </div>
+
+      <div class="survey-card" id="survey-card">
+        <div class="survey-card__top">
+          <p class="step-reading" id="step-reading">STEP <strong>行きたい企画を選ぶ</strong></p>
+          <span class="completion" id="completion">1 / 4</span>
+        </div>
+        <ol class="progress" aria-label="回答の進行状況">
+          <li data-progress="1" class="is-current"><span class="progress__bar"></span><span class="progress__label">企画</span></li>
+          <li data-progress="2"><span class="progress__bar"></span><span class="progress__label">条件</span></li>
+          <li data-progress="3"><span class="progress__bar"></span><span class="progress__label">日程</span></li>
+          <li data-progress="4"><span class="progress__bar"></span><span class="progress__label">通知</span></li>
+        </ol>
+
+        <form id="survey-form" novalidate>
+          <section class="step" id="step-1" data-step="1" aria-labelledby="step-1-title">
+            <p class="question-kicker">01 / まずは直感で</p>
+            <h2 class="question-title" id="step-1-title">いちばん行きたい企画は？ <span class="required">必須</span></h2>
+            <p class="question-lead">迷ったら、いちばん気になるものを1つだけ選んでください。</p>
+            <fieldset class="plan-grid" aria-describedby="plan-help">
+              <label class="choice">
+                <input type="radio" name="plan" value="学校セット撮影会（服装自由）">
+                <span class="choice__body">
+                  <span class="choice__top"><span class="choice__number">01</span><span><span class="choice__title">学校セット撮影会</span><span class="choice__description">制服・ユニ・体操服・私服など、服装自由</span></span></span>
+                  <span class="choice__mark" aria-hidden="true">＋</span>
+                </span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="plan" value="野球ユニ撮影交流会">
+                <span class="choice__body">
+                  <span class="choice__top"><span class="choice__number">02</span><span><span class="choice__title">野球ユニ撮影交流会</span><span class="choice__description">野球ユニフォームで、撮影と交流を楽しむ会</span></span></span>
+                  <span class="choice__mark" aria-hidden="true">＋</span>
+                </span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="plan" value="サカユニ撮影交流会">
+                <span class="choice__body">
+                  <span class="choice__top"><span class="choice__number">03</span><span><span class="choice__title">サカユニ撮影交流会</span><span class="choice__description">サッカーユニフォームで、気軽な交流と撮影</span></span></span>
+                  <span class="choice__mark" aria-hidden="true">＋</span>
+                </span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="plan" value="ユニミックス撮影交流会">
+                <span class="choice__body">
+                  <span class="choice__top"><span class="choice__number">04</span><span><span class="choice__title">ユニミックス撮影交流会</span><span class="choice__description">好きなスポーツユニで参加できる交流会</span></span></span>
+                  <span class="choice__mark" aria-hidden="true">＋</span>
+                </span>
+              </label>
+              <label class="choice choice--wide choice--plain">
+                <input type="radio" name="plan" value="今回は特にない" id="plan-none">
+                <span class="choice__body"><span class="choice__title">今回は特にない / まだ決められない</span><span class="choice__mark" aria-hidden="true">＋</span></span>
+              </label>
+            </fieldset>
+            <p class="form-help" id="plan-help">どの企画にも回答しても、参加申込みにはなりません。</p>
+
+            <details class="secondary-choice">
+              <summary>第二候補も入れる（任意）</summary>
+              <div class="secondary-choice__inner">
+                <div class="secondary-grid">
+                  <label class="choice choice--plain"><input type="radio" name="second-plan" value="学校セット撮影会（服装自由）"><span class="choice__body"><span class="choice__title">学校セット撮影会</span></span></label>
+                  <label class="choice choice--plain"><input type="radio" name="second-plan" value="野球ユニ撮影交流会"><span class="choice__body"><span class="choice__title">野球ユニ撮影交流会</span></span></label>
+                  <label class="choice choice--plain"><input type="radio" name="second-plan" value="サカユニ撮影交流会"><span class="choice__body"><span class="choice__title">サカユニ撮影交流会</span></span></label>
+                  <label class="choice choice--plain"><input type="radio" name="second-plan" value="ユニミックス撮影交流会"><span class="choice__body"><span class="choice__title">ユニミックス撮影交流会</span></span></label>
+                  <label class="choice choice--plain"><input type="radio" name="second-plan" value="特になし"><span class="choice__body"><span class="choice__title">特になし</span></span></label>
+                </div>
+              </div>
+            </details>
+            <p class="step-error" id="error-1" role="alert" aria-live="polite"></p>
+          </section>
+
+          <section class="step" id="step-2" data-step="2" hidden aria-labelledby="step-2-title">
+            <p class="question-kicker">02 / 行けそうな条件</p>
+            <h2 class="question-title" id="step-2-title">どんな会なら行けそう？</h2>
+            <p class="question-lead">「絶対参加」ではなく、今の気持ちに近いものを選んでください。</p>
+            <fieldset>
+              <legend class="subquestion__title">参加の温度感 <span class="required">必須</span></legend>
+              <div class="intent-grid" style="margin-top:.8rem">
+                <label class="choice intent"><input type="radio" name="intent" value="日程が合えばかなり参加したい"><span class="choice__body"><span class="choice__title">かなり行きたい</span><span class="choice__description">日程さえ合えば参加したい</span></span></label>
+                <label class="choice intent"><input type="radio" name="intent" value="条件（料金・人数など）が合えば参加を検討したい"><span class="choice__body"><span class="choice__title">条件が合えば</span><span class="choice__description">料金・人数などを見て決めたい</span></span></label>
+                <label class="choice intent"><input type="radio" name="intent" value="興味はあるが参加までは分からない"><span class="choice__body"><span class="choice__title">興味はある</span><span class="choice__description">まだ参加できるかは分からない</span></span></label>
+                <label class="choice intent"><input type="radio" name="intent" value="見るだけ・投票だけ"><span class="choice__body"><span class="choice__title">投票だけしたい</span><span class="choice__description">開催を見守りたい</span></span></label>
+              </div>
+            </fieldset>
+
+            <fieldset class="subquestion">
+              <legend class="subquestion__title">希望する開催スタイル <span class="required">必須</span></legend>
+              <p class="subquestion__lead">参加費だけでなく、人数・撮影時間・ドリンクをセットで比較できます。</p>
+              <div class="style-grid">
+                <label class="choice style"><input type="radio" name="style" value="style_2000_9to12_nodrink" data-summary="2,000円・9〜12人・交流メイン・撮影時間なし・ドリンクなし"><span class="choice__body"><span><span class="style__price">2,000円</span><span class="style__people">9〜12人</span><ul class="style__points"><li>交流メイン</li><li>撮影時間なし</li></ul></span><span class="style__drink">ドリンクなし</span></span></label>
+                <label class="choice style"><input type="radio" name="style" value="style_3000_7to8_nodrink" data-summary="3,000円・7〜8人・交流＋希望者撮影・ドリンクなし"><span class="choice__body"><span><span class="style__price">3,000円</span><span class="style__people">7〜8人</span><ul class="style__points"><li>交流＋希望者撮影</li></ul></span><span class="style__drink">ドリンクなし</span></span></label>
+                <label class="choice style"><input type="radio" name="style" value="style_3500_5to6_drink" data-summary="3,500円・5〜6人・交流＋希望者撮影・撮影時間しっかり・ドリンクあり"><span class="choice__body"><span><span class="style__price">3,500円</span><span class="style__people">5〜6人</span><ul class="style__points"><li>交流＋希望者撮影</li><li>撮影時間しっかり</li></ul></span><span class="style__drink style__drink--yes">ドリンクあり</span></span></label>
+                <label class="choice style"><input type="radio" name="style" value="style_4000_4_drink" data-summary="4,000円・4人・少人数・撮影時間多め・ドリンクあり"><span class="choice__body"><span><span class="style__price">4,000円</span><span class="style__people">4人</span><ul class="style__points"><li>少人数</li><li>撮影時間多め</li></ul></span><span class="style__drink style__drink--yes">ドリンクあり</span></span></label>
+              </div>
+            </fieldset>
+            <p class="step-error" id="error-2" role="alert" aria-live="polite"></p>
+          </section>
+
+          <section class="step" id="step-3" data-step="3" hidden aria-labelledby="step-3-title">
+            <p class="question-kicker">03 / 実際に動ける日</p>
+            <h2 class="question-title" id="step-3-title">9月の土日、いつなら空いてる？ <span class="required">必須</span></h2>
+            <p class="question-lead">複数選択できます。予定がまだ曖昧でも、可能性がある日を選べばOKです。</p>
+            <div class="date-toolbar"><span>選んだ日だけを開催候補として集計します。</span><span class="date-count"><span id="date-count">0</span> 日選択</span></div>
+            <fieldset class="date-grid">
+              <label class="date-choice"><input type="checkbox" name="date" value="9/5（土）"><span class="date-choice__body"><span class="date-choice__date">9/5</span><span class="date-choice__day">SAT</span></span></label>
+              <label class="date-choice"><input type="checkbox" name="date" value="9/6（日）"><span class="date-choice__body"><span class="date-choice__date">9/6</span><span class="date-choice__day">SUN</span></span></label>
+              <label class="date-choice"><input type="checkbox" name="date" value="9/12（土）"><span class="date-choice__body"><span class="date-choice__date">9/12</span><span class="date-choice__day">SAT</span></span></label>
+              <label class="date-choice"><input type="checkbox" name="date" value="9/13（日）"><span class="date-choice__body"><span class="date-choice__date">9/13</span><span class="date-choice__day">SUN</span></span></label>
+              <label class="date-choice"><input type="checkbox" name="date" value="9/19（土）"><span class="date-choice__body"><span class="date-choice__date">9/19</span><span class="date-choice__day">SAT</span></span></label>
+              <label class="date-choice"><input type="checkbox" name="date" value="9/20（日）"><span class="date-choice__body"><span class="date-choice__date">9/20</span><span class="date-choice__day">SUN</span></span></label>
+              <label class="date-choice"><input type="checkbox" name="date" value="9/26（土）"><span class="date-choice__body"><span class="date-choice__date">9/26</span><span class="date-choice__day">SAT</span></span></label>
+              <label class="date-choice"><input type="checkbox" name="date" value="9/27（日）"><span class="date-choice__body"><span class="date-choice__date">9/27</span><span class="date-choice__day">SUN</span></span></label>
+              <label class="date-choice date-choice--unavailable"><input type="checkbox" name="unavailable" value="9月の土日は参加できない" id="unavailable"><span class="date-choice__body"><span aria-hidden="true">—</span><span><strong>9月の土日は難しい</strong><br><small>他の日付選択は解除されます</small></span></span></label>
+            </fieldset>
+            <p class="step-error" id="error-3" role="alert" aria-live="polite"></p>
+          </section>
+
+          <section class="step" id="step-4" data-step="4" hidden aria-labelledby="step-4-title">
+            <p class="question-kicker">04 / より参加しやすくするために</p>
+            <h2 class="question-title" id="step-4-title">不安があれば、そのまま教えてください。</h2>
+            <p class="question-lead">すべて任意です。選ばなくても次へ進めます。</p>
+            <fieldset>
+              <legend class="subquestion__title">気になること <span class="optional">任意・複数可</span></legend>
+              <p class="subquestion__lead">開催内容を考えるために使います。個別の連絡には使いません。</p>
+              <div class="concern-grid" id="concern-grid">
+                <label class="chip-choice"><input type="checkbox" name="concern" value="一人参加が不安"><span>一人参加が不安</span></label>
+                <label class="chip-choice"><input type="checkbox" name="concern" value="初対面の人との交流が不安"><span>初対面の交流が不安</span></label>
+                <label class="chip-choice"><input type="checkbox" name="concern" value="撮られるのが苦手"><span>撮られるのが苦手</span></label>
+                <label class="chip-choice"><input type="checkbox" name="concern" value="ユニフォームを持っていない"><span>ユニを持っていない</span></label>
+                <label class="chip-choice"><input type="checkbox" name="concern" value="お酒も飲めると良い"><span>お酒もあると良い</span></label>
+                <label class="chip-choice"><input type="checkbox" name="concern" value="料金"><span>料金</span></label>
+                <label class="chip-choice"><input type="checkbox" name="concern" value="日程"><span>日程</span></label>
+                <label class="chip-choice"><input type="checkbox" name="concern" value="特になし" id="no-concern"><span>特になし</span></label>
+              </div>
+            </fieldset>
+
+            <div class="notify-panel">
+              <label class="switch-row"><input type="checkbox" id="notify"><span><strong>開催候補が決まったら連絡がほしい</strong><small>希望者だけ。連絡先を残さなくても回答できます。</small></span></label>
+              <div class="contact-fields" id="contact-fields" hidden>
+                <div class="contact-field"><label for="email">メールアドレス <span class="optional">任意</span></label><input type="email" id="email" autocomplete="email" placeholder="example@email.com"></div>
+                <div class="contact-field"><label for="x-account">Xアカウント <span class="optional">任意</span></label><input type="text" id="x-account" autocomplete="off" placeholder="@account"></div>
+              </div>
+            </div>
+
+            <div class="free-field"><label for="comment">ひとこと <span class="optional">任意</span></label><textarea id="comment" placeholder="やってみたい企画、こうなら参加しやすいことなど"></textarea></div>
+            <p class="step-error" id="error-4" role="alert" aria-live="polite"></p>
+          </section>
+
+          <section class="confirmation" id="confirmation" hidden aria-labelledby="confirmation-title">
+            <div class="confirmation__mark" aria-hidden="true">✓</div>
+            <h2 id="confirmation-title">回答内容を確認してください</h2>
+            <p class="confirmation__lead">このページは試作のため、完了しても回答は保存・送信されません。</p>
+            <dl class="answer-summary" id="answer-summary"></dl>
+            <p class="confirmation__notice">本番実装では、この確認後にのみ回答を送信する想定です。</p>
+            <div class="confirmation-actions"><button class="button button--back" id="edit-answer" type="button">回答を直す</button><button class="button button--complete" id="complete-demo" type="button">試作を完了する</button></div>
+          </section>
+
+          <section class="done" id="done" hidden aria-labelledby="done-title">
+            <div class="done__mark" aria-hidden="true">✓</div>
+            <h2 id="done-title">試作を完了しました</h2>
+            <p>実際の回答は保存されていません。操作感・迷った点・見づらかった点を確認するためのページです。</p>
+            <button class="done__again" id="start-again" type="button">もう一度試す</button>
+          </section>
+
+          <div class="survey-actions" id="survey-actions">
+            <button class="button button--back" id="back" type="button" hidden>戻る</button>
+            <button class="button button--next" id="next" type="button">次へ</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <details class="design-notes">
+      <summary>この試作で変えたこと（確認用）</summary>
+      <ul>
+        <li>長い説明と全設問の一括表示をやめ、最初に「企画を1つ選ぶ」だけの入口に変更。</li>
+        <li>必須の判断を1画面ずつに分割し、日程はカレンダー感覚の大きな選択面に変更。</li>
+        <li>第二候補・不安・自由記述は任意として後ろへ寄せ、連絡先は「通知希望」を選んだ時だけ開く。</li>
+        <li>スマホでは常に画面下に次の行動を置き、選択後の迷子を減らす。</li>
+      </ul>
+    </details>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var form = document.getElementById('survey-form');
+      var planNone = document.getElementById('plan-none');
+      var currentStep = 1;
+      var flow = [1, 2, 3, 4];
+      var stepLabels = { 1: '行きたい企画を選ぶ', 2: '参加の条件を選ぶ', 3: '参加できる日を選ぶ', 4: '通知の希望を選ぶ' };
+      var reading = document.getElementById('step-reading');
+      var completion = document.getElementById('completion');
+      var next = document.getElementById('next');
+      var back = document.getElementById('back');
+      var actions = document.getElementById('survey-actions');
+      var confirmation = document.getElementById('confirmation');
+      var done = document.getElementById('done');
+      var summary = document.getElementById('answer-summary');
+      var dateInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="date"]'));
+      var unavailable = document.getElementById('unavailable');
+      var dateCount = document.getElementById('date-count');
+      var noConcern = document.getElementById('no-concern');
+      var concernInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="concern"]'));
+      var notify = document.getElementById('notify');
+      var contactFields = document.getElementById('contact-fields');
+
+      function chosen(name) {
+        return form.querySelector('input[name="' + name + '"]:checked');
+      }
+
+      function setFlow() {
+        flow = planNone.checked ? [1, 4] : [1, 2, 3, 4];
+        if (flow.indexOf(currentStep) === -1) currentStep = flow[flow.length - 1];
+      }
+
+      function updateProgress() {
+        var progressItems = document.querySelectorAll('[data-progress]');
+        var index = flow.indexOf(currentStep);
+        progressItems.forEach(function (item) {
+          var step = Number(item.getAttribute('data-progress'));
+          var flowIndex = flow.indexOf(step);
+          item.classList.toggle('is-current', step === currentStep);
+          item.classList.toggle('is-done', flowIndex !== -1 && flowIndex < index);
+          item.classList.toggle('is-skipped', flowIndex === -1);
+        });
+        reading.innerHTML = 'STEP <strong>' + stepLabels[currentStep] + '</strong>';
+        completion.textContent = (index + 1) + ' / ' + flow.length;
+      }
+
+      function showStep(step, shouldScroll) {
+        setFlow();
+        currentStep = step;
+        form.querySelectorAll('.step').forEach(function (section) {
+          section.hidden = Number(section.getAttribute('data-step')) !== step;
+        });
+        confirmation.hidden = true;
+        done.hidden = true;
+        actions.hidden = false;
+        var index = flow.indexOf(step);
+        back.hidden = index === 0;
+        next.textContent = index === flow.length - 1 ? '内容を確認する' : '次へ';
+        updateProgress();
+        if (shouldScroll) document.getElementById('survey-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function clearError(step) {
+        document.getElementById('error-' + step).textContent = '';
+      }
+
+      function showError(step, message) {
+        document.getElementById('error-' + step).textContent = message;
+      }
+
+      function validateStep(step) {
+        clearError(step);
+        if (step === 1 && !chosen('plan')) {
+          showError(step, 'まず、いちばん行きたい企画を1つ選んでください。');
+          return false;
+        }
+        if (step === 2 && (!chosen('intent') || !chosen('style'))) {
+          showError(step, '参加の温度感と、希望する開催スタイルをそれぞれ選んでください。');
+          return false;
+        }
+        if (step === 3 && !unavailable.checked && !dateInputs.some(function (input) { return input.checked; })) {
+          showError(step, '参加できる日、または「9月の土日は難しい」を選んでください。');
+          return false;
+        }
+        return true;
+      }
+
+      function textOrDash(value) { return value || '未選択'; }
+      function selectedLabels(selector) {
+        return Array.prototype.slice.call(form.querySelectorAll(selector + ':checked')).map(function (input) {
+          return input.parentNode.textContent.replace(/\s+/g, ' ').trim();
+        });
+      }
+      function addSummary(label, value) {
+        var row = document.createElement('div');
+        var dt = document.createElement('dt');
+        var dd = document.createElement('dd');
+        dt.textContent = label;
+        dd.textContent = value;
+        row.appendChild(dt);
+        row.appendChild(dd);
+        summary.appendChild(row);
+      }
+      function buildSummary() {
+        summary.innerHTML = '';
+        var plan = chosen('plan');
+        var second = chosen('second-plan');
+        addSummary('第一希望', plan ? plan.value : '未選択');
+        if (!planNone.checked) {
+          var intent = chosen('intent');
+          var style = chosen('style');
+          addSummary('参加の温度感', intent ? intent.value : '未選択');
+          addSummary('開催スタイル', style ? (style.dataset.summary || style.value) : '未選択');
+          addSummary('参加できる日', unavailable.checked ? '9月の土日は難しい' : dateInputs.filter(function (input) { return input.checked; }).map(function (input) { return input.value; }).join('、'));
+        }
+        if (second) addSummary('第二候補', second.value);
+        var concerns = selectedLabels('input[name="concern"]');
+        if (concerns.length) addSummary('気になること', concerns.join('、'));
+        addSummary('開催連絡', notify.checked ? '希望する' : '希望しない');
+      }
+
+      function showConfirmation() {
+        form.querySelectorAll('.step').forEach(function (section) { section.hidden = true; });
+        buildSummary();
+        actions.hidden = true;
+        confirmation.hidden = false;
+        confirmation.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      next.addEventListener('click', function () {
+        if (!validateStep(currentStep)) return;
+        var index = flow.indexOf(currentStep);
+        if (index === flow.length - 1) {
+          showConfirmation();
+          return;
+        }
+        showStep(flow[index + 1], true);
+      });
+
+      back.addEventListener('click', function () {
+        var index = flow.indexOf(currentStep);
+        if (index > 0) showStep(flow[index - 1], true);
+      });
+
+      document.getElementById('start-survey').addEventListener('click', function () {
+        document.getElementById('survey').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(function () {
+          var first = form.querySelector('input[name="plan"]');
+          if (first) first.focus({ preventScroll: true });
+        }, 450);
+      });
+
+      form.querySelectorAll('input[name="plan"]').forEach(function (input) {
+        input.addEventListener('change', function () {
+          clearError(1);
+          if (planNone.checked) {
+            form.querySelectorAll('input[name="intent"], input[name="style"], input[name="date"]').forEach(function (field) { field.checked = false; });
+            unavailable.checked = false;
+            updateDateState();
+          }
+          setFlow();
+          updateProgress();
+        });
+      });
+
+      function updateDateState() {
+        if (unavailable.checked) {
+          dateInputs.forEach(function (input) { input.checked = false; input.disabled = true; });
+          dateCount.textContent = '0';
+        } else {
+          dateInputs.forEach(function (input) { input.disabled = false; });
+          dateCount.textContent = String(dateInputs.filter(function (input) { return input.checked; }).length);
+        }
+        clearError(3);
+      }
+      unavailable.addEventListener('change', updateDateState);
+      dateInputs.forEach(function (input) {
+        input.addEventListener('change', function () {
+          if (input.checked && unavailable.checked) unavailable.checked = false;
+          updateDateState();
+        });
+      });
+
+      noConcern.addEventListener('change', function () {
+        concernInputs.forEach(function (input) {
+          if (input !== noConcern) {
+            input.checked = false;
+            input.disabled = noConcern.checked;
+          }
+        });
+      });
+      concernInputs.filter(function (input) { return input !== noConcern; }).forEach(function (input) {
+        input.addEventListener('change', function () {
+          if (input.checked) noConcern.checked = false;
+        });
+      });
+
+      notify.addEventListener('change', function () { contactFields.hidden = !notify.checked; });
+
+      document.getElementById('edit-answer').addEventListener('click', function () { showStep(flow[flow.length - 1], true); });
+      document.getElementById('complete-demo').addEventListener('click', function () {
+        confirmation.hidden = true;
+        done.hidden = false;
+        done.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      document.getElementById('start-again').addEventListener('click', function () {
+        form.reset();
+        currentStep = 1;
+        setFlow();
+        contactFields.hidden = true;
+        updateDateState();
+        concernInputs.forEach(function (input) { input.disabled = false; });
+        form.querySelectorAll('.step-error').forEach(function (error) { error.textContent = ''; });
+        showStep(1, true);
+      });
+
+      updateDateState();
+      showStep(1, false);
+    })();
+  </script>
+</body>
+</html>
