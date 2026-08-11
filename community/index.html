@@ -44,30 +44,16 @@
   <meta name="twitter:description" content="東京や大阪にはある。名古屋にはまだ少ない。野球ユニ・競パン・スーツ好きが集まる少人数交流撮影会、名古屋・上前津で不定期開催。主催アタル。">
   <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg">
 
-  <!-- プレビューモード判定（?test=closed の場合のみ有効。実際の時刻に関わらずVol.3-4キャンセル待ち
-       受付締切後の表示を強制する。レビュー・確認用であり、GA4計測は行わない） -->
+  <!-- Google tag (gtag.js) -->
   <script>
-    window.SNB_PREVIEW_CLOSED_MODE = (function () {
-      try {
-        return new URLSearchParams(window.location.search).get('test') === 'closed';
-      } catch (e) {
-        return false;
-      }
-    })();
-  </script>
-
-  <!-- Google tag (gtag.js)（プレビューモード中はスクリプトの読み込み・計測を一切行わない） -->
-  <script>
-    if (!window.SNB_PREVIEW_CLOSED_MODE) {
-      window.dataLayer = window.dataLayer || [];
-      window.gtag = function () { window.dataLayer.push(arguments); };
-      window.gtag('js', new Date());
-      window.gtag('config', 'G-H9BD3KFZCR');
-      var snbGtagScript = document.createElement('script');
-      snbGtagScript.async = true;
-      snbGtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR';
-      document.head.appendChild(snbGtagScript);
-    }
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', 'G-H9BD3KFZCR');
+    var snbGtagScript = document.createElement('script');
+    snbGtagScript.async = true;
+    snbGtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR';
+    document.head.appendChild(snbGtagScript);
   </script>
   <script src="../events.js"></script>
   <script src="../analytics.js"></script>
@@ -144,28 +130,10 @@
     <p class="section-label">Schedule</p>
     <h2>開催情報</h2>
     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.85;">
-      2026年8月開催分の結果をお知らせします。
+      2026年8月開催（Vol.3-4）は終了しました。現在は2026年9月開催に向けたアンケートを実施しています。
     </p>
 
-    <div class="next-banner" id="vol34-apply-banner">
-      <span class="next-dot active"></span>
-      <div class="next-event">
-        <p class="next-event-title"><strong>Vol.3-4｜2026年8月 ユニフォーム交流撮影会</strong></p>
-        <ul class="next-event-detail">
-          <li>日程：2026年8月11日（火・祝）14:00〜17:00　開催決定</li>
-          <li>8月8日（土）・16日（日）は不開催となりました</li>
-          <li>対象ウェア：野球ユニフォーム・サッカーユニフォーム・陸上ユニフォーム・スイムウェア・ラグビー/アメフトウェア・シングレット（複数選択可）</li>
-          <li>定員12名・上前津・スタジオ名古屋ベース</li>
-        </ul>
-        <p class="next-event-note">
-          <span class="status-badge status-badge--full" id="vol34-status-badge">キャンセル待ち受付中</span><br>
-          <span id="vol34-deadline-line">現在、参加人数を調整しているため、キャンセル待ちとして受け付けています。受付締切：8月9日（日）23:59。</span><br>
-          <a href="vol3-4.html#apply" id="vol34-cta-link" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="vol3-4">📝 キャンセル待ちに申し込む →</a>
-        </p>
-      </div>
-    </div>
-
-    <div class="next-banner" id="enquete-banner" style="margin-top:1.25rem;">
+    <div class="next-banner" id="enquete-banner">
       <span class="next-dot active"></span>
       <div class="next-event">
         <p class="next-event-title"><strong>学校セット撮影会｜開催テーマアンケート（2026年9月）</strong></p>
@@ -177,6 +145,23 @@
         <p class="next-event-note">
           回答期間：2026年8月28日（金）23:59まで<br>
           <a href="enquete_202609.html" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="enquete_202609">📋 アンケートに回答する →</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="next-banner" id="vol34-apply-banner" style="margin-top:1.25rem;">
+      <span class="next-dot" style="background:var(--text-muted, #8a7d68);"></span>
+      <div class="next-event">
+        <p class="next-event-title"><strong>Vol.3-4｜2026年8月 ユニフォーム交流撮影会</strong></p>
+        <ul class="next-event-detail">
+          <li>日程：2026年8月11日（火・祝）14:00〜17:00　開催・終了しました</li>
+          <li>8月8日（土）・16日（日）は不開催でした</li>
+          <li>対象ウェア：野球ユニフォーム・サッカーユニフォーム・陸上ユニフォーム・スイムウェア・ラグビー/アメフトウェア・シングレット（複数選択可）</li>
+          <li>定員12名・上前津・スタジオ名古屋ベース</li>
+        </ul>
+        <p class="next-event-note">
+          <span class="status-badge status-badge--finished">開催終了</span><br>
+          <a href="vol3-4.html" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="vol3-4">📷 開催記録を見る →</a>
         </p>
       </div>
     </div>
@@ -290,6 +275,11 @@
         <p class="past-event-title">Vol.2 野球ユニ会</p>
         <p class="past-event-detail">2026年7月25日（土）開催・上前津（Studio Nagoya Base）</p>
         <a href="vol2_0725_baseball.html" style="display:inline-block;margin-top:4px;font-size:0.85rem;font-weight:700;color:#2E7D32;text-decoration:underline;text-underline-offset:3px;" data-cta-name="event_detail" data-cta-location="past_event_card" data-event-slug="vol2_0725_baseball">⚾ 特設ページを見る（アーカイブ）→</a>
+      </div>
+      <div class="past-event-item">
+        <p class="past-event-title">Vol.3-4 ユニフォーム交流撮影会</p>
+        <p class="past-event-detail">2026年8月11日（火・祝）開催・上前津（Studio Nagoya Base）／8月8日・16日は不開催</p>
+        <a href="vol3-4.html" style="display:inline-block;margin-top:4px;font-size:0.85rem;font-weight:700;color:#C62828;text-decoration:underline;text-underline-offset:3px;" data-cta-name="event_detail" data-cta-location="past_event_card" data-event-slug="vol3-4">👕 特設ページを見る（アーカイブ）→</a>
       </div>
     </div>
   </div>
@@ -435,43 +425,6 @@
   }
   if (mql.addEventListener) mql.addEventListener('change', handleViewportChange);
   else if (mql.addListener) mql.addListener(handleViewportChange);
-})();
-</script>
-
-<!-- ── Vol.3-4 キャンセル待ち受付締切ゲート ── -->
-<script>
-(function () {
-  'use strict';
-
-  // キャンセル待ち受付締切：2026年8月9日（日）23:59（日本時間）＝2026年8月10日0:00の
-  // 直前まで受付可能。vol3-4.html詳細ページと同一の基準・判定方式で切り替え、両ページの
-  // 表示を一致させる。境界値は翌日0:00で判定し、23:59台の1分間を受付終了にしてしまう
-  // ズレを避ける。オフセット付きISO文字列でパースするため、閲覧端末のローカル
-  // タイムゾーンに関わらず日本時間基準の判定になる。判定失敗時は「受付中」と
-  // 誤認させない安全側（受付終了扱い）に倒す。
-  var WAITLIST_DEADLINE_ISO = '2026-08-10T00:00:00+09:00';
-  var waitlistDeadlineMs = new Date(WAITLIST_DEADLINE_ISO).getTime();
-  // ?test=closed の場合は、実際の時刻に関わらず受付終了後の表示を強制する（レビュー・確認用）。
-  var isPreviewClosedMode = window.SNB_PREVIEW_CLOSED_MODE === true;
-  var isPastWaitlistDeadline = isPreviewClosedMode || isNaN(waitlistDeadlineMs) || Date.now() >= waitlistDeadlineMs;
-
-  if (!isPastWaitlistDeadline) return;
-
-  var statusBadge = document.getElementById('vol34-status-badge');
-  var deadlineLine = document.getElementById('vol34-deadline-line');
-  var ctaLink = document.getElementById('vol34-cta-link');
-
-  if (statusBadge) {
-    statusBadge.textContent = 'キャンセル待ち受付終了';
-    statusBadge.classList.remove('status-badge--full');
-    statusBadge.classList.add('status-badge--closed');
-  }
-  if (deadlineLine) {
-    deadlineLine.textContent = 'キャンセル待ちの新規受付は終了しました。8月11日回は予定どおり開催します。';
-  }
-  if (ctaLink) {
-    ctaLink.textContent = '📋 開催内容を見る →';
-  }
 })();
 </script>
 
