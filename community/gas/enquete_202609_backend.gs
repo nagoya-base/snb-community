@@ -9,12 +9,10 @@
  * ── デプロイ手順（Issue #209 再設計版） ──
  * 1. 対象Googleスプレッドシートの「拡張機能」→「Apps Script」を開き、Code.gsをこの内容に置き換える。
  * 2. SHEET_NAME と NOTIFICATION_EMAIL が実運用の値であることを確認する。
- * 3. 【重要・手動作業】既存シートに回答が既にある前提で移行すること。ゼロ件と決め打ちしない。
- *    a. 現在のヘッダー行（1行目）が、旧COLUMNS（19列：timestamp 〜 free_comment）と一致しているか確認する。
- *    b. 一致していれば、末尾（20列目・21列目）に `q2_wear_items`, `source_channel` を
- *       このスペルのまま手動で追加する（既存列の並び替え・削除は絶対に行わない）。
- *    c. ヘッダーが上記と異なる場合は、実際の列構成を確認したうえで個別に移行方法を検討する。
- *    d. populated シートに対して setupHeaderRow() を実行しない（安全装置により例外で停止する）。
+ * 3. 実回答が0件であることを運営側で確認済み（2026年時点）。回答0件の場合は
+ *    setupHeaderRow() を1回実行し、ヘッダーを新COLUMNS（21列：timestamp 〜 source_channel）
+ *    へ更新する。1件でも回答がある状態でこの関数を実行すると安全装置により例外で停止するため、
+ *    実行前に必ずシートの回答行数を再確認すること。
  * 4. 「デプロイ」→「デプロイを管理」→既存ウェブアプリの編集（鉛筆）で、
  *    バージョンに「新バージョン」を選んで再デプロイする。/exec URLは変更しない。
  * 5. /exec URLを開き、backend: OK と表示されることを確認する。
@@ -22,7 +20,6 @@
  *
  * ── この版の仕様（Issue #209） ──
  * ・Q1（q1_first_choice）は「開催形式」の4択コード（school_set等）のみを受け付ける。
- *   旧仕様（衣装テーマの生日本語文字列）の回答は過去データとして列に残るが、新規回答には適用しない。
  * ・Q2（q2_wear_items）はユニフォーム系で着たい衣装の複数選択（`、`区切り文字列）。空文字列＝未回答を許可する任意項目。
  * ・source_channel は流入元の単一選択・必須（固定コード）。「ユニ航空」という表記は使用しない。
  * ・notification_requested は厳密なboolean。false時の連絡先は空欄のみ許可する。
@@ -39,7 +36,8 @@ var NOTIFICATION_EMAIL = 'bbuni.ngo@gmail.com';
 var NOTIFICATION_EMAIL_SUBJECT = '【SNBC】9月企画アンケートに新しい回答があります';
 
 /* 末尾のq2_wear_items, source_channelはIssue #209で追加した新規列。
-   populated Sheetでは手動でヘッダーへ追加するまでnew列を含む保存は成功しない
+   デプロイ手順3の通りsetupHeaderRow()でヘッダーを更新するまでは、
+   新ヘッダー（21列）と一致しないため保存は成功しない
    （hasExpectedHeaderが列数・列名の完全一致を要求するため）。 */
 var COLUMNS = [
   'timestamp',
@@ -502,7 +500,8 @@ function sendNotificationEmailSafely(data, timestamp) {
 }
 
 /**
- * ヘッダー再作成用。回答が0件のときだけ実行できる。
+ * ヘッダー再作成用。回答が0件のときだけ実行できる（デプロイ手順3）。
+ * Issue #209時点で実回答0件を運営側で確認済みのため、この関数で新COLUMNS（21列）へ更新する。
  * データ行がある場合は、列ずれによる破損を避けるため明示的に停止する。
  */
 function setupHeaderRow() {
