@@ -59,7 +59,7 @@
     .status { color: var(--muted); font-size: .9rem; }
     .notice { border: 1px solid var(--border); background: var(--card); border-radius: 12px; padding: 12px 14px; color: var(--muted); font-size: .9rem; }
     .notice--error { color: var(--danger); background: var(--danger-soft); border-color: #efb5b5; }
-    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin: 20px 0 28px; }
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin: 20px 0 28px; }
     .metric { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); }
     .metric__label { color: var(--muted); font-size: .82rem; margin-bottom: 5px; }
     .metric__value { font-size: clamp(1.6rem, 5vw, 2.25rem); font-weight: 800; line-height: 1.15; }
@@ -89,7 +89,6 @@
       .wrap { width: min(100% - 20px, 1160px); }
       .header__inner { align-items: flex-start; flex-direction: column; }
       .metrics { grid-template-columns: 1fr 1fr; }
-      .metric:last-child { grid-column: 1 / -1; }
       .section__head { align-items: flex-start; flex-direction: column; gap: 4px; }
     }
   </style>
@@ -128,6 +127,11 @@
           <div class="metric__sub">かなり参加＋条件が合えば参加</div>
         </article>
         <article class="metric">
+          <div class="metric__label">参加してみたいが、名古屋は遠い</div>
+          <div class="metric__value" id="metric-nagoya-far">0</div>
+          <div class="metric__sub">強い参加意向とは別カテゴリ</div>
+        </article>
+        <article class="metric">
           <div class="metric__label">最終集計</div>
           <div class="metric__value" id="metric-updated" style="font-size:1.15rem">—</div>
           <div class="metric__sub">60秒ごとに自動更新</div>
@@ -139,14 +143,6 @@
       <div id="data-sections">
         <section class="section">
           <div class="section__head">
-            <div><h2>開催形式 × 参加温度感</h2><p class="section__note">形式の人気ではなく「本当に来そうな人数」を見るための主表</p></div>
-          </div>
-          <div class="strong-grid" id="strong-format"></div>
-          <div class="table-shell" id="table-format-intent"></div>
-        </section>
-
-        <section class="section">
-          <div class="section__head">
             <div><h2>着たい衣装 × 参加温度感</h2><p class="section__note">野球などの票数と参加温度感を分離して確認</p></div>
           </div>
           <div class="strong-grid" id="strong-wear"></div>
@@ -155,9 +151,9 @@
 
         <section class="section">
           <div class="section__head">
-            <div><h2>開催形式 × 希望料金プラン</h2><p class="section__note">学校セット派／ユニフォーム派で許容される人数・料金帯を確認</p></div>
+            <div><h2>希望する開催スタイルの分布</h2><p class="section__note">学校セット開催が確定のため、料金・人数・ドリンクの希望帯だけを確認</p></div>
           </div>
-          <div class="table-shell" id="table-format-style"></div>
+          <div class="strong-grid" id="strong-style"></div>
         </section>
 
         <section class="section">
@@ -170,7 +166,7 @@
 
         <section class="section">
           <div class="section__head">
-            <div><h2>着たい衣装 × 流入元</h2><p class="section__note">野球票などが特定チャンネルに偏っていないか確認</p></div>
+            <div><h2>着たい衣装 × 流入元</h2><p class="section__note">野球票などが特定チャンネルに偏っていないか確認。「旧流入元（整理前の回答）」はIssue #213以前に保存されたStudio Nagoya Base／Studio X／Instagram経由の回答です。</p></div>
           </div>
           <div class="table-shell" id="table-wear-source"></div>
         </section>
@@ -291,7 +287,6 @@
 
       function render(data) {
         var labels = data.labels || {};
-        var q1Labels = labelMap(labels.q1);
         var styleLabels = labelMap(labels.styles);
         var sourceLabels = labelMap(labels.sources);
         var dateLabels = labelMap(labels.dates);
@@ -300,6 +295,7 @@
 
         document.getElementById('metric-total').textContent = Number(data.total || 0);
         document.getElementById('metric-strong').textContent = Number(data.strong_intent_total || 0);
+        document.getElementById('metric-nagoya-far').textContent = Number(data.nagoya_far_total || 0);
         document.getElementById('metric-updated').textContent = formatUpdated(data.updated_at);
 
         dashboard.hidden = false;
@@ -308,14 +304,12 @@
         dataSections.hidden = isEmpty;
         if (isEmpty) return;
 
-        renderStrong('strong-format', (data.strong || {}).format, q1Labels);
         renderStrong('strong-wear', (data.strong || {}).wear, {});
+        renderStrong('strong-style', data.style_distribution, styleLabels);
         renderStrong('strong-date', (data.strong || {}).date, dateLabels);
 
         var intents = labels.intents || [];
-        renderMatrix('table-format-intent', data.format_intent, q1Labels, intents, intentLabels);
         renderMatrix('table-wear-intent', data.wear_intent, {}, intents, intentLabels);
-        renderMatrix('table-format-style', data.format_style, q1Labels, Object.keys(styleLabels), styleLabels);
         renderMatrix('table-date-intent', data.date_intent, dateLabels, intents, intentLabels);
         renderMatrix('table-wear-source', data.wear_source, {}, Object.keys(sourceLabels), sourceLabels);
       }
