@@ -1,22 +1,27 @@
 /**
- * SNBC 学校セット撮影会｜2026年9月開催テーマアンケート バックエンド
- * Issue #205 対応。community/enquete_202609.html から呼び出される。
+ * SNBC 学校セット＆ユニフォーム交流会｜2026年9月開催アンケート バックエンド
+ * Issue #205 で新設、Issue #209 で再設計（開催形式Q1／着用衣装Q2／流入元を分離取得）。
+ * community/enquete_202609.html から呼び出される。
  *
  * このファイルはリポジトリ内の正本だが、実行環境はGoogle Apps Script側。
  * GitHubへpushするだけでは反映されないため、次の順で手動反映する。
  *
- * ── デプロイ手順 ──
+ * ── デプロイ手順（Issue #209 再設計版） ──
  * 1. 対象Googleスプレッドシートの「拡張機能」→「Apps Script」を開き、Code.gsをこの内容に置き換える。
  * 2. SHEET_NAME と NOTIFICATION_EMAIL が実運用の値であることを確認する。
- * 3. 現時点の回答は0件のため、setupHeaderRow を1回実行する。
- *    1件でも回答があるシートでは、この関数は安全のためエラーで停止する。
+ * 3. 実回答が0件であることを運営側で確認済み（2026年時点）。回答0件の場合は
+ *    setupHeaderRow() を1回実行し、ヘッダーを新COLUMNS（21列：timestamp 〜 source_channel）
+ *    へ更新する。1件でも回答がある状態でこの関数を実行すると安全装置により例外で停止するため、
+ *    実行前に必ずシートの回答行数を再確認すること。
  * 4. 「デプロイ」→「デプロイを管理」→既存ウェブアプリの編集（鉛筆）で、
  *    バージョンに「新バージョン」を選んで再デプロイする。/exec URLは変更しない。
  * 5. /exec URLを開き、backend: OK と表示されることを確認する。
- * 6. GitHub Pages公開後、公開フォームから1件だけ疎通し、Sheets保存内容と通知を確認する。
+ * 6. 公開ページから1件だけ疎通し、Sheets保存内容（21列目まで）と通知メールを確認する。
  *
- * ── この版の仕様 ──
- * ・Q1は学校セット撮影会用の4択のみを受け付ける。
+ * ── この版の仕様（Issue #209） ──
+ * ・Q1（q1_first_choice）は「開催形式」の4択コード（school_set等）のみを受け付ける。
+ * ・Q2（q2_wear_items）はユニフォーム系で着たい衣装の複数選択（`、`区切り文字列）。空文字列＝未回答を許可する任意項目。
+ * ・source_channel は流入元の単一選択・必須（固定コード）。「ユニ航空」という表記は使用しない。
  * ・notification_requested は厳密なboolean。false時の連絡先は空欄のみ許可する。
  * ・自由入力は数式インジェクション対策をしてSheetsへ保存する。
  * ・submission_id、LockService、重複送信時の保存・通知抑止を維持する。
@@ -28,12 +33,16 @@ var SHEET_NAME = 'responses';
 /* 新しい回答が保存されたときの通知先。デプロイ手順5の通り、実際の運営者アドレスに書き換えること。 */
 var NOTIFICATION_EMAIL = 'bbuni.ngo@gmail.com';
 
-var NOTIFICATION_EMAIL_SUBJECT = '【SNBC】学校セット撮影会アンケートに新しい回答があります';
+var NOTIFICATION_EMAIL_SUBJECT = '【SNBC】9月企画アンケートに新しい回答があります';
 
+/* 末尾のq2_wear_items, source_channelはIssue #209で追加した新規列。
+   デプロイ手順3の通りsetupHeaderRow()でヘッダーを更新するまでは、
+   新ヘッダー（21列）と一致しないため保存は成功しない
+   （hasExpectedHeaderが列数・列名の完全一致を要求するため）。 */
 var COLUMNS = [
   'timestamp',
   'submission_id',
-  'q1_first_choice',
+  'q1_first_choice', // 保存値はIssue #209以降、開催形式の固定コード（school_set等）。
   'q3_participation_intent',
   'q4_price', // 保存値は開催スタイルの固定コード。
   'date_0905',
@@ -49,7 +58,9 @@ var COLUMNS = [
   'notification_requested',
   'contact_email',
   'contact_x',
-  'free_comment'
+  'free_comment',
+  'q2_wear_items', // Issue #209で追加。着て参加したい衣装の複数選択（`、`区切り、任意）。
+  'source_channel' // Issue #209で追加。流入元の単一選択・固定コード（必須）。
 ];
 
 var DATE_KEYS = [
@@ -72,8 +83,21 @@ var DATE_LABELS = {
 
 /* ── 許可値のallowlist（フロント側HTMLの選択肢と1対1で一致させること。
    選択肢の文言をHTML側で変更した場合、ここも必ず同時に更新する） ── */
+/* Q1：Issue #209以降は「開催形式」の固定コード。衣装テーマの投票ではない。 */
 var ALLOWED_Q1 = [
-  '制服・体操服・私服', '野球ユニフォーム', 'サッカーユニフォーム', 'ユニフォームミックス'
+  'school_set', 'uniform_event', 'either', 'not_interested'
+];
+/* Q1の固定コードを通知メール向けの人が読める表記に変換する対応表。 */
+var Q1_FORMAT_LABELS = {
+  school_set: '学校セット撮影会',
+  uniform_event: 'ユニフォーム交流会',
+  either: 'どちらでもよい',
+  not_interested: '今回は特に参加しない'
+};
+/* Q2：ユニフォーム系で着て参加したい衣装（複数選択・任意）。フロントでは`、`区切りの文字列で送られる。 */
+var ALLOWED_Q2_ITEMS = [
+  '野球ユニフォーム', 'サッカーユニフォーム', '陸上ユニフォーム', 'ラグビー／アメフトウェア',
+  'スイムウェア', 'シングレット', '制服・体操服', '私服', 'その他'
 ];
 var ALLOWED_Q3 = [
   '日程が合えばかなり参加したい',
@@ -92,14 +116,29 @@ var ALLOWED_Q4 = [
 /* Q4の固定コードを通知メール向けの人が読める表記に変換する対応表。 */
 var Q4_STYLE_LABELS = {
   style_2000_9to12_nodrink: '2,000円｜9〜12人｜交流メイン｜撮影時間なし｜ドリンクなし',
-  style_3000_7to8_nodrink: '3,000円｜7〜8人｜交流＋希望者撮影｜ドリンクなし',
-  style_3500_5to6_drink: '3,500円｜5〜6人｜交流＋希望者撮影｜撮影時間しっかり｜ドリンクあり',
-  style_4000_4_drink: '4,000円｜4人｜少人数｜撮影時間多め｜ドリンクあり'
+  style_3000_7to8_nodrink: '3,000円｜7〜8人｜交流メイン＋希望者のみ撮影｜ドリンクなし',
+  style_3500_5to6_drink: '3,500円｜5〜6人｜交流＋希望者のみ撮影｜撮影時間しっかり｜ドリンクあり',
+  style_4000_4_drink: '4,000円｜4人｜少人数｜希望者のみ撮影｜撮影時間多め｜ドリンクあり'
 };
 var ALLOWED_Q6_ITEMS = [
   '一人参加が不安', '初対面の人との交流が不安', '撮られるのが苦手',
   'ユニフォームを持っていない', 'お酒も飲めると良い', '料金', '日程', '会場の広さ', '特になし', 'その他'
 ];
+/* 流入元：Issue #209で追加。固定コードのみ許可し、単一選択・必須。
+   「ユニ航空」という表記は使用しない（Issue #209コメントで明示的に禁止）。 */
+var ALLOWED_SOURCE_CHANNEL = [
+  'x_ataru', 'x_snb', 'x_studio_x', 'snbc_web', 'instagram', 'friend', 'other'
+];
+/* 流入元の固定コードを通知メール向けの人が読める表記に変換する対応表。 */
+var SOURCE_CHANNEL_LABELS = {
+  x_ataru: 'X：アタル（@baseballuni2022）',
+  x_snb: 'X：Studio Nagoya Base',
+  x_studio_x: 'X：Studio X',
+  snbc_web: 'SNBCサイト',
+  instagram: 'Instagram',
+  friend: '知人から',
+  other: 'その他'
+};
 
 var MAX_FREE_COMMENT_LENGTH = 300; // フロントのmaxlengthと一致させる
 var MAX_CONTACT_LENGTH = 200; // フロントのmaxlengthとも一致させる（HTML側にも設定必須）
@@ -111,7 +150,7 @@ var MAX_SUBMISSION_ID_LENGTH = 100; // crypto.randomUUID()は36文字、フォ�
  * 自由入力欄（contact_email / contact_x / free_comment）は、
  * 先頭が =, +, -, @ の場合にスプレッドシート側で数式として解釈される可能性があるため、
  * 先頭に ' を付けて強制的に文字列として保存する。
- * allowlistで検証済みのQ1〜Q4等には適用不要（許可された固定文言のみのため）。
+ * allowlistで検証済みのQ1〜Q4・Q6・Q2（q2_wear_items）・source_channel等には適用不要（許可された固定文言のみのため）。
  */
 function sanitizeForSheet(value) {
   if (typeof value !== 'string') return value;
@@ -148,6 +187,15 @@ function validatePayload(data) {
   }
 
   if (ALLOWED_Q1.indexOf(data.q1_first_choice) === -1) return 'q1_invalid';
+
+  // Q2：joined文字列を分解し、全要素が許可値であることを確認する（任意項目のため空文字列は許可）。
+  if (typeof data.q2_wear_items !== 'string') return 'q2_invalid_type';
+  var q2Raw = data.q2_wear_items || '';
+  var q2Items = q2Raw === '' ? [] : q2Raw.split('、');
+  for (var m = 0; m < q2Items.length; m++) {
+    if (ALLOWED_Q2_ITEMS.indexOf(q2Items[m]) === -1) return 'q2_invalid_item';
+  }
+
   if (ALLOWED_Q3.indexOf(data.q3_participation_intent) === -1) return 'q3_invalid';
 
   if (ALLOWED_Q4.indexOf(data.q4_price) === -1) return 'q4_invalid';
@@ -178,6 +226,9 @@ function validatePayload(data) {
   }
   // Q6の排他関係：「特になし」を含む場合、他の項目と同時には保存できない。
   if (q6Items.indexOf('特になし') !== -1 && q6Items.length > 1) return 'q6_exclusive_violation';
+
+  // 流入元：単一選択・必須の固定コード。
+  if (ALLOWED_SOURCE_CHANNEL.indexOf(data.source_channel) === -1) return 'source_channel_invalid';
 
   // 通知希望は文字列"true"等を受け入れず、厳密なbooleanだけを許可する。
   if (typeof data.notification_requested !== 'boolean') return 'notification_requested_not_boolean';
@@ -384,6 +435,20 @@ function formatQ4ForNotification(data) {
 }
 
 /**
+ * Q1（開催形式の固定コード）を通知メール向けの人が読める表記に変換する。
+ */
+function formatQ1ForNotification(data) {
+  return Q1_FORMAT_LABELS[data.q1_first_choice] || data.q1_first_choice;
+}
+
+/**
+ * 流入元の固定コードを通知メール向けの人が読める表記に変換する。
+ */
+function formatSourceChannelForNotification(data) {
+  return SOURCE_CHANNEL_LABELS[data.source_channel] || data.source_channel;
+}
+
+/**
  * 通知メール本文を組み立てる。
  * 個人情報の保存場所を増やさないため、contact_email / contact_x / free_comment / submission_id は
  * 意図的に含めない（Issue #192）。詳細な内容はGoogleスプレッドシート側で確認する運用とする。
@@ -391,14 +456,16 @@ function formatQ4ForNotification(data) {
 function buildNotificationBody(data, timestamp) {
   var receivedAt = Utilities.formatDate(timestamp, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
   var lines = [
-    'SNBC 学校セット撮影会アンケートに新しい回答がありました。',
+    'SNBC 9月企画アンケートに新しい回答がありました。',
     '',
     '受付日時: ' + receivedAt,
-    'Q1 希望テーマ: ' + data.q1_first_choice,
+    'Q1 参加したい開催形式: ' + formatQ1ForNotification(data),
+    'Q2 着て参加したい衣装: ' + (data.q2_wear_items || '（未回答）'),
     'Q3 参加の温度感: ' + data.q3_participation_intent,
     'Q4 希望する開催スタイル: ' + formatQ4ForNotification(data),
     'Q5 参加可能日: ' + formatQ5ForNotification(data),
     'Q6 気になる点: ' + (data.q6_concerns || '（該当なし）'),
+    'どこで知ったか: ' + formatSourceChannelForNotification(data),
     '開催決定時の連絡: ' + (data.notification_requested ? '希望する' : '希望しない'),
     '',
     '詳細はGoogleスプレッドシートで確認してください。'
@@ -433,7 +500,8 @@ function sendNotificationEmailSafely(data, timestamp) {
 }
 
 /**
- * ヘッダー再作成用。回答が0件のときだけ実行できる。
+ * ヘッダー再作成用。回答が0件のときだけ実行できる（デプロイ手順3）。
+ * Issue #209時点で実回答0件を運営側で確認済みのため、この関数で新COLUMNS（21列）へ更新する。
  * データ行がある場合は、列ずれによる破損を避けるため明示的に停止する。
  */
 function setupHeaderRow() {
