@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>9月企画アンケート｜運営用リアルタイム集計｜SNBコミュニティ</title>
+  <meta name="description" content="SNBコミュニティ 2026年9月企画アンケートの運営用匿名集計ダッシュボードです。">
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --border: #dde2ea;
+      --accent: #173d76;
+      --accent-soft: #eaf0f8;
+      --strong: #0d6b4d;
+      --strong-soft: #e8f5ef;
+      --danger: #a12a2a;
+      --danger-soft: #fff0f0;
+      --shadow: 0 8px 28px rgba(23, 32, 51, .07);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+      line-height: 1.65;
+    }
+    a { color: inherit; }
+    button { font: inherit; }
+    .wrap { width: min(1160px, calc(100% - 32px)); margin: 0 auto; }
+    .header {
+      background: #111827;
+      color: #fff;
+      padding: 22px 0;
+    }
+    .header__inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { font-weight: 800; letter-spacing: .08em; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; font-size: .78rem; }
+    main { padding: 28px 0 56px; }
+    .hero { display: grid; gap: 14px; margin-bottom: 24px; }
+    .eyebrow { margin: 0; color: var(--accent); font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(1.65rem, 4vw, 2.45rem); line-height: 1.2; }
+    .lead { margin: 0; color: var(--muted); max-width: 760px; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 16px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .button:disabled { opacity: .55; cursor: wait; }
+    .status { color: var(--muted); font-size: .9rem; }
+    .notice { border: 1px solid var(--border); background: var(--card); border-radius: 12px; padding: 12px 14px; color: var(--muted); font-size: .9rem; }
+    .notice--error { color: var(--danger); background: var(--danger-soft); border-color: #efb5b5; }
+    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin: 20px 0 28px; }
+    .metric { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); }
+    .metric__label { color: var(--muted); font-size: .82rem; margin-bottom: 5px; }
+    .metric__value { font-size: clamp(1.6rem, 5vw, 2.25rem); font-weight: 800; line-height: 1.15; }
+    .metric__sub { margin-top: 6px; color: var(--muted); font-size: .82rem; }
+    .section { margin-top: 30px; }
+    .section__head { display: flex; justify-content: space-between; gap: 14px; align-items: end; margin-bottom: 10px; }
+    .section h2 { margin: 0; font-size: 1.2rem; }
+    .section__note { margin: 0; color: var(--muted); font-size: .82rem; }
+    .strong-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .strong-card { background: var(--strong-soft); border: 1px solid #bfe1d2; border-radius: 12px; padding: 12px 14px; }
+    .strong-card__label { color: #35594d; font-size: .82rem; }
+    .strong-card__value { color: var(--strong); font-size: 1.45rem; font-weight: 800; }
+    .table-shell { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; background: var(--card); box-shadow: var(--shadow); }
+    table { width: 100%; border-collapse: collapse; min-width: 720px; }
+    th, td { border-bottom: 1px solid var(--border); padding: 11px 12px; text-align: center; font-size: .9rem; }
+    th { background: #f8fafc; color: #3e4b61; font-size: .8rem; white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: var(--card); z-index: 1; min-width: 160px; }
+    th:first-child { background: #f8fafc; z-index: 2; }
+    tr:last-child td { border-bottom: 0; }
+    .count { font-variant-numeric: tabular-nums; font-weight: 700; }
+    .count--zero { color: #a6adbb; font-weight: 400; }
+    .empty { background: var(--card); border: 1px dashed var(--border); border-radius: 14px; padding: 32px 18px; text-align: center; color: var(--muted); }
+    .privacy { margin-top: 28px; border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 12px 14px; border-radius: 0 10px 10px 0; font-size: .88rem; color: #40526d; }
+    footer { padding: 24px 0 38px; color: var(--muted); font-size: .82rem; }
+    [hidden] { display: none !important; }
+    @media (max-width: 720px) {
+      .wrap { width: min(100% - 20px, 1160px); }
+      .header__inner { align-items: flex-start; flex-direction: column; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .metric:last-child { grid-column: 1 / -1; }
+      .section__head { align-items: flex-start; flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="wrap header__inner">
+      <div class="brand">SNB COMMUNITY</div>
+      <span class="badge">運営用・匿名集計</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <p class="eyebrow">September Survey / Live Dashboard</p>
+      <h1>9月企画アンケート リアルタイム集計</h1>
+      <p class="lead">開催判断に必要なクロス集計だけを表示します。個々の回答、連絡先、自由記述、submission_idはこの画面へ取得しません。</p>
+      <div class="toolbar">
+        <button type="button" class="button" id="refresh-button">今すぐ更新</button>
+        <span class="status" id="refresh-status" aria-live="polite">読み込み待ち</span>
+      </div>
+      <div class="notice" id="setup-notice" hidden></div>
+      <div class="notice notice--error" id="error-box" hidden role="alert"></div>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="metrics">
+        <article class="metric">
+          <div class="metric__label">総回答数</div>
+          <div class="metric__value" id="metric-total">0</div>
+          <div class="metric__sub">新設計の回答のみ</div>
+        </article>
+        <article class="metric">
+          <div class="metric__label">強い参加意向</div>
+          <div class="metric__value" id="metric-strong">0</div>
+          <div class="metric__sub">かなり参加＋条件が合えば参加</div>
+        </article>
+        <article class="metric">
+          <div class="metric__label">最終集計</div>
+          <div class="metric__value" id="metric-updated" style="font-size:1.15rem">—</div>
+          <div class="metric__sub">60秒ごとに自動更新</div>
+        </article>
+      </div>
+
+      <div class="empty" id="empty-state" hidden>まだ回答はありません。最初の回答が入るとクロス集計が表示されます。</div>
+
+      <div id="data-sections">
+        <section class="section">
+          <div class="section__head">
+            <div><h2>開催形式 × 参加温度感</h2><p class="section__note">形式の人気ではなく「本当に来そうな人数」を見るための主表</p></div>
+          </div>
+          <div class="strong-grid" id="strong-format"></div>
+          <div class="table-shell" id="table-format-intent"></div>
+        </section>
+
+        <section class="section">
+          <div class="section__head">
+            <div><h2>着たい衣装 × 参加温度感</h2><p class="section__note">野球などの票数と参加温度感を分離して確認</p></div>
+          </div>
+          <div class="strong-grid" id="strong-wear"></div>
+          <div class="table-shell" id="table-wear-intent"></div>
+        </section>
+
+        <section class="section">
+          <div class="section__head">
+            <div><h2>開催形式 × 希望料金プラン</h2><p class="section__note">学校セット派／ユニフォーム派で許容される人数・料金帯を確認</p></div>
+          </div>
+          <div class="table-shell" id="table-format-style"></div>
+        </section>
+
+        <section class="section">
+          <div class="section__head">
+            <div><h2>参加可能日 × 参加温度感</h2><p class="section__note">日付ごとの票数より、強い参加意向が重なる日を優先</p></div>
+          </div>
+          <div class="strong-grid" id="strong-date"></div>
+          <div class="table-shell" id="table-date-intent"></div>
+        </section>
+
+        <section class="section">
+          <div class="section__head">
+            <div><h2>着たい衣装 × 流入元</h2><p class="section__note">野球票などが特定チャンネルに偏っていないか確認</p></div>
+          </div>
+          <div class="table-shell" id="table-wear-source"></div>
+        </section>
+      </div>
+
+      <div class="privacy">このダッシュボードは集計済みJSONのみ取得します。メールアドレス、Xアカウント、自由記述、submission_id、個別回答行はAPIレスポンスに含めない設計です。</div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    SNB Community｜2026年9月企画アンケート 運営用集計
+  </footer>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var RESULTS_GAS_ENDPOINT = 'PLACEHOLDER_REPLACE_WITH_RESULTS_GAS_ENDPOINT';
+      var REFRESH_MS = 60000;
+      var refreshTimer = null;
+      var isLoading = false;
+
+      var dashboard = document.getElementById('dashboard');
+      var emptyState = document.getElementById('empty-state');
+      var dataSections = document.getElementById('data-sections');
+      var errorBox = document.getElementById('error-box');
+      var setupNotice = document.getElementById('setup-notice');
+      var refreshButton = document.getElementById('refresh-button');
+      var refreshStatus = document.getElementById('refresh-status');
+
+      function endpointReady() {
+        return RESULTS_GAS_ENDPOINT.indexOf('PLACEHOLDER_REPLACE_WITH') === -1;
+      }
+
+      function setLoading(loading) {
+        isLoading = loading;
+        refreshButton.disabled = loading;
+        refreshStatus.textContent = loading ? '更新中…' : '自動更新：60秒';
+      }
+
+      function showError(message) {
+        errorBox.hidden = false;
+        errorBox.textContent = message;
+      }
+
+      function clearError() {
+        errorBox.hidden = true;
+        errorBox.textContent = '';
+      }
+
+      function labelMap(obj) {
+        return obj || {};
+      }
+
+      function countCell(value) {
+        var n = Number(value || 0);
+        return '<span class="count' + (n === 0 ? ' count--zero' : '') + '">' + n + '</span>';
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function renderMatrix(targetId, matrix, rowLabels, columnKeys, columnLabels) {
+        var target = document.getElementById(targetId);
+        var rows = Object.keys(matrix || {});
+        var html = '<table><thead><tr><th>項目</th>';
+        columnKeys.forEach(function (key) {
+          html += '<th>' + escapeHtml(columnLabels[key] || key) + '</th>';
+        });
+        html += '<th>合計</th></tr></thead><tbody>';
+
+        rows.forEach(function (rowKey) {
+          var row = matrix[rowKey] || {};
+          var total = 0;
+          html += '<tr><td>' + escapeHtml(rowLabels[rowKey] || rowKey) + '</td>';
+          columnKeys.forEach(function (columnKey) {
+            var value = Number(row[columnKey] || 0);
+            total += value;
+            html += '<td>' + countCell(value) + '</td>';
+          });
+          html += '<td>' + countCell(total) + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        target.innerHTML = html;
+      }
+
+      function renderStrong(targetId, values, labels) {
+        var target = document.getElementById(targetId);
+        var entries = Object.keys(values || {}).map(function (key) {
+          return { key: key, value: Number(values[key] || 0) };
+        }).sort(function (a, b) { return b.value - a.value; });
+
+        if (!entries.length) {
+          target.innerHTML = '';
+          return;
+        }
+
+        target.innerHTML = entries.map(function (item) {
+          return '<article class="strong-card"><div class="strong-card__label">' +
+            escapeHtml(labels[item.key] || item.key) +
+            '</div><div class="strong-card__value">' + item.value + '人</div></article>';
+        }).join('');
+      }
+
+      function formatUpdated(value) {
+        var date = new Date(value);
+        if (isNaN(date.getTime())) return value || '—';
+        return new Intl.DateTimeFormat('ja-JP', {
+          month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+        }).format(date);
+      }
+
+      function render(data) {
+        var labels = data.labels || {};
+        var q1Labels = labelMap(labels.q1);
+        var styleLabels = labelMap(labels.styles);
+        var sourceLabels = labelMap(labels.sources);
+        var dateLabels = labelMap(labels.dates);
+        var intentLabels = {};
+        (labels.intents || []).forEach(function (intent) { intentLabels[intent] = intent; });
+
+        document.getElementById('metric-total').textContent = Number(data.total || 0);
+        document.getElementById('metric-strong').textContent = Number(data.strong_intent_total || 0);
+        document.getElementById('metric-updated').textContent = formatUpdated(data.updated_at);
+
+        dashboard.hidden = false;
+        var isEmpty = Number(data.total || 0) === 0;
+        emptyState.hidden = !isEmpty;
+        dataSections.hidden = isEmpty;
+        if (isEmpty) return;
+
+        renderStrong('strong-format', (data.strong || {}).format, q1Labels);
+        renderStrong('strong-wear', (data.strong || {}).wear, {});
+        renderStrong('strong-date', (data.strong || {}).date, dateLabels);
+
+        var intents = labels.intents || [];
+        renderMatrix('table-format-intent', data.format_intent, q1Labels, intents, intentLabels);
+        renderMatrix('table-wear-intent', data.wear_intent, {}, intents, intentLabels);
+        renderMatrix('table-format-style', data.format_style, q1Labels, Object.keys(styleLabels), styleLabels);
+        renderMatrix('table-date-intent', data.date_intent, dateLabels, intents, intentLabels);
+        renderMatrix('table-wear-source', data.wear_source, {}, Object.keys(sourceLabels), sourceLabels);
+      }
+
+      function refresh() {
+        if (isLoading || !endpointReady()) return;
+        clearError();
+        setLoading(true);
+        var url = RESULTS_GAS_ENDPOINT + (RESULTS_GAS_ENDPOINT.indexOf('?') === -1 ? '?' : '&') + 'action=summary&_=' + Date.now();
+        fetch(url, { method: 'GET', cache: 'no-store' })
+          .then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+          })
+          .then(function (data) {
+            if (!data || data.ok !== true) throw new Error((data && data.error) || 'invalid response');
+            render(data);
+          })
+          .catch(function (error) {
+            showError('集計データを取得できませんでした。GASのデプロイ状態とURLを確認してください。（' + error.message + '）');
+          })
+          .finally(function () {
+            setLoading(false);
+          });
+      }
+
+      refreshButton.addEventListener('click', refresh);
+
+      if (!endpointReady()) {
+        setupNotice.hidden = false;
+        setupNotice.textContent = '初回セットアップ待ち：集計専用GASをデプロイし、発行された /exec URL を RESULTS_GAS_ENDPOINT に設定するとリアルタイム集計が始まります。';
+        refreshStatus.textContent = 'GAS URL未設定';
+        refreshButton.disabled = true;
+        return;
+      }
+
+      refresh();
+      refreshTimer = window.setInterval(refresh, REFRESH_MS);
+      window.addEventListener('beforeunload', function () {
+        if (refreshTimer) window.clearInterval(refreshTimer);
+      });
+    })();
+  </script>
+</body>
+</html>
