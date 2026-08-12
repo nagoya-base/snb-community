@@ -777,6 +777,10 @@
                 <label class="chip-choice"><input type="checkbox" name="concern" value="その他"><span>その他</span></label>
               </div>
             </fieldset>
+            <div class="conditional-field" id="concern-other-field" hidden>
+              <label for="concern-other">気になることを教えてください <span class="required">必須</span></label>
+              <input type="text" id="concern-other" maxlength="100" placeholder="例：〇〇が気になる">
+            </div>
 
             <fieldset class="subquestion">
               <legend class="subquestion__title">このアンケートをどこで知りましたか？ <span class="required">必須</span></legend>
@@ -917,6 +921,9 @@
       var dateCount = document.getElementById('date-count');
       var noConcern = document.getElementById('no-concern');
       var concernInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="concern"]'));
+      var concernOtherCheckbox = concernInputs.filter(function (input) { return input.value === 'その他'; })[0];
+      var concernOtherField = document.getElementById('concern-other-field');
+      var concernOtherInput = document.getElementById('concern-other');
       var wearInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="wear"]'));
       var wearOtherCheckbox = wearInputs.filter(function (input) { return input.value === 'その他'; })[0];
       var wearOtherField = document.getElementById('wear-other-field');
@@ -1021,6 +1028,12 @@
           return false;
         }
         if (step === 4) {
+          if (concernOtherCheckbox.checked && !concernOtherInput.value.trim()) {
+            showError(step, '「その他」を選んだ場合は、気になることを教えてください。', 'q6_concern_other_missing');
+            concernOtherInput.focus({ preventScroll: true });
+            concernOtherInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return false;
+          }
           var sourceChosen = chosen('source_channel');
           if (!sourceChosen) {
             showError(step, 'このアンケートをどこで知ったか選んでください。', 'source_channel_missing');
@@ -1077,6 +1090,7 @@
         addSummary('開催スタイル', style ? (style.dataset.summary || style.value) : '未選択');
         addSummary('参加できる日', unavailable.checked ? '9月の土日は難しい' : selectedDates.join('、'));
         if (concerns.length) addSummary('気になること', concerns.join('、'));
+        if (concernOtherCheckbox.checked && concernOtherInput.value.trim()) addSummary('気になること（その他）', concernOtherInput.value.trim());
         addSummary('どこで知ったか', source ? (SOURCE_CHANNEL_LABELS[source.value] || source.value) : '未選択');
         if (source && source.value === 'other' && sourceOtherInput.value.trim()) addSummary('どこで知ったか（その他）', sourceOtherInput.value.trim());
         addSummary('開催連絡', notify.checked ? '希望する' : '希望しない');
@@ -1133,6 +1147,7 @@
           q4_price: (chosen('style') || {}).value || '',
           no_available_weekend: unavailable.checked,
           q6_concerns: concernInputs.filter(function (input) { return input.checked; }).map(function (input) { return input.value; }).join('、'),
+          q6_concern_other: concernOtherCheckbox.checked ? concernOtherInput.value.trim() : '',
           source_channel: (source || {}).value || '',
           source_other: (source && source.value === 'other') ? sourceOtherInput.value.trim() : '',
           notification_requested: notify.checked,
@@ -1221,6 +1236,14 @@
         });
       });
 
+      function updateConcernOtherState() {
+        concernOtherField.hidden = !concernOtherCheckbox.checked;
+        if (!concernOtherCheckbox.checked) concernOtherInput.value = '';
+        clearError(4);
+      }
+      concernOtherCheckbox.addEventListener('change', updateConcernOtherState);
+      concernOtherInput.addEventListener('input', function () { clearError(4); });
+
       noConcern.addEventListener('change', function () {
         concernInputs.forEach(function (input) {
           if (input !== noConcern) {
@@ -1228,6 +1251,7 @@
             input.disabled = noConcern.checked;
           }
         });
+        updateConcernOtherState();
       });
       concernInputs.filter(function (input) { return input !== noConcern; }).forEach(function (input) {
         input.addEventListener('change', function () {
@@ -1315,6 +1339,7 @@
       updateDateState();
       updateWearOtherState();
       updateSourceOtherState();
+      updateConcernOtherState();
       showStep(1, false);
     })();
   </script>
