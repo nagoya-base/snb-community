@@ -1,31 +1,50 @@
 /**
- * SNBC 学校セット＆ユニフォーム交流会｜2026年9月開催アンケート バックエンド
- * Issue #205 で新設、Issue #209 で再設計（開催形式Q1／着用衣装Q2／流入元を分離取得）。
+ * SNBC 学校セット撮影会｜2026年9月開催アンケート バックエンド
+ * Issue #205 で新設、Issue #209 で再設計（開催形式Q1／着用衣装Q2／流入元を分離取得）、
+ * Issue #213 で学校セット開催決定に伴い再整理（Q1のUI削除・内部固定、衣装その他/流入元その他の
+ * 自由記述追加、参加温度感「名古屋は遠い」追加、流入元の選択肢整理）。
  * community/enquete_202609.html から呼び出される。
  *
  * このファイルはリポジトリ内の正本だが、実行環境はGoogle Apps Script側。
  * GitHubへpushするだけでは反映されないため、次の順で手動反映する。
  *
- * ── デプロイ手順（Issue #209 再設計版） ──
+ * ── デプロイ手順（Issue #213 版） ──
  * 1. 対象Googleスプレッドシートの「拡張機能」→「Apps Script」を開き、Code.gsをこの内容に置き換える。
  * 2. SHEET_NAME と NOTIFICATION_EMAIL が実運用の値であることを確認する。
- * 3. 実回答が0件であることを運営側で確認済み（2026年時点）。回答0件の場合は
- *    setupHeaderRow() を1回実行し、ヘッダーを新COLUMNS（21列：timestamp 〜 source_channel）
- *    へ更新する。1件でも回答がある状態でこの関数を実行すると安全装置により例外で停止するため、
- *    実行前に必ずシートの回答行数を再確認すること。
+ * 3. 【重要】列構成の移行は実回答の有無を必ず確認してから行うこと。このIssue時点では
+ *    実Sheetの回答件数・旧流入元コード（x_snb / x_studio_x / instagram）の有無をこの場から
+ *    確認できないため、以下のどちらかを実際のSheetの状態に応じて選ぶ。
+ *      a) responses シートが空（ヘッダーのみ、または新規作成）の場合：
+ *         setupHeaderRow() を1回実行する。新COLUMNS（23列：timestamp 〜 source_other）で
+ *         ヘッダーを作成する。1件でも回答がある状態で実行すると安全装置により例外で停止する。
+ *      b) 既に旧ヘッダー（21列：timestamp 〜 source_channel、Issue #209版）で回答が入っている場合：
+ *         migrateAddFreeTextColumns() を1回実行する。既存の行・列にはいっさい触れず、
+ *         22列目に q2_wear_other、23列目に source_other のヘッダーだけを追記する
+ *         （非破壊・追記のみ）。実行後、既存の回答行は新しい2列が空欄のまま保持される。
+ *    どちらの場合も、実行前に対象シートの「拡張機能」→「Apps Script」エディタ上の関数選択で
+ *    対象関数を選び、実行結果とヘッダー行を目視確認すること。
  * 4. 「デプロイ」→「デプロイを管理」→既存ウェブアプリの編集（鉛筆）で、
  *    バージョンに「新バージョン」を選んで再デプロイする。/exec URLは変更しない。
  * 5. /exec URLを開き、backend: OK と表示されることを確認する。
- * 6. 公開ページから1件だけ疎通し、Sheets保存内容（21列目まで）と通知メールを確認する。
+ * 6. 公開ページから1件だけ疎通し、Sheets保存内容（23列目まで）と通知メールを確認する。
  *
- * ── この版の仕様（Issue #209） ──
- * ・Q1（q1_first_choice）は「開催形式」の4択コード（school_set等）のみを受け付ける。
- * ・Q2（q2_wear_items）はユニフォーム系で着たい衣装の複数選択（`、`区切り文字列）。空文字列＝未回答を許可する任意項目。
- * ・source_channel は流入元の単一選択・必須（固定コード）。「ユニ航空」という表記は使用しない。
+ * ── この版の仕様（Issue #213） ──
+ * ・Q1（q1_first_choice）はUIから削除し、内部固定値 'school_set' のみを許可する
+ *   （画面上の設問番号振り直しとは無関係に、payloadキー自体は変更しない）。
+ * ・Q2（q2_wear_items）は従来どおり。新設の q2_wear_other は、Q2に「その他」が含まれる場合は
+ *   必須（空文字列不可）、含まれない場合は逆に空文字列のみ許可する。
+ * ・Q3（q3_participation_intent）に「参加してみたいが、名古屋は遠い」を追加。
+ *   「強い参加意向」への算入可否は本ファイルでは判断しない（匿名集計側で別カテゴリとして扱う）。
+ * ・source_channel は x_ataru / x_repost / snbc_web / friend / other の5値のみを新規回答として許可する
+ *   （x_snb / x_studio_x / instagram は新規回答の許可値から削除。既存回答データは変更しない）。
+ *   新設の source_other は、source_channel が 'other' の場合は必須（空文字列不可）、
+ *   'other' でない場合は逆に空文字列のみ許可する。
  * ・notification_requested は厳密なboolean。false時の連絡先は空欄のみ許可する。
- * ・自由入力は数式インジェクション対策をしてSheetsへ保存する。
+ * ・自由入力（contact_email / contact_x / free_comment / q2_wear_other / source_other）は
+ *   数式インジェクション対策をしてSheetsへ保存する。
  * ・submission_id、LockService、重複送信時の保存・通知抑止を維持する。
- * ・通知メール本文には連絡先、自由記述、submission_id を含めない。
+ * ・通知メール本文には連絡先、自由記述（free_comment / q2_wear_other / source_other）、
+ *   submission_id を含めない（Issue #192の方針を維持）。
  */
 
 var SHEET_NAME = 'responses';
@@ -35,14 +54,14 @@ var NOTIFICATION_EMAIL = 'bbuni.ngo@gmail.com';
 
 var NOTIFICATION_EMAIL_SUBJECT = '【SNBC】9月企画アンケートに新しい回答があります';
 
-/* 末尾のq2_wear_items, source_channelはIssue #209で追加した新規列。
-   デプロイ手順3の通りsetupHeaderRow()でヘッダーを更新するまでは、
-   新ヘッダー（21列）と一致しないため保存は成功しない
+/* 末尾のq2_wear_other, source_otherはIssue #213で追加した新規列。
+   デプロイ手順3の通りsetupHeaderRow()またはmigrateAddFreeTextColumns()でヘッダーを
+   更新するまでは、新ヘッダー（23列）と一致しないため保存は成功しない
    （hasExpectedHeaderが列数・列名の完全一致を要求するため）。 */
 var COLUMNS = [
   'timestamp',
   'submission_id',
-  'q1_first_choice', // 保存値はIssue #209以降、開催形式の固定コード（school_set等）。
+  'q1_first_choice', // Issue #213以降、UIからは削除し内部固定コード'school_set'のみを送信・保存する。
   'q3_participation_intent',
   'q4_price', // 保存値は開催スタイルの固定コード。
   'date_0905',
@@ -60,7 +79,35 @@ var COLUMNS = [
   'contact_x',
   'free_comment',
   'q2_wear_items', // Issue #209で追加。着て参加したい衣装の複数選択（`、`区切り、任意）。
-  'source_channel' // Issue #209で追加。流入元の単一選択・固定コード（必須）。
+  'source_channel', // Issue #209で追加。流入元の単一選択・固定コード（必須）。
+  'q2_wear_other', // Issue #213で追加。Q2「その他」選択時は必須の自由記述。
+  'source_other' // Issue #213で追加。流入元「other」選択時は必須の自由記述。
+];
+
+/* Issue #209時点（PR #210）の旧ヘッダー（21列）。migrateAddFreeTextColumns()が
+   「安全に追記できる状態か」を判定するためだけに使う。新規保存のバリデーションには使わない。 */
+var OLD_COLUMNS_BEFORE_ISSUE_213 = [
+  'timestamp',
+  'submission_id',
+  'q1_first_choice',
+  'q3_participation_intent',
+  'q4_price',
+  'date_0905',
+  'date_0906',
+  'date_0912',
+  'date_0913',
+  'date_0919',
+  'date_0920',
+  'date_0926',
+  'date_0927',
+  'no_available_weekend',
+  'q6_concerns',
+  'notification_requested',
+  'contact_email',
+  'contact_x',
+  'free_comment',
+  'q2_wear_items',
+  'source_channel'
 ];
 
 var DATE_KEYS = [
@@ -83,25 +130,27 @@ var DATE_LABELS = {
 
 /* ── 許可値のallowlist（フロント側HTMLの選択肢と1対1で一致させること。
    選択肢の文言をHTML側で変更した場合、ここも必ず同時に更新する） ── */
-/* Q1：Issue #209以降は「開催形式」の固定コード。衣装テーマの投票ではない。 */
+/* Q1：Issue #213以降、学校セット開催が決定事項のためUIから削除し、内部固定値のみを許可する。
+   既存Sheetにuniform_event等の過去回答が残っていても、このallowlistは新規保存の検証にしか
+   使わないため、過去データには影響しない。 */
 var ALLOWED_Q1 = [
-  'school_set', 'uniform_event', 'either', 'not_interested'
+  'school_set'
 ];
 /* Q1の固定コードを通知メール向けの人が読める表記に変換する対応表。 */
 var Q1_FORMAT_LABELS = {
-  school_set: '学校セット撮影会',
-  uniform_event: 'ユニフォーム交流会',
-  either: 'どちらでもよい',
-  not_interested: '今回は特に参加しない'
+  school_set: '学校セット撮影会'
 };
-/* Q2：ユニフォーム系で着て参加したい衣装（複数選択・任意）。フロントでは`、`区切りの文字列で送られる。 */
+/* Q2：着て参加したい衣装（複数選択・任意）。フロントでは`、`区切りの文字列で送られる。 */
 var ALLOWED_Q2_ITEMS = [
   '野球ユニフォーム', 'サッカーユニフォーム', '陸上ユニフォーム', 'ラグビー／アメフトウェア',
   'スイムウェア', 'シングレット', '制服・体操服', '私服', 'その他'
 ];
+/* Q2の「その他」選択時は、対応する自由記述q2_wear_otherの入力を必須とする（Issue #213 PRレビュー指摘）。 */
+var Q2_OTHER_VALUE = 'その他';
 var ALLOWED_Q3 = [
   '日程が合えばかなり参加したい',
   '条件（料金・人数など）が合えば参加を検討したい',
+  '参加してみたいが、名古屋は遠い', // Issue #213で追加。「強い参加意向」には含めない別カテゴリ。
   '興味はあるが参加までは分からない',
   '見るだけ・投票だけ'
 ];
@@ -124,30 +173,34 @@ var ALLOWED_Q6_ITEMS = [
   '一人参加が不安', '初対面の人との交流が不安', '撮られるのが苦手',
   'ユニフォームを持っていない', 'お酒も飲めると良い', '料金', '日程', '会場の広さ', '特になし', 'その他'
 ];
-/* 流入元：Issue #209で追加。固定コードのみ許可し、単一選択・必須。
-   「ユニ航空」という表記は使用しない（Issue #209コメントで明示的に禁止）。 */
+/* 流入元：Issue #209で追加、Issue #213で選択肢を整理。固定コードのみ許可し、単一選択・必須。
+   「ユニ航空」という表記は使用しない（Issue #209コメントで明示的に禁止）。
+   x_snb / x_studio_x / instagram はIssue #213で新規回答の許可値から削除（既存Sheetの過去回答は
+   このallowlistでは扱わない。読み取り専用の匿名集計API側で「旧回答」として扱う）。 */
 var ALLOWED_SOURCE_CHANNEL = [
-  'x_ataru', 'x_snb', 'x_studio_x', 'snbc_web', 'instagram', 'friend', 'other'
+  'x_ataru', 'x_repost', 'snbc_web', 'friend', 'other'
 ];
 /* 流入元の固定コードを通知メール向けの人が読める表記に変換する対応表。 */
 var SOURCE_CHANNEL_LABELS = {
   x_ataru: 'X：アタル（@baseballuni2022）',
-  x_snb: 'X：Studio Nagoya Base',
-  x_studio_x: 'X：Studio X',
+  x_repost: 'Xのリポストから',
   snbc_web: 'SNBCサイト',
-  instagram: 'Instagram',
-  friend: '知人から',
+  friend: '知人からの誘い',
   other: 'その他'
 };
+/* 流入元「other」選択時は、対応する自由記述source_otherの入力を必須とする（Issue #213 PRレビュー指摘）。 */
+var SOURCE_OTHER_VALUE = 'other';
 
 var MAX_FREE_COMMENT_LENGTH = 300; // フロントのmaxlengthと一致させる
 var MAX_CONTACT_LENGTH = 200; // フロントのmaxlengthとも一致させる（HTML側にも設定必須）
+var MAX_WEAR_OTHER_LENGTH = 100; // フロントのq2_wear_other maxlengthと一致させる
+var MAX_SOURCE_OTHER_LENGTH = 100; // フロントのsource_other maxlengthと一致させる
 var EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // 簡易チェック（RFC完全準拠ではない）
 var MAX_SUBMISSION_ID_LENGTH = 100; // crypto.randomUUID()は36文字、フォールバック生成でも数十文字程度のため十分な余裕
 
 /**
  * Googleスプレッドシートの数式インジェクション対策。
- * 自由入力欄（contact_email / contact_x / free_comment）は、
+ * 自由入力欄（contact_email / contact_x / free_comment / q2_wear_other / source_other）は、
  * 先頭が =, +, -, @ の場合にスプレッドシート側で数式として解釈される可能性があるため、
  * 先頭に ' を付けて強制的に文字列として保存する。
  * allowlistで検証済みのQ1〜Q4・Q6・Q2（q2_wear_items）・source_channel等には適用不要（許可された固定文言のみのため）。
@@ -196,6 +249,15 @@ function validatePayload(data) {
     if (ALLOWED_Q2_ITEMS.indexOf(q2Items[m]) === -1) return 'q2_invalid_item';
   }
 
+  // q2_wear_other：型・長さを検証する。Q2で「その他」が選ばれている場合は必須（空文字列不可）、
+  // 選ばれていない場合は逆に空文字列のみ許可する（Issue #213 PRレビュー指摘で「その他」選択時は
+  // 記述必須に統一）。
+  if (typeof data.q2_wear_other !== 'string') return 'q2_wear_other_invalid_type';
+  if (data.q2_wear_other.length > MAX_WEAR_OTHER_LENGTH) return 'q2_wear_other_too_long';
+  var q2OtherSelected = q2Items.indexOf(Q2_OTHER_VALUE) !== -1;
+  if (q2OtherSelected && data.q2_wear_other.trim() === '') return 'q2_wear_other_required';
+  if (!q2OtherSelected && data.q2_wear_other !== '') return 'q2_wear_other_requires_other_selected';
+
   if (ALLOWED_Q3.indexOf(data.q3_participation_intent) === -1) return 'q3_invalid';
 
   if (ALLOWED_Q4.indexOf(data.q4_price) === -1) return 'q4_invalid';
@@ -229,6 +291,15 @@ function validatePayload(data) {
 
   // 流入元：単一選択・必須の固定コード。
   if (ALLOWED_SOURCE_CHANNEL.indexOf(data.source_channel) === -1) return 'source_channel_invalid';
+
+  // source_other：型・長さを検証する。source_channelが'other'の場合は必須（空文字列不可）、
+  // 'other'でない場合は逆に空文字列のみ許可する（Issue #213 PRレビュー指摘で「その他」選択時は
+  // 記述必須に統一）。
+  if (typeof data.source_other !== 'string') return 'source_other_invalid_type';
+  if (data.source_other.length > MAX_SOURCE_OTHER_LENGTH) return 'source_other_too_long';
+  var sourceOtherSelected = data.source_channel === SOURCE_OTHER_VALUE;
+  if (sourceOtherSelected && data.source_other.trim() === '') return 'source_other_required';
+  if (!sourceOtherSelected && data.source_other !== '') return 'source_other_requires_other_selected';
 
   // 通知希望は文字列"true"等を受け入れず、厳密なbooleanだけを許可する。
   if (typeof data.notification_requested !== 'boolean') return 'notification_requested_not_boolean';
@@ -354,7 +425,8 @@ function processSubmission(e) {
       if (key === 'timestamp') return now;
       var value = data[key];
       if (value === undefined || value === null) return '';
-      if (key === 'contact_email' || key === 'contact_x' || key === 'free_comment' || key === 'submission_id') {
+      if (key === 'contact_email' || key === 'contact_x' || key === 'free_comment' ||
+        key === 'submission_id' || key === 'q2_wear_other' || key === 'source_other') {
         return sanitizeForSheet(value);
       }
       return value;
@@ -451,7 +523,9 @@ function formatSourceChannelForNotification(data) {
 /**
  * 通知メール本文を組み立てる。
  * 個人情報の保存場所を増やさないため、contact_email / contact_x / free_comment / submission_id は
- * 意図的に含めない（Issue #192）。詳細な内容はGoogleスプレッドシート側で確認する運用とする。
+ * 意図的に含めない（Issue #192）。Issue #213で追加した自由記述 q2_wear_other / source_other も
+ * 同じ方針でメール本文には含めない（選んだ選択肢の固定ラベルのみ本文に含まれる）。
+ * 詳細な内容はGoogleスプレッドシート側で確認する運用とする。
  */
 function buildNotificationBody(data, timestamp) {
   var receivedAt = Utilities.formatDate(timestamp, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
@@ -500,9 +574,11 @@ function sendNotificationEmailSafely(data, timestamp) {
 }
 
 /**
- * ヘッダー再作成用。回答が0件のときだけ実行できる（デプロイ手順3）。
- * Issue #209時点で実回答0件を運営側で確認済みのため、この関数で新COLUMNS（21列）へ更新する。
+ * ヘッダー再作成用。回答が0件（新規シート・空シート）のときだけ実行できる（デプロイ手順3-a）。
+ * 新COLUMNS（23列：timestamp 〜 source_other）へ更新する。
  * データ行がある場合は、列ずれによる破損を避けるため明示的に停止する。
+ * 既に回答が入っているresponsesシートに対しては、この関数ではなく
+ * migrateAddFreeTextColumns() を使うこと（デプロイ手順3-b）。
  */
 function setupHeaderRow() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -511,11 +587,50 @@ function setupHeaderRow() {
     sheet = ss.insertSheet(SHEET_NAME);
   }
   if (sheet.getLastRow() > 1) {
-    throw new Error('既存の回答があるためsetupHeaderRowは実行できません。ヘッダーを上書きしないでください。');
+    throw new Error('既存の回答があるためsetupHeaderRowは実行できません。migrateAddFreeTextColumns()を使ってください。');
   }
   var existingColumnCount = sheet.getLastColumn();
   if (existingColumnCount > 0) {
     sheet.getRange(1, 1, 1, existingColumnCount).clearContent();
   }
   sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+}
+
+/**
+ * Issue #213向けの非破壊マイグレーション（デプロイ手順3-b）。
+ * 既にIssue #209版の旧ヘッダー（21列：timestamp 〜 source_channel）で回答が入っている
+ * responsesシートに対して、q2_wear_other / source_other の2列だけを末尾に追記する。
+ *
+ * ・既存の行・既存の列の値はいっさい変更しない（追記のみ）。
+ * ・実行前に必ずヘッダーが旧21列と完全一致することを確認し、一致しない場合は例外で停止する
+ *   （想定外の状態で誤って列がずれることを防ぐため）。
+ * ・既に新23列ヘッダーになっている場合は何もせず終了する（再実行しても安全＝冪等）。
+ * ・旧流入元コード（x_snb / x_studio_x / instagram）を含む既存回答行があっても、
+ *   この関数はヘッダー行のみを操作するため、既存回答データそのものには影響しない。
+ */
+function migrateAddFreeTextColumns() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    throw new Error('responsesシートが見つかりません。');
+  }
+
+  if (hasExpectedHeader(sheet)) {
+    console.log('[enquete_202609] 既に新ヘッダー（' + COLUMNS.length + '列）です。migrateAddFreeTextColumns()は何もしませんでした。');
+    return;
+  }
+
+  var lastColumn = sheet.getLastColumn();
+  if (lastColumn !== OLD_COLUMNS_BEFORE_ISSUE_213.length) {
+    throw new Error('想定外の列数（' + lastColumn + '列）のため中断しました。ヘッダーを目視確認してください。');
+  }
+  var header = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+  for (var i = 0; i < OLD_COLUMNS_BEFORE_ISSUE_213.length; i++) {
+    if (header[i] !== OLD_COLUMNS_BEFORE_ISSUE_213[i]) {
+      throw new Error('想定外のヘッダー（' + i + '列目: ' + header[i] + '）のため中断しました。ヘッダーを目視確認してください。');
+    }
+  }
+
+  // 既存の行・列には触れず、22・23列目にヘッダーだけを追記する。
+  sheet.getRange(1, OLD_COLUMNS_BEFORE_ISSUE_213.length + 1, 1, 2).setValues([['q2_wear_other', 'source_other']]);
 }
