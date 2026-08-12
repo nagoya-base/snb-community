@@ -193,6 +193,62 @@
     }
     .hero__cta:hover { transform: translateY(-2px); }
 
+    .status-board-wrap {
+      width: min(920px, calc(100% - 2.5rem));
+      margin: 1.7rem auto 0;
+      position: relative;
+    }
+    .status-board {
+      padding: 1.05rem clamp(1rem, 3vw, 1.6rem);
+      border: 1px solid rgba(29, 27, 23, .12);
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: 0 10px 28px rgba(25, 22, 18, .09);
+    }
+    .status-board__head { display: flex; align-items: baseline; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
+    .status-board__head h2 { margin: 0; font-size: 1.05rem; letter-spacing: -.01em; }
+    .status-board__updated { color: var(--muted); font-size: .7rem; font-weight: 700; white-space: nowrap; }
+    .status-board__note { margin: .45rem 0 1rem; color: var(--muted); font-size: .74rem; line-height: 1.6; }
+    .status-board__loading, .status-board__empty, .status-board__error {
+      margin: 0;
+      padding: .8rem .9rem;
+      border-radius: 10px;
+      background: #f7f5f1;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.6;
+    }
+    .status-board__error { background: var(--red-pale); color: #8a2020; }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: .6rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .status-card {
+      padding: .8rem .85rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fffdfa;
+    }
+    .status-card__date { margin-bottom: .4rem; font-size: .92rem; font-weight: 900; }
+    .status-card__row { display: flex; align-items: baseline; justify-content: space-between; gap: .4rem; font-size: .74rem; }
+    .status-card__row + .status-card__row { margin-top: .18rem; }
+    .status-card__key { color: var(--muted); font-weight: 700; }
+    .status-card__value { font-weight: 800; text-align: right; }
+    .status-wear { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .55rem; }
+    .status-wear__chip {
+      display: inline-block;
+      padding: .18rem .5rem;
+      border-radius: 999px;
+      background: var(--green-pale);
+      color: var(--green);
+      font-size: .65rem;
+      font-weight: 800;
+    }
+
     .survey-shell {
       width: min(920px, calc(100% - 2.5rem));
       margin: -1.65rem auto 0;
@@ -529,13 +585,17 @@
     .site-footer a { color: #fff; }
 
     @media (max-width: 640px) {
-      .site-header__inner, .hero__inner, .survey-shell { width: min(100% - 1.5rem, 1100px); }
+      .site-header__inner, .hero__inner, .survey-shell, .status-board-wrap { width: min(100% - 1.5rem, 1100px); }
       .brand small { display: none; }
       .hero { min-height: 410px; }
       .hero__inner { min-height: 410px; padding-top: 3rem; }
       .hero::before { background-position: center, 85% center; }
       .hero::after { width: 95vw; height: 95vw; inset: auto -45% -32% auto; }
       .survey-shell { margin-top: -1rem; }
+      .status-board-wrap { margin-top: 1.1rem; }
+      .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .status-card__row { flex-direction: column; align-items: flex-start; gap: .06rem; }
+      .status-card__value { text-align: left; }
       .trust-note { margin-bottom: .8rem; }
       .survey-card { border-radius: 15px; }
       .plan-grid, .intent-grid, .style-grid, .contact-fields { grid-template-columns: 1fr; }
@@ -573,6 +633,20 @@
           </div>
           <button class="hero__cta" id="start-survey" type="button">アンケートをはじめる</button>
         </div>
+      </div>
+    </section>
+
+    <section class="status-board-wrap" id="status-board-wrap" aria-labelledby="status-board-title">
+      <div class="status-board" id="status-board">
+        <div class="status-board__head">
+          <h2 id="status-board-title">現在の参加希望状況</h2>
+          <span class="status-board__updated" id="status-updated">—</span>
+        </div>
+        <p class="status-board__note">アンケート回答を参加意向に応じて補正した参考値です。実際の申込人数ではありません。</p>
+        <p class="status-board__loading" id="status-loading">現在の状況を読み込み中…</p>
+        <p class="status-board__empty" id="status-empty" hidden>まだ回答はありません。最初の回答をお待ちしています。</p>
+        <p class="status-board__error" id="status-error" role="status" hidden>現在の状況を取得できませんでした。しばらくしてからページを再読み込みしてください。</p>
+        <ul class="status-grid" id="status-grid" hidden></ul>
       </div>
     </section>
 
@@ -1242,6 +1316,113 @@
       updateWearOtherState();
       updateSourceOtherState();
       showStep(1, false);
+    })();
+  </script>
+
+  <!--
+    現在の参加希望状況（公開ダッシュボード / Issue #215）。
+    上のアンケート送信ロジックとは完全に独立したscriptブロックにしてあるため、
+    ここで例外が発生してもアンケート本体の回答・送信操作には影響しない。
+  -->
+  <script>
+    (function () {
+      'use strict';
+
+      // community/gas/enquete_202609_results_backend.gs の action=public を呼び出す。
+      // enquete_202609_results.html（運営用）と同じ /exec デプロイURL。
+      var PUBLIC_STATUS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwmDnzgvjfqP90x0XfzYN4p2qZK8BBa9BvKuKbFGqiTpdZHrkg3Q6MG7g-nE2HtRslZ/exec';
+      var REFRESH_MS = 60000;
+
+      var grid = document.getElementById('status-grid');
+      var loadingState = document.getElementById('status-loading');
+      var emptyState = document.getElementById('status-empty');
+      var errorState = document.getElementById('status-error');
+      var updatedLabel = document.getElementById('status-updated');
+
+      if (!grid || !loadingState || !emptyState || !errorState || !updatedLabel) return;
+
+      function escapeHtml(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function formatUpdated(value) {
+        var date = new Date(value);
+        if (isNaN(date.getTime())) return '—';
+        return new Intl.DateTimeFormat('ja-JP', {
+          month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        }).format(date);
+      }
+
+      function formatAdjusted(value) {
+        var n = Number(value);
+        if (isNaN(n)) return '0.0';
+        return n.toFixed(1);
+      }
+
+      function renderDateCard(entry) {
+        var countText = entry && entry.raw_count_label ? entry.raw_count_label : '少数';
+        var wearHtml = '';
+        if (entry && entry.wear_votes && typeof entry.wear_votes === 'object') {
+          var chips = Object.keys(entry.wear_votes).map(function (key) {
+            return '<span class="status-wear__chip">' + escapeHtml(key) + ' ' + Number(entry.wear_votes[key] || 0) + '票</span>';
+          }).join('');
+          if (chips) wearHtml = '<div class="status-wear">' + chips + '</div>';
+        }
+        return '<li class="status-card">' +
+          '<div class="status-card__date">' + escapeHtml(entry.date_label) + '</div>' +
+          '<div class="status-card__row"><span class="status-card__key">回答</span><span class="status-card__value">' + escapeHtml(countText) + '</span></div>' +
+          '<div class="status-card__row"><span class="status-card__key">参加見込み（参考）</span><span class="status-card__value">' + formatAdjusted(entry.adjusted_count) + '人</span></div>' +
+          wearHtml +
+          '</li>';
+      }
+
+      function showOnly(el) {
+        [loadingState, emptyState, errorState, grid].forEach(function (node) {
+          node.hidden = node !== el;
+        });
+      }
+
+      function render(data) {
+        updatedLabel.textContent = formatUpdated(data.updated_at);
+
+        if (data.has_responses === false) {
+          showOnly(emptyState);
+          return;
+        }
+
+        var dates = Array.isArray(data.dates) ? data.dates : [];
+        grid.innerHTML = dates.map(renderDateCard).join('');
+        showOnly(grid);
+      }
+
+      function refresh() {
+        var url = PUBLIC_STATUS_ENDPOINT + (PUBLIC_STATUS_ENDPOINT.indexOf('?') === -1 ? '?' : '&') + 'action=public&_=' + Date.now();
+        fetch(url, { method: 'GET', cache: 'no-store' })
+          .then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+          })
+          .then(function (data) {
+            if (!data || data.ok !== true) throw new Error((data && data.error) || 'invalid response');
+            render(data);
+          })
+          .catch(function () {
+            showOnly(errorState);
+          });
+      }
+
+      try {
+        refresh();
+        var timer = window.setInterval(refresh, REFRESH_MS);
+        window.addEventListener('beforeunload', function () { window.clearInterval(timer); });
+      } catch (err) {
+        showOnly(errorState);
+      }
     })();
   </script>
 </body>
