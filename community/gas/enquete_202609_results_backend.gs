@@ -23,6 +23,7 @@
  * - free_comment
  * - q2_wear_other（Issue #213で追加した自由記述）
  * - source_other（Issue #213で追加した自由記述）
+ * - q6_concern_other（Issue #217で追加した自由記述）
  * - 個々の回答行
  *
  * ── 公開API（Issue #215） ──
