@@ -138,7 +138,10 @@ function doGet(e) {
       publicCache.put('public_v1', encodedPublic, RESULTS_CACHE_SECONDS);
       return ContentService.createTextOutput(encodedPublic).setMimeType(ContentService.MimeType.JSON);
     } catch (err) {
-      return resultsJson_({ ok: false, error: 'public_error', message: String(err) });
+      // 公開APIは必要最小限の方針のため、GAS/Spreadsheet側の内部例外文言をクライアントへ
+      // 返さない（レビュー指摘）。詳細はサーバー側ログにのみ残す。
+      console.error('[enquete_202609_results] public_error: ' + err);
+      return resultsJson_({ ok: false, error: 'public_error' });
     }
   }
 
