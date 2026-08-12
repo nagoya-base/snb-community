@@ -629,7 +629,7 @@
               </div>
             </fieldset>
             <div class="conditional-field" id="wear-other-field" hidden>
-              <label for="wear-other">その他の衣装を教えてください <span class="optional">任意</span></label>
+              <label for="wear-other">その他の衣装を教えてください <span class="required">必須</span></label>
               <input type="text" id="wear-other" maxlength="100" placeholder="例：〇〇のユニフォーム">
             </div>
             <p class="step-error" id="error-1" role="alert" aria-live="polite"></p>
@@ -716,7 +716,7 @@
               </div>
             </fieldset>
             <div class="conditional-field" id="source-other-field" hidden>
-              <label for="source-other">どこで知ったか教えてください <span class="optional">任意</span></label>
+              <label for="source-other">どこで知ったか教えてください <span class="required">必須</span></label>
               <input type="text" id="source-other" maxlength="100" placeholder="例：〇〇のイベント告知で見た">
             </div>
 
@@ -930,6 +930,12 @@
 
       function validateStep(step) {
         clearError(step);
+        if (step === 1 && wearOtherCheckbox.checked && !wearOtherInput.value.trim()) {
+          showError(step, '「その他」を選んだ場合は、衣装の内容を教えてください。', 'q2_wear_other_missing');
+          wearOtherInput.focus({ preventScroll: true });
+          wearOtherInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return false;
+        }
         if (step === 2 && (!chosen('intent') || !chosen('style'))) {
           showError(step, '参加の温度感と、希望する開催スタイルをそれぞれ選んでください。', 'q3_or_q4_missing');
           focusChoice(!chosen('intent') ? 'intent' : 'style');
@@ -941,9 +947,16 @@
           return false;
         }
         if (step === 4) {
-          if (!chosen('source_channel')) {
+          var sourceChosen = chosen('source_channel');
+          if (!sourceChosen) {
             showError(step, 'このアンケートをどこで知ったか選んでください。', 'source_channel_missing');
             focusChoice('source_channel');
+            return false;
+          }
+          if (sourceChosen.value === 'other' && !sourceOtherInput.value.trim()) {
+            showError(step, '「その他」を選んだ場合は、どこで知ったか教えてください。', 'source_other_missing');
+            sourceOtherInput.focus({ preventScroll: true });
+            sourceOtherInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return false;
           }
           if (notify.checked) {
@@ -1096,8 +1109,10 @@
       function updateWearOtherState() {
         wearOtherField.hidden = !wearOtherCheckbox.checked;
         if (!wearOtherCheckbox.checked) wearOtherInput.value = '';
+        clearError(1);
       }
       wearOtherCheckbox.addEventListener('change', updateWearOtherState);
+      wearOtherInput.addEventListener('input', function () { clearError(1); });
 
       function updateSourceOtherState() {
         var source = chosen('source_channel');
@@ -1111,6 +1126,7 @@
           updateSourceOtherState();
         });
       });
+      sourceOtherInput.addEventListener('input', function () { clearError(4); });
 
       function updateDateState() {
         if (unavailable.checked) {

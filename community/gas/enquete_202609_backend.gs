@@ -31,13 +31,14 @@
  * ── この版の仕様（Issue #213） ──
  * ・Q1（q1_first_choice）はUIから削除し、内部固定値 'school_set' のみを許可する
  *   （画面上の設問番号振り直しとは無関係に、payloadキー自体は変更しない）。
- * ・Q2（q2_wear_items）は従来どおり。新設の q2_wear_other は、Q2に「その他」が含まれない
- *   場合は空文字列のみ許可する任意項目。
+ * ・Q2（q2_wear_items）は従来どおり。新設の q2_wear_other は、Q2に「その他」が含まれる場合は
+ *   必須（空文字列不可）、含まれない場合は逆に空文字列のみ許可する。
  * ・Q3（q3_participation_intent）に「参加してみたいが、名古屋は遠い」を追加。
  *   「強い参加意向」への算入可否は本ファイルでは判断しない（匿名集計側で別カテゴリとして扱う）。
  * ・source_channel は x_ataru / x_repost / snbc_web / friend / other の5値のみを新規回答として許可する
  *   （x_snb / x_studio_x / instagram は新規回答の許可値から削除。既存回答データは変更しない）。
- *   新設の source_other は、source_channel が 'other' でない場合は空文字列のみ許可する任意項目。
+ *   新設の source_other は、source_channel が 'other' の場合は必須（空文字列不可）、
+ *   'other' でない場合は逆に空文字列のみ許可する。
  * ・notification_requested は厳密なboolean。false時の連絡先は空欄のみ許可する。
  * ・自由入力（contact_email / contact_x / free_comment / q2_wear_other / source_other）は
  *   数式インジェクション対策をしてSheetsへ保存する。
@@ -79,8 +80,8 @@ var COLUMNS = [
   'free_comment',
   'q2_wear_items', // Issue #209で追加。着て参加したい衣装の複数選択（`、`区切り、任意）。
   'source_channel', // Issue #209で追加。流入元の単一選択・固定コード（必須）。
-  'q2_wear_other', // Issue #213で追加。Q2「その他」選択時のみ入力される自由記述（任意）。
-  'source_other' // Issue #213で追加。流入元「other」選択時のみ入力される自由記述（任意）。
+  'q2_wear_other', // Issue #213で追加。Q2「その他」選択時は必須の自由記述。
+  'source_other' // Issue #213で追加。流入元「other」選択時は必須の自由記述。
 ];
 
 /* Issue #209時点（PR #210）の旧ヘッダー（21列）。migrateAddFreeTextColumns()が
@@ -144,7 +145,7 @@ var ALLOWED_Q2_ITEMS = [
   '野球ユニフォーム', 'サッカーユニフォーム', '陸上ユニフォーム', 'ラグビー／アメフトウェア',
   'スイムウェア', 'シングレット', '制服・体操服', '私服', 'その他'
 ];
-/* Q2の「その他」選択時のみ、対応する自由記述q2_wear_otherへの入力を許可する（Issue #213）。 */
+/* Q2の「その他」選択時は、対応する自由記述q2_wear_otherの入力を必須とする（Issue #213 PRレビュー指摘）。 */
 var Q2_OTHER_VALUE = 'その他';
 var ALLOWED_Q3 = [
   '日程が合えばかなり参加したい',
@@ -187,7 +188,7 @@ var SOURCE_CHANNEL_LABELS = {
   friend: '知人からの誘い',
   other: 'その他'
 };
-/* 流入元「other」選択時のみ、対応する自由記述source_otherへの入力を許可する（Issue #213）。 */
+/* 流入元「other」選択時は、対応する自由記述source_otherの入力を必須とする（Issue #213 PRレビュー指摘）。 */
 var SOURCE_OTHER_VALUE = 'other';
 
 var MAX_FREE_COMMENT_LENGTH = 300; // フロントのmaxlengthと一致させる
@@ -248,12 +249,14 @@ function validatePayload(data) {
     if (ALLOWED_Q2_ITEMS.indexOf(q2Items[m]) === -1) return 'q2_invalid_item';
   }
 
-  // q2_wear_other：型・長さを検証し、Q2で「その他」が選ばれていない場合は空文字列のみ許可する（Issue #213）。
+  // q2_wear_other：型・長さを検証する。Q2で「その他」が選ばれている場合は必須（空文字列不可）、
+  // 選ばれていない場合は逆に空文字列のみ許可する（Issue #213 PRレビュー指摘で「その他」選択時は
+  // 記述必須に統一）。
   if (typeof data.q2_wear_other !== 'string') return 'q2_wear_other_invalid_type';
   if (data.q2_wear_other.length > MAX_WEAR_OTHER_LENGTH) return 'q2_wear_other_too_long';
-  if (data.q2_wear_other !== '' && q2Items.indexOf(Q2_OTHER_VALUE) === -1) {
-    return 'q2_wear_other_requires_other_selected';
-  }
+  var q2OtherSelected = q2Items.indexOf(Q2_OTHER_VALUE) !== -1;
+  if (q2OtherSelected && data.q2_wear_other.trim() === '') return 'q2_wear_other_required';
+  if (!q2OtherSelected && data.q2_wear_other !== '') return 'q2_wear_other_requires_other_selected';
 
   if (ALLOWED_Q3.indexOf(data.q3_participation_intent) === -1) return 'q3_invalid';
 
@@ -289,12 +292,14 @@ function validatePayload(data) {
   // 流入元：単一選択・必須の固定コード。
   if (ALLOWED_SOURCE_CHANNEL.indexOf(data.source_channel) === -1) return 'source_channel_invalid';
 
-  // source_other：型・長さを検証し、source_channelが'other'でない場合は空文字列のみ許可する（Issue #213）。
+  // source_other：型・長さを検証する。source_channelが'other'の場合は必須（空文字列不可）、
+  // 'other'でない場合は逆に空文字列のみ許可する（Issue #213 PRレビュー指摘で「その他」選択時は
+  // 記述必須に統一）。
   if (typeof data.source_other !== 'string') return 'source_other_invalid_type';
   if (data.source_other.length > MAX_SOURCE_OTHER_LENGTH) return 'source_other_too_long';
-  if (data.source_other !== '' && data.source_channel !== SOURCE_OTHER_VALUE) {
-    return 'source_other_requires_other_selected';
-  }
+  var sourceOtherSelected = data.source_channel === SOURCE_OTHER_VALUE;
+  if (sourceOtherSelected && data.source_other.trim() === '') return 'source_other_required';
+  if (!sourceOtherSelected && data.source_other !== '') return 'source_other_requires_other_selected';
 
   // 通知希望は文字列"true"等を受け入れず、厳密なbooleanだけを許可する。
   if (typeof data.notification_requested !== 'boolean') return 'notification_requested_not_boolean';
