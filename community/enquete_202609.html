@@ -482,6 +482,11 @@
       font-size: .86rem;
     }
     .contact-field input:focus, .free-field textarea:focus { border-color: var(--red); outline: 2px solid rgba(198,40,40,.2); }
+    .carrier-notice { grid-column: 1 / -1; margin-top: .25rem; padding: .75rem .9rem; border: 1px solid #e7c9a7; border-radius: 10px; background: #fff8ef; }
+    .carrier-notice__text { margin: 0 0 .55rem; color: var(--muted); font-size: .74rem; line-height: 1.6; }
+    .carrier-notice__text strong { color: var(--ink); }
+    .carrier-notice__check { display: flex; align-items: flex-start; gap: .5rem; font-size: .8rem; font-weight: 700; color: var(--ink); cursor: pointer; }
+    .carrier-notice__check input { width: 1.1rem; height: 1.1rem; flex-shrink: 0; margin-top: .1rem; accent-color: var(--red); }
     .free-field { margin-top: 1.35rem; }
     .free-field label { display: block; margin-bottom: .36rem; font-size: .83rem; font-weight: 800; }
     .free-field textarea { min-height: 82px; resize: vertical; }
@@ -804,6 +809,10 @@
                 <p class="contact-help" id="contact-help">メールアドレスまたはXアカウントの、どちらか1つを入力してください。</p>
                 <div class="contact-field"><label for="contact-email">メールアドレス <span class="optional">いずれか必須</span></label><input type="email" id="contact-email" autocomplete="email" aria-describedby="contact-help" placeholder="example@email.com" maxlength="200"></div>
                 <div class="contact-field"><label for="contact-x">Xアカウント <span class="optional">いずれか必須</span></label><input type="text" id="contact-x" autocomplete="off" aria-describedby="contact-help" placeholder="@account" maxlength="200"></div>
+                <div class="carrier-notice" id="carrier-notice" hidden>
+                  <p class="carrier-notice__text"><strong>携帯電話会社のメールアドレスをご利用の方へ</strong><br>docomo・au・SoftBankなどのキャリアメールでは、当方からのGmailが受信拒否される場合があります。Gmailからのメールを受信できる設定になっているか、迷惑メールフォルダに振り分けられていないかをご確認ください。</p>
+                  <label class="carrier-notice__check"><input type="checkbox" id="carrier-ack"> 上記のメール受信設定・迷惑メールフォルダについて確認しました</label>
+                </div>
               </div>
             </div>
 
@@ -934,7 +943,16 @@
       var contactFields = document.getElementById('contact-fields');
       var email = document.getElementById('contact-email');
       var xAccount = document.getElementById('contact-x');
+      var carrierNotice = document.getElementById('carrier-notice');
+      var carrierAck = document.getElementById('carrier-ack');
       var freeComment = document.getElementById('free-comment');
+
+      function updateCarrierNoticeVisibility() {
+        if (!carrierNotice) return;
+        var show = notify.checked && email.value.trim() !== '';
+        carrierNotice.hidden = !show;
+        if (!show && carrierAck) carrierAck.checked = false;
+      }
 
       function analytics() {
         if (isTestMode || isPreviewClosedMode) return null;
@@ -1057,6 +1075,12 @@
               showError(step, 'メールアドレスの形式を確認してください。', 'contact_email_invalid');
               email.focus({ preventScroll: true });
               email.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              return false;
+            }
+            if (email.value.trim() && carrierAck && !carrierAck.checked) {
+              showError(step, 'メール受信設定・迷惑メールフォルダについての確認にチェックを入れてください。', 'carrier_ack_missing');
+              carrierAck.focus({ preventScroll: true });
+              carrierAck.scrollIntoView({ behavior: 'smooth', block: 'center' });
               return false;
             }
           }
@@ -1265,8 +1289,18 @@
           email.value = '';
           xAccount.value = '';
         }
+        updateCarrierNoticeVisibility();
         clearError(4);
       });
+
+      email.addEventListener('input', function () {
+        updateCarrierNoticeVisibility();
+        clearError(4);
+      });
+
+      if (carrierAck) {
+        carrierAck.addEventListener('change', function () { clearError(4); });
+      }
 
       document.getElementById('edit-answer').addEventListener('click', function () {
         showStep(flow[flow.length - 1], true);

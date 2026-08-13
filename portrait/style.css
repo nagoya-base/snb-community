@@ -387,6 +387,11 @@ h1 {
   line-height: 1.85;
 }
 .form-notice strong { color: var(--navy); }
+.form-notice--carrier {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.75;
+}
 
 .contact-assurance {
   display: grid;
