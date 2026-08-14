@@ -1572,6 +1572,16 @@
           <p class="form-hint">予約内容の確認と返信に使用します。</p>
         </div>
 
+        <div class="form-field form-field--carrier-notice" id="pf-carrier-field" hidden>
+          <div class="form-notice form-notice--carrier">
+            <p><strong>携帯電話会社のメールアドレスをご利用の方へ</strong><br>docomo・au・SoftBankなどのキャリアメールでは、当方からのGmailが受信拒否される場合があります。Gmailからのメールを受信できる設定になっているか、迷惑メールフォルダに振り分けられていないかをご確認ください。</p>
+          </div>
+          <label class="checkbox-option checkbox-option--agree">
+            <input type="checkbox" id="pf-carrier-ack">
+            上記のメール受信設定・迷惑メールフォルダについて確認しました
+          </label>
+        </div>
+
         <div class="form-field">
           <label for="pf-x">Xアカウント <span class="optional-mark">任意</span></label>
           <input type="text" id="pf-x" name="Xアカウント" placeholder="@baseballuni2022" autocomplete="off">
@@ -1885,6 +1895,8 @@
   var costumeError = document.getElementById('pf-costume-error');
   var emailField = document.getElementById('pf-email');
   var xField = document.getElementById('pf-x');
+  var carrierField = document.getElementById('pf-carrier-field');
+  var carrierCheckbox = document.getElementById('pf-carrier-ack');
   var contactMethodRadios = form.querySelectorAll('input[name="希望する連絡方法"]');
   var submitBtn = document.getElementById('pf-submit-btn');
   var successBox = document.getElementById('pf-success');
@@ -2062,6 +2074,17 @@
     return null;
   }
 
+  function updateCarrierAckRequirement(hasEmail) {
+    if (!carrierField || !carrierCheckbox) return;
+    carrierField.hidden = !hasEmail;
+    if (hasEmail) {
+      carrierCheckbox.setAttribute('required', 'required');
+    } else {
+      carrierCheckbox.removeAttribute('required');
+      carrierCheckbox.checked = false;
+    }
+  }
+
   function updateContactValidity() {
     if (!emailField || !xField) return;
 
@@ -2071,6 +2094,7 @@
 
     emailField.setCustomValidity('');
     xField.setCustomValidity('');
+    updateCarrierAckRequirement(hasEmail);
 
     if (!hasEmail && !hasX) {
       emailField.setCustomValidity('メールアドレスまたはXアカウントのどちらかを入力してください。');

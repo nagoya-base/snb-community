@@ -151,6 +151,27 @@
 }
 .radio-option input { margin-top: 0.2rem; flex-shrink: 0; }
 
+.checkbox-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.checkbox-option input { margin-top: 0.2rem; flex-shrink: 0; }
+.checkbox-option--agree {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.form-notice--carrier {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.75;
+}
+
 .contact-form__submit {
   width: 100%;
   margin-top: 1rem;
