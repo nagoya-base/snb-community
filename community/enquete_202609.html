@@ -951,7 +951,13 @@
         if (!carrierNotice) return;
         var show = notify.checked && email.value.trim() !== '';
         carrierNotice.hidden = !show;
-        if (!show && carrierAck) carrierAck.checked = false;
+        if (!carrierAck) return;
+        if (show) {
+          carrierAck.setAttribute('required', 'required');
+        } else {
+          carrierAck.removeAttribute('required');
+          carrierAck.checked = false;
+        }
       }
 
       function analytics() {
