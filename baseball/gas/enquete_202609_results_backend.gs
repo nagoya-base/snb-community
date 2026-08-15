@@ -40,7 +40,7 @@
  * - 個々の回答行（個票）
  */
 
-var RESULTS_SPREADSHEET_ID = 'PLACEHOLDER_REPLACE_WITH_BASEBALL_RESULTS_SPREADSHEET_ID';
+var RESULTS_SPREADSHEET_ID = '1wce7hUzwRyBUQlJy5K8D9HgeBZgjclmIXyQnlxNPD-E';
 var RESULTS_SHEET_NAME = 'responses';
 /* baseball/gas/enquete_202609_backend.gs の TEST_SHEET_NAME と同じ文字列にすること。
    APIレベルのテストモード（?action=summary&test=1）専用の集計対象。 */
