@@ -97,7 +97,10 @@
  * 同期させること（最終的な正規化・照合の権威はこのファイル側）。
  *
  * ── この版で踏襲した安全設計 ──
- * ・submission_id による冪等性（同じsubmission_idの再送は行を増やさず、通知もしない）
+ * ・submission_id による冪等性（同じsubmission_idの再送は行を増やさず、通知もしない）。
+ *   submission_idはSUBMISSION_ID_PATTERN（先頭英数字＋英数字・ハイフンのみ、最大100文字）で
+ *   検証し、sanitizeForSheet_()の変換対象となる先頭文字（=+-@）を許容しない。これにより、
+ *   Sheetへの保存値と、冪等性判定に使う受信直後の生値（data.submission_id）が常に一致する。
  * ・LockService（既存照合〜書き込みまでロック内で完結させる。doPost→processSubmission_）
  * ・Formula Injection対策（sanitizeForSheet_。submission_id/display_name/contact_email/
  *   contact_x/free_comment に適用）
@@ -187,7 +190,14 @@ var ALLOWED_ACTIVITY_PREFERENCES = [
 var MAX_DISPLAY_NAME_LENGTH = 50; // フロントのmaxlengthと一致させる
 var MAX_CONTACT_LENGTH = 200; // フロントのcontact-email/contact-xのmaxlengthと一致させる
 var MAX_FREE_COMMENT_LENGTH = 300; // フロントのmaxlengthと一致させる
-var MAX_SUBMISSION_ID_LENGTH = 100; // crypto.randomUUID()は36文字、フォールバック生成でも数十文字程度のため十分な余裕
+/* submission_idの文字種・長さ制限。先頭は英数字固定、以降は英数字・ハイフンのみ、
+   最大100文字（crypto.randomUUID()は36文字、フォールバック生成でも数十文字程度のため十分な余裕）。
+   先頭を英数字に限定することで、sanitizeForSheet_()が対象とする =+-@ のいずれも
+   submission_idの先頭に来なくなり、Sheetへの保存値（sanitize後）と冪等性判定に使う
+   受信直後の生値（data.submission_id）が常に一致することを保証する（レビュー指摘対応：
+   例えば "-abc" のようなIDは保存時に "'-abc" へ変換されるため、加工前の値と比較する
+   duplicate判定が一致せず、同一submission_idの再送を検出できなくなっていた）。 */
+var SUBMISSION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9-]{0,99}$/;
 var EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // 簡易チェック（RFC完全準拠ではない）
 var X_HANDLE_PATTERN = /^[A-Za-z0-9_]{1,15}$/; // Xのユーザー名仕様（英数字・アンダースコア、1〜15文字）
 var X_PROFILE_URL_PATTERN = /^https?:\/\/(?:www\.|mobile\.)?(?:x\.com|twitter\.com)\/([A-Za-z0-9_]{1,15})\/?$/i;
@@ -268,9 +278,7 @@ function validatePayload_(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return { error: 'payload_invalid' };
 
   if (typeof data.submission_id !== 'string') return { error: 'submission_id_invalid_type' };
-  if (data.submission_id.length === 0 || data.submission_id.length > MAX_SUBMISSION_ID_LENGTH) {
-    return { error: 'submission_id_invalid_length' };
-  }
+  if (!SUBMISSION_ID_PATTERN.test(data.submission_id)) return { error: 'submission_id_invalid_format' };
 
   if (typeof data.display_name !== 'string') return { error: 'display_name_invalid_type' };
   if (data.display_name.length > MAX_DISPLAY_NAME_LENGTH) return { error: 'display_name_too_long' };
