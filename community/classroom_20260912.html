@@ -865,10 +865,8 @@
       'use strict';
 
       /* 募集状態は手動フラグで切り替える（Issue #224）。日付ベースの自動終了ロジックは使わない。
-         TODO(公開作業): GAS初回デプロイ後、下のGAS_ENDPOINT_URLを実際の/exec URLに差し替えてから
-         'open' に戻すこと。プレースホルダーのままopenにすると、本番送信が必ず失敗する
-         （PR #227レビュー指摘）。 */
-      var ENTRY_STATUS = 'closed'; // 'open' | 'closed' | 'waitlist'
+         GAS初回デプロイ・/exec URL反映（commit 58baea6）が完了したため、'open' に戻した。 */
+      var ENTRY_STATUS = 'open'; // 'open' | 'closed' | 'waitlist'
 
       var GAS_ENDPOINT_URL = 'https://script.google.com/macros/s/AKfycbw_rDPUv82N-XkwottbXCbahQSt3uuMH5CsMBqVON9-pIj_du2ySOH_x975IOM3uH-I/exec';
       var FORM_NAME = 'classroom_20260912';
