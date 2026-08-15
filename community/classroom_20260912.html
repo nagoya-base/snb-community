@@ -712,8 +712,8 @@
         </div>
 
         <div class="status-message status-message--closed" id="status-closed" hidden>
-          <strong>現在、受付を終了しています。</strong><br>
-          ご検討いただきありがとうございました。次回開催のお知らせはXでご確認ください。
+          <strong>現在、参加申込の受付を停止しています。</strong><br>
+          しばらくお待ちいただくか、最新情報はXでご確認ください。
         </div>
 
         <div class="status-message status-message--waitlist" id="status-waitlist" hidden>
@@ -864,8 +864,11 @@
     (function () {
       'use strict';
 
-      /* 募集状態は手動フラグで切り替える（Issue #224）。日付ベースの自動終了ロジックは使わない。 */
-      var ENTRY_STATUS = 'open'; // 'open' | 'closed' | 'waitlist'
+      /* 募集状態は手動フラグで切り替える（Issue #224）。日付ベースの自動終了ロジックは使わない。
+         TODO(公開作業): GAS初回デプロイ後、下のGAS_ENDPOINT_URLを実際の/exec URLに差し替えてから
+         'open' に戻すこと。プレースホルダーのままopenにすると、本番送信が必ず失敗する
+         （PR #227レビュー指摘）。 */
+      var ENTRY_STATUS = 'closed'; // 'open' | 'closed' | 'waitlist'
 
       var GAS_ENDPOINT_URL = 'https://script.google.com/macros/s/PLACEHOLDER_REPLACE_WITH_CLASSROOM_20260912_DEPLOYMENT_ID/exec';
       var FORM_NAME = 'classroom_20260912';
@@ -1191,6 +1194,18 @@
         var payload = buildPayload();
         if (isTestMode) {
           showCompletion(true);
+          return;
+        }
+
+        // 保険：GAS_ENDPOINT_URLがプレースホルダーのまま万一ENTRY_STATUSがopenに
+        // なっていた場合でも、確実に失敗するネットワーク送信を試みず安全に止める。
+        if (GAS_ENDPOINT_URL.indexOf('PLACEHOLDER_REPLACE_WITH') !== -1) {
+          if (analytics()) analytics().trackFormError(FORM_NAME, 'endpoint_not_configured');
+          if (submitError) {
+            submitError.textContent = '現在、この申込フォームは準備中のため送信できません。しばらくしてから再度お試しください。';
+            submitError.hidden = false;
+            submitError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
           return;
         }
 
