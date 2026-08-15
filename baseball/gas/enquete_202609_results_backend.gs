@@ -19,6 +19,13 @@
  *    RESULTS_GAS_ENDPOINT に設定する。
  * 6. /exec?action=summary をブラウザで開き、{"ok":true, ...} のJSONが返ることを確認する。
  *
+ * ── APIレベルのテストモード（?action=summary&test=1） ──
+ * baseball/gas/enquete_202609_backend.gs 側のAPIレベルテストモード（POST先URLに ?test=1）で
+ * test_responsesシートへ保存したテストデータを確認するための専用エンドポイント。
+ * 本番の ?action=summary（responsesシートを集計）とはキャッシュ・レスポンスとも完全に分離しており、
+ * 本番の集計結果には一切混ざらない。test_responsesシートがまだ存在しない場合はエラーにはせず、
+ * total:0の空集計を返す（テスト送信がまだ1件もない状態でも安全に呼び出せるようにするため）。
+ *
  * APIレスポンスへ絶対に含めないもの：
  * - display_name（お名前／ハンドルネーム）
  * - contact_email
@@ -30,6 +37,9 @@
 
 var RESULTS_SPREADSHEET_ID = 'PLACEHOLDER_REPLACE_WITH_BASEBALL_RESULTS_SPREADSHEET_ID';
 var RESULTS_SHEET_NAME = 'responses';
+/* baseball/gas/enquete_202609_backend.gs の TEST_SHEET_NAME と同じ文字列にすること。
+   APIレベルのテストモード（?action=summary&test=1）専用の集計対象。 */
+var RESULTS_TEST_SHEET_NAME = 'test_responses';
 var RESULTS_CACHE_SECONDS = 30;
 
 /* 候補日は必ずこの6列のみ。9/12・9/26は候補日に含めない（Issue #225で明示的に禁止）。
@@ -56,25 +66,27 @@ var RESULTS_HISTORY_VALUES = ['初参加', '以前参加したことがある'];
 
 function doGet(e) {
   var action = e && e.parameter ? String(e.parameter.action || '') : '';
+  var isTestMode = !!(e && e.parameter && e.parameter.test === '1');
 
   if (action !== 'summary') {
     return resultsJson_({
       ok: true,
       service: 'baseball enquete_202609 anonymous summary API',
-      usage: '?action=summary（運営用クロス集計）'
+      usage: '?action=summary（運営用クロス集計。&test=1でテスト専用シートを集計）'
     });
   }
 
   try {
+    var cacheKey = isTestMode ? 'summary_test_v1' : 'summary_v1';
     var cache = CacheService.getScriptCache();
-    var cached = cache.get('summary_v1');
+    var cached = cache.get(cacheKey);
     if (cached) {
       return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
     }
 
-    var summary = buildSurveySummary_();
+    var summary = buildSurveySummary_(isTestMode);
     var encoded = JSON.stringify(summary);
-    cache.put('summary_v1', encoded, RESULTS_CACHE_SECONDS);
+    cache.put(cacheKey, encoded, RESULTS_CACHE_SECONDS);
     return ContentService.createTextOutput(encoded).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     // 内部例外の文言をクライアントへ返さない。詳細はサーバー側ログにのみ残す。
@@ -84,7 +96,8 @@ function doGet(e) {
 }
 
 /**
- * 運営用クロス集計を組み立てる。
+ * 運営用クロス集計を組み立てる。isTestMode=trueの場合、対象シートが本番のRESULTS_SHEET_NAMEでは
+ * なくRESULTS_TEST_SHEET_NAMEになる（APIレベルのテストモード。ファイル冒頭コメント参照）。
  * - total: 総回答数（現在Sheetに保存されている行数。1人1行のupsert後の件数）
  * - date_counts: 候補日ごとの参加可能人数
  * - matrix: 候補日6日×6日の重複人数マトリクス。matrix[A][B] は「AもBも○」の人数。
@@ -95,14 +108,24 @@ function doGet(e) {
  * 個々の回答行・display_name・連絡先・自由記述・submission_idはいっさい読み出し対象に含めない
  * （必要な列のみ getRange で取得し、レスポンス組み立てにも使わない）。
  */
-function buildSurveySummary_() {
+function buildSurveySummary_(isTestMode) {
   var ss = SpreadsheetApp.openById(RESULTS_SPREADSHEET_ID);
-  var sheet = ss.getSheetByName(RESULTS_SHEET_NAME);
-  if (!sheet) throw new Error('responses sheet not found');
+  var sheetName = isTestMode ? RESULTS_TEST_SHEET_NAME : RESULTS_SHEET_NAME;
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    // テストモードでは、まだ1件もテスト送信していない状態（test_responsesシート未作成）を
+    // エラーにせず、空集計として返す。本番モードでresponsesシートが無いのは異常事態のため
+    // 従来どおり例外にする。
+    if (isTestMode) return emptySummary_(true);
+    throw new Error('responses sheet not found');
+  }
 
   var lastRow = sheet.getLastRow();
   var lastColumn = sheet.getLastColumn();
-  if (lastColumn < 1) throw new Error('header not found');
+  if (lastColumn < 1) {
+    if (isTestMode) return emptySummary_(true);
+    throw new Error('header not found');
+  }
 
   var headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
   var index = {};
@@ -142,6 +165,7 @@ function buildSurveySummary_() {
 
   return {
     ok: true,
+    test_mode: isTestMode,
     total: rows.length,
     no_available_count: noAvailableCount,
     updated_at: Utilities.formatDate(new Date(), 'Asia/Tokyo', "yyyy-MM-dd'T'HH:mm:ssXXX"),
@@ -154,6 +178,30 @@ function buildSurveySummary_() {
     matrix: matrix,
     date_intent: dateIntent,
     history_counts: historyCounts
+  };
+}
+
+/**
+ * テストモードで、まだtest_responsesシートが存在しない（＝テスト送信がまだ1件もない）場合の
+ * 空集計レスポンス。本番相当の形状を保ったまま、全カウントを0として返す。
+ */
+function emptySummary_(isTestMode) {
+  var dateKeys = RESULTS_DATE_COLUMNS.map(function (pair) { return pair[0]; });
+  return {
+    ok: true,
+    test_mode: isTestMode,
+    total: 0,
+    no_available_count: 0,
+    updated_at: Utilities.formatDate(new Date(), 'Asia/Tokyo', "yyyy-MM-dd'T'HH:mm:ssXXX"),
+    labels: {
+      dates: objectFromPairs_(RESULTS_DATE_COLUMNS),
+      intents: RESULTS_INTENTS,
+      history: RESULTS_HISTORY_VALUES
+    },
+    date_counts: zeroMap_(dateKeys),
+    matrix: makeMatrix_(dateKeys, dateKeys),
+    date_intent: makeMatrix_(dateKeys, RESULTS_INTENTS),
+    history_counts: zeroMap_(RESULTS_HISTORY_VALUES)
   };
 }
 

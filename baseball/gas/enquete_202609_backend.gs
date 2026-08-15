@@ -27,6 +27,27 @@
  * 9. baseball/gas/enquete_202609_results_backend.gs の RESULTS_SPREADSHEET_ID に、
  *    このスプレッドシートのID（URLの /d/ と /edit の間の文字列）を設定して集計APIもデプロイする。
  *
+ * ── APIレベルのテストモード（?test=1） ──
+ * baseball/enquete_202609.html の画面側テストモード（?test=1）は、この節とは別に、
+ * そもそもこのバックエンドへリクエストを送らない設計になっている（本番Sheet・通知・GA4を
+ * 一切汚さず入力〜完了画面まで確認できるようにするため）。
+ *
+ * それとは別に、このバックエンド自体にもテストモードを用意する。デプロイ後の実疎通確認
+ * （本物の /exec URLへ直接POSTして冪等性・upsert・contact_conflictの実挙動を確認する用途）で、
+ * 本番の responses シートや運営への通知メールを一切汚さずに済むようにするためのもの。
+ *
+ * 使い方：POST先のURLに ?test=1 を付ける（例： {デプロイ後の/exec URL}?test=1）。
+ * - 書き込み先が本番の 'responses' ではなく、専用の 'test_responses' シートになる
+ *   （存在しなければCOLUMNSヘッダー付きで自動作成される）。冪等性・連絡先upsert・
+ *   contact_conflict判定などのロジックはすべて本番と同一だが、対象データは
+ *   test_responsesシート内に完結し、本番データには一切影響しない。
+ * - 通知メールは送信されない（NOTIFICATION_EMAILの設定に関わらず）。
+ * - レスポンスJSONに test_mode:true が含まれる。
+ * - baseball/gas/enquete_202609_results_backend.gs 側も ?action=summary&test=1 で
+ *   test_responsesシートだけを集計するテスト専用エンドポイントを持つ（本番集計には出ない）。
+ * - QA・疎通確認が終わったら、スクリプトエディタの関数選択で resetTestSheet を実行すると、
+ *   test_responsesシートの中身（ヘッダー以外）を一括で消せる。
+ *
  * ── 同一人物1票・再回答upsertの方式（Issue #225） ──
  * submission_id は「送信操作」単位の冪等性キーとして維持する。同じsubmission_idの再送は
  * 行を増やさず、通知メールも送らない（processSubmission_内で最優先に判定する）。
@@ -94,6 +115,11 @@
  */
 
 var SHEET_NAME = 'responses';
+
+/* APIレベルのテストモード（POST先URLに ?test=1）専用の書き込み先。ファイル冒頭コメントの
+   「APIレベルのテストモード」を参照。baseball/gas/enquete_202609_results_backend.gs の
+   RESULTS_TEST_SHEET_NAME と同じ文字列にすること。 */
+var TEST_SHEET_NAME = 'test_responses';
 
 /* 新しい回答・更新回答が保存されたときの通知先。デプロイ手順3の通り、実際の運営者アドレスに書き換えること。 */
 var NOTIFICATION_EMAIL = 'YOUR_NOTIFICATION_EMAIL';
@@ -193,6 +219,8 @@ function doGet(e) {
     message += '\n[WARNING] NOTIFICATION_EMAIL が未設定です（プレースホルダーのままです）。' +
       'このままでは運営者への通知メールが送信されません。実際の宛先へ書き換えてください。';
   }
+  message += '\n[INFO] POST先URLに ?test=1 を付けると、書き込み先が本番のresponsesではなく' +
+    'test_responsesシートになり、通知メールも送信されません（疎通確認用。詳細はファイル冒頭コメント参照）。';
   return ContentService.createTextOutput(message);
 }
 
@@ -316,16 +344,35 @@ function hasExpectedHeader_(sheet) {
 }
 
 /**
+ * APIレベルのテストモード（?test=1）用のシートを取得する。存在しなければCOLUMNSヘッダー付きで
+ * 新規作成する（テスト用途のため、setupHeaderRowのような「既存回答があると例外停止」という
+ * 安全装置は設けない＝疎通確認のたびに毎回気軽に使える設計）。
+ * 既に存在するがヘッダーが一致しない場合は、呼び出し元のhasExpectedHeader_チェックに委ねる
+ * （誤って重要なシートを同名で使っていた場合に、無言で上書きしないための安全策）。
+ */
+function getOrCreateTestSheet_(ss) {
+  var sheet = ss.getSheetByName(TEST_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(TEST_SHEET_NAME);
+    sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+  }
+  return sheet;
+}
+
+/**
  * ロック保持中に行う本体処理（payload検証・submission_id冪等性判定・連絡先による同一人物照合・
  * Sheetsへの追記または上書き更新まで）。Issue #225の要件により、既存照合から書き込みまでを
  * このLockService保持区間の中で完結させる。
+ * isTestModeがtrueの場合、書き込み先は本番のSHEET_NAMEではなくTEST_SHEET_NAMEになる
+ * （ファイル冒頭コメント「APIレベルのテストモード」を参照）。判定・照合ロジック自体は
+ * 本番と同一で、対象データが異なるだけ。
  * メール送信はここでは行わない。MailApp.sendEmail()はネットワーク呼び出しを伴い遅延しうるため、
  * ロックを保持したまま呼ぶと後続リクエストの待ち時間が延び、busyになりやすくなる。
  * そのため通知が必要な場合は必要な情報を呼び出し元に返すだけにとどめ、実際の送信は
- * doPost側でロック解放後に行う。
+ * doPost側でロック解放後に行う（テストモード時はdoPost側で送信自体をスキップする）。
  * 戻り値：{ response: ContentServiceのレスポンス, notify: 保存が発生した場合のみ通知情報、それ以外はnull }
  */
-function processSubmission_(e) {
+function processSubmission_(e, isTestMode) {
   try {
     if (!e || !e.postData || !e.postData.contents) {
       return { response: jsonResponse_({ ok: false, error: 'no_payload' }), notify: null };
@@ -343,9 +390,10 @@ function processSubmission_(e) {
       return { response: jsonResponse_({ ok: false, error: validated.error }), notify: null };
     }
 
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = isTestMode ? getOrCreateTestSheet_(ss) : ss.getSheetByName(SHEET_NAME);
     if (!sheet) {
-      return { response: jsonResponse_({ ok: false, error: 'sheet_not_found' }), notify: null };
+      return { response: jsonResponse_({ ok: false, error: isTestMode ? 'test_sheet_not_found' : 'sheet_not_found' }), notify: null };
     }
     if (!hasExpectedHeader_(sheet)) {
       return { response: jsonResponse_({ ok: false, error: 'header_mismatch' }), notify: null };
@@ -360,7 +408,7 @@ function processSubmission_(e) {
     // 1) submission_id冪等性：送信操作そのものの再送は行を増やさず・通知もしない。
     for (var s = 0; s < dataRows.length; s++) {
       if (dataRows[s][colIndex.submission_id] === data.submission_id) {
-        return { response: jsonResponse_({ ok: true, duplicate: true }), notify: null };
+        return { response: jsonResponse_({ ok: true, duplicate: true, test_mode: isTestMode }), notify: null };
       }
     }
 
@@ -381,7 +429,7 @@ function processSubmission_(e) {
     if (emailRowIndex !== -1 && xRowIndex !== -1 && emailRowIndex !== xRowIndex) {
       // メールが指す既存行とXが指す既存行が別々。自動更新すると誤って別人の回答を
       // 書き換える恐れがあるため、既存行はいっさい変更せず書き込みを拒否する。
-      return { response: jsonResponse_({ ok: false, error: 'contact_conflict' }), notify: null };
+      return { response: jsonResponse_({ ok: false, error: 'contact_conflict', test_mode: isTestMode }), notify: null };
     }
 
     var targetIndex = emailRowIndex !== -1 ? emailRowIndex : xRowIndex; // -1なら新規行
@@ -408,7 +456,7 @@ function processSubmission_(e) {
     }
 
     return {
-      response: jsonResponse_({ ok: true, duplicate: false }),
+      response: jsonResponse_({ ok: true, duplicate: false, test_mode: isTestMode, action: isUpdate ? 'update' : 'new' }),
       notify: { data: data, displayName: validated.displayName, timestamp: now, isUpdate: isUpdate }
     };
   } catch (err) {
@@ -417,6 +465,10 @@ function processSubmission_(e) {
 }
 
 function doPost(e) {
+  // APIレベルのテストモード。POST先URLに ?test=1 を付けた場合のみ有効になる
+  // （ファイル冒頭コメント「APIレベルのテストモード」を参照）。
+  var isTestMode = !!(e && e.parameter && e.parameter.test === '1');
+
   var lock = LockService.getScriptLock();
   var gotLock = false;
   try {
@@ -431,14 +483,15 @@ function doPost(e) {
 
   var result;
   try {
-    result = processSubmission_(e);
+    result = processSubmission_(e, isTestMode);
   } finally {
     lock.releaseLock();
   }
 
   // 通知メールはSheets保存に対して補助処理であり、失敗しても回答自体は成功として返す。
   // ロック解放後に送ることで、メール送信の遅延が後続リクエストのbusy化に響かないようにする。
-  if (result.notify) {
+  // テストモードでは、本番運営者へ通知メールを一切送らない。
+  if (result.notify && !isTestMode) {
     sendNotificationEmailSafely_(result.notify);
   }
 
@@ -533,4 +586,21 @@ function setupHeaderRow() {
     sheet.getRange(1, 1, 1, existingColumnCount).clearContent();
   }
   sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+}
+
+/**
+ * APIレベルのテストモード（?test=1）で溜まったtest_responsesシートのデータを、
+ * ヘッダー行だけ残して一括で消す。QA・疎通確認が終わったら、スクリプトエディタの
+ * 関数選択でこれを1回実行する。本番の'responses'シートには一切触れない。
+ * test_responsesシート自体が存在しない場合は何もしない。
+ */
+function resetTestSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(TEST_SHEET_NAME);
+  if (!sheet) return;
+  var lastRow = sheet.getLastRow();
+  var lastColumn = sheet.getLastColumn();
+  if (lastRow > 1 && lastColumn > 0) {
+    sheet.getRange(2, 1, lastRow - 1, lastColumn).clearContent();
+  }
 }
