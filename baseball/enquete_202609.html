@@ -250,8 +250,8 @@
     </div>
 
     <div class="status-message status-message--closed" id="sv-closed" hidden>
-      <strong>回答期間は終了しました。</strong><br>
-      ご協力ありがとうございました。開催日のお知らせはXでご確認ください。
+      <strong id="sv-closed-title">回答期間は終了しました。</strong><br>
+      <span id="sv-closed-body">ご協力ありがとうございました。開催日のお知らせはXでご確認ください。</span>
     </div>
 
     <div class="survey-card" id="survey-card">
@@ -430,9 +430,16 @@
        発行された /exec URL に書き換えるまでは実送信できないが、テストモード（?test=1）の
        画面確認には影響しない。 */
     var GAS_ENDPOINT_URL = 'PLACEHOLDER_REPLACE_WITH_BASEBALL_ENQUETE_GAS_URL';
+    /* 定員チェック（?action=capacity）専用。baseball/enquete_202609_results.html の
+       RESULTS_GAS_ENDPOINT と同じ、集計用GASの /exec URLを設定する
+       （baseball/gas/enquete_202609_results_backend.gs 参照）。未設定のままでも定員チェックが
+       スキップされるだけで、回答受付自体は継続する（fail-open）。 */
+    var RESULTS_GAS_ENDPOINT = 'PLACEHOLDER_REPLACE_WITH_BASEBALL_RESULTS_GAS_URL';
     var FORM_NAME = 'baseball_enquete_202609_form';
-    /* 候補日（9/5〜9/27）を踏まえ、開催日を決めるための回答収集期間の目安。必要に応じて調整可。 */
-    var SURVEY_DEADLINE_ISO = '2026-09-03T23:59:59+09:00';
+    /* 一時〆切：8/28（金）23:59、または回答12名到達のどちらか早い方（運営判断による仮の目安。
+       状況に応じて調整可）。 */
+    var SURVEY_DEADLINE_ISO = '2026-08-28T23:59:59+09:00';
+    var SURVEY_MAX_RESPONSES = 12;
     var isTestMode = window.SNB_TEST_MODE === true;
     var isPreviewClosedMode = window.SNB_PREVIEW_CLOSED_MODE === true;
     var deadlineMs = new Date(SURVEY_DEADLINE_ISO).getTime();
@@ -443,6 +450,8 @@
 
     var surveyCard = document.getElementById('survey-card');
     var closedBox = document.getElementById('sv-closed');
+    var closedTitle = document.getElementById('sv-closed-title');
+    var closedBody = document.getElementById('sv-closed-body');
     var successBox = document.getElementById('sv-success');
     var testSuccessBox = document.getElementById('sv-test-success');
     var submitError = document.getElementById('sv-error');
@@ -457,9 +466,21 @@
       console.error('[baseball_enquete_202609] GAS_ENDPOINT_URL がプレースホルダーのままです。');
     }
 
-    if (!isTestMode && isPastDeadline) {
+    // reason: 'date'（締切日超過）または 'capacity'（定員到達）。
+    function showClosed(reason) {
       if (surveyCard) surveyCard.hidden = true;
+      if (reason === 'capacity') {
+        if (closedTitle) closedTitle.textContent = '定員（' + SURVEY_MAX_RESPONSES + '名）に達したため、一時的に受付を終了しました。';
+        if (closedBody) closedBody.textContent = 'たくさんのご回答ありがとうございました。受付を再開する場合はXでお知らせします。';
+      } else {
+        if (closedTitle) closedTitle.textContent = '回答期間は終了しました。';
+        if (closedBody) closedBody.textContent = 'ご協力ありがとうございました。開催日のお知らせはXでご確認ください。';
+      }
       if (closedBox) closedBox.hidden = false;
+    }
+
+    if (!isTestMode && isPastDeadline) {
+      showClosed('date');
       return;
     }
     if (closedBox) closedBox.hidden = true;
@@ -828,8 +849,37 @@
         });
     });
 
+    /**
+     * 一時〆切のもう一方の条件（定員12名到達）を確認する。締切日を過ぎていない場合のみ呼ばれる。
+     * テストモード・?test=closedプレビュー中はスキップする（backendの実デプロイ有無に関わらず
+     * 画面確認できるようにするため）。RESULTS_GAS_ENDPOINTが未設定、または取得に失敗した場合は
+     * 定員チェックを行わず回答受付を継続する（fail-open。定員判定の失敗で回答自体を
+     * 止めないため）。締切日と異なり、これはあくまで簡易的な目安のチェックであり、
+     * 同時に複数人が送信した場合の厳密な排他制御は行わない。
+     */
+    function checkCapacityAndMaybeClose() {
+      if (isTestMode || isPreviewClosedMode) return;
+      if (RESULTS_GAS_ENDPOINT.indexOf('PLACEHOLDER_REPLACE_WITH') !== -1) return;
+      var url = RESULTS_GAS_ENDPOINT + (RESULTS_GAS_ENDPOINT.indexOf('?') === -1 ? '?' : '&') + 'action=capacity&_=' + Date.now();
+      fetch(url, { method: 'GET', cache: 'no-store' })
+        .then(function (response) {
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          return response.json();
+        })
+        .then(function (data) {
+          if (!data || data.ok !== true) return;
+          if (Number(data.total || 0) >= SURVEY_MAX_RESPONSES) {
+            showClosed('capacity');
+          }
+        })
+        .catch(function () {
+          // 定員チェックの失敗は回答受付を止める理由にしない。
+        });
+    }
+
     updateDateState();
     updateCarrierNoticeVisibility();
+    checkCapacityAndMaybeClose();
   })();
 </script>
 </body>
