@@ -16,20 +16,15 @@
  * 4. 「デプロイ」→「新しいデプロイ」→「ウェブアプリ」。実行ユーザーは自分、
  *    アクセス権はダッシュボードからGETできる設定にする。
  * 5. 発行された /exec URL を baseball/enquete_202609_results.html の
- *    RESULTS_GAS_ENDPOINT、および baseball/enquete_202609.html の RESULTS_GAS_ENDPOINT
- *    （一時〆切の定員チェック用）の両方に設定する。
+ *    RESULTS_GAS_ENDPOINT に設定する。
  * 6. /exec?action=summary をブラウザで開き、{"ok":true, ...} のJSONが返ることを確認する。
- *    /exec?action=capacity も開き、{"ok":true,"total":0} 等が返ることを確認する。
  *
- * ── 一時〆切の定員チェック用エンドポイント（?action=capacity） ──
- * baseball/enquete_202609.html は、8/28（金）23:59 または回答12名到達のどちらか早い方で
- * 一時的に受付を終了する。日付は画面側だけで判定できるが、回答12名到達の判定には
- * 現在の総回答数が必要なため、このエンドポイントを呼び出す。
- * 返すのは総回答数（total）のみで、氏名・連絡先・自由記述・クロス集計などは一切含めない。
- * ?action=summary と同じくキャッシュされ、&test=1 でtest_responsesシート（0件なら0扱い）を
- * 参照するテスト専用の集計に切り替えられる。
+ * 受付上限について：baseball/enquete_202609.html の一時〆切は 2026/8/28（金）23:59 のみ。
+ * 12名は通常参加枠の目安であり、回答数到達によるフォーム閉鎖・新規回答拒否は行わない
+ * （13人目以降は補欠候補として運営が手動対応する。Issue #225 2026-08-15追記）。
+ * そのため、このAPIに回答数到達を判定するための専用エンドポイントは設けていない。
  *
- * ── APIレベルのテストモード（?action=summary&test=1 / ?action=capacity&test=1） ──
+ * ── APIレベルのテストモード（?action=summary&test=1） ──
  * baseball/gas/enquete_202609_backend.gs 側のAPIレベルテストモード（POST先URLに ?test=1）で
  * test_responsesシートへ保存したテストデータを確認するための専用エンドポイント。
  * 本番の ?action=summary（responsesシートを集計）とはキャッシュ・レスポンスとも完全に分離しており、
@@ -78,30 +73,11 @@ function doGet(e) {
   var action = e && e.parameter ? String(e.parameter.action || '') : '';
   var isTestMode = !!(e && e.parameter && e.parameter.test === '1');
 
-  if (action === 'capacity') {
-    try {
-      var capacityCacheKey = isTestMode ? 'capacity_test_v1' : 'capacity_v1';
-      var capacityCache = CacheService.getScriptCache();
-      var cachedCapacity = capacityCache.get(capacityCacheKey);
-      if (cachedCapacity) {
-        return ContentService.createTextOutput(cachedCapacity).setMimeType(ContentService.MimeType.JSON);
-      }
-
-      var capacity = buildCapacity_(isTestMode);
-      var encodedCapacity = JSON.stringify(capacity);
-      capacityCache.put(capacityCacheKey, encodedCapacity, RESULTS_CACHE_SECONDS);
-      return ContentService.createTextOutput(encodedCapacity).setMimeType(ContentService.MimeType.JSON);
-    } catch (err) {
-      console.error('[enquete_202609_results] capacity_error: ' + err);
-      return resultsJson_({ ok: false, error: 'capacity_error' });
-    }
-  }
-
   if (action !== 'summary') {
     return resultsJson_({
       ok: true,
       service: 'baseball enquete_202609 anonymous summary API',
-      usage: '?action=summary（運営用クロス集計）／?action=capacity（一時〆切の定員チェック用）。いずれも&test=1でテスト専用シートを参照'
+      usage: '?action=summary（運営用クロス集計。&test=1でテスト専用シートを参照）'
     });
   }
 
@@ -232,26 +208,6 @@ function emptySummary_(isTestMode) {
     date_intent: makeMatrix_(dateKeys, RESULTS_INTENTS),
     history_counts: zeroMap_(RESULTS_HISTORY_VALUES)
   };
-}
-
-/**
- * baseball/enquete_202609.html の一時〆切（定員到達）判定専用。総回答数のみを返す、
- * 公開しても差し支えない最小限のレスポンス。個々の回答行・display_name・連絡先・
- * 自由記述・submission_id・クロス集計はいっさい含めない（列の値すら読まず、行数のみを数える）。
- * isTestMode=trueの場合はtest_responsesシートを対象にする。シートが存在しない場合は
- * total:0を返す（テスト送信が1件もない、または本番運用開始直後で該当シートが空のケースを
- * エラーにしないため）。
- */
-function buildCapacity_(isTestMode) {
-  var ss = SpreadsheetApp.openById(RESULTS_SPREADSHEET_ID);
-  var sheetName = isTestMode ? RESULTS_TEST_SHEET_NAME : RESULTS_SHEET_NAME;
-  var sheet = ss.getSheetByName(sheetName);
-  var total = 0;
-  if (sheet) {
-    var lastRow = sheet.getLastRow();
-    total = lastRow >= 2 ? lastRow - 1 : 0;
-  }
-  return { ok: true, test_mode: isTestMode, total: total };
 }
 
 function zeroMap_(keys) {
