@@ -952,9 +952,20 @@
       form.addEventListener('input', trackFormStart);
       form.addEventListener('change', trackFormStart);
 
+      /* docomo・au・SoftBank等のキャリアメールドメイン一覧。この一覧に一致する場合のみ
+         キャリアメール向けの受信設定確認を表示・必須化する（PR #227レビュー指摘：
+         Gmail等の一般メールアドレスにまで確認を必須化しないため）。 */
+      var CARRIER_EMAIL_DOMAINS = ['docomo.ne.jp', 'ezweb.ne.jp', 'au.com', 'softbank.ne.jp', 'i.softbank.jp', 'ymobile.ne.jp'];
+      function isCarrierEmail(value) {
+        var at = value.lastIndexOf('@');
+        if (at === -1) return false;
+        var domain = value.slice(at + 1).trim().toLowerCase();
+        return CARRIER_EMAIL_DOMAINS.indexOf(domain) !== -1;
+      }
+
       function updateCarrierNoticeVisibility() {
         if (!carrierNotice) return;
-        var show = email.value.trim() !== '';
+        var show = isCarrierEmail(email.value.trim());
         carrierNotice.hidden = !show;
         if (!carrierAck) return;
         if (show) {
@@ -1035,7 +1046,7 @@
           focusAndScroll(email);
           return false;
         }
-        if (hasEmail && carrierAck && !carrierAck.checked) {
+        if (hasEmail && isCarrierEmail(email.value.trim()) && carrierAck && !carrierAck.checked) {
           showFieldError('err-contact', 'メール受信設定・迷惑メールフォルダについての確認にチェックを入れてください。', 'carrier_ack_missing');
           focusAndScroll(carrierAck);
           return false;

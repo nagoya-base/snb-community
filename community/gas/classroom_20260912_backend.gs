@@ -98,6 +98,14 @@ var MAX_CONCERN_OTHER_LENGTH = 200; // フロントのconcern-other maxlengthと
 var MAX_FREE_COMMENT_LENGTH = 300; // フロントのfree-comment maxlengthと一致させる
 var EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // 簡易チェック（RFC完全準拠ではない）
 var MAX_SUBMISSION_ID_LENGTH = 100; // crypto.randomUUID()は36文字、フォールバック生成でも数十文字程度のため十分な余裕
+/* submission_idの文字集合を英数字・ハイフンのみ、かつ先頭は英数字に制限する（PR #227レビュー指摘）。
+   sanitizeForSheetは先頭が =, +, -, @ の場合に保存値の先頭へ'を付与するが、isDuplicateSubmissionは
+   保存前の生のsubmission_idと既存シート値（＝sanitizeForSheet適用後の値）を比較しているため、
+   もしsubmission_idの先頭文字を制限しないと、細工したPOSTで「保存値と比較値が食い違う」ことで
+   重複判定をすり抜けられてしまう。この正規表現により、正規のUUID／フォールバック生成値はそのまま
+   許可しつつ、先頭が =, +, -, @ になり得る値を根本的に拒否し、sanitizeForSheetが
+   submission_idに対して実質的に無害（no-op）であることを保証する。 */
+var SUBMISSION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9-]{0,99}$/;
 
 /**
  * Googleスプレッドシートの数式インジェクション対策。
@@ -134,12 +142,15 @@ function doGet(e) {
 function validatePayload(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return 'payload_invalid';
 
-  // submission_id：冪等性のキーとして使うため、型・長さだけ検証する（文字の内容自体は
-  // allowlist化できない自由な識別子のため、シート書き込み時にsanitizeForSheetで防御する）。
+  // submission_id：冪等性のキーとして使うため、型・長さに加えて文字集合も検証する。
+  // 英数字・ハイフンのみ（先頭は英数字）に制限することで、sanitizeForSheetによる
+  // 保存値の書き換えが発生しないことを保証し、重複判定（生値 vs 保存値）のズレを防ぐ
+  // （PR #227レビュー指摘）。
   if (typeof data.submission_id !== 'string') return 'submission_id_invalid_type';
   if (data.submission_id.length === 0 || data.submission_id.length > MAX_SUBMISSION_ID_LENGTH) {
     return 'submission_id_invalid_length';
   }
+  if (!SUBMISSION_ID_PATTERN.test(data.submission_id)) return 'submission_id_invalid_format';
 
   // 表示名：必須・型・長さ。
   if (typeof data.display_name !== 'string') return 'display_name_invalid_type';
