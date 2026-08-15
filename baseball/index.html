@@ -280,6 +280,15 @@
     }
     .schedule-title { font-size: 1.1rem; font-weight: 800; color: var(--sky); margin-bottom: 0.5rem; }
     .schedule-note { font-size: 0.88rem; color: var(--text-muted); }
+    .survey-cta {
+      margin-top: 1.5rem;
+      padding: 1.1rem 1.3rem;
+      background: var(--bg-tint);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+    }
+    .survey-cta__title { font-size: 1rem; font-weight: 800; color: var(--accent-lt); margin-bottom: 0.3rem; }
+    .survey-cta__note { font-size: 0.84rem; color: var(--text-muted); margin-bottom: 0.9rem; }
 
     /* ── Gallery ── */
     .gallery-grid {
@@ -380,8 +389,13 @@
         現在、屋外活動を休止しています。<br>
         次回開催はXでお知らせします。
       </p>
+      <div class="survey-cta">
+        <p class="survey-cta__title">📋 9月キャッチボール会 日程アンケート受付中</p>
+        <p class="survey-cta__note">参加できそうな日を教えてください。回答＝参加確定ではありません。</p>
+        <a href="./enquete_202609.html" class="btn btn-primary" data-cta-name="survey_202609" data-cta-location="schedule">日程アンケートに回答する</a>
+      </div>
       <p style="margin-top: 1.5rem;">
-        <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-outbound-channel="x" data-cta-location="schedule">Xで次回開催を確認する</a>
+        <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-outline" data-outbound-channel="x" data-cta-location="schedule">Xで次回開催を確認する</a>
         <a href="../contact/?category=question" class="btn btn-outline" data-cta-name="contact_form" data-cta-location="schedule">初参加についてフォームで質問する</a>
       </p>
       <p class="schedule-note" style="margin-top: 1.25rem; font-size: 0.82rem;">
