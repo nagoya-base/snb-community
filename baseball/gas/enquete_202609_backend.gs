@@ -125,7 +125,7 @@ var SHEET_NAME = 'responses';
 var TEST_SHEET_NAME = 'test_responses';
 
 /* 新しい回答・更新回答が保存されたときの通知先。デプロイ手順3の通り、実際の運営者アドレスに書き換えること。 */
-var NOTIFICATION_EMAIL = 'YOUR_NOTIFICATION_EMAIL';
+var NOTIFICATION_EMAIL = 'bbuni.ngo@gmail.com';
 
 var NOTIFICATION_EMAIL_SUBJECT_NEW = '【名古屋野球ユニ部】9月日程アンケートに新しい回答があります';
 var NOTIFICATION_EMAIL_SUBJECT_UPDATE = '【名古屋野球ユニ部】9月日程アンケートの回答が更新されました';
