@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>9/12教室撮影会｜運営用リアルタイム集計｜SNBコミュニティ</title>
+  <meta name="description" content="SNBコミュニティ 2026年9月SNBC教室撮影会（9/12開催）の運営用匿名集計ダッシュボードです。">
+  <!--
+    このページは通常の公開ナビゲーションからリンクしていない「検索・導線非公開」ページです
+    （Issue #229）。認証付き管理画面ではありません。URLを知っていれば誰でも開けます。
+    ただしAPI（classroom_20260912_results_backend.gs の ?action=summary）は表示名・連絡先・
+    Xアカウント・submission_id・自由記述などのPIIを一切返さない設計にしているため、
+    このURLが漏れてもPIIそのものは漏れません。氏名・連絡先・自由記述の確認は必ず
+    Googleスプレッドシート側で行う運用とします。
+  -->
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --border: #dde2ea;
+      --accent: #173d76;
+      --accent-soft: #eaf0f8;
+      --strong: #0d6b4d;
+      --strong-soft: #e8f5ef;
+      --danger: #a12a2a;
+      --danger-soft: #fff0f0;
+      --shadow: 0 8px 28px rgba(23, 32, 51, .07);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+      line-height: 1.65;
+    }
+    a { color: inherit; }
+    button { font: inherit; }
+    .wrap { width: min(1160px, calc(100% - 32px)); margin: 0 auto; }
+    .header { background: #111827; color: #fff; padding: 22px 0; }
+    .header__inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { font-weight: 800; letter-spacing: .08em; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; font-size: .78rem; }
+    main { padding: 28px 0 56px; }
+    .hero { display: grid; gap: 14px; margin-bottom: 24px; }
+    .eyebrow { margin: 0; color: var(--accent); font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(1.65rem, 4vw, 2.45rem); line-height: 1.2; }
+    .lead { margin: 0; color: var(--muted); max-width: 760px; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 16px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .button:disabled { opacity: .55; cursor: wait; }
+    .status { color: var(--muted); font-size: .9rem; }
+    .notice { border: 1px solid var(--border); background: var(--card); border-radius: 12px; padding: 12px 14px; color: var(--muted); font-size: .9rem; }
+    .notice--error { color: var(--danger); background: var(--danger-soft); border-color: #efb5b5; }
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin: 20px 0 28px; }
+    .metric { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); }
+    .metric__label { color: var(--muted); font-size: .82rem; margin-bottom: 5px; }
+    .metric__value { font-size: clamp(1.6rem, 5vw, 2.25rem); font-weight: 800; line-height: 1.15; }
+    .metric__sub { margin-top: 6px; color: var(--muted); font-size: .82rem; }
+    .section { margin-top: 30px; }
+    .section__head { display: flex; justify-content: space-between; gap: 14px; align-items: end; margin-bottom: 10px; }
+    .section h2 { margin: 0; font-size: 1.2rem; }
+    .section__note { margin: 0; color: var(--muted); font-size: .82rem; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+    .stat-card__label { color: var(--muted); font-size: .82rem; margin-bottom: 4px; }
+    .stat-card__value { font-size: 1.5rem; font-weight: 800; }
+    .stat-card--strong { background: var(--strong-soft); border-color: #bfe1d2; }
+    .stat-card--strong .stat-card__value { color: var(--strong); }
+    .empty { background: var(--card); border: 1px dashed var(--border); border-radius: 14px; padding: 32px 18px; text-align: center; color: var(--muted); }
+    .privacy { margin-top: 28px; border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 12px 14px; border-radius: 0 10px 10px 0; font-size: .88rem; color: #40526d; }
+    .privacy + .privacy { margin-top: 10px; }
+    footer { padding: 24px 0 38px; color: var(--muted); font-size: .82rem; }
+    [hidden] { display: none !important; }
+    @media (max-width: 720px) {
+      .wrap { width: min(100% - 20px, 1160px); }
+      .header__inner { align-items: flex-start; flex-direction: column; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .section__head { align-items: flex-start; flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="wrap header__inner">
+      <div class="brand">SNB COMMUNITY</div>
+      <span class="badge">運営用・匿名集計</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Classroom Photo Session 9/12 / Live Dashboard</p>
+      <h1>9/12 教室撮影会 申込状況 リアルタイム集計</h1>
+      <p class="lead">正式申込（entriesシート）の匿名集計だけを表示します。表示名・連絡先・Xアカウント・submission_id・自由記述はこの画面へ取得しません。個人情報の確認はGoogleスプレッドシート側で行ってください。</p>
+      <div class="toolbar">
+        <button type="button" class="button" id="refresh-button">今すぐ更新</button>
+        <span class="status" id="refresh-status" aria-live="polite">読み込み待ち</span>
+      </div>
+      <div class="notice" id="setup-notice" hidden></div>
+      <div class="notice notice--error" id="error-box" hidden role="alert"></div>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="metrics">
+        <article class="metric">
+          <div class="metric__label">総申込件数</div>
+          <div class="metric__value" id="metric-total">0</div>
+          <div class="metric__sub">agree_terms=trueの有効な申込のみ</div>
+        </article>
+        <article class="metric">
+          <div class="metric__label">通常受付</div>
+          <div class="metric__value" id="metric-open">0</div>
+          <div class="metric__sub">entry_mode = open</div>
+        </article>
+        <article class="metric">
+          <div class="metric__label">キャンセル待ち</div>
+          <div class="metric__value" id="metric-waitlist">0</div>
+          <div class="metric__sub">entry_mode = waitlist</div>
+        </article>
+        <article class="metric">
+          <div class="metric__label">最終集計</div>
+          <div class="metric__value" id="metric-updated" style="font-size:1.15rem">—</div>
+          <div class="metric__sub">60秒ごとに自動更新</div>
+        </article>
+      </div>
+
+      <div class="empty" id="empty-state" hidden>まだ申込はありません。最初の申込が入ると集計が表示されます。</div>
+
+      <div id="data-sections">
+        <section class="section">
+          <div class="section__head">
+            <div><h2>参加ははじめてか</h2><p class="section__note">first_timeの単純集計</p></div>
+          </div>
+          <div class="card-grid" id="grid-first-time"></div>
+        </section>
+
+        <section class="section">
+          <div class="section__head">
+            <div><h2>参加予定の衣装（カテゴリ別件数）</h2><p class="section__note">「その他」の自由記述本文（wear_other）は表示しません。正式申込フォームのallowlistと一致させています。</p></div>
+          </div>
+          <div class="card-grid" id="grid-wear-items"></div>
+        </section>
+
+        <section class="section">
+          <div class="section__head">
+            <div><h2>衣装貸出希望</h2><p class="section__note">wear_rental_requestedの単純集計</p></div>
+          </div>
+          <div class="card-grid" id="grid-rental"></div>
+        </section>
+
+        <section class="section">
+          <div class="section__head">
+            <div><h2>撮影について、希望・不安なこと（カテゴリ別件数）</h2><p class="section__note">「その他」の自由記述本文（concern_other）は表示しません。</p></div>
+          </div>
+          <div class="card-grid" id="grid-concerns"></div>
+        </section>
+      </div>
+
+      <div class="privacy">このダッシュボードは集計済みJSONのみ取得します。表示名、メールアドレス、Xアカウント、submission_id、自由記述、個別回答行はAPIレスポンスに含めない設計です。</div>
+      <div class="privacy">このページは検索・通常ナビゲーションから非公開のURLですが、認証付き管理画面ではありません。機密情報はそもそもAPIに含まれないため、URLが漏れてもPIIは漏れません。</div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    SNB Community｜2026年9月SNBC教室撮影会（9/12開催）運営用集計
+  </footer>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // デプロイ手順の通り、classroom_20260912_results_backend.gs 発行の /exec URLを設定する。
+      // community/enquete_202609.html の公開カード（?action=public）と同じ/exec URLを使う。
+      var RESULTS_GAS_ENDPOINT = 'https://script.google.com/macros/s/PLACEHOLDER_REPLACE_WITH_CLASSROOM_RESULTS_EXEC_URL/exec';
+      var REFRESH_MS = 60000;
+      var refreshTimer = null;
+      var isLoading = false;
+
+      var dashboard = document.getElementById('dashboard');
+      var emptyState = document.getElementById('empty-state');
+      var dataSections = document.getElementById('data-sections');
+      var errorBox = document.getElementById('error-box');
+      var setupNotice = document.getElementById('setup-notice');
+      var refreshButton = document.getElementById('refresh-button');
+      var refreshStatus = document.getElementById('refresh-status');
+
+      var FIRST_TIME_LABELS = { yes: 'はじめて', no: '参加したことがある', unanswered: '未回答' };
+      var RENTAL_LABELS = { requested: '希望あり', not_requested: '希望なし' };
+
+      function endpointReady() {
+        return RESULTS_GAS_ENDPOINT.indexOf('PLACEHOLDER_REPLACE_WITH') === -1;
+      }
+
+      function setLoading(loading) {
+        isLoading = loading;
+        refreshButton.disabled = loading;
+        refreshStatus.textContent = loading ? '更新中…' : '自動更新：60秒';
+      }
+
+      function showError(message) {
+        errorBox.hidden = false;
+        errorBox.textContent = message;
+      }
+
+      function clearError() {
+        errorBox.hidden = true;
+        errorBox.textContent = '';
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function renderCards(targetId, values, labels) {
+        var target = document.getElementById(targetId);
+        var keys = Object.keys(values || {});
+        target.innerHTML = keys.map(function (key) {
+          var value = Number(values[key] || 0);
+          var label = (labels && labels[key]) || key;
+          return '<article class="stat-card' + (value > 0 ? ' stat-card--strong' : '') + '">' +
+            '<div class="stat-card__label">' + escapeHtml(label) + '</div>' +
+            '<div class="stat-card__value">' + value + '件</div></article>';
+        }).join('');
+      }
+
+      function formatUpdated(value) {
+        var date = new Date(value);
+        if (isNaN(date.getTime())) return value || '—';
+        return new Intl.DateTimeFormat('ja-JP', {
+          month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+        }).format(date);
+      }
+
+      function render(data) {
+        document.getElementById('metric-total').textContent = Number(data.total || 0);
+        document.getElementById('metric-open').textContent = Number((data.entry_mode || {}).open || 0);
+        document.getElementById('metric-waitlist').textContent = Number((data.entry_mode || {}).waitlist || 0);
+        document.getElementById('metric-updated').textContent = formatUpdated(data.updated_at);
+
+        dashboard.hidden = false;
+        var isEmpty = Number(data.total || 0) === 0;
+        emptyState.hidden = !isEmpty;
+        dataSections.hidden = isEmpty;
+        if (isEmpty) return;
+
+        renderCards('grid-first-time', data.first_time, FIRST_TIME_LABELS);
+        renderCards('grid-wear-items', data.wear_items, {});
+        renderCards('grid-rental', data.wear_rental_requested, RENTAL_LABELS);
+        renderCards('grid-concerns', data.concerns, {});
+      }
+
+      function refresh() {
+        if (isLoading || !endpointReady()) return;
+        clearError();
+        setLoading(true);
+        var url = RESULTS_GAS_ENDPOINT + (RESULTS_GAS_ENDPOINT.indexOf('?') === -1 ? '?' : '&') + 'action=summary&_=' + Date.now();
+        fetch(url, { method: 'GET', cache: 'no-store' })
+          .then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+          })
+          .then(function (data) {
+            if (!data || data.ok !== true) throw new Error((data && data.error) || 'invalid response');
+            render(data);
+          })
+          .catch(function (error) {
+            showError('集計データを取得できませんでした。GASのデプロイ状態とURLを確認してください。（' + error.message + '）');
+          })
+          .finally(function () {
+            setLoading(false);
+          });
+      }
+
+      refreshButton.addEventListener('click', refresh);
+
+      if (!endpointReady()) {
+        setupNotice.hidden = false;
+        setupNotice.textContent = '初回セットアップ待ち：classroom_20260912_results_backend.gs をデプロイし、発行された /exec URL を RESULTS_GAS_ENDPOINT に設定するとリアルタイム集計が始まります。';
+        refreshStatus.textContent = 'GAS URL未設定';
+        refreshButton.disabled = true;
+        return;
+      }
+
+      refresh();
+      refreshTimer = window.setInterval(refresh, REFRESH_MS);
+      window.addEventListener('beforeunload', function () {
+        if (refreshTimer) window.clearInterval(refreshTimer);
+      });
+    })();
+  </script>
+</body>
+</html>
