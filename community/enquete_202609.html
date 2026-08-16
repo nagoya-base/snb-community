@@ -1568,8 +1568,9 @@
     (function () {
       'use strict';
 
-      // デプロイ手順10の通り、classroom_20260912_results_backend.gs 発行の /exec URLを設定する。
-      var CLASSROOM_STATUS_ENDPOINT = 'https://script.google.com/macros/s/PLACEHOLDER_REPLACE_WITH_CLASSROOM_RESULTS_EXEC_URL/exec';
+      // classroom_20260912_results_backend.gs 発行の /exec URL。
+      // community/classroom_20260912_results.html（運営用）のRESULTS_GAS_ENDPOINTと同じ/exec URL。
+      var CLASSROOM_STATUS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwqLPO7MQp3nVKXmmN7urKiG0EqAQat0rJjesZQ3oC35KWX_oxp7Jkf5dx44_dnros1nA/exec';
       var REFRESH_MS = 60000;
 
       var textEl = document.getElementById('classroom-status-text');
