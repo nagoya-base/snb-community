@@ -29,6 +29,26 @@
  * 8. 公開後、実際のページ（?test=1を付けずに）から実申込を1件送信し、
  *    Sheets保存内容（15列目まで）と通知メールを確認する。
  *
+ * ── 本番移行手順（Issue #241：稼働中のSheetへwear_ownership列を追加する場合） ──
+ * 本番はENTRY_STATUS='open'で稼働中、かつ既に申込データが入っている前提。
+ * hasExpectedHeader()は15列ヘッダーの完全一致を要求するため、Sheet側が14列のままだと
+ * 移行中の新規申込はすべてheader_mismatchで保存拒否される。事故を避けるため、
+ * 必ず次の順序で進めること（順序を入れ替えない）。
+ * 1. Sheetの15列化：Apps Scriptエディタで migrateHeaderAddWearOwnership() を実行し、
+ *    既存14列・既存データ行はそのままに、15列目へwear_ownershipヘッダーだけを追加する。
+ * 2. 保存GAS（このファイル）を再デプロイする：既存デプロイの「デプロイを管理」→
+ *    対象デプロイの鉛筆アイコン→バージョン「新バージョン」で更新する
+ *    （/exec URLを変えずに更新できるため、community/classroom_20260912.html の
+ *    GAS_ENDPOINT_URLは変更不要）。
+ * 3. 集計GAS（community/gas/classroom_20260912_results_backend.gs）を同様に再デプロイする。
+ * 4. 集計GASの /exec?action=summary をブラウザで直接開き、レスポンスJSONに
+ *    wear_ownership（have/preparing/none/unanswered）が含まれ、
+ *    旧wear_rental_requestedキーが含まれていないことを確認する。
+ * 5. 上記1〜4が確認できてから、このリポジトリのHTML（community/classroom_20260912.html・
+ *    community/classroom_20260912_results.html）をGitHub Pagesへ公開する。
+ *    HTML公開を先に行うと、Sheet側がまだ14列のままの間はwear_ownershipを送る新フォームの
+ *    申込がすべてheader_mismatchで失敗するため、必ずGAS側（1〜4）を先に完了させること。
+ *
  * ── この版の仕様 ──
  * ・display_name（表示名／ハンドルネーム）は必須・30文字以内。
  * ・contact_email / contact_x はそれぞれ200文字以内。どちらか1つ以上が必須。

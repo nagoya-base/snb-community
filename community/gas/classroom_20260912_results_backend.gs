@@ -32,6 +32,14 @@
  *     - community/enquete_202609.html（PUBLIC_STATUS ENDPOINT定数、9/12申込状況カード）
  *     - community/classroom_20260912_results.html（運営用ダッシュボード）
  *
+ * ── 本番移行手順（Issue #241：wear_ownership追加時） ──
+ * 本番はENTRY_STATUS='open'で稼働中、かつ既に申込データが入っている前提。
+ * このファイルの再デプロイは、community/gas/classroom_20260912_backend.gs の
+ * 「本番移行手順」セクションに書かれた順序（Sheetの15列化 → 保存GAS再デプロイ →
+ * 集計GAS再デプロイ → summary確認 → HTML公開）の3番目・4番目にあたる。
+ * このファイルだけを先に再デプロイしても実害はないが、summary確認（4番目）が意味を持つのは、
+ * 保存GAS側の移行（Sheetの15列化・保存GASの再デプロイ）が完了したあとになる。
+ *
  * ── 受付状態変更時の運用（重要） ──
  * 受付状態は募集ページと集計GASの2箇所を同時更新する。
  * 1. community/classroom_20260912.html の ENTRY_STATUS
