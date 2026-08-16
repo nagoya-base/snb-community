@@ -60,7 +60,7 @@
  * - 衣装カテゴリ名・カテゴリ別票数・衣装内訳オブジェクトは、キー自体を一切含めない
  *   （母集団が小さいと、カテゴリ単位の1〜2票からでも残り人数との差し引きで
  *   個人の衣装傾向を推測できるため）。
- * - 希望・不安の内訳、初参加割合、衣装貸出希望件数、open/waitlistの件数内訳、
+ * - 希望・不安の内訳、初参加割合、衣装所有状況の内訳、open/waitlistの件数内訳、
  *   entry_modeの個別内訳も一切返さない。
  * - 申込件数は、0件は正確な0件として返してよいが、1〜2件は「少数」とだけ表現し、
  *   正確な数（1か2か）をレスポンスから推測できないようにする。3件以上のみ実数を返す。
@@ -96,6 +96,9 @@ var ALLOWED_CONCERNS = [
 ];
 var ALLOWED_FIRST_TIME = ['', 'yes', 'no'];
 var ALLOWED_ENTRY_MODE = ['open', 'waitlist'];
+/* 当日着用する衣装を用意できるか（Issue #241：衣装貸出廃止に伴う新設項目）。
+   community/gas/classroom_20260912_backend.gs の ALLOWED_WEAR_OWNERSHIP と一致させること。 */
+var ALLOWED_WEAR_OWNERSHIP = ['have', 'preparing', 'none'];
 
 function doGet(e) {
   var action = e && e.parameter ? String(e.parameter.action || '') : '';
@@ -239,7 +242,7 @@ function buildPublicSummary_() {
  * （そもそも読み込む必要がないため、それらの列値は参照しない）。
  */
 function buildSummary_() {
-  var required = ['agree_terms', 'entry_mode', 'first_time', 'wear_items', 'wear_rental_requested', 'concerns'];
+  var required = ['agree_terms', 'entry_mode', 'first_time', 'wear_items', 'wear_ownership', 'concerns'];
   var sheetData = openEntriesSheet_(required);
   var index = sheetData.index;
 
@@ -247,7 +250,7 @@ function buildSummary_() {
   var entryMode = { open: 0, waitlist: 0 };
   var firstTime = { yes: 0, no: 0, unanswered: 0 };
   var wearItems = zeroMapFromList_(ALLOWED_WEAR_ITEMS);
-  var wearRentalRequested = { requested: 0, not_requested: 0 };
+  var wearOwnership = { have: 0, preparing: 0, none: 0, unanswered: 0 };
   var concerns = zeroMapFromList_(ALLOWED_CONCERNS);
 
   sheetData.rows.forEach(function (row) {
@@ -272,14 +275,13 @@ function buildSummary_() {
       wearItems[item] += 1;
     });
 
-    // 保存GASはwear_rental_requestedを厳密なbooleanとしてのみ受け付けるため、
-    // 集計側もtrue/falseだけを数え、異常値・空欄は「希望なし」へ丸めずに無視する
-    // （集計対象外。not_requestedを不正確に膨らませない）。
-    var rentalValue = row[index.wear_rental_requested];
-    if (rentalValue === true) {
-      wearRentalRequested.requested += 1;
-    } else if (rentalValue === false) {
-      wearRentalRequested.not_requested += 1;
+    // 保存GASはwear_ownershipをallowlist（have/preparing/none）でのみ受け付けるため、
+    // 集計側もallowlist値だけをそれぞれのキーへ数え、allowlist外・空欄はunansweredへ寄せる。
+    var ownershipValue = stringCell_(row[index.wear_ownership]);
+    if (ALLOWED_WEAR_OWNERSHIP.indexOf(ownershipValue) !== -1) {
+      wearOwnership[ownershipValue] += 1;
+    } else {
+      wearOwnership.unanswered += 1;
     }
 
     splitAllowed_(row[index.concerns], ALLOWED_CONCERNS).forEach(function (item) {
@@ -294,7 +296,7 @@ function buildSummary_() {
     entry_mode: entryMode,
     first_time: firstTime,
     wear_items: wearItems,
-    wear_rental_requested: wearRentalRequested,
+    wear_ownership: wearOwnership,
     concerns: concerns
   };
 }

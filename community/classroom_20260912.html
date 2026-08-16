@@ -293,7 +293,7 @@
       font-size: .78rem;
       font-weight: 800;
     }
-    .rental-note {
+    .info-note {
       display: flex;
       gap: .7rem;
       padding: .9rem 1rem;
@@ -304,7 +304,7 @@
       font-size: .83rem;
       line-height: 1.75;
     }
-    .rental-note__icon { flex: 0 0 auto; font-size: 1.1rem; }
+    .info-note__icon { flex: 0 0 auto; font-size: 1.1rem; }
 
     .flow-list { display: grid; gap: .7rem; margin: 0; padding: 0; list-style: none; counter-reset: flow; }
     .flow-item {
@@ -488,6 +488,7 @@
     .subquestion { margin-top: 1.3rem; }
     .subquestion__title { margin: 0; font-size: .88rem; font-weight: 800; }
     .intent-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+    .ownership-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
     .choice { position: relative; display: block; cursor: pointer; }
     .choice input { position: absolute; opacity: 0; pointer-events: none; }
     .choice__body {
@@ -578,7 +579,7 @@
       .hero::before { background-position: center, 85% center; }
       .hero::after { width: 95vw; height: 95vw; inset: auto -45% -32% auto; }
       section.content-section { padding: 2.4rem 0; }
-      .reassurance-grid, .intent-grid, .contact-fields { grid-template-columns: 1fr; }
+      .reassurance-grid, .intent-grid, .ownership-grid, .contact-fields { grid-template-columns: 1fr; }
       .entry-card { border-radius: 15px; }
       .answer-summary div { grid-template-columns: 1fr; gap: .12rem; }
       .confirmation-actions { flex-direction: column-reverse; }
@@ -629,7 +630,7 @@
       <div class="container">
         <p class="section-label">About</p>
         <h2 id="about-title">この撮影会について</h2>
-        <p class="lead-text">学校机・椅子・教卓・黒板のある教室セットで撮影しながら、参加者どうしで交流を楽しむ会です。自分で撮る／撮ってもらう、どちらの参加スタイルでもかまいません。</p>
+        <p class="lead-text">学校机・椅子・教卓・黒板のある教室セットで、主催者による撮影と参加者どうしの交流を楽しむ会です。撮影タイムでは、主催者が参加者を順番に撮影します。</p>
         <div class="reassurance-grid">
           <div class="reassurance-card">
             <p class="reassurance-card__title">一人参加でも安心してご参加いただけます</p>
@@ -659,9 +660,9 @@
           <span class="wear-tag">私服</span>
           <span class="wear-tag">その他スポーツウェア等</span>
         </div>
-        <div class="rental-note">
-          <span class="rental-note__icon" aria-hidden="true">ℹ️</span>
-          <span>衣装を持っていない方は、申込フォームで貸出希望をお伝えください。在庫状況により個別にご案内するもので、貸出をお約束するものではありません。</span>
+        <div class="info-note">
+          <span class="info-note__icon" aria-hidden="true">ℹ️</span>
+          <span>衣装の貸出は行っておりません。参加枠は、当日着用する衣装をご自身で用意できる方を優先して確保します。定員に達した場合は補欠受付となります。お申し込み時点では参加確定ではありません。内容を確認後、参加可否をご連絡します。</span>
         </div>
       </div>
     </section>
@@ -675,10 +676,10 @@
           <li class="flow-item"><span>集合・受付</span></li>
           <li class="flow-item"><span>着替え・簡単な自己紹介</span></li>
           <li class="flow-item"><span>教室セットで撮影・交流</span></li>
-          <li class="flow-item"><span>希望者同士で撮影</span></li>
+          <li class="flow-item"><span>主催者が参加者を順番に撮影</span></li>
           <li class="flow-item"><span>終了・着替え</span></li>
         </ol>
-        <p class="flow-note">ドリンクをご用意します。撮影中心・交流中心・どちらでもよい、から自分に合う参加スタイルを選べます。</p>
+        <p class="flow-note">ドリンクをご用意します。撮影タイムでは、主催者が参加者を順番に撮影します。参加者同士で撮影する場合は、必ず相手の了承を得てください。交流中心の参加スタイルでも歓迎します。</p>
       </div>
     </section>
 
@@ -717,8 +718,8 @@
         </div>
 
         <div class="status-message status-message--waitlist" id="status-waitlist" hidden>
-          <strong>現在、キャンセル待ちでの受付です。</strong><br>
-          定員に達しているため、お申し込みいただいた内容はキャンセル待ちとして確認します。参加が確定した場合のみご連絡します。
+          <strong>現在、補欠受付です。</strong><br>
+          定員に達しているため、お申し込みいただいた内容は補欠として確認します。参加が確定した場合のみご連絡します。
         </div>
 
         <div class="entry-card" id="entry-card">
@@ -780,8 +781,18 @@
               </fieldset>
 
               <fieldset class="field-group">
+                <legend class="question-title">当日着用する衣装を用意できますか？ <span class="required">必須</span></legend>
+                <p class="question-lead">衣装の貸出は行っていません。参加枠は、衣装をご自身で用意できる方を優先して確保します。</p>
+                <div class="ownership-grid" id="wear-ownership-grid">
+                  <label class="choice"><input type="radio" name="wear_ownership" value="have"><span class="choice__body"><span class="choice__title">持っている</span></span></label>
+                  <label class="choice"><input type="radio" name="wear_ownership" value="preparing"><span class="choice__body"><span class="choice__title">現在準備中</span></span></label>
+                  <label class="choice"><input type="radio" name="wear_ownership" value="none"><span class="choice__body"><span class="choice__title">持っていない</span></span></label>
+                </div>
+                <p class="field-error" id="err-wear-ownership" role="alert" aria-live="polite"></p>
+              </fieldset>
+
+              <fieldset class="field-group">
                 <legend class="question-title">その他の希望 <span class="optional">任意</span></legend>
-                <label class="switch-row"><input type="checkbox" id="entry-rental"><span><strong>衣装の貸出を希望する</strong><small>在庫状況により、個別にご案内します（貸出をお約束するものではありません）。</small></span></label>
                 <div class="subquestion">
                   <p class="subquestion__title">撮影会・交流会への参加ははじめてですか？</p>
                   <div class="intent-grid" style="margin-top:.6rem;">
@@ -829,7 +840,7 @@
               <h2 id="entry-confirm-title">申込内容を確認してください</h2>
               <p class="confirmation__lead">内容を確認し、問題なければ送信してください。この画面で送信するまで、申込は確定しません。</p>
               <dl class="answer-summary" id="entry-summary"></dl>
-              <p class="confirmation__notice">送信後、内容を確認のうえ参加についてご連絡します。定員に達している場合は、キャンセル待ちとしてご案内する場合があります。</p>
+              <p class="confirmation__notice">送信後、内容を確認のうえ参加についてご連絡します。定員に達している場合は、補欠としてご案内する場合があります。</p>
               <p class="confirmation__notice confirmation__notice--error" id="entry-submit-error" role="alert" hidden></p>
               <div class="confirmation-actions">
                 <button class="button button--back" id="entry-edit" type="button">内容を直す</button>
@@ -922,7 +933,8 @@
       var wearOtherCheckbox = wearInputs.filter(function (input) { return input.value === 'その他'; })[0];
       var wearOtherField = document.getElementById('wear-other-field');
       var wearOtherInput = document.getElementById('wear-other');
-      var rentalCheckbox = document.getElementById('entry-rental');
+      var wearOwnershipInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="wear_ownership"]'));
+      var WEAR_OWNERSHIP_LABELS = { have: '持っている', preparing: '現在準備中', none: '持っていない' };
       var concernInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="concern"]'));
       var concernOtherCheckbox = concernInputs.filter(function (input) { return input.value === 'その他'; })[0];
       var concernOtherField = document.getElementById('concern-other-field');
@@ -988,7 +1000,7 @@
       }
 
       function clearAllErrors() {
-        ['err-name', 'err-contact', 'err-wear', 'err-agree', 'entry-error'].forEach(clearFieldError);
+        ['err-name', 'err-contact', 'err-wear', 'err-wear-ownership', 'err-agree', 'entry-error'].forEach(clearFieldError);
       }
 
       function updateWearOtherState() {
@@ -1000,6 +1012,9 @@
       wearOtherInput.addEventListener('input', function () { clearFieldError('err-wear'); });
       wearInputs.forEach(function (input) {
         input.addEventListener('change', function () { clearFieldError('err-wear'); });
+      });
+      wearOwnershipInputs.forEach(function (input) {
+        input.addEventListener('change', function () { clearFieldError('err-wear-ownership'); });
       });
 
       function updateConcernOtherState() {
@@ -1062,6 +1077,13 @@
           return false;
         }
 
+        var wearOwnershipChecked = wearOwnershipInputs.some(function (input) { return input.checked; });
+        if (!wearOwnershipChecked) {
+          showFieldError('err-wear-ownership', '当日着用する衣装を用意できるか選んでください。', 'wear_ownership_missing');
+          focusAndScroll(wearOwnershipInputs[0]);
+          return false;
+        }
+
         if (concernOtherCheckbox.checked && !concernOtherInput.value.trim()) {
           showFieldError('err-wear', '「その他」を選んだ場合は、具体的な内容を教えてください。', 'concern_other_missing');
           focusAndScroll(concernOtherInput);
@@ -1099,7 +1121,8 @@
         if (xAccount.value.trim()) addSummary('Xアカウント', xAccount.value.trim());
         addSummary('参加予定の衣装', wearItems.join('、'));
         if (wearOtherCheckbox.checked && wearOtherInput.value.trim()) addSummary('その他の衣装', wearOtherInput.value.trim());
-        addSummary('衣装の貸出希望', rentalCheckbox.checked ? '希望する' : '希望しない');
+        var wearOwnership = form.querySelector('input[name="wear_ownership"]:checked');
+        if (wearOwnership) addSummary('当日着用する衣装', WEAR_OWNERSHIP_LABELS[wearOwnership.value] || wearOwnership.value);
         if (firstTime) addSummary('参加ははじめてか', firstTime.value === 'yes' ? 'はじめて' : '参加したことがある');
         if (concerns.length) addSummary('希望・不安なこと', concerns.join('、'));
         if (concernOtherCheckbox.checked && concernOtherInput.value.trim()) addSummary('希望・不安（その他）', concernOtherInput.value.trim());
@@ -1144,6 +1167,7 @@
 
       function buildPayload() {
         var firstTime = form.querySelector('input[name="first_time"]:checked');
+        var wearOwnership = form.querySelector('input[name="wear_ownership"]:checked');
         return {
           submission_id: getSubmissionId(),
           display_name: nameInput.value.trim(),
@@ -1151,7 +1175,7 @@
           contact_x: xAccount.value.trim(),
           wear_items: wearInputs.filter(function (input) { return input.checked; }).map(function (input) { return input.value; }).join('、'),
           wear_other: wearOtherCheckbox.checked ? wearOtherInput.value.trim() : '',
-          wear_rental_requested: rentalCheckbox.checked,
+          wear_ownership: wearOwnership ? wearOwnership.value : '',
           first_time: firstTime ? firstTime.value : '',
           concerns: concernInputs.filter(function (input) { return input.checked; }).map(function (input) { return input.value; }).join('、'),
           concern_other: concernOtherCheckbox.checked ? concernOtherInput.value.trim() : '',
