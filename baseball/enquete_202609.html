@@ -675,6 +675,7 @@
       trimmed = trimmed.replace(/[​-‍﻿]/g, '').trim();
       if (trimmed === '') return { ok: true, value: '' };
       var handle = /^@/.test(trimmed) ? trimmed.slice(1) : trimmed;
+      if (handle.length > 15) return { ok: false, reason: 'too_long', length: handle.length };
       if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) return { ok: false };
       var lower = handle.toLowerCase();
       var reserved = ['home', 'i', 'search', 'explore', 'notifications', 'messages', 'settings', 'compose', 'intent', 'hashtag', 'share', 'login', 'logout', 'tos', 'privacy', 'about', 'download'];
@@ -860,8 +861,12 @@
           isValid = false;
           firstInvalid = firstInvalid || emailInput;
         }
-        if (xVal !== '' && !normalizeXHandle(xVal).ok) {
-          setError('contact', 'Xアカウントの形式を確認してください（例：@example／＠example）。', 'contact_x_invalid');
+        var normalizedX = normalizeXHandle(xVal);
+        if (xVal !== '' && !normalizedX.ok) {
+          var xErrorMessage = normalizedX.reason === 'too_long'
+            ? 'Xアカウントは、@を除いて' + normalizedX.length + '文字です。15文字以内で入力してください。'
+            : 'Xアカウントの形式を確認してください（例：@example／＠example）。';
+          setError('contact', xErrorMessage, 'contact_x_invalid');
           isValid = false;
           firstInvalid = firstInvalid || xInput;
         }
