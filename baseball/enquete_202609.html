@@ -365,7 +365,7 @@
               </div>
               <div>
                 <label class="field-label" for="contact-x">Xアカウント <span class="optional">いずれか必須</span></label>
-                <input type="text" id="contact-x" class="text-input" autocomplete="off" maxlength="200" placeholder="@account／＠account または https://x.com/account">
+                <input type="text" id="contact-x" class="text-input" autocomplete="off" maxlength="200" placeholder="@account または account">
               </div>
               <div class="carrier-notice" id="carrier-notice" hidden>
                 <p class="carrier-notice__text"><strong>携帯電話会社のメールアドレスをご利用の方へ</strong><br>docomo・au・SoftBankなどのキャリアメールでは、当方からのGmailが受信拒否される場合があります。Gmailからのメールを受信できる設定になっているか、迷惑メールフォルダに振り分けられていないかをご確認ください。</p>
@@ -373,6 +373,29 @@
               </div>
             </div>
             <p class="q-error" id="error-contact" role="alert" aria-live="polite"></p>
+
+            <div id="x-contact-fields" hidden>
+              <div class="first-time-fields__inner">
+                <div class="sub-field">
+                  <p class="field-label">X連絡について <span class="required">必須</span></p>
+                  <p class="field-help">Xアカウントが鍵アカウントの場合、事前確認や当日連絡のため、名古屋野球ユニ部アカウントからフォロー申請をお送りします。フォロー申請が届いた場合は承認をお願いします。</p>
+                  <label class="carrier-notice__check" style="margin-top:.6rem;"><input type="checkbox" id="x-follow-approval-ack"> 承認依頼確認済み</label>
+                  <p class="q-error" id="error-x-follow-approval-ack" role="alert" aria-live="polite"></p>
+                </div>
+
+                <div class="sub-field">
+                  <p class="field-label">当日のDM連絡方法</p>
+                  <fieldset>
+                    <legend class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;">当日のDM連絡方法</legend>
+                    <div class="choice-grid">
+                      <label class="choice"><input type="radio" name="x_contact_method" value="当日用DMグループへの追加を希望する"><span class="choice__body">当日用DMグループへの追加を希望する</span></label>
+                      <label class="choice"><input type="radio" name="x_contact_method" value="個別DMで連絡してほしい"><span class="choice__body">個別DMで連絡してほしい</span></label>
+                    </div>
+                  </fieldset>
+                  <p class="q-error" id="error-x-contact-method" role="alert" aria-live="polite"></p>
+                </div>
+              </div>
+            </div>
           </section>
 
           <section class="q-block">
@@ -610,6 +633,9 @@
     var carrierAck = document.getElementById('carrier-ack');
     var firstTimeFields = document.getElementById('first-time-fields');
     var firstTimeMotivationInput = document.getElementById('first-time-motivation');
+    var xContactFields = document.getElementById('x-contact-fields');
+    var xFollowApprovalAckInput = document.getElementById('x-follow-approval-ack');
+    var xContactMethodInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="x_contact_method"]'));
     var markAllUnavailableBtn = document.getElementById('mark-all-unavailable');
     var timePrefInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="time_pref"]'));
     var activityInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="activity_pref"]'));
@@ -637,28 +663,34 @@
       return inputs.filter(function (input) { return input.checked; }).map(function (input) { return input.value; });
     }
 
-    /* Xアカウントの正規化。@example / ＠example / example / https://x.com/example / https://twitter.com/example を
-       同一人物として扱うための判定に使う（表示用の即時バリデーションのみ）。
+    /* Xアカウントの正規化（Issue #234でURL形式の受理を撤回し簡素化）。
+       利用者にURL入力は求めない。@example / ＠example / example の文字列だけを受け付ける
+       （表示用の即時バリデーションのみ）。
        最終的な正規化・照合は baseball/gas/enquete_202609_backend.gs の normalizeXHandle_ が権威を持つ。
        ロジックは常にそちらと同期させること。 */
     function normalizeXHandle(raw) {
       if (typeof raw !== 'string') return { ok: false };
       var trimmed = raw.trim();
+      if (trimmed.normalize) trimmed = trimmed.normalize('NFKC');
+      trimmed = trimmed.replace(/[​-‍﻿]/g, '').trim();
       if (trimmed === '') return { ok: true, value: '' };
-      var handle;
-      if (/^https?:\/\//i.test(trimmed)) {
-        var withoutQuery = trimmed.split(/[?#]/)[0];
-        var match = withoutQuery.match(/^https?:\/\/(?:www\.|mobile\.)?(?:x\.com|twitter\.com)\/([A-Za-z0-9_]{1,15})\/?$/i);
-        if (!match) return { ok: false };
-        handle = match[1];
-      } else {
-        handle = /^[@＠]/.test(trimmed) ? trimmed.slice(1) : trimmed;
-      }
+      var handle = /^@/.test(trimmed) ? trimmed.slice(1) : trimmed;
       if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) return { ok: false };
       var lower = handle.toLowerCase();
       var reserved = ['home', 'i', 'search', 'explore', 'notifications', 'messages', 'settings', 'compose', 'intent', 'hashtag', 'share', 'login', 'logout', 'tos', 'privacy', 'about', 'download'];
       if (reserved.indexOf(lower) !== -1) return { ok: false };
       return { ok: true, value: lower };
+    }
+
+    /* X連絡追加ブロック（鍵垢フォロー承認確認・当日DM連絡方法）の表示・必須条件。
+       初参加 かつ 正規化後contact_xが空でない場合のみtrue。Xの形式が不正な間は
+       既存Xバリデーションを優先するため、ここではfalseのまま追加項目を要求しない。
+       baseball/gas/enquete_202609_backend.gs のxContactApplicable判定と一致させること。 */
+    function isXContactApplicable() {
+      var history = chosen('participation_history');
+      var isFirstTime = !!(history && history.value === '初参加');
+      var xNormalized = normalizeXHandle(xInput.value);
+      return isFirstTime && xNormalized.ok && xNormalized.value !== '';
     }
 
     function analytics() {
@@ -687,7 +719,7 @@
       if (analytics()) analytics().trackFormError(FORM_NAME, errorType || id);
     }
     function clearAllErrors() {
-      ['display-name', 'history', 'age-group', 'sports-experience', 'uniform-status', 'glove-availability', 'contact', 'intent', 'date'].forEach(clearError);
+      ['display-name', 'history', 'age-group', 'sports-experience', 'uniform-status', 'glove-availability', 'contact', 'x-follow-approval-ack', 'x-contact-method', 'intent', 'date'].forEach(clearError);
     }
 
     function updateCarrierNoticeVisibility() {
@@ -702,9 +734,28 @@
         carrierAck.checked = false;
       }
     }
+    /* 初参加 かつ 正規化後contact_xが空でない場合のみ、鍵垢フォロー承認確認・当日DM連絡方法の
+       追加ブロックを表示・必須にする。非該当になった場合は入力済みの値をクリアし、
+       送信payloadに残らないようにする（Issue #234）。 */
+    function updateXContactState() {
+      var applicable = isXContactApplicable();
+      xContactFields.hidden = !applicable;
+      if (xFollowApprovalAckInput) xFollowApprovalAckInput.required = applicable;
+      xContactMethodInputs.forEach(function (input) { input.required = applicable; });
+      if (!applicable) {
+        if (xFollowApprovalAckInput) xFollowApprovalAckInput.checked = false;
+        xContactMethodInputs.forEach(function (input) { input.checked = false; });
+        ['x-follow-approval-ack', 'x-contact-method'].forEach(clearError);
+      }
+    }
+
     emailInput.addEventListener('input', function () { updateCarrierNoticeVisibility(); clearError('contact'); });
-    xInput.addEventListener('input', function () { clearError('contact'); });
+    xInput.addEventListener('input', function () { clearError('contact'); updateXContactState(); });
     if (carrierAck) carrierAck.addEventListener('change', function () { clearError('contact'); });
+    if (xFollowApprovalAckInput) xFollowApprovalAckInput.addEventListener('change', function () { clearError('x-follow-approval-ack'); });
+    xContactMethodInputs.forEach(function (input) {
+      input.addEventListener('change', function () { clearError('x-contact-method'); });
+    });
 
     DATE_KEYS.forEach(function (key) {
       form.querySelectorAll('input[name="' + key + '"]').forEach(function (input) {
@@ -739,6 +790,7 @@
         });
         ['age-group', 'sports-experience', 'uniform-status', 'glove-availability'].forEach(clearError);
       }
+      updateXContactState();
     }
     form.querySelectorAll('input[name="participation_history"]').forEach(function (input) {
       input.addEventListener('change', function () { clearError('history'); updateHistoryState(); });
@@ -820,6 +872,21 @@
         firstInvalid = firstInvalid || carrierAck;
       }
 
+      // X連絡追加ブロック：Xの形式が不正な間は上のcontact_x_invalidが優先して確認画面へ
+      // 進ませないため、ここではisXContactApplicable()がtrue（＝X形式は妥当）の場合のみ検証する。
+      if (isXContactApplicable()) {
+        if (!xFollowApprovalAckInput || !xFollowApprovalAckInput.checked) {
+          setError('x-follow-approval-ack', 'フォロー申請承認についての確認にチェックを入れてください。', 'x_follow_approval_ack_missing');
+          isValid = false;
+          firstInvalid = firstInvalid || xFollowApprovalAckInput;
+        }
+        if (!chosen('x_contact_method')) {
+          setError('x-contact-method', '当日のDM連絡方法を選んでください。', 'x_contact_method_missing');
+          isValid = false;
+          firstInvalid = firstInvalid || form.querySelector('input[name="x_contact_method"]');
+        }
+      }
+
       if (!chosen('participation_intent')) {
         setError('intent', '参加意向を選んでください。', 'intent_missing');
         isValid = false;
@@ -872,6 +939,11 @@
       }
       if (emailInput.value.trim()) addSummary('メールアドレス', emailInput.value.trim());
       if (xInput.value.trim()) addSummary('Xアカウント', xInput.value.trim());
+      if (isXContactApplicable()) {
+        addSummary('フォロー承認依頼', '確認済み');
+        var xContactMethod = chosen('x_contact_method');
+        addSummary('X連絡方法', xContactMethod ? xContactMethod.value : '未選択');
+      }
       addSummary('参加意向', intent ? intent.value : '未選択');
       var dateSummary = DATE_KEYS.map(function (key) {
         var picked = chosen(key);
@@ -928,6 +1000,10 @@
       var intent = chosen('participation_intent');
       var history = chosen('participation_history');
       var isFirstTime = !!(history && history.value === '初参加');
+      // 初参加×正規化後contact_xが空でない場合のみtrue。非該当の場合はx_follow_approval_ack /
+      // x_contact_methodを送信payloadに残さない（初参加→以前参加、またはXあり→メールのみへの
+      // 切り替え時に入力済みの値が残っていても、ここで空文字列へ落とす。Issue #234）。
+      var xContactApplicable = isXContactApplicable();
 
       var payload = {
         submission_id: getSubmissionId(),
@@ -942,6 +1018,8 @@
         glove_availability: isFirstTime && chosen('glove_availability') ? chosen('glove_availability').value : '',
         contact_email: emailInput.value.trim(),
         contact_x: xInput.value.trim(),
+        x_follow_approval_ack: xContactApplicable && xFollowApprovalAckInput && xFollowApprovalAckInput.checked ? '確認済み' : '',
+        x_contact_method: xContactApplicable && chosen('x_contact_method') ? chosen('x_contact_method').value : '',
         participation_intent: intent ? intent.value : '',
         time_preferences: checkedValues(timePrefInputs).join('、'),
         activity_preferences: checkedValues(activityInputs).join('、'),
