@@ -61,6 +61,7 @@ snb-community/
 - 緊縛事業（ataru-nagoya）へのリンクをこのサイト内に追加しない
 - OGP 画像は JPEG、ヒーロー画像は `<picture>` 要素で WebP 優先
 - コードレビュー観点は `REVIEW_CHECKLIST.md` を参照
+- ルートの `index.html` は各活動への恒久導線として運用する。個別イベントの開催日・募集状況・アンケート等の期間限定情報は原則掲載せず、`community/` / `baseball/` / `portrait/` など各活動配下のページで告知する
 
 ---
 
