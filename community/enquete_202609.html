@@ -134,6 +134,28 @@
     }
     .decided-banner__cta:hover { background: #fff1ee; }
 
+    /* 9/12教室撮影会 申込状況カード（Issue #229）。既存アンケートの「現在の参加希望状況」
+       （status-board、下方）とは別データソース・別スクリプトブロック。 */
+    .classroom-status-banner { background: #fff; border-bottom: 1px solid var(--line); }
+    .classroom-status-banner__inner {
+      width: min(1100px, calc(100% - 2.5rem));
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: .3rem 1rem;
+      padding: .6rem 0;
+      font-size: .8rem;
+    }
+    .classroom-status-banner__label { font-weight: 800; color: var(--ink); white-space: nowrap; }
+    .classroom-status-banner__text { color: var(--muted); }
+    .classroom-status-banner__text[data-state="open-small"],
+    .classroom-status-banner__text[data-state="open-exact"] { color: var(--green); font-weight: 800; }
+    .classroom-status-banner__text[data-state="waitlist"] { color: #7c4221; font-weight: 800; }
+    .classroom-status-banner__text[data-state="closed"],
+    .classroom-status-banner__text[data-state="error"] { color: #8a2020; }
+    .classroom-status-banner__updated { color: #928c84; font-size: .7rem; white-space: nowrap; }
+
     .hero {
       position: relative;
       isolation: isolate;
@@ -617,7 +639,7 @@
     .site-footer a { color: #fff; }
 
     @media (max-width: 640px) {
-      .site-header__inner, .hero__inner, .survey-shell, .status-board-wrap { width: min(100% - 1.5rem, 1100px); }
+      .site-header__inner, .hero__inner, .survey-shell, .status-board-wrap, .classroom-status-banner__inner { width: min(100% - 1.5rem, 1100px); }
       .brand small { display: none; }
       .hero { min-height: 410px; }
       .hero__inner { min-height: 410px; padding-top: 3rem; }
@@ -653,6 +675,14 @@
       <div class="decided-banner__inner">
         <span class="decided-banner__text"><strong>9月12日（土）の開催が決定しました。</strong>参加をご希望の方は、専用の申込フォームからお申し込みください。</span>
         <a class="decided-banner__cta" href="classroom_20260912.html" data-cta-name="classroom_20260912" data-cta-location="enquete_banner">参加申込はこちら →</a>
+      </div>
+    </div>
+
+    <div class="classroom-status-banner" id="classroom-status-banner">
+      <div class="classroom-status-banner__inner">
+        <span class="classroom-status-banner__label">9/12 教室撮影会｜申込状況</span>
+        <span class="classroom-status-banner__text" id="classroom-status-text" data-state="loading">読み込み中…</span>
+        <span class="classroom-status-banner__updated" id="classroom-status-updated"></span>
       </div>
     </div>
 
@@ -1522,6 +1552,106 @@
       } catch (err) {
         showOnly(errorState);
       }
+    })();
+  </script>
+
+  <!--
+    9/12教室撮影会 申込状況カード（Issue #229）。
+    community/gas/classroom_20260912_results_backend.gs の ?action=public を呼び出す。
+    community/classroom_20260912_results.html（運営用）と同じ /exec デプロイURLを使うが、
+    このカードは?action=publicのみを呼び、運営用の?action=summaryは呼ばない。
+    上の「現在の参加希望状況」（9月企画アンケートの集計）とは別データソース・別スクリプト
+    ブロックのため、どちらかで例外が起きてももう片方の表示・アンケート送信には影響しない。
+    人数・受付状況などの集計値はGA4へ送らない（このブロックはGA4を一切呼び出さない）。
+  -->
+  <script>
+    (function () {
+      'use strict';
+
+      // classroom_20260912_results_backend.gs 発行の /exec URL。
+      // community/classroom_20260912_results.html（運営用）のRESULTS_GAS_ENDPOINTと同じ/exec URL。
+      var CLASSROOM_STATUS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwqLPO7MQp3nVKXmmN7urKiG0EqAQat0rJjesZQ3oC35KWX_oxp7Jkf5dx44_dnros1nA/exec';
+      var REFRESH_MS = 60000;
+
+      var textEl = document.getElementById('classroom-status-text');
+      var updatedEl = document.getElementById('classroom-status-updated');
+      if (!textEl || !updatedEl) return;
+
+      function endpointReady() {
+        return CLASSROOM_STATUS_ENDPOINT.indexOf('PLACEHOLDER_REPLACE_WITH') === -1;
+      }
+
+      function formatUpdated(value) {
+        var date = new Date(value);
+        if (isNaN(date.getTime())) return '';
+        return new Intl.DateTimeFormat('ja-JP', {
+          month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        }).format(date) + ' 時点';
+      }
+
+      function setText(state, message) {
+        textEl.setAttribute('data-state', state);
+        textEl.textContent = message;
+      }
+
+      /* entry_status（preparing/open/waitlist/closed）とcount_type（zero/small/exact）の
+         組み合わせから表示文言を決める。衣装・不安・初参加率などは一切扱わない
+         （このAPIレスポンス自体にそれらのキーが含まれない設計のため）。 */
+      function render(data) {
+        var status = data.entry_status;
+        var countType = data.count_type;
+
+        if (status === 'preparing') {
+          setText('preparing', '参加申込は受付準備中です');
+        } else if (status === 'waitlist') {
+          setText('waitlist', '現在キャンセル待ち受付中');
+        } else if (status === 'closed') {
+          setText('closed', '現在受付を停止しています');
+        } else if (status === 'open') {
+          if (countType === 'zero') {
+            setText('open-zero', '受付中｜まだ申込はありません');
+          } else if (countType === 'small') {
+            setText('open-small', '受付中｜申込：少数');
+          } else if (countType === 'exact') {
+            setText('open-exact', '受付中｜申込：' + Number(data.count || 0) + '名');
+          } else {
+            setText('error', '現在集計を取得できません');
+            return;
+          }
+        } else {
+          setText('error', '現在集計を取得できません');
+          return;
+        }
+
+        updatedEl.textContent = formatUpdated(data.updated_at);
+      }
+
+      function refresh() {
+        if (!endpointReady()) return;
+        var url = CLASSROOM_STATUS_ENDPOINT + (CLASSROOM_STATUS_ENDPOINT.indexOf('?') === -1 ? '?' : '&') + 'action=public&_=' + Date.now();
+        fetch(url, { method: 'GET', cache: 'no-store' })
+          .then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+          })
+          .then(function (data) {
+            if (!data || data.ok !== true) throw new Error((data && data.error) || 'invalid response');
+            render(data);
+          })
+          .catch(function () {
+            // API失敗時は古い表示を0や空欄へ戻さず、取得失敗メッセージだけを表示する。
+            setText('error', '現在集計を取得できません');
+          });
+      }
+
+      if (!endpointReady()) {
+        setText('error', '現在集計を取得できません');
+        return;
+      }
+
+      refresh();
+      var classroomStatusTimer = window.setInterval(refresh, REFRESH_MS);
+      window.addEventListener('beforeunload', function () { window.clearInterval(classroomStatusTimer); });
     })();
   </script>
 </body>
