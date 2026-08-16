@@ -674,12 +674,18 @@
       if (trimmed.normalize) trimmed = trimmed.normalize('NFKC');
       trimmed = trimmed.replace(/[​-‍﻿]/g, '').trim();
       if (trimmed === '') return { ok: true, value: '' };
-      var handle = /^@/.test(trimmed) ? trimmed.slice(1) : trimmed;
+      if (/^(?:https?:\\/\\/)?(?:www\\.)?(?:x|twitter)\\.com\\//i.test(trimmed)) return { ok: false, reason: 'url' };
+      var hasAt = /^@/.test(trimmed);
+      var handle = hasAt ? trimmed.slice(1) : trimmed;
+      if (hasAt && /^@/.test(handle)) return { ok: false, reason: 'double_at' };
+      if (/\\s/.test(handle)) return { ok: false, reason: 'space' };
+      if (handle.indexOf('.') !== -1) return { ok: false, reason: 'dot' };
+      if (handle.indexOf('/') !== -1) return { ok: false, reason: 'slash' };
       if (handle.length > 15) return { ok: false, reason: 'too_long', length: handle.length };
-      if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) return { ok: false };
+      if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) return { ok: false, reason: 'invalid_character' };
       var lower = handle.toLowerCase();
       var reserved = ['home', 'i', 'search', 'explore', 'notifications', 'messages', 'settings', 'compose', 'intent', 'hashtag', 'share', 'login', 'logout', 'tos', 'privacy', 'about', 'download'];
-      if (reserved.indexOf(lower) !== -1) return { ok: false };
+      if (reserved.indexOf(lower) !== -1) return { ok: false, reason: 'reserved' };
       return { ok: true, value: lower };
     }
 
@@ -863,9 +869,18 @@
         }
         var normalizedX = normalizeXHandle(xVal);
         if (xVal !== '' && !normalizedX.ok) {
+          var xErrorMessages = {
+            double_at: '@ または ＠ は、先頭に1つだけ入力してください。',
+            url: 'プロフィールURLではなく、@以降のXアカウントIDだけを入力してください。',
+            dot: 'Xアカウントには「.」は使えません。英数字と_だけを入力してください。',
+            slash: 'Xアカウントには「/」は使えません。プロフィールURLではなく、IDだけを入力してください。',
+            space: 'Xアカウントの途中に空白は入れられません。',
+            invalid_character: 'Xアカウントは英数字と_だけで入力してください。',
+            reserved: 'この文字列はXアカウントIDとして使用できません。'
+          };
           var xErrorMessage = normalizedX.reason === 'too_long'
             ? 'Xアカウントは、@を除いて' + normalizedX.length + '文字です。15文字以内で入力してください。'
-            : 'Xアカウントの形式を確認してください（例：@example／＠example）。';
+            : (xErrorMessages[normalizedX.reason] || 'Xアカウントの形式を確認してください（例：@example／＠example）。');
           setError('contact', xErrorMessage, 'contact_x_invalid');
           isValid = false;
           firstInvalid = firstInvalid || xInput;
