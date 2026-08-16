@@ -125,7 +125,7 @@
           <div class="metric__sub">entry_mode = open</div>
         </article>
         <article class="metric">
-          <div class="metric__label">キャンセル待ち</div>
+          <div class="metric__label">補欠受付</div>
           <div class="metric__value" id="metric-waitlist">0</div>
           <div class="metric__sub">entry_mode = waitlist</div>
         </article>
@@ -155,9 +155,9 @@
 
         <section class="section">
           <div class="section__head">
-            <div><h2>衣装貸出希望</h2><p class="section__note">wear_rental_requestedの単純集計</p></div>
+            <div><h2>衣装所有状況</h2><p class="section__note">wear_ownershipの単純集計</p></div>
           </div>
-          <div class="card-grid" id="grid-rental"></div>
+          <div class="card-grid" id="grid-wear-ownership"></div>
         </section>
 
         <section class="section">
@@ -197,7 +197,7 @@
       var refreshStatus = document.getElementById('refresh-status');
 
       var FIRST_TIME_LABELS = { yes: 'はじめて', no: '参加したことがある', unanswered: '未回答' };
-      var RENTAL_LABELS = { requested: '希望あり', not_requested: '希望なし' };
+      var WEAR_OWNERSHIP_LABELS = { have: '衣装あり', preparing: '準備中', none: '衣装なし', unanswered: '未回答' };
 
       function endpointReady() {
         return RESULTS_GAS_ENDPOINT.indexOf('PLACEHOLDER_REPLACE_WITH') === -1;
@@ -262,7 +262,7 @@
 
         renderCards('grid-first-time', data.first_time, FIRST_TIME_LABELS);
         renderCards('grid-wear-items', data.wear_items, {});
-        renderCards('grid-rental', data.wear_rental_requested, RENTAL_LABELS);
+        renderCards('grid-wear-ownership', data.wear_ownership, WEAR_OWNERSHIP_LABELS);
         renderCards('grid-concerns', data.concerns, {});
       }
 

@@ -13,7 +13,11 @@
  *    内容で置き換える。
  * 3. NOTIFICATION_EMAIL が実運用の通知先アドレスになっていることを確認する。
  * 4. Apps Scriptエディタの関数選択で setupHeaderRow() を選び、実行してヘッダー行
- *    （14列：timestamp 〜 entry_mode）を作成する。
+ *    （15列：timestamp 〜 wear_ownership）を作成する。
+ *    既に申込データが入っている既存スプレッドシートへ、衣装貸出廃止（Issue #241）に伴う
+ *    wear_ownership列を追加する場合は、setupHeaderRow()ではなく
+ *    migrateHeaderAddWearOwnership() を1回だけ実行すること
+ *    （setupHeaderRow()はデータがあると中断される安全設計のため）。
  * 5. 「デプロイ」→「新しいデプロイ」→種類「ウェブアプリ」を選択し、
  *    実行ユーザー「自分」、アクセスできるユーザー「全員」でデプロイする
  *    （これは新規の正式申込バックエンドであり、既存9月アンケートGASの更新ではない。
@@ -23,20 +27,44 @@
  *    （現在はプレースホルダーが入っている）。
  * 7. /exec URLをブラウザで開き、backend: OK と表示されることを確認する。
  * 8. 公開後、実際のページ（?test=1を付けずに）から実申込を1件送信し、
- *    Sheets保存内容（14列目まで）と通知メールを確認する。
+ *    Sheets保存内容（15列目まで）と通知メールを確認する。
+ *
+ * ── 本番移行手順（Issue #241：稼働中のSheetへwear_ownership列を追加する場合） ──
+ * 本番はENTRY_STATUS='open'で稼働中、かつ既に申込データが入っている前提。
+ * hasExpectedHeader()は15列ヘッダーの完全一致を要求するため、Sheet側が14列のままだと
+ * 移行中の新規申込はすべてheader_mismatchで保存拒否される。事故を避けるため、
+ * 必ず次の順序で進めること（順序を入れ替えない）。
+ * 1. Sheetの15列化：Apps Scriptエディタで migrateHeaderAddWearOwnership() を実行し、
+ *    既存14列・既存データ行はそのままに、15列目へwear_ownershipヘッダーだけを追加する。
+ * 2. 保存GAS（このファイル）を再デプロイする：既存デプロイの「デプロイを管理」→
+ *    対象デプロイの鉛筆アイコン→バージョン「新バージョン」で更新する
+ *    （/exec URLを変えずに更新できるため、community/classroom_20260912.html の
+ *    GAS_ENDPOINT_URLは変更不要）。
+ * 3. 集計GAS（community/gas/classroom_20260912_results_backend.gs）を同様に再デプロイする。
+ * 4. 集計GASの /exec?action=summary をブラウザで直接開き、レスポンスJSONに
+ *    wear_ownership（have/preparing/none/unanswered）が含まれ、
+ *    旧wear_rental_requestedキーが含まれていないことを確認する。
+ * 5. 上記1〜4が確認できてから、このリポジトリのHTML（community/classroom_20260912.html・
+ *    community/classroom_20260912_results.html）をGitHub Pagesへ公開する。
+ *    HTML公開を先に行うと、Sheet側がまだ14列のままの間はwear_ownershipを送る新フォームの
+ *    申込がすべてheader_mismatchで失敗するため、必ずGAS側（1〜4）を先に完了させること。
  *
  * ── この版の仕様 ──
  * ・display_name（表示名／ハンドルネーム）は必須・30文字以内。
  * ・contact_email / contact_x はそれぞれ200文字以内。どちらか1つ以上が必須。
  * ・wear_items（参加予定の衣装）は複数選択必須（`、`区切りの文字列、1件以上）。
  *   「その他」を含む場合は wear_other（50文字以内）が必須、含まない場合は空文字列のみ許可する。
- * ・wear_rental_requested（衣装貸出希望）・first_time（初参加かどうか）は任意。
+ * ・wear_ownership（当日着用する衣装を用意できるか：have/preparing/none）は必須（Issue #241）。
+ *   衣装貸出は廃止したため、参加枠は衣装持参可否を優先判断材料として使う。
+ * ・wear_rental_requested列は廃止した衣装貸出希望の旧項目。既存Sheetsデータ保護のため列は残すが、
+ *   新規申込では取得・保存せず、常に空文字列で保存する（列の意味を変更して再利用はしない）。
+ * ・first_time（初参加かどうか）は任意。
  * ・concerns（撮影についての希望・不安）は複数選択・任意。
  *   「その他」を含む場合は concern_other（200文字以内）が必須、含まない場合は空文字列のみ許可する。
  * ・free_comment（自由記述）は任意・300文字以内。
  * ・agree_terms（利用規約・参加ルールへの同意）は必須（true固定）。
  * ・entry_mode（open / waitlist）はフロント側のENTRY_STATUSに連動する参考値。
- *   運営が実際の対応（通常受付／キャンセル待ち）を判断するための補助情報であり、
+ *   運営が実際の対応（通常受付／補欠受付）を判断するための補助情報であり、
  *   このファイル側で受付可否そのものを制御するものではない。
  * ・自由入力（display_name / contact_email / contact_x / wear_other / concern_other /
  *   free_comment）は数式インジェクション対策をしてSheetsへ保存する。
@@ -53,9 +81,12 @@ var NOTIFICATION_EMAIL = 'bbuni.ngo@gmail.com';
 
 var NOTIFICATION_EMAIL_SUBJECT = '【SNBC】9月12日教室撮影会に新しい参加申込があります';
 
-/* デプロイ手順4の通りsetupHeaderRow()でヘッダーを作成するまでは、
-   新ヘッダー（14列）と一致しないため保存は成功しない
-   （hasExpectedHeaderが列数・列名の完全一致を要求するため）。 */
+/* デプロイ手順4の通りsetupHeaderRow()（新規シート）またはmigrateHeaderAddWearOwnership()
+   （既存シートへの追加移行）でヘッダーを整えるまでは、新ヘッダー（15列）と一致しないため
+   保存は成功しない（hasExpectedHeaderが列数・列名の完全一致を要求するため）。
+   wear_rental_requestedは廃止済みの衣装貸出希望列（Issue #241）。既存データ保護のため
+   列自体は残すが、新規申込では常に空文字列で保存し、意味を変更して再利用はしない。
+   新設のwear_ownership列は末尾に追加し、既存13列の並びは変更しない。 */
 var COLUMNS = [
   'timestamp',
   'submission_id',
@@ -70,7 +101,8 @@ var COLUMNS = [
   'concern_other',
   'free_comment',
   'agree_terms',
-  'entry_mode'
+  'entry_mode',
+  'wear_ownership'
 ];
 
 /* ── 許可値のallowlist（フロント側HTMLの選択肢と1対1で一致させること。
@@ -90,6 +122,10 @@ var CONCERN_OTHER_VALUE = 'その他';
 var ALLOWED_FIRST_TIME = ['', 'yes', 'no'];
 
 var ALLOWED_ENTRY_MODE = ['open', 'waitlist'];
+
+/* 当日着用する衣装を用意できるか（Issue #241：衣装貸出廃止に伴う新設必須項目）。
+   フロント側HTMLのラジオボタン選択肢と1対1で一致させること。 */
+var ALLOWED_WEAR_OWNERSHIP = ['have', 'preparing', 'none'];
 
 var MAX_DISPLAY_NAME_LENGTH = 30; // フロントのentry-name maxlengthと一致させる
 var MAX_CONTACT_LENGTH = 200; // フロントのentry-email / entry-x maxlengthと一致させる
@@ -184,8 +220,10 @@ function validatePayload(data) {
   if (wearOtherSelected && data.wear_other.trim() === '') return 'wear_other_required';
   if (!wearOtherSelected && data.wear_other !== '') return 'wear_other_requires_other_selected';
 
-  // wear_rental_requested：厳密なboolean。
-  if (typeof data.wear_rental_requested !== 'boolean') return 'wear_rental_requested_not_boolean';
+  // wear_ownership：当日着用する衣装を用意できるかの必須項目。allowlist以外は拒否する
+  // （Issue #241：衣装貸出廃止に伴い、旧wear_rental_requestedの厳密boolean検証を置き換えた）。
+  if (typeof data.wear_ownership !== 'string') return 'wear_ownership_invalid_type';
+  if (ALLOWED_WEAR_OWNERSHIP.indexOf(data.wear_ownership) === -1) return 'wear_ownership_invalid';
 
   // first_time：任意。空文字列 or yes/no のみ許可する。
   if (typeof data.first_time !== 'string') return 'first_time_invalid_type';
@@ -374,6 +412,14 @@ function jsonResponse(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+/* 通知メール本文の衣装所有状況の表示文言。フロント側HTMLの選択肢文言と一致させている
+   （Issue #241：衣装貸出廃止に伴い、旧wear_rental_requested参照を置き換えた）。 */
+var WEAR_OWNERSHIP_NOTIFICATION_LABELS = {
+  have: '衣装を持っている',
+  preparing: '現在準備中',
+  none: '衣装を持っていない'
+};
+
 /**
  * 通知メール本文を組み立てる。
  * 個人情報の保存場所を増やさないため、contact_email / contact_x / free_comment /
@@ -388,10 +434,10 @@ function buildNotificationBody(data, timestamp) {
     '',
     '受付日時: ' + receivedAt,
     '参加予定の衣装: ' + (data.wear_items || '（未回答）'),
-    '衣装の貸出希望: ' + (data.wear_rental_requested ? '希望する' : '希望しない'),
+    '衣装の準備状況: ' + (WEAR_OWNERSHIP_NOTIFICATION_LABELS[data.wear_ownership] || '（未回答）'),
     '参加ははじめてか: ' + (data.first_time === 'yes' ? 'はじめて' : (data.first_time === 'no' ? '参加したことがある' : '（未回答）')),
     '希望・不安なこと: ' + (data.concerns || '（該当なし）'),
-    '受付区分: ' + (data.entry_mode === 'waitlist' ? 'キャンセル待ち' : '通常受付'),
+    '受付区分: ' + (data.entry_mode === 'waitlist' ? '補欠受付' : '通常受付'),
     '',
     '氏名・連絡先・自由記述の詳細はGoogleスプレッドシートで確認してください。'
   ];
@@ -422,9 +468,11 @@ function sendNotificationEmailSafely(data, timestamp) {
 
 /**
  * ヘッダー再作成用。新規スプレッドシートでの初回デプロイ時（デプロイ手順4）に1回だけ実行する。
- * 新COLUMNS（14列：timestamp 〜 entry_mode）でヘッダーを作成する。
+ * 新COLUMNS（15列：timestamp 〜 wear_ownership）でヘッダーを作成する。
  * 既に回答が入っている状態で誤って実行すると列がずれて破損するため、
  * データ行がある場合は明示的に停止する。
+ * 既存データがあるスプレッドシートへwear_ownership列だけを追加したい場合は、
+ * このsetupHeaderRow()ではなく migrateHeaderAddWearOwnership() を使うこと。
  */
 function setupHeaderRow() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -440,4 +488,41 @@ function setupHeaderRow() {
     sheet.getRange(1, 1, 1, existingColumnCount).clearContent();
   }
   sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+}
+
+/**
+ * 衣装貸出廃止（Issue #241）に伴う移行専用関数。
+ * 既に申込データが入っている本番スプレッドシートで、旧14列ヘッダー
+ * （timestamp 〜 entry_mode、wear_ownership追加前）に15列目 wear_ownership を
+ * 安全に追加するために、Apps Scriptエディタで1回だけ手動実行する。
+ * 既存の14列・既存データ行は一切変更せず、15列目のヘッダーセルのみ追加する。
+ * 現在のヘッダーが旧14列と完全一致しない場合（未移行以外の状態）は、
+ * 誤実行による列破壊を防ぐため何もせず例外を投げる。
+ */
+var LEGACY_COLUMNS_BEFORE_WEAR_OWNERSHIP = [
+  'timestamp', 'submission_id', 'display_name', 'contact_email', 'contact_x',
+  'wear_items', 'wear_other', 'wear_rental_requested', 'first_time', 'concerns',
+  'concern_other', 'free_comment', 'agree_terms', 'entry_mode'
+];
+function migrateHeaderAddWearOwnership() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    throw new Error('シート「' + SHEET_NAME + '」が見つかりません。');
+  }
+
+  var lastColumn = sheet.getLastColumn();
+  if (lastColumn !== LEGACY_COLUMNS_BEFORE_WEAR_OWNERSHIP.length) {
+    throw new Error(
+      '現在のヘッダー列数（' + lastColumn + '列）が想定（' + LEGACY_COLUMNS_BEFORE_WEAR_OWNERSHIP.length +
+      '列）と一致しないため中断しました。すでに移行済み、または想定外の状態です。ヘッダーを目視確認してください。'
+    );
+  }
+  var header = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+  for (var i = 0; i < LEGACY_COLUMNS_BEFORE_WEAR_OWNERSHIP.length; i++) {
+    if (header[i] !== LEGACY_COLUMNS_BEFORE_WEAR_OWNERSHIP[i]) {
+      throw new Error('既存ヘッダーが想定と一致しない列があります（' + (i + 1) + '列目）。中断しました。ヘッダーを目視確認してください。');
+    }
+  }
+  sheet.getRange(1, lastColumn + 1).setValue('wear_ownership');
 }
