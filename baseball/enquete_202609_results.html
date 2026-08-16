@@ -54,10 +54,17 @@
     .section__head { margin-bottom: 10px; }
     .section h2 { margin: 0; font-size: 1.15rem; }
     .section__note { margin: 4px 0 0; color: var(--muted); font-size: .82rem; }
-    .date-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .date-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
     .date-card { background: var(--accent-soft); border: 1px solid #bfe0c8; border-radius: 12px; padding: 12px 14px; }
     .date-card__label { color: #2c5f35; font-size: .82rem; font-weight: 700; }
+    .date-card__row { display: flex; align-items: baseline; gap: 6px; margin-top: 2px; }
+    .date-card__row + .date-card__row { margin-top: 4px; }
     .date-card__value { color: var(--accent); font-size: 1.5rem; font-weight: 800; }
+    .date-card__value--maybe { color: #7a8a2c; font-size: 1.1rem; }
+    .date-card__tag { color: var(--muted); font-size: .74rem; font-weight: 700; }
+    .matrix-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 3px; background: var(--card); }
+    .matrix-toggle button { border: 0; border-radius: 999px; padding: 6px 14px; background: transparent; color: var(--muted); font-size: .82rem; font-weight: 700; cursor: pointer; }
+    .matrix-toggle button.is-active { background: var(--accent); color: #fff; }
     .table-shell { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; background: var(--card); box-shadow: var(--shadow); }
     table { width: 100%; border-collapse: collapse; min-width: 620px; }
     th, td { border-bottom: 1px solid var(--border); padding: 11px 12px; text-align: center; font-size: .9rem; }
@@ -110,7 +117,7 @@
         <article class="metric">
           <div class="metric__label">9月は参加できない</div>
           <div class="metric__value" id="metric-no-available">0</div>
-          <div class="metric__sub">候補日と排他の回答</div>
+          <div class="metric__sub">6日すべて×の回答数</div>
         </article>
         <article class="metric">
           <div class="metric__label">初参加</div>
@@ -138,7 +145,11 @@
         <section class="section">
           <div class="section__head">
             <h2>候補日同士の重複マトリクス</h2>
-            <p class="section__note">「両方とも参加可能」な人数。対角線はその日自体の参加可能人数です。</p>
+            <p class="section__note" id="matrix-note">表示中の基準（〇のみ／〇＋△）で両方の候補日に該当する人数です。対角線はその日自体の人数です。</p>
+            <div class="matrix-toggle" id="matrix-toggle" role="group" aria-label="重複マトリクスの基準切り替え">
+              <button type="button" data-matrix-mode="confirmed" class="is-active">〇のみ</button>
+              <button type="button" data-matrix-mode="including_maybe">〇＋△</button>
+            </div>
           </div>
           <div class="table-shell" id="table-matrix"></div>
         </section>
@@ -169,6 +180,12 @@
       var refreshTimer = null;
       var isLoading = false;
 
+      // 直近取得した集計データ。60秒自動更新のたびに参照を差し替えるが、matrixModeはリセットしない。
+      var latestData = null;
+      // 重複マトリクスの表示基準。'confirmed'（〇のみ）または 'including_maybe'（〇＋△）。
+      var matrixMode = 'confirmed';
+      var MATRIX_MODE_LABELS = { confirmed: '〇のみ', including_maybe: '〇＋△' };
+
       var dashboard = document.getElementById('dashboard');
       var emptyState = document.getElementById('empty-state');
       var dataSections = document.getElementById('data-sections');
@@ -176,6 +193,7 @@
       var setupNotice = document.getElementById('setup-notice');
       var refreshButton = document.getElementById('refresh-button');
       var refreshStatus = document.getElementById('refresh-status');
+      var matrixToggle = document.getElementById('matrix-toggle');
 
       function endpointReady() {
         return RESULTS_GAS_ENDPOINT.indexOf('PLACEHOLDER_REPLACE_WITH') === -1;
@@ -213,11 +231,30 @@
       }
 
       function renderDateCards(dateCounts, dateLabels, dateKeys) {
+        // 片系統（confirmed／including_maybe）が欠けていても画面全体を落とさないようフォールバックする。
+        var confirmed = (dateCounts && dateCounts.confirmed) || {};
+        var includingMaybe = (dateCounts && dateCounts.including_maybe) || {};
         var target = document.getElementById('date-cards');
         target.innerHTML = dateKeys.map(function (key) {
-          return '<article class="date-card"><div class="date-card__label">' + escapeHtml(dateLabels[key] || key) +
-            '</div><div class="date-card__value">' + Number(dateCounts[key] || 0) + '人</div></article>';
+          return '<article class="date-card">' +
+            '<div class="date-card__label">' + escapeHtml(dateLabels[key] || key) + '</div>' +
+            '<div class="date-card__row"><span class="date-card__value">' + Number(confirmed[key] || 0) + '人</span><span class="date-card__tag">〇</span></div>' +
+            '<div class="date-card__row"><span class="date-card__value date-card__value--maybe">' + Number(includingMaybe[key] || 0) + '人</span><span class="date-card__tag">〇＋△</span></div>' +
+            '</article>';
         }).join('');
+      }
+
+      function renderMatrixForCurrentMode() {
+        if (!latestData) return;
+        var labels = latestData.labels || {};
+        var dateLabels = labels.dates || {};
+        var dateKeys = Object.keys(dateLabels);
+        renderMatrix(
+          'table-matrix',
+          (latestData.matrix && latestData.matrix[matrixMode]) || {},
+          dateKeys,
+          dateLabels
+        );
       }
 
       function renderMatrix(targetId, matrix, dateKeys, dateLabels) {
@@ -268,6 +305,9 @@
       }
 
       function render(data) {
+        // 60秒自動更新のたびにlatestDataだけ差し替える。matrixMode（選択中の基準）はここではリセットしない。
+        latestData = data;
+
         var labels = data.labels || {};
         var dateLabels = labels.dates || {};
         var dateKeys = Object.keys(dateLabels);
@@ -287,7 +327,7 @@
         if (isEmpty) return;
 
         renderDateCards(data.date_counts || {}, dateLabels, dateKeys);
-        renderMatrix('table-matrix', data.matrix || {}, dateKeys, dateLabels);
+        renderMatrixForCurrentMode();
         renderDateIntent('table-date-intent', data.date_intent || {}, dateKeys, dateLabels, intents);
       }
 
@@ -314,6 +354,21 @@
       }
 
       refreshButton.addEventListener('click', refresh);
+
+      if (matrixToggle) {
+        matrixToggle.addEventListener('click', function (event) {
+          var button = event.target.closest ? event.target.closest('button[data-matrix-mode]') : null;
+          if (!button) return;
+          var mode = button.getAttribute('data-matrix-mode');
+          if (mode === matrixMode || !MATRIX_MODE_LABELS[mode]) return;
+          matrixMode = mode;
+          Array.prototype.forEach.call(matrixToggle.querySelectorAll('button'), function (b) {
+            b.classList.toggle('is-active', b === button);
+          });
+          // トグル操作では再fetchせず、保持済みのlatestDataからマトリクスだけ再描画する。
+          renderMatrixForCurrentMode();
+        });
+      }
 
       if (!endpointReady()) {
         setupNotice.hidden = false;
