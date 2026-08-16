@@ -674,7 +674,7 @@
       if (trimmed.normalize) trimmed = trimmed.normalize('NFKC');
       trimmed = trimmed.replace(/[​-‍﻿]/g, '').trim();
       if (trimmed === '') return { ok: true, value: '' };
-      if (/^(?:https?:\/\/)?(?:www\\.)?(?:x|twitter)\\.com\//i.test(trimmed)) return { ok: false, reason: 'url' };
+      if (/^(?:https?:\/\/)?(?:www\.)?(?:x|twitter)\.com\//i.test(trimmed)) return { ok: false, reason: 'url' };
       var hasAt = /^@/.test(trimmed);
       var handle = hasAt ? trimmed.slice(1) : trimmed;
       if (hasAt && /^@/.test(handle)) return { ok: false, reason: 'double_at' };
