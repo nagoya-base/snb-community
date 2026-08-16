@@ -69,6 +69,12 @@ var RESULTS_INTENTS = [
 /* baseball/gas/enquete_202609_backend.gs の ALLOWED_PARTICIPATION_HISTORY と一致させること。 */
 var RESULTS_HISTORY_VALUES = ['初参加', '以前参加したことがある'];
 
+/* baseball/gas/enquete_202609_backend.gs の ALLOWED_DATE_VALUES と一致させること。
+   日程6列は '〇'/'△'/'×' の3値（Issue #232。旧booleanから変更、no_available_date列は廃止）。 */
+var RESULTS_DATE_VALUE_CONFIRMED = '〇';
+var RESULTS_DATE_VALUE_MAYBE = '△';
+var RESULTS_DATE_VALUE_UNAVAILABLE = '×';
+
 function doGet(e) {
   var action = e && e.parameter ? String(e.parameter.action || '') : '';
   var isTestMode = !!(e && e.parameter && e.parameter.test === '1');
@@ -104,12 +110,13 @@ function doGet(e) {
  * 運営用クロス集計を組み立てる。isTestMode=trueの場合、対象シートが本番のRESULTS_SHEET_NAMEでは
  * なくRESULTS_TEST_SHEET_NAMEになる（APIレベルのテストモード。ファイル冒頭コメント参照）。
  * - total: 総回答数（現在Sheetに保存されている行数。1人1行のupsert後の件数）
- * - date_counts: 候補日ごとの参加可能人数
- * - matrix: 候補日6日×6日の重複人数マトリクス。matrix[A][B] は「AもBも○」の人数。
- *   対角線 matrix[A][A] は date_counts[A] と一致する（その日自体の参加可能人数）。
- * - date_intent: 候補日 × 参加意向のクロス集計。
+ * - date_counts: 候補日ごとの参加可能人数。confirmed（〇のみ）／including_maybe（〇＋△）の2系統。
+ * - matrix: 候補日6日×6日の重複人数マトリクス。confirmed／including_maybeの2系統。
+ *   matrix.confirmed[A][B] は「AもBも〇」の人数、matrix.including_maybe[A][B] は
+ *   「AもBも〇または△」の人数。対角線 matrix.X[A][A] は date_counts.X[A] と一致する。
+ * - date_intent: 候補日 × 参加意向のクロス集計（〇の回答のみを対象とする）。
  * - history_counts: 初参加／既参加の内訳（付随情報）。
- * - no_available_count: 「9月は参加できない」の人数（付随情報）。
+ * - no_available_count: 6日すべて「×」の行数として動的算出する（専用stateは持たないため）。
  * 個々の回答行・display_name・連絡先・自由記述・submission_idはいっさい読み出し対象に含めない
  * （必要な列のみ getRange で取得し、レスポンス組み立てにも使わない）。
  */
@@ -137,34 +144,46 @@ function buildSurveySummary_(isTestMode) {
   headers.forEach(function (name, i) { index[String(name)] = i; });
 
   var dateKeys = RESULTS_DATE_COLUMNS.map(function (pair) { return pair[0]; });
-  var required = dateKeys.concat(['participation_intent', 'participation_history', 'no_available_date']);
+  var required = dateKeys.concat(['participation_intent', 'participation_history']);
   required.forEach(function (name) {
     if (index[name] === undefined) throw new Error('required column missing: ' + name);
   });
 
   var rows = lastRow >= 2 ? sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues() : [];
 
-  var dateCounts = zeroMap_(dateKeys);
-  var matrix = makeMatrix_(dateKeys, dateKeys);
+  var dateCountsConfirmed = zeroMap_(dateKeys);
+  var dateCountsIncludingMaybe = zeroMap_(dateKeys);
+  var matrixConfirmed = makeMatrix_(dateKeys, dateKeys);
+  var matrixIncludingMaybe = makeMatrix_(dateKeys, dateKeys);
   var dateIntent = makeMatrix_(dateKeys, RESULTS_INTENTS);
   var historyCounts = zeroMap_(RESULTS_HISTORY_VALUES);
   var noAvailableCount = 0;
 
   rows.forEach(function (row) {
-    var flags = dateKeys.map(function (key) { return row[index[key]] === true; });
+    var values = dateKeys.map(function (key) { return stringCell_(row[index[key]]); });
+    var confirmedFlags = values.map(function (v) { return v === RESULTS_DATE_VALUE_CONFIRMED; });
+    var includingMaybeFlags = values.map(function (v) { return v === RESULTS_DATE_VALUE_CONFIRMED || v === RESULTS_DATE_VALUE_MAYBE; });
+    var allUnavailable = values.every(function (v) { return v === RESULTS_DATE_VALUE_UNAVAILABLE; });
     var intent = stringCell_(row[index.participation_intent]);
     var history = stringCell_(row[index.participation_history]);
 
-    if (row[index.no_available_date] === true) noAvailableCount += 1;
+    if (allUnavailable) noAvailableCount += 1;
     if (historyCounts[history] !== undefined) historyCounts[history] += 1;
 
     dateKeys.forEach(function (keyA, i) {
-      if (!flags[i]) return;
-      dateCounts[keyA] += 1;
-      if (dateIntent[keyA] && dateIntent[keyA][intent] !== undefined) dateIntent[keyA][intent] += 1;
-      dateKeys.forEach(function (keyB, j) {
-        if (flags[j]) matrix[keyA][keyB] += 1;
-      });
+      if (confirmedFlags[i]) {
+        dateCountsConfirmed[keyA] += 1;
+        if (dateIntent[keyA] && dateIntent[keyA][intent] !== undefined) dateIntent[keyA][intent] += 1;
+        dateKeys.forEach(function (keyB, j) {
+          if (confirmedFlags[j]) matrixConfirmed[keyA][keyB] += 1;
+        });
+      }
+      if (includingMaybeFlags[i]) {
+        dateCountsIncludingMaybe[keyA] += 1;
+        dateKeys.forEach(function (keyB, j) {
+          if (includingMaybeFlags[j]) matrixIncludingMaybe[keyA][keyB] += 1;
+        });
+      }
     });
   });
 
@@ -179,8 +198,14 @@ function buildSurveySummary_(isTestMode) {
       intents: RESULTS_INTENTS,
       history: RESULTS_HISTORY_VALUES
     },
-    date_counts: dateCounts,
-    matrix: matrix,
+    date_counts: {
+      confirmed: dateCountsConfirmed,
+      including_maybe: dateCountsIncludingMaybe
+    },
+    matrix: {
+      confirmed: matrixConfirmed,
+      including_maybe: matrixIncludingMaybe
+    },
     date_intent: dateIntent,
     history_counts: historyCounts
   };
@@ -203,8 +228,14 @@ function emptySummary_(isTestMode) {
       intents: RESULTS_INTENTS,
       history: RESULTS_HISTORY_VALUES
     },
-    date_counts: zeroMap_(dateKeys),
-    matrix: makeMatrix_(dateKeys, dateKeys),
+    date_counts: {
+      confirmed: zeroMap_(dateKeys),
+      including_maybe: zeroMap_(dateKeys)
+    },
+    matrix: {
+      confirmed: makeMatrix_(dateKeys, dateKeys),
+      including_maybe: makeMatrix_(dateKeys, dateKeys)
+    },
     date_intent: makeMatrix_(dateKeys, RESULTS_INTENTS),
     history_counts: zeroMap_(RESULTS_HISTORY_VALUES)
   };

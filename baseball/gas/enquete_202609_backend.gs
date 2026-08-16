@@ -16,13 +16,13 @@
  * 3. NOTIFICATION_EMAIL を実運用の通知先アドレスに書き換える（プレースホルダー
  *    'YOUR_NOTIFICATION_EMAIL' のままだと通知メールは送信されない。doGet()を開くと警告が出る）。
  * 4. スクリプトエディタの関数選択で setupHeaderRow を選び、1回実行する。
- *    responses シートへヘッダー行（18列：submission_id 〜 free_comment）を作成する
+ *    responses シートへヘッダー行（22列：submission_id 〜 free_comment）を作成する
  *    （既に回答がある状態で実行すると安全装置により例外で停止する）。
  * 5. 「デプロイ」→「新しいデプロイ」→「ウェブアプリ」。実行ユーザーは自分、
  *    アクセス権は「全員」にする。
  * 6. 発行された /exec URL を baseball/enquete_202609.html の GAS_ENDPOINT_URL に設定する。
  * 7. /exec URLをブラウザで開き、「baseball enquete_202609 backend: OK」と表示されることを確認する。
- * 8. 公開ページ（?test=1 を付けない本番URL）から1件だけ疎通し、Sheetsの保存内容（18列目まで）と
+ * 8. 公開ページ（?test=1 を付けない本番URL）から1件だけ疎通し、Sheetsの保存内容（22列目まで）と
  *    通知メールの件名・本文を確認する。
  * 9. baseball/gas/enquete_202609_results_backend.gs の RESULTS_SPREADSHEET_ID に、
  *    このスプレッドシートのID（URLの /d/ と /edit の間の文字列）を設定して集計APIもデプロイする。
@@ -66,11 +66,14 @@
  * - created_at … 初回保存時の値をそのまま維持する
  * - updated_at … 今回の受付時刻に更新する
  * - submission_id … 今回送信された新しい値に置き換える
- * - それ以外の回答列（display_name/contact_email/contact_x/participation_intent/
- *   日付6列/no_available_date/time_preferences/activity_preferences/
- *   participation_history/free_comment） … すべて今回送信された最新の内容に置き換える
- *   （前回値との差分マージは行わない。連絡先のどちらかを今回未入力にした場合、その列は
- *   空欄で上書きされる）。
+ * - それ以外の回答列（display_name/participation_history/first_time_motivation/
+ *   age_group/sports_experience/uniform_status/glove_availability/contact_email/
+ *   contact_x/participation_intent/日付6列/time_preferences/activity_preferences/
+ *   free_comment） … すべて今回送信された最新の内容に置き換える（前回値との差分マージは
+ *   行わない。連絡先のどちらかを今回未入力にした場合、その列は空欄で上書きされる）。
+ *   participation_history が「以前参加したことがある」の場合、first_time_motivation /
+ *   age_group / sports_experience / uniform_status / glove_availability は空文字列に
+ *   正規化して保存する（旧回答が初参加だった場合でも、再回答upsert時に旧値を残さない）。
  *
  * ── 連絡先の正規化 ──
  * メール：前後の空白を除去し、小文字化する（normalizeEmail_）。
@@ -104,18 +107,23 @@
  *   Sheetへの保存値と、冪等性判定に使う受信直後の生値（data.submission_id）が常に一致する。
  * ・LockService（既存照合〜書き込みまでロック内で完結させる。doPost→processSubmission_）
  * ・Formula Injection対策（sanitizeForSheet_。submission_id/display_name/contact_email/
- *   contact_x/free_comment に適用）
- * ・サーバー側allowlist（participation_intent/participation_history/time_preferences/
- *   activity_preferences はフロントの選択肢と1対1で一致させたallowlistで検証する）
+ *   contact_x/first_time_motivation/free_comment に適用）
+ * ・サーバー側allowlist（participation_intent/participation_history/age_group/
+ *   sports_experience/uniform_status/glove_availability/time_preferences/
+ *   activity_preferences はフロントの選択肢と1対1で一致させたallowlistで検証する。
+ *   日付6列も ['〇','△','×'] のallowlistで検証する）
  * ・型・文字数検証（display_name<=50 / contact_email<=200 / contact_x<=200 /
- *   free_comment<=300、日付6列とno_available_dateは厳密なboolean）
+ *   first_time_motivation<=100 / free_comment<=300、日付6列は厳密に '〇'/'△'/'×' のいずれか）
+ * ・participation_history === '初参加' の場合のみ first_time_motivation 以外の追加4項目
+ *   （age_group/sports_experience/uniform_status/glove_availability）を必須検証し、
+ *   '以前参加したことがある' の場合はクライアントから値が来ても空文字列に正規化して保存する
  * ・候補日は date_0905/date_0906/date_0913/date_0919/date_0920/date_0927 の6列のみ
  *   （9/12・9/26は列として存在しない）
  * ・送信失敗時に成功扱いしない（バリデーションエラー・contact_conflict・server_errorは
  *   すべて ok:false を返し、Sheetへは一切書き込まない）
  * ・duplicate時（同一submission_id再送）の重複保存・重複通知抑止
  * ・新規回答／更新回答で通知メールの件名を分ける
- * ・通知メール本文にはメール・X・自由記述・submission_idを含めない
+ * ・通知メール本文にはメール・X・自由記述・submission_id・初参加者向け追加情報を含めない
  */
 
 var SHEET_NAME = 'responses';
@@ -131,14 +139,25 @@ var NOTIFICATION_EMAIL = 'bbuni.ngo@gmail.com';
 var NOTIFICATION_EMAIL_SUBJECT_NEW = '【名古屋野球ユニ部】9月日程アンケートに新しい回答があります';
 var NOTIFICATION_EMAIL_SUBJECT_UPDATE = '【名古屋野球ユニ部】9月日程アンケートの回答が更新されました';
 
-/* Sheetの列構成（18列）。upsertの都合上 submission_id を先頭、created_at/updated_at を
+/* Sheetの列構成（22列）。upsertの都合上 submission_id を先頭、created_at/updated_at を
    その直後に置く。列の並び・列名を変更する場合はsetupHeaderRow()実行前に必ずこの配列も
-   更新し、既存回答がある状態でヘッダーだけ変えないこと（列ずれ事故防止）。 */
+   更新し、既存回答がある状態でヘッダーだけ変えないこと（列ずれ事故防止）。
+   Issue #232 で participation_history を display_name の直後に移動し、初参加者向け追加4項目
+   （age_group/sports_experience/uniform_status/glove_availability）と任意項目
+   （first_time_motivation）を新設。日程6列は旧来のboolean（true/false）から
+   '〇'/'△'/'×' の3値へ変更し、no_available_date列は廃止した（実データなしで移行不要のため
+   非破壊マイグレーションは行わず、setupHeaderRow()で作り直す）。 */
 var COLUMNS = [
   'submission_id',
   'created_at',
   'updated_at',
   'display_name',
+  'participation_history',
+  'first_time_motivation',
+  'age_group',
+  'sports_experience',
+  'uniform_status',
+  'glove_availability',
   'contact_email',
   'contact_x',
   'participation_intent',
@@ -148,15 +167,16 @@ var COLUMNS = [
   'date_0919',
   'date_0920',
   'date_0927',
-  'no_available_date',
   'time_preferences',
   'activity_preferences',
-  'participation_history',
   'free_comment'
 ];
 
-/* 候補日は必ずこの6列のみ。9/12・9/26は候補日に含めない（Issue #225で明示的に禁止）。 */
+/* 候補日は必ずこの6列のみ。9/12・9/26は候補日に含めない（Issue #225で明示的に禁止）。
+   各列の値は厳密に '〇'/'△'/'×' のいずれか（Issue #232。旧booleanから変更）。 */
 var DATE_KEYS = ['date_0905', 'date_0906', 'date_0913', 'date_0919', 'date_0920', 'date_0927'];
+/* 日程各列に許可する値。 */
+var ALLOWED_DATE_VALUES = ['〇', '△', '×'];
 
 /* 通知メール本文でQ4の参加可能日を人が読める形式で表示するためのラベル
    （baseball/enquete_202609.html の日付選択肢と1対1で一致させること）。 */
@@ -187,9 +207,28 @@ var ALLOWED_TIME_PREFERENCES = [
 var ALLOWED_ACTIVITY_PREFERENCES = [
   'キャッチボール', 'ノック', '守備・送球練習', '初心者向け練習', '軽く写真撮影', '練習後の銭湯'
 ];
+/* 初参加者向け追加4項目（Issue #232実装指示コメントで確定した選択肢）。 */
+var ALLOWED_AGE_GROUPS = ['10代', '20代', '30代', '40代', '50代以上'];
+var ALLOWED_SPORTS_EXPERIENCE = [
+  '運動経験はほとんどない',
+  '学生時代など少し前に運動していた',
+  '最近（1年以内）まで運動していた',
+  '今も定期的に運動している'
+];
+var ALLOWED_UNIFORM_STATUS = [
+  '着用する予定',
+  '着用しない予定（動きやすい服装で参加）',
+  'まだ決めていない'
+];
+var ALLOWED_GLOVE_AVAILABILITY = [
+  '持参できる',
+  '持っていない（相談したい）',
+  'まだわからない'
+];
 
 var MAX_DISPLAY_NAME_LENGTH = 50; // フロントのmaxlengthと一致させる
 var MAX_CONTACT_LENGTH = 200; // フロントのcontact-email/contact-xのmaxlengthと一致させる
+var MAX_FIRST_TIME_MOTIVATION_LENGTH = 100; // フロントのfirst-time-motivationのmaxlengthと一致させる
 var MAX_FREE_COMMENT_LENGTH = 300; // フロントのmaxlengthと一致させる
 /* submission_idの文字種・長さ制限。先頭は英数字固定、以降は英数字・ハイフンのみ、
    最大100文字（crypto.randomUUID()は36文字、フォールバック生成でも数十文字程度のため十分な余裕）。
@@ -210,11 +249,12 @@ var X_RESERVED_HANDLES = [
 
 /**
  * Googleスプレッドシートの数式インジェクション対策。
- * 自由入力欄（submission_id / display_name / contact_email / contact_x / free_comment）は、
- * 先頭が =, +, -, @ の場合にスプレッドシート側で数式として解釈される可能性があるため、
- * 先頭に ' を付けて強制的に文字列として保存する。
- * allowlistで検証済みの participation_intent / participation_history /
- * time_preferences / activity_preferences / 日付各列には適用不要（許可された固定文言のみのため）。
+ * 自由入力欄（submission_id / display_name / contact_email / contact_x /
+ * first_time_motivation / free_comment）は、先頭が =, +, -, @ の場合にスプレッドシート側で
+ * 数式として解釈される可能性があるため、先頭に ' を付けて強制的に文字列として保存する。
+ * allowlistで検証済みの participation_intent / participation_history / age_group /
+ * sports_experience / uniform_status / glove_availability / time_preferences /
+ * activity_preferences / 日付各列には適用不要（許可された固定文言のみのため）。
  */
 function sanitizeForSheet_(value) {
   if (typeof value !== 'string') return value;
@@ -286,6 +326,22 @@ function validatePayload_(data) {
   var displayName = data.display_name.trim();
   if (displayName === '') return { error: 'display_name_required' };
 
+  if (ALLOWED_PARTICIPATION_HISTORY.indexOf(data.participation_history) === -1) return { error: 'participation_history_invalid' };
+  var isFirstTime = data.participation_history === '初参加';
+
+  if (typeof data.first_time_motivation !== 'string') return { error: 'first_time_motivation_invalid_type' };
+  if (data.first_time_motivation.length > MAX_FIRST_TIME_MOTIVATION_LENGTH) return { error: 'first_time_motivation_too_long' };
+
+  // 初参加者向け追加4項目：participation_history==='初参加'の場合のみ必須検証する。
+  // '以前参加したことがある'の場合はクライアントから値が来ても空文字列に正規化して保存する
+  // （保存直前のprocessSubmission_内、firstTimeFieldKeysの分岐で正規化する）。
+  if (isFirstTime) {
+    if (ALLOWED_AGE_GROUPS.indexOf(data.age_group) === -1) return { error: 'age_group_invalid' };
+    if (ALLOWED_SPORTS_EXPERIENCE.indexOf(data.sports_experience) === -1) return { error: 'sports_experience_invalid' };
+    if (ALLOWED_UNIFORM_STATUS.indexOf(data.uniform_status) === -1) return { error: 'uniform_status_invalid' };
+    if (ALLOWED_GLOVE_AVAILABILITY.indexOf(data.glove_availability) === -1) return { error: 'glove_availability_invalid' };
+  }
+
   if (typeof data.contact_email !== 'string') return { error: 'contact_email_invalid_type' };
   if (data.contact_email.length > MAX_CONTACT_LENGTH) return { error: 'contact_email_too_long' };
   var normalizedEmail = normalizeEmail_(data.contact_email);
@@ -301,20 +357,12 @@ function validatePayload_(data) {
 
   if (ALLOWED_PARTICIPATION_INTENT.indexOf(data.participation_intent) === -1) return { error: 'participation_intent_invalid' };
 
-  // 日付：各列は厳密にboolean型であること（文字列"true"等は許可しない）。
-  var anyDateTrue = false;
+  // 日付：6日すべて、厳密に '〇'/'△'/'×' のいずれかであること（Issue #232でboolean/
+  // no_available_dateの排他制御から3値必須へ変更。専用の「9月は参加できない」stateは持たない）。
   for (var i = 0; i < DATE_KEYS.length; i++) {
     var key = DATE_KEYS[i];
-    var value = data[key];
-    if (typeof value !== 'boolean') return { error: key + '_not_boolean' };
-    if (value) anyDateTrue = true;
+    if (ALLOWED_DATE_VALUES.indexOf(data[key]) === -1) return { error: key + '_invalid' };
   }
-  if (typeof data.no_available_date !== 'boolean') return { error: 'no_available_date_not_boolean' };
-
-  // 排他関係：「9月は参加できない」がtrueの場合、日付は全てfalseでなければならない。
-  if (data.no_available_date === true && anyDateTrue) return { error: 'date_exclusive_violation' };
-  // どちらも埋まっていない（fetch改造等で両方false）場合も不正とする。
-  if (data.no_available_date !== true && !anyDateTrue) return { error: 'date_missing' };
 
   if (typeof data.time_preferences !== 'string') return { error: 'time_preferences_invalid_type' };
   var timePrefRaw = data.time_preferences || '';
@@ -330,12 +378,16 @@ function validatePayload_(data) {
     if (ALLOWED_ACTIVITY_PREFERENCES.indexOf(activityItems[a]) === -1) return { error: 'activity_preferences_invalid_item' };
   }
 
-  if (ALLOWED_PARTICIPATION_HISTORY.indexOf(data.participation_history) === -1) return { error: 'participation_history_invalid' };
-
   if (typeof data.free_comment !== 'string') return { error: 'free_comment_invalid_type' };
   if (data.free_comment.length > MAX_FREE_COMMENT_LENGTH) return { error: 'free_comment_too_long' };
 
-  return { error: null, normalizedEmail: normalizedEmail, normalizedX: normalizedX, displayName: displayName };
+  return {
+    error: null,
+    normalizedEmail: normalizedEmail,
+    normalizedX: normalizedX,
+    displayName: displayName,
+    isFirstTime: isFirstTime
+  };
 }
 
 /**
@@ -446,6 +498,10 @@ function processSubmission_(e, isTestMode) {
     var now = new Date();
     var createdAt = isUpdate ? dataRows[targetIndex][colIndex.created_at] : now;
 
+    // 初参加者向け追加5項目：'以前参加したことがある'の場合は、クライアントから値が来ていても
+    // 保存しない（空文字列に正規化する）。再回答upsert時、旧回答が初参加だった場合でも
+    // 今回が以前参加であれば旧値を残さずここで空に上書きする。
+    var firstTimeFieldKeys = ['first_time_motivation', 'age_group', 'sports_experience', 'uniform_status', 'glove_availability'];
     var row = COLUMNS.map(function (key) {
       if (key === 'created_at') return createdAt;
       if (key === 'updated_at') return now;
@@ -454,6 +510,10 @@ function processSubmission_(e, isTestMode) {
       if (key === 'contact_email') return sanitizeForSheet_(validated.normalizedEmail);
       if (key === 'contact_x') return sanitizeForSheet_(validated.normalizedX);
       if (key === 'free_comment') return sanitizeForSheet_(data.free_comment);
+      if (firstTimeFieldKeys.indexOf(key) !== -1) {
+        if (!validated.isFirstTime) return '';
+        return key === 'first_time_motivation' ? sanitizeForSheet_(data.first_time_motivation) : data[key];
+      }
       var value = data[key];
       return value === undefined || value === null ? '' : value;
     });
@@ -514,18 +574,15 @@ function jsonResponse_(obj) {
 }
 
 /**
- * Q4（参加可能日）を通知メール向けの短い文字列に整形する。
- * 「9月は参加できない」が選ばれている場合はそちらを優先して表示する
- * （validatePayload_により日付側とは排他であることが保証されている）。
+ * Q5（参加候補日）を通知メール向けの短い文字列に整形する。
+ * 6日すべてが「×」の場合は「9月は参加できない（6日すべて×）」を先頭に付ける
+ * （専用stateは持たないため、この文言はここで動的に判定する）。
  */
 function formatDateSelectionForNotification_(data) {
-  if (data.no_available_date === true) return '9月は参加できない';
-  var selected = [];
-  for (var i = 0; i < DATE_KEYS.length; i++) {
-    var key = DATE_KEYS[i];
-    if (data[key] === true) selected.push(DATE_LABELS[key]);
-  }
-  return selected.length > 0 ? selected.join('、') : '（未選択）';
+  var parts = DATE_KEYS.map(function (key) { return DATE_LABELS[key] + '：' + data[key]; });
+  var allCross = DATE_KEYS.every(function (key) { return data[key] === '×'; });
+  var prefix = allCross ? '9月は参加できない（6日すべて×）／' : '';
+  return prefix + parts.join('、');
 }
 
 /**
@@ -578,7 +635,7 @@ function sendNotificationEmailSafely_(notify) {
 
 /**
  * ヘッダー再作成用。回答が0件（新規シート・空シート）のときだけ実行できる（デプロイ手順4）。
- * COLUMNS（18列：submission_id 〜 free_comment）でヘッダーを作成する。
+ * COLUMNS（22列：submission_id 〜 free_comment）でヘッダーを作成する。
  * データ行がある場合は、列ずれによる破損を避けるため明示的に停止する。
  */
 function setupHeaderRow() {
