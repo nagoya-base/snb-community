@@ -80,6 +80,16 @@
     }
     .hero-facts strong { color: var(--accent-lt); }
 
+    .public-tally { max-width: var(--max-w); margin: 0 auto; padding: 2.5rem 1.5rem; }
+    .public-tally h2 { margin: 0 0 .4rem; font-size: 1.15rem; font-weight: 800; color: var(--accent-lt); }
+    .public-tally__note { margin: 0 0 1rem; color: var(--text-muted); font-size: .84rem; }
+    .public-tally__total { margin-bottom: .9rem; font-size: 1rem; font-weight: 800; color: var(--text); }
+    .public-tally__grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: .6rem; }
+    .public-tally__card { border: 1px solid var(--border); border-radius: 12px; padding: .75rem .6rem; background: var(--bg-card); text-align: center; }
+    .public-tally__card-date { font-size: .78rem; font-weight: 800; color: var(--accent-lt); margin-bottom: .35rem; }
+    .public-tally__card-row { font-size: .78rem; color: var(--text); line-height: 1.5; }
+    .public-tally__status { margin: .9rem 0 0; color: var(--text-muted); font-size: .78rem; }
+
     .survey-shell { max-width: var(--max-w); margin: -1.5rem auto 0; padding: 0 1.5rem 4rem; position: relative; }
     .test-mode-note, .status-message {
       margin-bottom: 1.25rem; padding: .9rem 1rem; border-radius: 12px; font-size: .84rem; line-height: 1.7;
@@ -205,6 +215,8 @@
     [hidden] { display: none !important; }
 
     @media (max-width: 640px) {
+      .public-tally { padding: 2rem 1rem; }
+      .public-tally__grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .survey-shell { margin-top: -1rem; padding: 0 1rem 3rem; }
       .contact-grid { grid-template-columns: 1fr; }
       .choice-grid { grid-template-columns: 1fr; }
@@ -247,6 +259,16 @@
       <a href="#survey" class="btn btn-primary" data-cta-name="survey_start" data-cta-location="survey_hero">アンケートに回答する</a>
       <a href="./" class="btn btn-outline" data-cta-name="baseball_top" data-cta-location="survey_hero">野球ユニ部トップに戻る</a>
     </div>
+  </section>
+
+  <section class="public-tally" id="public-tally" aria-labelledby="public-tally-title">
+    <h2 id="public-tally-title">現在の回答状況</h2>
+    <p class="public-tally__note">
+      回答はリアルタイムで集計しています。〇＝参加できそう、△＝予定次第で参加できそうとして表示しています。
+    </p>
+    <div class="public-tally__total" id="public-tally-total" aria-live="polite"></div>
+    <div class="public-tally__grid" id="public-tally-grid" aria-live="polite"></div>
+    <p class="public-tally__status" id="public-tally-status" aria-live="polite"></p>
   </section>
 
   <section class="survey-shell" id="survey" aria-labelledby="survey-title">
@@ -593,6 +615,109 @@
     var deadlineMs = new Date(SURVEY_DEADLINE_ISO).getTime();
     var isPastDeadline = !isTestMode && (isPreviewClosedMode || isNaN(deadlineMs) || Date.now() >= deadlineMs);
 
+    /* 参加候補日は必ずこの6列のみ。9/12・9/26は候補日に含めない。
+       baseball/gas/enquete_202609_backend.gs の DATE_KEYS / DATE_LABELS と一致させること。
+       公開集計セクションでも同じ定数を再利用するため、フォーム取得より前に宣言する。 */
+    var DATE_KEYS = ['date_0905', 'date_0906', 'date_0913', 'date_0919', 'date_0920', 'date_0927'];
+    var DATE_LABELS = {
+      date_0905: '9/5（土）',
+      date_0906: '9/6（日）',
+      date_0913: '9/13（日）',
+      date_0919: '9/19（土）',
+      date_0920: '9/20（日）',
+      date_0927: '9/27（日）'
+    };
+
+    /* ── 公開用リアルタイム集計（Issue #236） ──
+       baseball/enquete_202609_results.html と同じ結果GAS endpointから、匿名集計済みの
+       total / date_counts.confirmed / date_counts.including_maybe / updated_at のみを取得する。
+       個別回答・PIIはこのAPIのレスポンスに含まれない設計（enquete_202609_results_backend.gs参照）。
+       締切後プレビュー（?test=closed）や実際の締切後でもこのsectionは独立して動作させるため、
+       フォーム本体の初期化（およびその中の早期return）より前に開始する。 */
+    var RESULTS_GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyJZP6KEWXrRbU6lUdQrhvrAspKs_2puAuNEB1T48CXViVSkHrLWg6FcHOSDzYAHxu1/exec';
+    /* baseball/enquete_202609_results.html の RESULTS_GAS_ENDPOINT と同一値。
+       結果APIを再デプロイしてURLが変わった場合は両方を更新すること。 */
+    var PUBLIC_TALLY_POLL_INTERVAL_MS = 60000;
+    var publicTallyTimerId = null;
+
+    function fetchPublicTally() {
+      if (isTestMode) {
+        renderPublicTallyTestModeNotice();
+        return;
+      }
+      var statusEl = document.getElementById('public-tally-status');
+      var url = RESULTS_GAS_ENDPOINT + (RESULTS_GAS_ENDPOINT.indexOf('?') === -1 ? '?' : '&') + 'action=summary&_=' + Date.now();
+      fetch(url, { method: 'GET', cache: 'no-store' })
+        .then(function (response) {
+          if (!response.ok) throw new Error('http_error');
+          return response.json();
+        })
+        .then(function (data) {
+          if (!data || data.ok !== true) throw new Error('api_error');
+          renderPublicTally(data);
+        })
+        .catch(function () {
+          if (statusEl) statusEl.textContent = '現在、集計を読み込めません。アンケートへの回答はそのまま行えます。';
+        });
+    }
+
+    function renderPublicTallyTestModeNotice() {
+      var section = document.getElementById('public-tally');
+      var statusEl = document.getElementById('public-tally-status');
+      if (statusEl) statusEl.textContent = 'テストモードのため集計は読み込みません。';
+      if (section) section.setAttribute('data-test-mode', 'true');
+    }
+
+    function renderPublicTally(data) {
+      var totalEl = document.getElementById('public-tally-total');
+      var gridEl = document.getElementById('public-tally-grid');
+      var statusEl = document.getElementById('public-tally-status');
+      if (totalEl) totalEl.textContent = '総回答数：' + Number(data.total || 0) + '人';
+
+      if (gridEl) {
+        var confirmed = (data.date_counts && data.date_counts.confirmed) || {};
+        var includingMaybe = (data.date_counts && data.date_counts.including_maybe) || {};
+        gridEl.innerHTML = '';
+        DATE_KEYS.forEach(function (key) {
+          var card = document.createElement('div');
+          card.className = 'public-tally__card';
+          var label = DATE_LABELS[key] || key;
+          var c = Number(confirmed[key] || 0);
+          var m = Number(includingMaybe[key] || 0);
+          card.innerHTML =
+            '<div class="public-tally__card-date">' + label + '</div>' +
+            '<div class="public-tally__card-row">〇 ' + c + '人</div>' +
+            '<div class="public-tally__card-row">〇＋△ ' + m + '人</div>';
+          gridEl.appendChild(card);
+        });
+      }
+
+      if (statusEl) {
+        var updatedAt = data.updated_at ? formatUpdatedAtForDisplay_(data.updated_at) : '';
+        statusEl.textContent = updatedAt ? ('自動更新中／最終更新 ' + updatedAt) : '自動更新中';
+      }
+    }
+
+    function formatUpdatedAtForDisplay_(isoString) {
+      try {
+        var d = new Date(isoString);
+        if (isNaN(d.getTime())) return '';
+        var hh = ('0' + d.getHours()).slice(-2);
+        var mm = ('0' + d.getMinutes()).slice(-2);
+        return hh + ':' + mm;
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function startPublicTallyPolling() {
+      fetchPublicTally();
+      if (publicTallyTimerId) clearInterval(publicTallyTimerId);
+      publicTallyTimerId = setInterval(fetchPublicTally, PUBLIC_TALLY_POLL_INTERVAL_MS);
+    }
+
+    startPublicTallyPolling();
+
     var form = document.getElementById('enquete-form');
     if (!form) return;
 
@@ -641,17 +766,6 @@
     var activityInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="activity_pref"]'));
     var freeComment = document.getElementById('free-comment');
 
-    /* 参加候補日は必ずこの6列のみ。9/12・9/26は候補日に含めない。
-       baseball/gas/enquete_202609_backend.gs の DATE_KEYS / DATE_LABELS と一致させること。 */
-    var DATE_KEYS = ['date_0905', 'date_0906', 'date_0913', 'date_0919', 'date_0920', 'date_0927'];
-    var DATE_LABELS = {
-      date_0905: '9/5（土）',
-      date_0906: '9/6（日）',
-      date_0913: '9/13（日）',
-      date_0919: '9/19（土）',
-      date_0920: '9/20（日）',
-      date_0927: '9/27（日）'
-    };
     /* 初参加者向け追加5項目のうち、選択式4項目のフィールド名。 */
     var FIRST_TIME_CHOICE_FIELDS = ['age_group', 'sports_experience', 'uniform_status', 'glove_availability'];
 
@@ -1108,6 +1222,7 @@
           }
 
           showCompletion(false);
+          fetchPublicTally();
           if (analytics() && result.duplicate !== true) {
             // 新規5項目（初参加者向け）はGA4へ送らない。日程は〇△×の3値になったため、
             // date_count／no_available_dateは既存パラメータ名のまま「〇の日数」「6日すべて×か」を送る。
