@@ -68,7 +68,7 @@
  * console.error() でGAS側の実行ログにのみ残す。
  */
 
-var RESULTS_SPREADSHEET_ID = 'PLACEHOLDER_REPLACE_WITH_CLASSROOM_ENTRIES_SPREADSHEET_ID';
+var RESULTS_SPREADSHEET_ID = '1hyzWKssp6LVpP_KZlOucmKCZIMg7puooFYFaaz2hsNg';
 var RESULTS_SHEET_NAME = 'entries';
 var RESULTS_CACHE_SECONDS = 45; // 30〜60秒の目安内。public/summaryでキャッシュキーを分離して使う。
 
