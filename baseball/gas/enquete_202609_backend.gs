@@ -16,16 +16,38 @@
  * 3. NOTIFICATION_EMAIL を実運用の通知先アドレスに書き換える（プレースホルダー
  *    'YOUR_NOTIFICATION_EMAIL' のままだと通知メールは送信されない。doGet()を開くと警告が出る）。
  * 4. スクリプトエディタの関数選択で setupHeaderRow を選び、1回実行する。
- *    responses シートへヘッダー行（22列：submission_id 〜 free_comment）を作成する
+ *    responses シートへヘッダー行（24列：submission_id 〜 x_contact_method）を作成する
  *    （既に回答がある状態で実行すると安全装置により例外で停止する）。
  * 5. 「デプロイ」→「新しいデプロイ」→「ウェブアプリ」。実行ユーザーは自分、
  *    アクセス権は「全員」にする。
  * 6. 発行された /exec URL を baseball/enquete_202609.html の GAS_ENDPOINT_URL に設定する。
  * 7. /exec URLをブラウザで開き、「baseball enquete_202609 backend: OK」と表示されることを確認する。
- * 8. 公開ページ（?test=1 を付けない本番URL）から1件だけ疎通し、Sheetsの保存内容（22列目まで）と
+ * 8. 公開ページ（?test=1 を付けない本番URL）から1件だけ疎通し、Sheetsの保存内容（24列目まで）と
  *    通知メールの件名・本文を確認する。
  * 9. baseball/gas/enquete_202609_results_backend.gs の RESULTS_SPREADSHEET_ID に、
  *    このスプレッドシートのID（URLの /d/ と /edit の間の文字列）を設定して集計APIもデプロイする。
+ *
+ * ── Issue #234 追記：22列→24列への切替手順（既存 /exec URL を維持する場合） ──
+ * 既にデプロイ済みの本番プロジェクトへこのコード（24列版）を反映する場合、上の「デプロイ手順」
+ * 1〜9はそのまま使わず、必ず次の順で行う。schemaを先に安全な状態にしてからコードを差し替えないと、
+ * 22列のシートに24列前提のコードが乗る一瞬が生まれ、hasExpectedHeader_ の不一致で本番受付が
+ * 一時的に失敗する（ok:false, error:'header_mismatch'）おそれがある。
+ *
+ * 1. 本番 responses シートの実データ行数を確認する（0件かどうか）。
+ * 2a. 0件の場合：スクリプトエディタの関数選択で setupHeaderRow を選び、1回実行して
+ *     24列ヘッダーを作成する。
+ * 2b. 1件以上ある場合：setupHeaderRow は使わない（既存データがあると例外で停止する安全設計）。
+ *     スプレッドシート上で x_follow_approval_ack / x_contact_method の2列をシート右端に
+ *     手動追加する（既存データ行は空文字列のままでよい）。
+ * 3. スプレッドシートの実際の列構成（1行目）が、この時点で新しい COLUMNS 配列（24列）と
+ *    完全一致していることを確認する（hasExpectedHeader_ が判定に使う内容と同じ）。
+ * 4. 「拡張機能」→「Apps Script」を開き、Code.gs の内容をこのファイルの内容に置き換える。
+ * 5. 「デプロイ」→「デプロイを管理」を開き、既存のウェブアプリのデプロイを選んで編集アイコンから
+ *    「バージョン」を「新バージョン」にして更新する。既存の /exec URL を維持するため、
+ *    「デプロイ」→「新しいデプロイ」は使わない（新しいデプロイを作ると /exec URL が変わり、
+ *    baseball/enquete_202609.html 側の GAS_ENDPOINT_URL 更新が別途必要になる）。
+ * 6. /exec URL をブラウザで開き、「baseball enquete_202609 backend: OK」と表示されることを
+ *    確認したうえで、/exec?test=1 への直接POSTで受理/拒否ケースの疎通確認を行う。
  *
  * ── APIレベルのテストモード（?test=1） ──
  * baseball/enquete_202609.html の画面側テストモード（?test=1）は、この節とは別に、
@@ -78,27 +100,32 @@
  * ── 連絡先の正規化 ──
  * メール：前後の空白を除去し、小文字化する（normalizeEmail_）。
  *
- * Xアカウント（normalizeXHandle_）：
- * @example / ＠example / example / https://x.com/example / https://twitter.com/example を
- * すべて同一人物として扱えるよう、次の手順で正規化する。
- * 1. 前後の空白を除去する。空文字列はそのまま「未入力」として扱う。
- * 2. http(s):// で始まる場合はURL形式とみなし、クエリ・フラグメントを除いた上で、
- *    ホストが x.com / twitter.com（www. / mobile. サブドメイン許容）かつ
- *    パスが「/ハンドル」または「/ハンドル/」の1階層だけであることを確認する。
- *    ステータスURL（/ハンドル/status/123 等）、ホーム・検索等の非プロフィールパスを含む
- *    URLは、誤マッチを避けるため不正な形式として拒否する。
- * 3. URL形式でない場合はそのままハンドル文字列として扱い、先頭の半角 @ または全角 ＠ が
- *    あれば1文字だけ除去する（例：＠@example のような二重記号は除去されず不正な形式として拒否される）。
- * 4. 最終的なハンドルが英数字・アンダースコアのみ・1〜15文字であること（Xのユーザー名仕様）を
+ * Xアカウント（normalizeXHandle_、Issue #234でURL形式の受理を撤回し簡素化）：
+ * 利用者にURL入力は求めない。@example / ＠example / example の文字列だけを受け付け、
+ * 次の手順で正規化する。
+ * 1. 前後の空白をtrimする。空文字列はそのまま「未入力」として扱う。
+ * 2. Unicode NFKC正規化を行う（全角＠→半角@、全角英数字→半角ASCII等）。
+ * 3. ​〜‍（ゼロ幅スペース等）・﻿（BOM）などのゼロ幅文字を除去し、再度trimする。
+ * 4. 先頭の半角 @ が1文字だけあれば除去する（＠@example のような二重記号は除去されず
+ *    不正な形式として拒否される。全角＠はNFKC正規化で半角@になった上でこの手順に入る）。
+ * 5. 最終的なハンドルが英数字・アンダースコアのみ・1〜15文字であること（Xのユーザー名仕様）を
  *    確認する。満たさない場合、または home/search 等の予約語に一致する場合は不正な形式として拒否する。
- * 5. 小文字化した値を、正規化後のXアカウントとして保存・照合に使う。
+ * 6. 小文字化した値を、正規化後のXアカウントとして保存・照合に使う。
  *
- * URLとして解釈できない・不正な形式のXアカウントはバリデーションエラーとして送信自体を拒否し、
+ * https://x.com/example・https://twitter.com/example・x.com/example 等のURL形式は
+ * 一切受理しない（Issue #234で撤回。今後URL入力を促す案内・placeholderも出さない）。
+ * 不正な形式のXアカウントはバリデーションエラーとして送信自体を拒否し、
  * 誤って別人と同一視（誤マッチ）することがないようにする。
  *
  * フロント側 baseball/enquete_202609.html の normalizeXHandle() は、この関数と
  * 同じロジックを画面側の即時バリデーション用に複製している。仕様を変更する場合は両方を
  * 同期させること（最終的な正規化・照合の権威はこのファイル側）。
+ *
+ * 互換性に関する注意（Issue #234）：現行コードは以前 https://x.com/example 形式のURLも
+ * 受理していた。既に本番に、その形式で登録された実回答が含まれている可能性がある
+ * （正規化済みのハンドル文字列として保存済みのため保存データ自体への影響はない）。
+ * ただしその人物が今後同じURL文字列で再回答（upsert）しようとすると、この変更以降は
+ * 拒否される（@handle形式で入力し直せば再回答できる）。
  *
  * ── この版で踏襲した安全設計 ──
  * ・submission_id による冪等性（同じsubmission_idの再送は行を増やさず、通知もしない）。
@@ -117,13 +144,20 @@
  * ・participation_history === '初参加' の場合のみ first_time_motivation 以外の追加4項目
  *   （age_group/sports_experience/uniform_status/glove_availability）を必須検証し、
  *   '以前参加したことがある' の場合はクライアントから値が来ても空文字列に正規化して保存する
+ * ・participation_history === '初参加' かつ正規化後 contact_x !== '' の場合のみ、
+ *   x_follow_approval_ack（'確認済み'のみ許可）/ x_contact_method（DMグループ追加／個別DMの
+ *   2値allowlist）を必須検証する（Issue #234）。非該当（以前参加、またはXなし・メールのみ）の
+ *   場合はクライアントから値が来ても空文字列に正規化して保存し、upsertで条件が外れた
+ *   再回答でも旧値を残さない。
  * ・候補日は date_0905/date_0906/date_0913/date_0919/date_0920/date_0927 の6列のみ
  *   （9/12・9/26は列として存在しない）
  * ・送信失敗時に成功扱いしない（バリデーションエラー・contact_conflict・server_errorは
  *   すべて ok:false を返し、Sheetへは一切書き込まない）
  * ・duplicate時（同一submission_id再送）の重複保存・重複通知抑止
  * ・新規回答／更新回答で通知メールの件名を分ける
- * ・通知メール本文にはメール・X・自由記述・submission_id・初参加者向け追加情報を含めない
+ * ・通知メール本文にはメール・Xアカウント文字列・自由記述・submission_id・
+ *   初参加者向け追加5項目・x_follow_approval_ackを含めない（x_contact_methodのみ運営上
+ *   有用なため、該当時に限り本文へ追加する。Issue #234）
  */
 
 var SHEET_NAME = 'responses';
@@ -139,14 +173,17 @@ var NOTIFICATION_EMAIL = 'bbuni.ngo@gmail.com';
 var NOTIFICATION_EMAIL_SUBJECT_NEW = '【名古屋野球ユニ部】9月日程アンケートに新しい回答があります';
 var NOTIFICATION_EMAIL_SUBJECT_UPDATE = '【名古屋野球ユニ部】9月日程アンケートの回答が更新されました';
 
-/* Sheetの列構成（22列）。upsertの都合上 submission_id を先頭、created_at/updated_at を
+/* Sheetの列構成（24列）。upsertの都合上 submission_id を先頭、created_at/updated_at を
    その直後に置く。列の並び・列名を変更する場合はsetupHeaderRow()実行前に必ずこの配列も
    更新し、既存回答がある状態でヘッダーだけ変えないこと（列ずれ事故防止）。
    Issue #232 で participation_history を display_name の直後に移動し、初参加者向け追加4項目
    （age_group/sports_experience/uniform_status/glove_availability）と任意項目
    （first_time_motivation）を新設。日程6列は旧来のboolean（true/false）から
    '〇'/'△'/'×' の3値へ変更し、no_available_date列は廃止した（実データなしで移行不要のため
-   非破壊マイグレーションは行わず、setupHeaderRow()で作り直す）。 */
+   非破壊マイグレーションは行わず、setupHeaderRow()で作り直す）。
+   Issue #234 で末尾に x_follow_approval_ack / x_contact_method の2列を追加（22列→24列）。
+   既に実回答がある状態でこの列追加をデプロイする場合はsetupHeaderRow()を使わず、
+   ファイル冒頭コメント「Issue #234 追記」の安全な手順に従うこと。 */
 var COLUMNS = [
   'submission_id',
   'created_at',
@@ -169,7 +206,9 @@ var COLUMNS = [
   'date_0927',
   'time_preferences',
   'activity_preferences',
-  'free_comment'
+  'free_comment',
+  'x_follow_approval_ack',
+  'x_contact_method'
 ];
 
 /* 候補日は必ずこの6列のみ。9/12・9/26は候補日に含めない（Issue #225で明示的に禁止）。
@@ -225,6 +264,10 @@ var ALLOWED_GLOVE_AVAILABILITY = [
   '持っていない（相談したい）',
   'まだわからない'
 ];
+/* 初参加×X連絡時の追加確認2項目（Issue #234実装指示コメントで確定した選択肢）。
+   参加経験==='初参加' かつ正規化後contact_xが空でない場合のみ必須検証する。 */
+var ALLOWED_X_FOLLOW_APPROVAL_ACK = ['確認済み'];
+var ALLOWED_X_CONTACT_METHOD = ['当日用DMグループへの追加を希望する', '個別DMで連絡してほしい'];
 
 var MAX_DISPLAY_NAME_LENGTH = 50; // フロントのmaxlengthと一致させる
 var MAX_CONTACT_LENGTH = 200; // フロントのcontact-email/contact-xのmaxlengthと一致させる
@@ -240,8 +283,9 @@ var MAX_FREE_COMMENT_LENGTH = 300; // フロントのmaxlengthと一致させる
 var SUBMISSION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9-]{0,99}$/;
 var EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // 簡易チェック（RFC完全準拠ではない）
 var X_HANDLE_PATTERN = /^[A-Za-z0-9_]{1,15}$/; // Xのユーザー名仕様（英数字・アンダースコア、1〜15文字）
-var X_PROFILE_URL_PATTERN = /^https?:\/\/(?:www\.|mobile\.)?(?:x\.com|twitter\.com)\/([A-Za-z0-9_]{1,15})\/?$/i;
-/* プロフィールURLとして解釈すべきでない既知の非ハンドルパス（誤マッチ防止）。 */
+/* ゼロ幅文字（ゼロ幅スペース〜結合子・BOM）。コピペ混入対策として正規化時に除去する（Issue #234）。 */
+var X_ZERO_WIDTH_PATTERN = /[​-‍﻿]/g;
+/* Xの予約語（システムパス名）。実在の個人ハンドルと誤認しないよう拒否する（誤マッチ防止）。 */
 var X_RESERVED_HANDLES = [
   'home', 'i', 'search', 'explore', 'notifications', 'messages', 'settings',
   'compose', 'intent', 'hashtag', 'share', 'login', 'logout', 'tos', 'privacy', 'about', 'download'
@@ -290,17 +334,11 @@ function normalizeEmail_(raw) {
 function normalizeXHandle_(raw) {
   if (typeof raw !== 'string') return { ok: false };
   var trimmed = raw.trim();
+  if (trimmed.normalize) trimmed = trimmed.normalize('NFKC');
+  trimmed = trimmed.replace(X_ZERO_WIDTH_PATTERN, '').trim();
   if (trimmed === '') return { ok: true, value: '' };
 
-  var handle;
-  if (/^https?:\/\//i.test(trimmed)) {
-    var withoutQuery = trimmed.split(/[?#]/)[0];
-    var match = withoutQuery.match(X_PROFILE_URL_PATTERN);
-    if (!match) return { ok: false };
-    handle = match[1];
-  } else {
-    handle = /^[@＠]/.test(trimmed) ? trimmed.slice(1) : trimmed;
-  }
+  var handle = /^@/.test(trimmed) ? trimmed.slice(1) : trimmed;
 
   if (!X_HANDLE_PATTERN.test(handle)) return { ok: false };
   var lower = handle.toLowerCase();
@@ -355,6 +393,19 @@ function validatePayload_(data) {
 
   if (normalizedEmail === '' && normalizedX === '') return { error: 'contact_required' };
 
+  // 初参加×X連絡時の追加確認2項目：participation_history==='初参加' かつ 正規化後
+  // contact_xが空でない場合のみ必須検証する。非該当時はクライアントから値が来ても
+  // 保存直前のprocessSubmission_内、xContactFieldKeysの分岐で空文字列に正規化する。
+  var xContactApplicable = isFirstTime && normalizedX !== '';
+  if (xContactApplicable) {
+    if (ALLOWED_X_FOLLOW_APPROVAL_ACK.indexOf(data.x_follow_approval_ack) === -1) {
+      return { error: 'x_follow_approval_ack_invalid' };
+    }
+    if (ALLOWED_X_CONTACT_METHOD.indexOf(data.x_contact_method) === -1) {
+      return { error: 'x_contact_method_invalid' };
+    }
+  }
+
   if (ALLOWED_PARTICIPATION_INTENT.indexOf(data.participation_intent) === -1) return { error: 'participation_intent_invalid' };
 
   // 日付：6日すべて、厳密に '〇'/'△'/'×' のいずれかであること（Issue #232でboolean/
@@ -386,7 +437,8 @@ function validatePayload_(data) {
     normalizedEmail: normalizedEmail,
     normalizedX: normalizedX,
     displayName: displayName,
-    isFirstTime: isFirstTime
+    isFirstTime: isFirstTime,
+    xContactApplicable: xContactApplicable
   };
 }
 
@@ -502,6 +554,11 @@ function processSubmission_(e, isTestMode) {
     // 保存しない（空文字列に正規化する）。再回答upsert時、旧回答が初参加だった場合でも
     // 今回が以前参加であれば旧値を残さずここで空に上書きする。
     var firstTimeFieldKeys = ['first_time_motivation', 'age_group', 'sports_experience', 'uniform_status', 'glove_availability'];
+    // 初参加×X連絡時の追加確認2項目：xContactApplicableがfalseの場合（以前参加、または
+    // Xなし・メールのみ）は、クライアントから値が来ていても保存しない（空文字列に正規化する）。
+    // 再回答upsert時、旧回答が該当していた場合でも今回が非該当であれば旧値を残さずここで
+    // 空に上書きする（Issue #234）。
+    var xContactFieldKeys = ['x_follow_approval_ack', 'x_contact_method'];
     var row = COLUMNS.map(function (key) {
       if (key === 'created_at') return createdAt;
       if (key === 'updated_at') return now;
@@ -513,6 +570,10 @@ function processSubmission_(e, isTestMode) {
       if (firstTimeFieldKeys.indexOf(key) !== -1) {
         if (!validated.isFirstTime) return '';
         return key === 'first_time_motivation' ? sanitizeForSheet_(data.first_time_motivation) : data[key];
+      }
+      if (xContactFieldKeys.indexOf(key) !== -1) {
+        if (!validated.xContactApplicable) return '';
+        return data[key];
       }
       var value = data[key];
       return value === undefined || value === null ? '' : value;
@@ -526,7 +587,7 @@ function processSubmission_(e, isTestMode) {
 
     return {
       response: jsonResponse_({ ok: true, duplicate: false, test_mode: isTestMode, action: isUpdate ? 'update' : 'new' }),
-      notify: { data: data, displayName: validated.displayName, timestamp: now, isUpdate: isUpdate }
+      notify: { data: data, displayName: validated.displayName, timestamp: now, isUpdate: isUpdate, xContactApplicable: validated.xContactApplicable }
     };
   } catch (err) {
     return { response: jsonResponse_({ ok: false, error: 'server_error', message: String(err) }), notify: null };
@@ -605,6 +666,11 @@ function buildNotificationBody_(notify) {
     '希望時間帯: ' + (data.time_preferences || '（未回答）'),
     'やってみたいこと: ' + (data.activity_preferences || '（未回答）'),
     '参加経験: ' + data.participation_history,
+    // X連絡方法は運営上有用なため通知本文に含める。ただしXアカウント文字列そのもの・
+    // メールアドレス・submission_id・フォロー承認確認（x_follow_approval_ack）は含めない
+    // （Sheet保存のみでよい。Issue #234）。notify.xContactApplicableで該当時のみ表示する
+    // （非該当時にdata.x_contact_methodが未検証の値である可能性を避けるため）。
+    'X連絡方法: ' + (notify.xContactApplicable ? data.x_contact_method : '（該当なし）'),
     '',
     '詳細はGoogleスプレッドシートで確認してください。'
   ];
@@ -635,8 +701,10 @@ function sendNotificationEmailSafely_(notify) {
 
 /**
  * ヘッダー再作成用。回答が0件（新規シート・空シート）のときだけ実行できる（デプロイ手順4）。
- * COLUMNS（22列：submission_id 〜 free_comment）でヘッダーを作成する。
+ * COLUMNS（24列：submission_id 〜 x_contact_method）でヘッダーを作成する。
  * データ行がある場合は、列ずれによる破損を避けるため明示的に停止する。
+ * 既に24列より前のバージョン（22列）でデータがある場合はこの関数は使わず、
+ * ファイル冒頭コメント「Issue #234 追記」の安全な列追加手順に従うこと。
  */
 function setupHeaderRow() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
