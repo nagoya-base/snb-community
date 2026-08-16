@@ -729,6 +729,9 @@
       var history = chosen('participation_history');
       var isFirstTime = !!(history && history.value === '初参加');
       firstTimeFields.hidden = !isFirstTime;
+      FIRST_TIME_CHOICE_FIELDS.forEach(function (name) {
+        form.querySelectorAll('input[name="' + name + '"]').forEach(function (input) { input.required = isFirstTime; });
+      });
       if (!isFirstTime) {
         firstTimeMotivationInput.value = '';
         FIRST_TIME_CHOICE_FIELDS.forEach(function (name) {
