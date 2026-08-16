@@ -1346,14 +1346,6 @@
       var CLASSROOM_STATUS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyVJhkg2ZN8itUkqdO53u5sQ0VwmDNljyyKNyFE2u6_EDy1uDN_rghEnGjaRhLD34pujg/exec';
       var REFRESH_MS = 60000;
 
-      // 事故防止の保険（Issue #244再発防止）：保存用GAS_ENDPOINT_URLの複製ではなく、
-      // このブロック限定の参照用コピーとして保持し、集計用エンドポイントと誤って
-      // 同一値になっていないかを起動時に確認する（申込フォーム側のスクリプトには触れない）。
-      var SAVE_GAS_ENDPOINT_URL_REF = 'https://script.google.com/macros/s/AKfycbxuTfrfHR6fXL3uKHDQk0tEIzjPY4IWrX3IUfQ-H5z95xPJtIfIS1QE5h1RiEBZkEAi/exec';
-      if (SAVE_GAS_ENDPOINT_URL_REF === CLASSROOM_STATUS_ENDPOINT) {
-        console.error('[classroom_20260912] 保存用と集計用のGAS URLが同一です。設定ミスの可能性があります。');
-      }
-
       var textEl = document.getElementById('public-status-text');
       var updatedEl = document.getElementById('public-status-updated');
       if (!textEl || !updatedEl) return;
