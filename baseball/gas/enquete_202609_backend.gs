@@ -76,7 +76,7 @@
  * メール：前後の空白を除去し、小文字化する（normalizeEmail_）。
  *
  * Xアカウント（normalizeXHandle_）：
- * @example / example / https://x.com/example / https://twitter.com/example を
+ * @example / ＠example / example / https://x.com/example / https://twitter.com/example を
  * すべて同一人物として扱えるよう、次の手順で正規化する。
  * 1. 前後の空白を除去する。空文字列はそのまま「未入力」として扱う。
  * 2. http(s):// で始まる場合はURL形式とみなし、クエリ・フラグメントを除いた上で、
@@ -84,7 +84,8 @@
  *    パスが「/ハンドル」または「/ハンドル/」の1階層だけであることを確認する。
  *    ステータスURL（/ハンドル/status/123 等）、ホーム・検索等の非プロフィールパスを含む
  *    URLは、誤マッチを避けるため不正な形式として拒否する。
- * 3. URL形式でない場合はそのままハンドル文字列として扱い、先頭の @ があれば除去する。
+ * 3. URL形式でない場合はそのままハンドル文字列として扱い、先頭の半角 @ または全角 ＠ が
+ *    あれば1文字だけ除去する（例：＠@example のような二重記号は除去されず不正な形式として拒否される）。
  * 4. 最終的なハンドルが英数字・アンダースコアのみ・1〜15文字であること（Xのユーザー名仕様）を
  *    確認する。満たさない場合、または home/search 等の予約語に一致する場合は不正な形式として拒否する。
  * 5. 小文字化した値を、正規化後のXアカウントとして保存・照合に使う。
@@ -181,10 +182,10 @@ var ALLOWED_PARTICIPATION_HISTORY = [
   '以前参加したことがある'
 ];
 var ALLOWED_TIME_PREFERENCES = [
-  '午前', '13〜15時ごろ', '15〜17時ごろ', '夕方でも可', '時間は特にこだわらない'
+  '午前中', '13〜15時ごろ', '時間は特にこだわらない'
 ];
 var ALLOWED_ACTIVITY_PREFERENCES = [
-  'キャッチボール', 'ノック', '守備・送球練習', '初心者向け練習', '軽く写真撮影', '練習後の銭湯', '練習後の飲み会'
+  'キャッチボール', 'ノック', '守備・送球練習', '初心者向け練習', '軽く写真撮影', '練習後の銭湯'
 ];
 
 var MAX_DISPLAY_NAME_LENGTH = 50; // フロントのmaxlengthと一致させる
@@ -258,7 +259,7 @@ function normalizeXHandle_(raw) {
     if (!match) return { ok: false };
     handle = match[1];
   } else {
-    handle = trimmed.charAt(0) === '@' ? trimmed.slice(1) : trimmed;
+    handle = /^[@＠]/.test(trimmed) ? trimmed.slice(1) : trimmed;
   }
 
   if (!X_HANDLE_PATTERN.test(handle)) return { ok: false };

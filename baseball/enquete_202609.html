@@ -280,7 +280,7 @@
               </div>
               <div>
                 <label class="field-label" for="contact-x">Xアカウント <span class="optional">いずれか必須</span></label>
-                <input type="text" id="contact-x" class="text-input" autocomplete="off" maxlength="200" placeholder="@account または https://x.com/account">
+                <input type="text" id="contact-x" class="text-input" autocomplete="off" maxlength="200" placeholder="@account／＠account または https://x.com/account">
               </div>
               <div class="carrier-notice" id="carrier-notice" hidden>
                 <p class="carrier-notice__text"><strong>携帯電話会社のメールアドレスをご利用の方へ</strong><br>docomo・au・SoftBankなどのキャリアメールでは、当方からのGmailが受信拒否される場合があります。Gmailからのメールを受信できる設定になっているか、迷惑メールフォルダに振り分けられていないかをご確認ください。</p>
@@ -328,10 +328,8 @@
             <h3 class="q-title">希望時間帯 <span class="optional">任意・複数可</span></h3>
             <p class="q-lead">まずは開催日の選定を優先します。目安として教えてください。</p>
             <div class="chip-grid">
-              <label class="chip-choice"><input type="checkbox" name="time_pref" value="午前"><span>午前</span></label>
+              <label class="chip-choice"><input type="checkbox" name="time_pref" value="午前中"><span>午前中</span></label>
               <label class="chip-choice"><input type="checkbox" name="time_pref" value="13〜15時ごろ"><span>13〜15時ごろ</span></label>
-              <label class="chip-choice"><input type="checkbox" name="time_pref" value="15〜17時ごろ"><span>15〜17時ごろ</span></label>
-              <label class="chip-choice"><input type="checkbox" name="time_pref" value="夕方でも可"><span>夕方でも可</span></label>
               <label class="chip-choice"><input type="checkbox" name="time_pref" value="時間は特にこだわらない"><span>時間は特にこだわらない</span></label>
             </div>
           </section>
@@ -346,7 +344,6 @@
               <label class="chip-choice"><input type="checkbox" name="activity_pref" value="初心者向け練習"><span>初心者向け練習</span></label>
               <label class="chip-choice"><input type="checkbox" name="activity_pref" value="軽く写真撮影"><span>軽く写真撮影</span></label>
               <label class="chip-choice"><input type="checkbox" name="activity_pref" value="練習後の銭湯"><span>練習後の銭湯</span></label>
-              <label class="chip-choice"><input type="checkbox" name="activity_pref" value="練習後の飲み会"><span>練習後の飲み会</span></label>
             </div>
           </section>
 
@@ -367,7 +364,7 @@
             <p class="q-kicker">Q8</p>
             <h3 class="q-title">自由記述 <span class="optional">任意</span></h3>
             <label class="field-label" for="free-comment" style="position:absolute;width:1px;height:1px;overflow:hidden;">自由記述</label>
-            <textarea id="free-comment" class="text-input" maxlength="300" placeholder="日程・時間・やってみたいことなどあればどうぞ。"></textarea>
+            <textarea id="free-comment" class="text-input" maxlength="300" placeholder="日程・時間・やってみたいこと・応援や激励などあればどうぞ。"></textarea>
             <p class="field-help">最大300文字</p>
           </section>
         </div>
@@ -493,7 +490,7 @@
       return inputs.filter(function (input) { return input.checked; }).map(function (input) { return input.value; });
     }
 
-    /* Xアカウントの正規化。@example / example / https://x.com/example / https://twitter.com/example を
+    /* Xアカウントの正規化。@example / ＠example / example / https://x.com/example / https://twitter.com/example を
        同一人物として扱うための判定に使う（表示用の即時バリデーションのみ）。
        最終的な正規化・照合は baseball/gas/enquete_202609_backend.gs の normalizeXHandle_ が権威を持つ。
        ロジックは常にそちらと同期させること。 */
@@ -508,7 +505,7 @@
         if (!match) return { ok: false };
         handle = match[1];
       } else {
-        handle = trimmed.charAt(0) === '@' ? trimmed.slice(1) : trimmed;
+        handle = /^[@＠]/.test(trimmed) ? trimmed.slice(1) : trimmed;
       }
       if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) return { ok: false };
       var lower = handle.toLowerCase();
@@ -613,7 +610,7 @@
           firstInvalid = firstInvalid || emailInput;
         }
         if (xVal !== '' && !normalizeXHandle(xVal).ok) {
-          setError('contact', 'Xアカウントの形式を確認してください（例：@example）。', 'contact_x_invalid');
+          setError('contact', 'Xアカウントの形式を確認してください（例：@example／＠example）。', 'contact_x_invalid');
           isValid = false;
           firstInvalid = firstInvalid || xInput;
         }
