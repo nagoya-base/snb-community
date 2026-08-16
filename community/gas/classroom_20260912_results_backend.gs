@@ -22,7 +22,10 @@
  * 6. 「デプロイ」→「新しいデプロイ」→種類「ウェブアプリ」を選択し、
  *    実行ユーザー「自分」、アクセスできるユーザー「全員」で新規デプロイする
  *    （既存の回答保存GASのデプロイを更新するのではなく、新規のWeb Appとして発行する）。
- * 7. 発行された /exec URL をブラウザで開き、backend: OK と表示されることを確認する。
+ * 7. 発行された /exec URL をブラウザで開き、action未指定時のデフォルトレスポンス
+ *    {"ok":true,"service":"SNBC classroom_20260912 anonymous results API","usage":"..."}
+ *    が返ることを確認する（doGet()のaction未指定分岐の実装と一致させている。
+ *    回答保存GAS側の「backend: OK」というプレーンテキスト応答とは異なるので注意）。
  * 8. /exec?action=public を開き、{"ok":true, ...} のJSONが返ることを確認する。
  * 9. /exec?action=summary を開き、{"ok":true, ...} のJSONが返ることを確認する。
  * 10. 発行された /exec URL を、以下の両方に設定する。
@@ -269,9 +272,13 @@ function buildSummary_() {
       wearItems[item] += 1;
     });
 
-    if (row[index.wear_rental_requested] === true) {
+    // 保存GASはwear_rental_requestedを厳密なbooleanとしてのみ受け付けるため、
+    // 集計側もtrue/falseだけを数え、異常値・空欄は「希望なし」へ丸めずに無視する
+    // （集計対象外。not_requestedを不正確に膨らませない）。
+    var rentalValue = row[index.wear_rental_requested];
+    if (rentalValue === true) {
       wearRentalRequested.requested += 1;
-    } else {
+    } else if (rentalValue === false) {
       wearRentalRequested.not_requested += 1;
     }
 
