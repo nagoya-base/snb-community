@@ -233,6 +233,33 @@
     }
     .hero__cta:hover { transform: translateY(-2px); }
 
+    .status-card-section { padding: 1.3rem 0 0; }
+    .status-card {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .4rem 1rem;
+      padding: .95rem 1.3rem;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 0 8px 24px rgba(25, 22, 18, .08);
+    }
+    .status-card__label { flex: 0 0 auto; font-size: .78rem; font-weight: 800; letter-spacing: .04em; color: var(--muted); }
+    .status-card__text { font-size: .92rem; font-weight: 800; color: var(--ink); }
+    .status-card__text[data-state="loading"] { color: var(--muted); font-weight: 700; }
+    .status-card__text[data-state="open-small"],
+    .status-card__text[data-state="open-exact"] { color: var(--green); }
+    .status-card__text[data-state="waitlist"] { color: #a3591b; }
+    .status-card__text[data-state="preparing"] { color: var(--muted); }
+    .status-card__text[data-state="closed"],
+    .status-card__text[data-state="error"] { color: var(--red-dark); }
+    .status-card__updated { margin-left: auto; color: #928c84; font-size: .7rem; white-space: nowrap; }
+    @media (max-width: 480px) {
+      .status-card { padding: .85rem 1rem; }
+      .status-card__updated { margin-left: 0; }
+    }
+
     .page-nav {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -612,6 +639,16 @@
             <li class="meta-chip">👥 <strong>5〜6名程度</strong></li>
           </ul>
           <button class="hero__cta" id="hero-cta" type="button" data-cta-name="entry_form" data-cta-location="hero">参加を申し込む</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="status-card-section" aria-label="現在の申込状況" aria-live="polite">
+      <div class="container">
+        <div class="status-card">
+          <span class="status-card__label">現在の申込状況</span>
+          <span class="status-card__text" id="public-status-text" data-state="loading">読み込み中…</span>
+          <span class="status-card__updated" id="public-status-updated"></span>
         </div>
       </div>
     </section>
@@ -1287,6 +1324,109 @@
       updateWearOtherState();
       updateConcernOtherState();
       updateCarrierNoticeVisibility();
+    })();
+  </script>
+
+  <!--
+    現在の申込状況カード（Issue #243）。
+    community/gas/classroom_20260912_results_backend.gs の ?action=public のみを呼び出す
+    （運営用の?action=summaryはここでは呼ばない）。
+    上の申込フォーム送信処理（保存用GAS_ENDPOINT_URLを使う別スクリプトブロック）とは
+    完全に独立したscriptブロックのため、どちらかで例外が起きてももう片方には影響しない。
+    このブロックはGA4を一切呼び出さない（申込件数・count_type・entry_status・API成否・
+    updated_at等の集計値やAPIレスポンス内容は送信しない）。
+  -->
+  <script>
+    (function () {
+      'use strict';
+
+      // classroom_20260912_results_backend.gs 発行の /exec URL（集計用）。
+      // community/classroom_20260912_results.html（運営用）のRESULTS_GAS_ENDPOINTと同じ/exec URL。
+      // 上の申込フォーム送信先（保存用GAS_ENDPOINT_URL）とは別のデプロイなので、ここでは変更しない。
+      var CLASSROOM_STATUS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyVJhkg2ZN8itUkqdO53u5sQ0VwmDNljyyKNyFE2u6_EDy1uDN_rghEnGjaRhLD34pujg/exec';
+      var REFRESH_MS = 60000;
+
+      // 事故防止の保険（Issue #244再発防止）：保存用GAS_ENDPOINT_URLの複製ではなく、
+      // このブロック限定の参照用コピーとして保持し、集計用エンドポイントと誤って
+      // 同一値になっていないかを起動時に確認する（申込フォーム側のスクリプトには触れない）。
+      var SAVE_GAS_ENDPOINT_URL_REF = 'https://script.google.com/macros/s/AKfycbxuTfrfHR6fXL3uKHDQk0tEIzjPY4IWrX3IUfQ-H5z95xPJtIfIS1QE5h1RiEBZkEAi/exec';
+      if (SAVE_GAS_ENDPOINT_URL_REF === CLASSROOM_STATUS_ENDPOINT) {
+        console.error('[classroom_20260912] 保存用と集計用のGAS URLが同一です。設定ミスの可能性があります。');
+      }
+
+      var textEl = document.getElementById('public-status-text');
+      var updatedEl = document.getElementById('public-status-updated');
+      if (!textEl || !updatedEl) return;
+
+      var hasRenderedOnce = false;
+
+      function formatUpdated(value) {
+        var date = new Date(value);
+        if (isNaN(date.getTime())) return '';
+        return '最終更新 ' + new Intl.DateTimeFormat('ja-JP', {
+          hour: '2-digit', minute: '2-digit'
+        }).format(date);
+      }
+
+      function setText(state, message) {
+        textEl.setAttribute('data-state', state);
+        textEl.textContent = message;
+      }
+
+      /* entry_status（preparing/open/waitlist/closed）とcount_type（zero/small/exact）の
+         組み合わせから表示文言を決める。1〜2名等の少数の正確な人数はDOM・属性いずれにも
+         出さない（count_type=smallの分岐ではdata.countを一切参照しない）。 */
+      function render(data) {
+        var status = data.entry_status;
+        var countType = data.count_type;
+
+        if (status === 'preparing') {
+          setText('preparing', '参加申込は受付準備中です');
+        } else if (status === 'waitlist') {
+          setText('waitlist', '現在、補欠受付です');
+        } else if (status === 'closed') {
+          setText('closed', '現在受付を停止しています');
+        } else if (status === 'open' && countType === 'zero') {
+          setText('open-zero', '受付中｜まだ申込はありません');
+        } else if (status === 'open' && countType === 'small') {
+          setText('open-small', '受付中｜申込：少数');
+        } else if (status === 'open' && countType === 'exact') {
+          setText('open-exact', '受付中｜申込：' + Number(data.count || 0) + '名');
+        } else {
+          return false;
+        }
+
+        updatedEl.textContent = formatUpdated(data.updated_at);
+        hasRenderedOnce = true;
+        return true;
+      }
+
+      function refresh() {
+        var url = CLASSROOM_STATUS_ENDPOINT + (CLASSROOM_STATUS_ENDPOINT.indexOf('?') === -1 ? '?' : '&') + 'action=public&_=' + Date.now();
+        fetch(url, { method: 'GET', cache: 'no-store' })
+          .then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+          })
+          .then(function (data) {
+            if (!data || data.ok !== true) throw new Error('invalid response');
+            if (render(data) === false && !hasRenderedOnce) {
+              setText('error', '現在、申込状況を取得できません');
+            }
+          })
+          .catch(function () {
+            // 初回取得前の失敗時のみ安全な文言を表示する。一度取得に成功した後の
+            // 更新失敗では、直前の正常表示・最終更新時刻をそのまま維持し、
+            // 0件表示や人数を推測できる表示へは変えない。
+            if (!hasRenderedOnce) {
+              setText('error', '現在、申込状況を取得できません');
+            }
+          });
+      }
+
+      refresh();
+      var publicStatusTimer = window.setInterval(refresh, REFRESH_MS);
+      window.addEventListener('beforeunload', function () { window.clearInterval(publicStatusTimer); });
     })();
   </script>
 </body>
