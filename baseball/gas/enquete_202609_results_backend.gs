@@ -78,25 +78,34 @@ var RESULTS_DATE_VALUE_UNAVAILABLE = '×';
 function doGet(e) {
   var action = e && e.parameter ? String(e.parameter.action || '') : '';
   var isTestMode = !!(e && e.parameter && e.parameter.test === '1');
+  /* ?action=summary&fresh=1 でScript Cacheの読み取りだけをバイパスする（Issue #236）。
+     回答フォーム側は、送信成功直後の1回だけこのフラグを付けて呼び出し、直前30秒以内の
+     キャッシュに阻まれず最新集計を即時反映する。通常の60秒自動更新はfresh=1を付けず、
+     従来どおりRESULTS_CACHE_SECONDSのキャッシュを利用する。 */
+  var isFreshMode = !!(e && e.parameter && e.parameter.fresh === '1');
 
   if (action !== 'summary') {
     return resultsJson_({
       ok: true,
       service: 'baseball enquete_202609 anonymous summary API',
-      usage: '?action=summary（運営用クロス集計。&test=1でテスト専用シートを参照）'
+      usage: '?action=summary（運営用クロス集計。&test=1でテスト専用シートを参照、&fresh=1でキャッシュを読み飛ばして再計算）'
     });
   }
 
   try {
     var cacheKey = isTestMode ? 'summary_test_v1' : 'summary_v1';
     var cache = CacheService.getScriptCache();
-    var cached = cache.get(cacheKey);
-    if (cached) {
-      return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
+    if (!isFreshMode) {
+      var cached = cache.get(cacheKey);
+      if (cached) {
+        return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
+      }
     }
 
     var summary = buildSurveySummary_(isTestMode);
     var encoded = JSON.stringify(summary);
+    // fresh=1で再計算した値も通常のcacheKeyへ書き戻す。以後30秒以内の通常リクエスト（他の
+    // 閲覧者・60秒ポーリング）にも、この送信を反映した最新値がすぐに届くようにするため。
     cache.put(cacheKey, encoded, RESULTS_CACHE_SECONDS);
     return ContentService.createTextOutput(encoded).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {

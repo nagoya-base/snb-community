@@ -640,13 +640,17 @@
     var PUBLIC_TALLY_POLL_INTERVAL_MS = 60000;
     var publicTallyTimerId = null;
 
-    function fetchPublicTally() {
+    function fetchPublicTally(options) {
       if (isTestMode) {
         renderPublicTallyTestModeNotice();
         return;
       }
       var statusEl = document.getElementById('public-tally-status');
       var url = RESULTS_GAS_ENDPOINT + (RESULTS_GAS_ENDPOINT.indexOf('?') === -1 ? '?' : '&') + 'action=summary&_=' + Date.now();
+      // fresh=1は結果backend側のScript Cache（30秒）を読み飛ばして再計算させる。通常の60秒
+      // ポーリングでは付けず、送信成功直後の即時再取得だけで使う（直前30秒以内のキャッシュに
+      // 阻まれて古い数字が返るのを避けるため。PR #237レビュー対応）。
+      if (options && options.fresh) url += '&fresh=1';
       fetch(url, { method: 'GET', cache: 'no-store' })
         .then(function (response) {
           if (!response.ok) throw new Error('http_error');
@@ -1222,7 +1226,7 @@
           }
 
           showCompletion(false);
-          fetchPublicTally();
+          fetchPublicTally({ fresh: true });
           if (analytics() && result.duplicate !== true) {
             // 新規5項目（初参加者向け）はGA4へ送らない。日程は〇△×の3値になったため、
             // date_count／no_available_dateは既存パラメータ名のまま「〇の日数」「6日すべて×か」を送る。
