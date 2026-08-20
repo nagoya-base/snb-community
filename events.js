@@ -10,17 +10,19 @@
   window.SNB_EVENTS = [
     {
       id: "baseball-next-activity",
-      title: "次回の活動",
+      title: "9月キャッチボール会",
       date: null,
-      dateLabel: null,
-      timeLabel: null,
+      /* 9/5・9/13の2日開催のため、単一date運用（自動finished判定）は使わない。
+         9/13開催終了後、statusを手動で"finished"へ切り替えること（Issue #247）。 */
+      dateLabel: "9/5（土）・9/13（日）",
+      timeLabel: "13:00〜15:00",
       venue: "名古屋市内（公園・グラウンド）",
       fee: "基本無料",
       capacity: null,
       minimum: null,
       condition: "グローブ必須・ユニフォーム推奨",
-      status: "paused",
-      url: "baseball/#schedule"
+      status: "recruiting",
+      url: "baseball/enquete_202609.html"
     }
   ];
 

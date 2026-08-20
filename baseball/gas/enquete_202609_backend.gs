@@ -217,6 +217,16 @@ var DATE_KEYS = ['date_0905', 'date_0906', 'date_0913', 'date_0919', 'date_0920'
 /* 日程各列に許可する値。 */
 var ALLOWED_DATE_VALUES = ['〇', '△', '×'];
 
+/* Issue #247：9月は9/5・9/13の2回開催に確定。開催2日前23:59(JST)で個別に締め切る。
+   締切後は、既存行があればその日の値を保持（過去の実回答を締切だけを理由に上書きしない）、
+   新規行なら'×'固定にする。全ての締切を過ぎた場合はエントリー自体を受け付けない。 */
+var EVENT_DATES = [
+  { key: 'date_0905', deadline: '2026-09-03T23:59:59+09:00' },
+  { key: 'date_0913', deadline: '2026-09-11T23:59:59+09:00' }
+];
+/* 開催しない4日。新規・更新いずれも常に'×'を強制する（バックエンド側の安全策。Issue #247）。 */
+var NON_HOSTED_DATE_KEYS = ['date_0906', 'date_0919', 'date_0920', 'date_0927'];
+
 /* 通知メール本文でQ4の参加可能日を人が読める形式で表示するためのラベル
    （baseball/enquete_202609.html の日付選択肢と1対1で一致させること）。 */
 var DATE_LABELS = {
@@ -344,6 +354,34 @@ function normalizeXHandle_(raw) {
   var lower = handle.toLowerCase();
   if (X_RESERVED_HANDLES.indexOf(lower) !== -1) return { ok: false };
   return { ok: true, value: lower };
+}
+
+/**
+ * 9/5・9/13の締切状態を踏まえて、実際にSheetへ保存する値を決定する。
+ * - 締切前：クライアント送信値をそのまま採用する（validatePayload_の
+ *   ALLOWED_DATE_VALUESチェックを既に通過済みの値のみここに来る）。
+ * - 締切後：既存行（upsert対象）があればその日の既存値を保持する。
+ *   既存行がない、または既存値が不正な場合は'×'固定にする。
+ * 戻り値：{ values: {date_0905, date_0913}, anyOpen: boolean }
+ * anyOpenがfalse（=両日とも締切済み）の場合、呼び出し側は書き込みをせず
+ * 'entry_closed'エラーを返すこと。
+ */
+function resolveEventDates_(data, existingRow, colIndex, now) {
+  var values = {};
+  var anyOpen = false;
+  EVENT_DATES.forEach(function (d) {
+    var deadlineMs = new Date(d.deadline).getTime();
+    var isOpen = !isNaN(deadlineMs) && now.getTime() < deadlineMs;
+    if (isOpen) {
+      anyOpen = true;
+      values[d.key] = data[d.key];
+    } else if (existingRow && ALLOWED_DATE_VALUES.indexOf(existingRow[colIndex[d.key]]) !== -1) {
+      values[d.key] = existingRow[colIndex[d.key]];
+    } else {
+      values[d.key] = '×';
+    }
+  });
+  return { values: values, anyOpen: anyOpen };
 }
 
 /**
@@ -550,6 +588,16 @@ function processSubmission_(e, isTestMode) {
     var now = new Date();
     var createdAt = isUpdate ? dataRows[targetIndex][colIndex.created_at] : now;
 
+    // 9/5・9/13の締切状態を解決する（Issue #247）。両日とも締切済みならエントリー自体を拒否する。
+    var eventDateResolution = resolveEventDates_(data, isUpdate ? dataRows[targetIndex] : null, colIndex, now);
+    if (!eventDateResolution.anyOpen) {
+      return { response: jsonResponse_({ ok: false, error: 'entry_closed', test_mode: isTestMode }), notify: null };
+    }
+    var resolvedDates = eventDateResolution.values;
+    if (resolvedDates.date_0905 === '×' && resolvedDates.date_0913 === '×') {
+      return { response: jsonResponse_({ ok: false, error: 'both_dates_unavailable', test_mode: isTestMode }), notify: null };
+    }
+
     // 初参加者向け追加5項目：'以前参加したことがある'の場合は、クライアントから値が来ていても
     // 保存しない（空文字列に正規化する）。再回答upsert時、旧回答が初参加だった場合でも
     // 今回が以前参加であれば旧値を残さずここで空に上書きする。
@@ -575,6 +623,8 @@ function processSubmission_(e, isTestMode) {
         if (!validated.xContactApplicable) return '';
         return data[key];
       }
+      if (key === 'date_0905' || key === 'date_0913') return resolvedDates[key];
+      if (NON_HOSTED_DATE_KEYS.indexOf(key) !== -1) return '×';
       var value = data[key];
       return value === undefined || value === null ? '' : value;
     });
@@ -585,9 +635,17 @@ function processSubmission_(e, isTestMode) {
       sheet.appendRow(row);
     }
 
+    // 通知メールは実際にSheetへ保存された値を反映する（Issue #247：締切済み日程は
+    // クライアント送信値と実際の保存値が異なりうるため、生のdataをそのまま使わない）。
+    var notifyData = {};
+    Object.keys(data).forEach(function (k) { notifyData[k] = data[k]; });
+    notifyData.date_0905 = resolvedDates.date_0905;
+    notifyData.date_0913 = resolvedDates.date_0913;
+    NON_HOSTED_DATE_KEYS.forEach(function (k) { notifyData[k] = '×'; });
+
     return {
       response: jsonResponse_({ ok: true, duplicate: false, test_mode: isTestMode, action: isUpdate ? 'update' : 'new' }),
-      notify: { data: data, displayName: validated.displayName, timestamp: now, isUpdate: isUpdate, xContactApplicable: validated.xContactApplicable }
+      notify: { data: notifyData, displayName: validated.displayName, timestamp: now, isUpdate: isUpdate, xContactApplicable: validated.xContactApplicable }
     };
   } catch (err) {
     return { response: jsonResponse_({ ok: false, error: 'server_error', message: String(err) }), notify: null };
