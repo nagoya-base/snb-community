@@ -246,7 +246,7 @@
       </p>
       <div class="hero-specs">
         <span class="hero-spec">📝 記名式エントリー</span>
-        <span class="hero-spec">🗓️ 9/5・9/13どちらに参加できそうかを〇／△／×で回答</span>
+        <span class="hero-spec">🗓️ 9/5・9/13それぞれ参加できるかを〇／×で回答</span>
         <span class="hero-spec">⏱️ 約1分で回答できます</span>
       </div>
       <div class="hero-facts" id="entry-status-note">
@@ -260,7 +260,7 @@
   <section class="public-tally" id="public-tally" aria-labelledby="public-tally-title">
     <h2 id="public-tally-title">現在の参加見込み</h2>
     <p class="public-tally__note">
-      回答はリアルタイムで集計しています。〇＝参加できそう、△＝予定次第で参加できそうとして表示しています。
+      回答はリアルタイムで集計しています。〇＝参加できる、×＝参加できないとして表示しています。
     </p>
     <div class="public-tally__total" id="public-tally-total" aria-live="polite"></div>
     <div class="public-tally__grid" id="public-tally-grid" aria-live="polite"></div>
@@ -429,7 +429,7 @@
           <section class="q-block">
             <p class="q-kicker">Q5</p>
             <h3 class="q-title">参加可否 <span class="required">必須</span></h3>
-            <p class="q-lead">9/5・9/13それぞれについて、参加できそうかを〇／△／×で教えてください。予定が曖昧な場合は△を選んでください。</p>
+            <p class="q-lead">9/5・9/13それぞれについて、参加できるかを〇／×で教えてください。</p>
             <div class="date-toolbar">
               <span>表示されている日程に回答してください。</span>
             </div>
@@ -440,7 +440,6 @@
                   <legend class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;">9/5（土）の参加可否</legend>
                   <div class="date-day__options">
                     <label class="date-opt"><input type="radio" name="date_0905" value="〇"><span>〇</span></label>
-                    <label class="date-opt"><input type="radio" name="date_0905" value="△"><span>△</span></label>
                     <label class="date-opt"><input type="radio" name="date_0905" value="×"><span>×</span></label>
                   </div>
                 </fieldset>
@@ -451,7 +450,6 @@
                   <legend class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;">9/13（日）の参加可否</legend>
                   <div class="date-day__options">
                     <label class="date-opt"><input type="radio" name="date_0913" value="〇"><span>〇</span></label>
-                    <label class="date-opt"><input type="radio" name="date_0913" value="△"><span>△</span></label>
                     <label class="date-opt"><input type="radio" name="date_0913" value="×"><span>×</span></label>
                   </div>
                 </fieldset>
@@ -963,13 +961,13 @@
       var openDateKeys = EVENT_DATE_KEYS.filter(function (key) { return isEventDateOpen(key); });
       var missingDate = openDateKeys.some(function (key) { return !chosen(key); });
       if (missingDate) {
-        setError('date', '参加できそうな日を〇／△／×で回答してください。', 'date_missing');
+        setError('date', '参加できるかを〇／×で回答してください。', 'date_missing');
         isValid = false;
         firstInvalid = firstInvalid || form.querySelector('input[name="' + openDateKeys[0] + '"]');
       } else if (openDateKeys.length === 2 && openDateKeys.every(function (key) { var picked = chosen(key); return picked && picked.value === '×'; })) {
-        // 両日とも受付中のときのみ、フロント側でも早期にブロックする（Issue #247）。
+        // 両日とも受付中のときのみ、フロント側でも早期にブロックする（Issue #247／#250）。
         // 片方が締切済みの場合はサーバー側のboth_dates_unavailable判定に委ねる。
-        setError('date', '少なくとも一方の日程で〇または△を選んでください。', 'both_dates_unavailable');
+        setError('date', '9/5・9/13のどちらか一方は「〇」を選んでください。', 'both_dates_unavailable');
         isValid = false;
         firstInvalid = firstInvalid || form.querySelector('input[name="' + openDateKeys[0] + '"]');
       }
@@ -1163,7 +1161,7 @@
           showCompletion(false);
           fetchPublicTally({ fresh: true });
           if (analytics() && result.duplicate !== true) {
-            // 新規5項目（初参加者向け）はGA4へ送らない。日程は〇△×の3値になったため、
+            // 新規5項目（初参加者向け）はGA4へ送らない。日程は〇×の2値になったため（Issue #250）、
             // date_count／no_available_dateは既存パラメータ名のまま「〇の日数」「両日とも×か」を送る。
             var confirmedDateCount = EVENT_DATE_KEYS.filter(function (key) { return payload[key] === '〇'; }).length;
             var allUnavailable = EVENT_DATE_KEYS.every(function (key) { return payload[key] === '×'; });
@@ -1186,7 +1184,7 @@
             var submitErrorMessages = {
               contact_conflict: '入力されたメールアドレスとXアカウントが、既存の別々の回答と一致しました。自動更新できないため、運営までご連絡ください。',
               entry_closed: '受付期間が終了しました。次回開催はXでお知らせします。',
-              both_dates_unavailable: '少なくとも一方の日程で〇または△を選んでください。'
+              both_dates_unavailable: '9/5・9/13のどちらか一方は「〇」を選んでください。'
             };
             submitError.textContent = submitErrorMessages[failureType] ||
               '送信に失敗しました。通信環境をご確認のうえ、もう一度お試しください。改善しない場合は問い合わせフォームからご連絡ください。';

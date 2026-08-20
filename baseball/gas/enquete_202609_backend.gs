@@ -138,9 +138,11 @@
  * ・サーバー側allowlist（participation_intent/participation_history/age_group/
  *   sports_experience/uniform_status/glove_availability/time_preferences/
  *   activity_preferences はフロントの選択肢と1対1で一致させたallowlistで検証する。
- *   日付6列も ['〇','△','×'] のallowlistで検証する）
+ *   日付6列のうち開催しない4日は ['〇','△','×']、開催2日（date_0905/date_0913）は
+ *   ['〇','×'] のallowlistで検証する。既存Sheetの過去△行は書き換えない（Issue #250）。）
  * ・型・文字数検証（display_name<=50 / contact_email<=200 / contact_x<=200 /
- *   first_time_motivation<=100 / free_comment<=300、日付6列は厳密に '〇'/'△'/'×' のいずれか）
+ *   first_time_motivation<=100 / free_comment<=300、日付6列は厳密に '〇'/'△'/'×' のいずれか、
+ *   ただし開催2日は新規入力を '〇'/'×' のいずれかに限定、Issue #250）
  * ・participation_history === '初参加' の場合のみ first_time_motivation 以外の追加4項目
  *   （age_group/sports_experience/uniform_status/glove_availability）を必須検証し、
  *   '以前参加したことがある' の場合はクライアントから値が来ても空文字列に正規化して保存する
@@ -212,9 +214,12 @@ var COLUMNS = [
 ];
 
 /* 候補日は必ずこの6列のみ。9/12・9/26は候補日に含めない（Issue #225で明示的に禁止）。
-   各列の値は厳密に '〇'/'△'/'×' のいずれか（Issue #232。旧booleanから変更）。 */
+   Sheet保存値としては引き続き '〇'/'△'/'×' の3値をとりうる（Issue #232／既存行の過去△を
+   保持するため）。ただしIssue #250により、9/5・9/13（EVENT_DATE_KEYS）へ新規に入力できる値は
+   '〇'/'×' の2値に制限する。ALLOWED_DATE_VALUESは既存行の値の妥当性確認（resolveEventDates_）
+   にのみ引き続き使う。 */
 var DATE_KEYS = ['date_0905', 'date_0906', 'date_0913', 'date_0919', 'date_0920', 'date_0927'];
-/* 日程各列に許可する値。 */
+/* 日程各列（保存値）に許容する値。既存行に残る過去の△を有効な値として扱うために維持する。 */
 var ALLOWED_DATE_VALUES = ['〇', '△', '×'];
 
 /* Issue #247：9月は9/5・9/13の2回開催に確定。開催2日前23:59(JST)で個別に締め切る。
@@ -224,8 +229,12 @@ var EVENT_DATES = [
   { key: 'date_0905', deadline: '2026-09-03T23:59:59+09:00' },
   { key: 'date_0913', deadline: '2026-09-11T23:59:59+09:00' }
 ];
+var EVENT_DATE_KEYS = EVENT_DATES.map(function (d) { return d.key; });
 /* 開催しない4日。新規・更新いずれも常に'×'を強制する（バックエンド側の安全策。Issue #247）。 */
 var NON_HOSTED_DATE_KEYS = ['date_0906', 'date_0919', 'date_0920', 'date_0927'];
+/* Issue #250：9/5・9/13は〇／×の2択に簡略化。新規送信・再送信でクライアントから△が
+   送られても受理しない。既存Sheetの過去△（ALLOWED_DATE_VALUES）はそのまま保持してよい。 */
+var ALLOWED_EVENT_DATE_VALUES = ['〇', '×'];
 
 /* 通知メール本文でQ4の参加可能日を人が読める形式で表示するためのラベル
    （baseball/enquete_202609.html の日付選択肢と1対1で一致させること）。 */
@@ -446,11 +455,13 @@ function validatePayload_(data) {
 
   if (ALLOWED_PARTICIPATION_INTENT.indexOf(data.participation_intent) === -1) return { error: 'participation_intent_invalid' };
 
-  // 日付：6日すべて、厳密に '〇'/'△'/'×' のいずれかであること（Issue #232でboolean/
-  // no_available_dateの排他制御から3値必須へ変更。専用の「9月は参加できない」stateは持たない）。
+  // 日付：6日すべてを検証する。開催2日（date_0905/date_0913）はIssue #250により新規入力を
+  // '〇'/'×' の2値に限定し、△は受理しない。開催しない4日は引き続き '〇'/'△'/'×' を許容する
+  // （どのみちNON_HOSTED_DATE_KEYSとして後段で強制的に'×'へ上書きされる）。
   for (var i = 0; i < DATE_KEYS.length; i++) {
     var key = DATE_KEYS[i];
-    if (ALLOWED_DATE_VALUES.indexOf(data[key]) === -1) return { error: key + '_invalid' };
+    var allowedValues = EVENT_DATE_KEYS.indexOf(key) !== -1 ? ALLOWED_EVENT_DATE_VALUES : ALLOWED_DATE_VALUES;
+    if (allowedValues.indexOf(data[key]) === -1) return { error: key + '_invalid' };
   }
 
   if (typeof data.time_preferences !== 'string') return { error: 'time_preferences_invalid_type' };
