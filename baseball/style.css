@@ -47,18 +47,6 @@
   font-size: 0.98rem;
 }
 
-/* 2026年9月キャッチボール会アンケートの回答締切表示。
-   .hero-facts は enquete_202609.html のみで使用している。 */
-.hero-facts::after {
-  content: "回答締切：8月28日（金）23:59";
-  display: block;
-  margin-top: .75rem;
-  padding-top: .75rem;
-  border-top: 1px solid var(--border);
-  color: var(--accent-lt);
-  font-weight: 800;
-}
-
 /* ── Info table ── */
 .info-table {
   width: 100%;
