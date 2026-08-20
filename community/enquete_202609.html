@@ -133,6 +133,7 @@
       white-space: nowrap;
     }
     .decided-banner__cta:hover { background: #fff1ee; }
+    .decided-banner__divider { opacity: .55; }
 
     /* 9/12教室撮影会 申込状況カード（Issue #229）。既存アンケートの「現在の参加希望状況」
        （status-board、下方）とは別データソース・別スクリプトブロック。 */
@@ -297,6 +298,10 @@
       font-size: .65rem;
       font-weight: 800;
     }
+    .status-secondary { margin-top: 1rem; padding-top: .9rem; border-top: 1px dashed var(--line); }
+    .status-secondary__label { margin: 0 0 .55rem; color: var(--muted); font-size: .72rem; font-weight: 800; }
+    .status-grid--secondary { opacity: .72; }
+    .status-grid--secondary .status-card { background: #f7f5f1; }
 
     .survey-shell {
       width: min(920px, calc(100% - 2.5rem));
@@ -450,6 +455,21 @@
     .style__drink { display: inline-block; align-self: flex-start; margin-top: .2rem; border-radius: 999px; padding: .18rem .52rem; background: #f0eee9; color: #635d56; font-size: .66rem; font-weight: 800; }
     .style__drink--yes { background: #e5f5ea; color: var(--green); }
 
+    .date-excluded-note {
+      margin-top: .9rem;
+      padding: .85rem .95rem;
+      border-radius: 10px;
+      background: #f7f5f1;
+      color: var(--muted);
+      font-size: .78rem;
+      line-height: 1.75;
+    }
+    .date-excluded-note p { margin: 0; }
+    .date-excluded-note p + p { margin-top: .35rem; }
+    .date-excluded-note strong { color: var(--ink); }
+    .date-excluded-note a { color: var(--red); font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
+    .date-excluded-note a:hover { color: var(--red-dark); }
+
     .date-toolbar {
       display: flex;
       align-items: center;
@@ -463,7 +483,7 @@
       font-size: .8rem;
     }
     .date-count { color: var(--ink); font-size: .83rem; font-weight: 800; white-space: nowrap; }
-    .date-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .55rem; }
+    .date-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
     .date-choice { position: relative; display: block; cursor: pointer; }
     .date-choice input { position: absolute; opacity: 0; pointer-events: none; }
     .date-choice__body {
@@ -655,7 +675,6 @@
       .plan-grid, .intent-grid, .style-grid, .contact-fields { grid-template-columns: 1fr; }
       .choice { min-height: auto; }
       .choice__body { min-height: 108px; }
-      .date-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .date-choice__body { min-height: 72px; }
       .answer-summary div { grid-template-columns: 1fr; gap: .12rem; }
       .confirmation-actions { flex-direction: column-reverse; }
@@ -673,8 +692,11 @@
   <main>
     <div class="decided-banner" id="decided-banner">
       <div class="decided-banner__inner">
-        <span class="decided-banner__text"><strong>9月12日（土）の開催が決定しました。</strong>参加をご希望の方は、専用の申込フォームからお申し込みください。</span>
+        <span class="decided-banner__text"><strong>9月12日（土）の教室撮影会</strong>の開催が決定しました。参加をご希望の方は、専用の申込フォームからお申し込みください。</span>
         <a class="decided-banner__cta" href="classroom_20260912.html" data-cta-name="classroom_20260912" data-cta-location="enquete_banner">参加申込はこちら →</a>
+        <span class="decided-banner__divider" aria-hidden="true">｜</span>
+        <span class="decided-banner__text"><strong>9月のキャッチボール会（9/5・9/13）</strong>も開催が決定しています。</span>
+        <a class="decided-banner__cta" href="../baseball/" data-cta-name="baseball_top" data-cta-location="enquete_banner">キャッチボール会はこちら →</a>
       </div>
     </div>
 
@@ -711,11 +733,15 @@
           <h2 id="status-board-title">現在の参加希望状況</h2>
           <span class="status-board__updated" id="status-updated">—</span>
         </div>
-        <p class="status-board__note">アンケート回答を参加意向に応じて補正した参考値です。実際の申込人数ではありません。</p>
+        <p class="status-board__note">アンケート回答を参加意向に応じて補正した参考値です。実際の申込人数ではありません。現在は<strong>9/19（土）・9/26（土）</strong>のみ新規回答を受け付けています。</p>
         <p class="status-board__loading" id="status-loading">現在の状況を読み込み中…</p>
         <p class="status-board__empty" id="status-empty" hidden>まだ回答はありません。最初の回答をお待ちしています。</p>
         <p class="status-board__error" id="status-error" role="status" hidden>現在の状況を取得できませんでした。しばらくしてからページを再読み込みしてください。</p>
         <ul class="status-grid" id="status-grid" hidden></ul>
+        <div class="status-secondary" id="status-secondary" hidden>
+          <p class="status-secondary__label">参考｜対象外になった日の回答（募集は終了しました）</p>
+          <ul class="status-grid status-grid--secondary" id="status-secondary-grid"></ul>
+        </div>
       </div>
     </section>
 
@@ -808,21 +834,28 @@
 
           <section class="step" id="step-3" data-step="3" hidden aria-labelledby="step-3-title">
             <p class="question-kicker">03 / 実際に動ける日</p>
-            <h2 class="question-title" id="step-3-title">9月の土日、いつなら空いてる？ <span class="required">必須</span></h2>
-            <p class="question-lead">複数選択できます。予定がまだ曖昧でも、可能性がある日を選べばOKです。</p>
+            <h2 class="question-title" id="step-3-title">9/19（土）・9/26（土）、いつなら空いてる？ <span class="required">必須</span></h2>
+            <p class="question-lead">アンケートで参加可能日をお伺いするのは、この2日のみです。複数選択できます。予定がまだ曖昧でも、可能性がある日を選べばOKです。</p>
             <div class="date-toolbar"><span>選んだ日だけを開催候補として集計します。</span><span class="date-count"><span id="date-count">0</span> 日選択</span></div>
             <fieldset class="date-grid">
               <legend class="sr-only">参加できる日</legend>
-              <label class="date-choice"><input type="checkbox" name="date" value="9/5（土）" data-sheet-key="date_0905"><span class="date-choice__body"><span class="date-choice__date">9/5</span><span class="date-choice__day">SAT</span></span></label>
-              <label class="date-choice"><input type="checkbox" name="date" value="9/6（日）" data-sheet-key="date_0906"><span class="date-choice__body"><span class="date-choice__date">9/6</span><span class="date-choice__day">SUN</span></span></label>
-              <label class="date-choice"><input type="checkbox" name="date" value="9/12（土）" data-sheet-key="date_0912"><span class="date-choice__body"><span class="date-choice__date">9/12</span><span class="date-choice__day">SAT</span></span></label>
-              <label class="date-choice"><input type="checkbox" name="date" value="9/13（日）" data-sheet-key="date_0913"><span class="date-choice__body"><span class="date-choice__date">9/13</span><span class="date-choice__day">SUN</span></span></label>
               <label class="date-choice"><input type="checkbox" name="date" value="9/19（土）" data-sheet-key="date_0919"><span class="date-choice__body"><span class="date-choice__date">9/19</span><span class="date-choice__day">SAT</span></span></label>
-              <label class="date-choice"><input type="checkbox" name="date" value="9/20（日）" data-sheet-key="date_0920"><span class="date-choice__body"><span class="date-choice__date">9/20</span><span class="date-choice__day">SUN</span></span></label>
               <label class="date-choice"><input type="checkbox" name="date" value="9/26（土）" data-sheet-key="date_0926"><span class="date-choice__body"><span class="date-choice__date">9/26</span><span class="date-choice__day">SAT</span></span></label>
-              <label class="date-choice"><input type="checkbox" name="date" value="9/27（日）" data-sheet-key="date_0927"><span class="date-choice__body"><span class="date-choice__date">9/27</span><span class="date-choice__day">SUN</span></span></label>
-              <label class="date-choice date-choice--unavailable"><input type="checkbox" name="unavailable" value="9月の土日は参加できない" id="unavailable"><span class="date-choice__body"><span aria-hidden="true">—</span><span><strong>9月の土日は難しい</strong><br><small>他の日付選択は解除されます</small></span></span></label>
+              <label class="date-choice date-choice--unavailable"><input type="checkbox" name="unavailable" value="9月の土日は参加できない" id="unavailable"><span class="date-choice__body"><span aria-hidden="true">—</span><span><strong>9/19・9/26のどちらも難しい</strong><br><small>他の日付選択は解除されます</small></span></span></label>
+              <!-- date_0905/0906/0912/0913/0920/0927：対象外日（Issue #251）。
+                   既存Sheet列・過去回答を維持するためinput自体は残し、非表示・操作不可のまま常にfalseを送信する。 -->
+              <input type="checkbox" name="date" value="9/5（土）" data-sheet-key="date_0905" hidden aria-hidden="true" tabindex="-1">
+              <input type="checkbox" name="date" value="9/6（日）" data-sheet-key="date_0906" hidden aria-hidden="true" tabindex="-1">
+              <input type="checkbox" name="date" value="9/12（土）" data-sheet-key="date_0912" hidden aria-hidden="true" tabindex="-1">
+              <input type="checkbox" name="date" value="9/13（日）" data-sheet-key="date_0913" hidden aria-hidden="true" tabindex="-1">
+              <input type="checkbox" name="date" value="9/20（日）" data-sheet-key="date_0920" hidden aria-hidden="true" tabindex="-1">
+              <input type="checkbox" name="date" value="9/27（日）" data-sheet-key="date_0927" hidden aria-hidden="true" tabindex="-1">
             </fieldset>
+            <div class="date-excluded-note">
+              <p><strong>9/5（土）・9/13（日）</strong>はキャッチボール会開催のため対象外です。<a href="../baseball/" data-cta-name="baseball_top" data-cta-location="enquete_date_note">キャッチボール会はこちら →</a></p>
+              <p><strong>9/12（土）</strong>は教室撮影会開催のため対象外です。<a href="classroom_20260912.html" data-cta-name="classroom_20260912" data-cta-location="enquete_date_note">参加申込はこちら →</a></p>
+              <p><strong>9/6（日）・9/20（日）・9/27（日）</strong>は参加希望が少数のため募集を停止しました。</p>
+            </div>
             <p class="step-error" id="error-3" role="alert" aria-live="polite"></p>
           </section>
 
@@ -1467,8 +1500,14 @@
       var emptyState = document.getElementById('status-empty');
       var errorState = document.getElementById('status-error');
       var updatedLabel = document.getElementById('status-updated');
+      var secondaryWrap = document.getElementById('status-secondary');
+      var secondaryGrid = document.getElementById('status-secondary-grid');
 
       if (!grid || !loadingState || !emptyState || !errorState || !updatedLabel) return;
+
+      // 9/19・9/26のみをアンケート対象日として主表示し、対象外になった日は
+      // 参考セクションへ分離する（Issue #251）。既存Sheet列・APIレスポンスは変更しない。
+      var PRIMARY_DATE_CODES = ['date_0919', 'date_0926'];
 
       function escapeHtml(value) {
         return String(value == null ? '' : value)
@@ -1514,6 +1553,7 @@
         [loadingState, emptyState, errorState, grid].forEach(function (node) {
           node.hidden = node !== el;
         });
+        if (secondaryWrap && el !== grid) secondaryWrap.hidden = true;
       }
 
       function render(data) {
@@ -1525,8 +1565,16 @@
         }
 
         var dates = Array.isArray(data.dates) ? data.dates : [];
-        grid.innerHTML = dates.map(renderDateCard).join('');
+        var primaryDates = dates.filter(function (entry) { return PRIMARY_DATE_CODES.indexOf(entry.date_code) !== -1; });
+        var secondaryDates = dates.filter(function (entry) { return PRIMARY_DATE_CODES.indexOf(entry.date_code) === -1; });
+
+        grid.innerHTML = primaryDates.map(renderDateCard).join('');
         showOnly(grid);
+
+        if (secondaryWrap && secondaryGrid) {
+          secondaryGrid.innerHTML = secondaryDates.map(renderDateCard).join('');
+          secondaryWrap.hidden = secondaryDates.length === 0;
+        }
       }
 
       function refresh() {
