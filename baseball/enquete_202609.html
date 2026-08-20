@@ -413,23 +413,8 @@
 
           <section class="q-block">
             <p class="q-kicker">Q4</p>
-            <h3 class="q-title">参加意向 <span class="required">必須</span></h3>
-            <fieldset>
-              <legend class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;">参加意向</legend>
-              <div class="choice-grid">
-                <label class="choice"><input type="radio" name="participation_intent" value="日程が合えば参加したい"><span class="choice__body">日程が合えば参加したい</span></label>
-                <label class="choice"><input type="radio" name="participation_intent" value="たぶん参加したい"><span class="choice__body">たぶん参加したい</span></label>
-                <label class="choice"><input type="radio" name="participation_intent" value="条件次第で参加を検討したい"><span class="choice__body">条件次第で参加を検討したい</span></label>
-                <label class="choice"><input type="radio" name="participation_intent" value="今回は日程投票だけ"><span class="choice__body">今回は日程投票だけ</span></label>
-              </div>
-            </fieldset>
-            <p class="q-error" id="error-intent" role="alert" aria-live="polite"></p>
-          </section>
-
-          <section class="q-block">
-            <p class="q-kicker">Q5</p>
             <h3 class="q-title">参加可否 <span class="required">必須</span></h3>
-            <p class="q-lead">9/5・9/13それぞれについて、参加できるかを〇／×で教えてください。</p>
+            <p class="q-lead">9/5・9/13それぞれについて、参加できるかを〇／×で教えてください。参加する意思が決まっている方のみエントリーしてください。〇を選んだ日程は参加予定として受け付けます。</p>
             <div class="date-toolbar">
               <span>表示されている日程に回答してください。</span>
             </div>
@@ -459,7 +444,7 @@
           </section>
 
           <section class="q-block">
-            <p class="q-kicker">Q6</p>
+            <p class="q-kicker">Q5</p>
             <h3 class="q-title">やってみたいこと <span class="optional">任意・複数可</span></h3>
             <div class="chip-grid">
               <label class="chip-choice"><input type="checkbox" name="activity_pref" value="キャッチボール"><span>キャッチボール</span></label>
@@ -472,7 +457,7 @@
           </section>
 
           <section class="q-block">
-            <p class="q-kicker">Q7</p>
+            <p class="q-kicker">Q6</p>
             <h3 class="q-title">自由記述 <span class="optional">任意</span></h3>
             <label class="field-label" for="free-comment" style="position:absolute;width:1px;height:1px;overflow:hidden;">自由記述</label>
             <textarea id="free-comment" class="text-input" maxlength="300" placeholder="日程・時間・やってみたいこと・応援や激励などあればどうぞ。"></textarea>
@@ -801,7 +786,7 @@
       if (analytics()) analytics().trackFormError(FORM_NAME, errorType || id);
     }
     function clearAllErrors() {
-      ['display-name', 'age-group', 'sports-experience', 'uniform-status', 'glove-availability', 'contact', 'x-follow-approval-ack', 'x-contact-method', 'intent', 'date'].forEach(clearError);
+      ['display-name', 'age-group', 'sports-experience', 'uniform-status', 'glove-availability', 'contact', 'x-follow-approval-ack', 'x-contact-method', 'date'].forEach(clearError);
     }
 
     function updateCarrierNoticeVisibility() {
@@ -863,9 +848,6 @@
       });
     });
 
-    form.querySelectorAll('input[name="participation_intent"]').forEach(function (input) {
-      input.addEventListener('change', function () { clearError('intent'); });
-    });
     displayNameInput.addEventListener('input', function () { clearError('display-name'); });
 
     function validateAll() {
@@ -952,12 +934,6 @@
         }
       }
 
-      if (!chosen('participation_intent')) {
-        setError('intent', '参加意向を選んでください。', 'intent_missing');
-        isValid = false;
-        firstInvalid = firstInvalid || form.querySelector('input[name="participation_intent"]');
-      }
-
       var openDateKeys = EVENT_DATE_KEYS.filter(function (key) { return isEventDateOpen(key); });
       var missingDate = openDateKeys.some(function (key) { return !chosen(key); });
       if (missingDate) {
@@ -992,7 +968,6 @@
 
     function buildSummary() {
       summary.innerHTML = '';
-      var intent = chosen('participation_intent');
 
       addSummary('お名前／ハンドルネーム', displayNameInput.value.trim());
       if (firstTimeMotivationInput.value.trim()) addSummary('初参加のきっかけ・動機', firstTimeMotivationInput.value.trim());
@@ -1011,7 +986,6 @@
         var xContactMethod = chosen('x_contact_method');
         addSummary('X連絡方法', xContactMethod ? xContactMethod.value : '未選択');
       }
-      addSummary('参加意向', intent ? intent.value : '未選択');
       var dateSummary = EVENT_DATE_KEYS.map(function (key) {
         if (!isEventDateOpen(key)) return (DATE_LABELS[key] || key) + '：受付終了';
         var picked = chosen(key);
@@ -1063,7 +1037,6 @@
     }
 
     function buildPayload() {
-      var intent = chosen('participation_intent');
       // 初参加×正規化後contact_xが空でない場合のみtrue。非該当の場合はx_follow_approval_ack /
       // x_contact_methodを送信payloadに残さない（Issue #234）。
       var xContactApplicable = isXContactApplicable();
@@ -1082,7 +1055,8 @@
         contact_x: xInput.value.trim(),
         x_follow_approval_ack: xContactApplicable && xFollowApprovalAckInput && xFollowApprovalAckInput.checked ? '確認済み' : '',
         x_contact_method: xContactApplicable && chosen('x_contact_method') ? chosen('x_contact_method').value : '',
-        participation_intent: intent ? intent.value : '',
+        // 参加意向の設問はUIから削除し、常に固定値を送信する（Issue #254）。
+        participation_intent: '参加する',
         // 希望時間帯の設問はUIから削除し、9月は13〜15時固定として送信する（Issue #247）。
         time_preferences: '13〜15時ごろ',
         activity_preferences: checkedValues(activityInputs).join('、'),
