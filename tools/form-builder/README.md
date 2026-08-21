@@ -48,11 +48,11 @@ SNBコミュニティの応募フォーム・アンケートを、スマホか�
 | Pull requests | Read and write |
 | Metadata | Read-only（Fine-grained PATでは自動付与） |
 
-### Fine-grained PATスパイク結果
+### Fine-grained PATスパイク結果／実PAT E2E確認
 
-Issue #256 のレビュー指示に基づき、本体実装前にGitHub API（`main`最新SHA取得→branch作成→1ファイルcommit→PR作成）の最小スパイクを実施しました。このリポジトリの設定（ブランチ保護なし）では一連の操作がAPIレベルで問題なく成立することを確認済みです（詳細はIssue #256のコメント参照）。
+Issue #256 のレビュー指示に基づき、本体実装前にGitHub API（`main`最新SHA取得→branch作成→1ファイルcommit→PR作成）の最小スパイクを実施しました（詳細はIssue #256のコメント参照）。このスパイクは本セッションに付与されたGitHub App由来のトークンで実行したものでした。
 
-ただし、そのスパイクは本セッションに付与されたGitHub App由来のトークンで実行したものであり、**実際にブラウザから発行するFine-grained PATでの動作確認は別途必要**です。特にPR作成でFine-grained PAT特有の `403 Resource not accessible by personal access token` が発生するかどうかは、実運用時に確認してください。
+その後、運営者により**実際にブラウザから発行したFine-grained PATを使ったE2E確認**が完了しています（PR #262、`Contents: Read and write` / `Pull requests: Read and write` 権限）。main最新SHA取得→branch作成→HTML commit→設定JSON commit→PR作成まで403等のエラーなく成功し、テストPR・使用トークンともにクローズ／Revoke済みです。テストブランチ（ダミーファイルのみ）は削除機能未実装のため残存しています。
 
 ### フォールバック：classic PAT
 
@@ -87,9 +87,11 @@ Fine-grained PATで `Pull requests: Read and write` を付与してもPR作成�
 
 ## 動作確認状況
 
-- 390px（iPhone Safari相当）／1440px（PC）でのテンプレート切替・候補日追加削除・質問項目編集・バリデーション・プレビュー・送信フロー（テストモード）を Chromium（Playwright）で確認済み
-- プレビュー・テストモードでの送信操作時、GAS宛のネットワークリクエストが一切発生しないことを確認済み
+- 390px（iPhone Safari相当）／1440px（PC）でのテンプレート切替・候補日追加削除・質問項目編集・バリデーション・プレビュー・送信フロー（`?test=1` / `?test=closed` 双方）を Chromium（Playwright）で確認済み
+- プレビュー・テストモードでの送信操作時、GAS宛のネットワークリクエストが一切発生しないことを確認済み（`?test=closed`は確認画面到達後の送信操作を含めて確認。無指定＝本番想定では実際に送信リクエストが発生することも確認し、過剰ブロックでないことも確認済み）
+- 無効化（OFF）した質問が公開ページの描画・検証・送信payloadに含まれないことを確認済み
+- 候補日の曜日自動計算がタイムゾーンに依存しないことを確認済み
 - 生成HTMLの先頭 front matter 非混入、`<!DOCTYPE html>` 開始を確認済み
-- 生成HTMLへの入力値（タイトル・質問ラベル等）がエスケープされ、`<script>`タグ等を注入できないことを確認済み
-- GitHub API連携（branch作成→commit→PR作成）はリクエスト形状（URL・メソッド・認証ヘッダー・ボディ）を検証済み。**実際のFine-grained PATを使ったブラウザ操作でのE2E確認は運用開始時に別途実施してください**
+- 生成HTMLへの入力値（タイトル・質問ラベル・JSON-LD等）がエスケープされ、`<script>`タグ等を注入できないことを確認済み
+- GitHub API連携（branch作成→commit→PR作成）はリクエスト形状（URL・メソッド・認証ヘッダー・ボディ）を検証済み。**実際のFine-grained PATを使ったブラウザ操作でのE2E確認も運営者により完了済み**（PR #262、詳細は上記「Fine-grained PATスパイク結果／実PAT E2E確認」参照）
 - GitHub Pagesへのデプロイ後、実URLでの表示確認はPRマージ後に実施が必要です（本ツールの実装時点では未デプロイ）
