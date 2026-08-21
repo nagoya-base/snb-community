@@ -2,12 +2,21 @@
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
-/** "2026-09-05" -> "9/5（金）"。不正な日付は空文字を返す。 */
+/**
+ * "2026-09-05" -> "9/5（土）"。不正な日付は空文字を返す。
+ *
+ * 実行環境のローカルタイムゾーンに依存しないよう、UTC基準で日付を構築・読み出す
+ * （例えばタイムゾーンがUTCのブラウザ/OSでは、"...T00:00:00+09:00" をローカル
+ * getDate()/getDay()で読むと1日ずれる。本来の暦日は時差に関係なく一意なので、
+ * Date.UTCで組み立ててUTCアクセサで読めば環境非依存で常に正しい値になる）。
+ */
 export function formatDateLabel(isoDate) {
   if (!isoDate) return '';
-  const d = new Date(`${isoDate}T00:00:00+09:00`);
-  if (Number.isNaN(d.getTime())) return '';
-  return `${d.getMonth() + 1}/${d.getDate()}（${WEEKDAYS[d.getDay()]}）`;
+  const [y, m, d] = isoDate.split('-').map(Number);
+  if (!y || !m || !d) return '';
+  const dt = new Date(Date.UTC(y, m - 1, d, 12));
+  if (Number.isNaN(dt.getTime())) return '';
+  return `${dt.getUTCMonth() + 1}/${dt.getUTCDate()}（${WEEKDAYS[dt.getUTCDay()]}）`;
 }
 
 /** "2026-09-05" -> "date_0905" */
