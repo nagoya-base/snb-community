@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>フォームジェネレーター（内部ツール）| SNBコミュニティ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="fb-header">
+    <h1>フォームジェネレーター <span class="fb-badge">内部ツール / MVP</span></h1>
+    <p class="fb-header__desc">テンプレートを選んで入力するだけで、応募フォーム／アンケートページの雛形とPRを生成します。</p>
+  </header>
+
+  <main class="fb-main">
+
+    <section class="fb-section">
+      <h2>1. 前回を複製 / 新規作成</h2>
+      <div id="preset-buttons" class="fb-preset-buttons"></div>
+    </section>
+
+    <section class="fb-section">
+      <h2>2. テンプレート種別</h2>
+      <div id="template-picker" class="fb-template-picker"></div>
+    </section>
+
+    <section class="fb-section">
+      <h2>3. 基本情報</h2>
+      <div class="fb-field">
+        <label class="fb-label" for="f-title">タイトル <span class="required">必須</span></label>
+        <input type="text" id="f-title" placeholder="例: 2026年9月SNBC教室撮影会">
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="f-subtitle">サブタイトル／説明文</label>
+        <input type="text" id="f-subtitle">
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="f-description">meta description</label>
+        <input type="text" id="f-description">
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="f-yearMonthOrId">年月／イベントID</label>
+        <input type="text" id="f-yearMonthOrId" placeholder="例: 202609">
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="f-directory">公開先ディレクトリ <span class="required">必須</span></label>
+        <select id="f-directory"></select>
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="f-slug">生成ファイル名（slug） <span class="required">必須</span></label>
+        <input type="text" id="f-slug" placeholder="例: enquete_202609">
+        <button type="button" id="suggest-slug-btn" class="fb-btn-small">候補slugを提案</button>
+        <p class="fb-help">半角小文字英数字とアンダースコアのみ、先頭は英字。公開URLとファイル名になります。</p>
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="f-ogpImagePath">OGP画像パス（任意）</label>
+        <input type="text" id="f-ogpImagePath" placeholder="例: images/community/enquete-202609/meta-ogp-main.jpg">
+      </div>
+    </section>
+
+    <section class="fb-section" id="section-event-info">
+      <h2>4. イベント情報</h2>
+      <div class="fb-field">
+        <label class="fb-label" for="f-eventDate">開催日</label>
+        <input type="date" id="f-eventDate">
+      </div>
+      <div class="fb-row">
+        <div class="fb-field">
+          <label class="fb-label" for="f-startTime">開始時刻</label>
+          <input type="time" id="f-startTime">
+        </div>
+        <div class="fb-field">
+          <label class="fb-label" for="f-endTime">終了時刻</label>
+          <input type="time" id="f-endTime">
+        </div>
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="f-price">料金</label>
+        <input type="text" id="f-price" placeholder="例: 3500 または 無料">
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="f-capacity">定員</label>
+        <input type="text" id="f-capacity">
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="f-venue">会場</label>
+        <input type="text" id="f-venue">
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="f-entryDeadline">締切</label>
+        <input type="datetime-local" id="f-entryDeadline">
+      </div>
+      <div class="fb-field" id="section-consent">
+        <label class="fb-inline-checkbox"><input type="checkbox" id="f-consentRequired"> 利用規約への同意チェックボックスを表示する</label>
+      </div>
+    </section>
+
+    <section class="fb-section" id="section-dates">
+      <h2>5. 候補日</h2>
+      <div id="dates-list" class="fb-list"></div>
+      <button type="button" id="add-date-btn" class="fb-btn-small">＋候補日を追加</button>
+    </section>
+
+    <section class="fb-section" id="section-plans">
+      <h2>6. 候補企画</h2>
+      <div id="plans-list" class="fb-list"></div>
+      <button type="button" id="add-plan-btn" class="fb-btn-small">＋候補企画を追加</button>
+    </section>
+
+    <section class="fb-section">
+      <h2>7. 連絡先項目</h2>
+      <label class="fb-inline-checkbox"><input type="checkbox" id="f-contact-name"> お名前・表示名を表示する</label>
+      <label class="fb-inline-checkbox"><input type="checkbox" id="f-contact-x"> Xアカウント欄を表示する</label>
+      <label class="fb-inline-checkbox"><input type="checkbox" id="f-contact-email"> メールアドレス欄を表示する</label>
+      <label class="fb-inline-checkbox"><input type="checkbox" id="f-contact-emailRequired"> メールアドレスを必須にする</label>
+    </section>
+
+    <section class="fb-section">
+      <h2>8. 質問項目</h2>
+      <div id="questions-list" class="fb-list"></div>
+      <button type="button" id="add-question-btn" class="fb-btn-small">＋質問を追加</button>
+    </section>
+
+    <section class="fb-section">
+      <h2>9. GAS Web App 連携</h2>
+      <p class="fb-note">
+        新規のGoogle Apps Scriptプロジェクト作成・初回Web Appデプロイ・<code>/exec</code>URLの発行は、
+        運営者がGoogle側で手動で行います。このツールでは自動化していません。
+        発行済みの<code>/exec</code>URLを下に入力してください。未入力のまま生成した場合、
+        公開ページの送信ボタンはプレースホルダーのままとなり、安全側に倒されて送信は失敗します。
+      </p>
+      <div class="fb-field">
+        <label class="fb-label" for="f-gasExecUrl">送信先 GAS /exec URL</label>
+        <input type="text" id="f-gasExecUrl" placeholder="https://script.google.com/macros/s/xxxx/exec">
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="f-resultsGasExecUrl">集計結果用 GAS /exec URL（任意）</label>
+        <input type="text" id="f-resultsGasExecUrl" placeholder="https://script.google.com/macros/s/xxxx/exec">
+      </div>
+      <div class="fb-field">
+        <label class="fb-label" for="f-leadType">generate_lead の lead_type（応募フォームのみ・任意）</label>
+        <input type="text" id="f-leadType" placeholder="例: snbc_event_entry">
+        <p class="fb-help">既存の analytics.js 規約に合わせ、独自の成果イベント名は増やさず lead_type で区別します。</p>
+      </div>
+    </section>
+
+    <section class="fb-section">
+      <h2>10. 検証</h2>
+      <button type="button" id="validate-btn" class="fb-btn fb-btn--secondary">入力内容を検証する</button>
+      <div id="validation-errors" class="fb-validation-errors"></div>
+      <div id="validation-warnings" class="fb-validation-warnings"></div>
+    </section>
+
+    <section class="fb-section">
+      <h2>11. プレビュー</h2>
+      <p class="fb-note">プレビューは常にテストモード扱いです。GAS送信・メール通知・GA4送信は発生しません。</p>
+      <button type="button" id="preview-btn" class="fb-btn fb-btn--secondary">プレビューを更新</button>
+      <div id="preview-frame-wrap" hidden>
+        <div id="preview-meta" class="fb-preview-meta"></div>
+        <iframe id="preview-iframe" class="fb-preview-iframe" title="フォームプレビュー"></iframe>
+      </div>
+    </section>
+
+    <section class="fb-section">
+      <h2>12. GitHub連携・PR作成</h2>
+      <p class="fb-note">
+        対象リポジトリ: <code>nagoya-base/snb-community</code>。<br>
+        Fine-grained Personal Access Token を入力してください。トークンはこのページのメモリ上にのみ保持され、
+        保存（localStorage等）は一切行いません。ページを再読み込みすると破棄されます。
+        必要な権限は README.md を参照してください。
+      </p>
+      <div class="fb-field">
+        <label class="fb-label" for="f-github-token">GitHub Fine-grained PAT</label>
+        <input type="password" id="f-github-token" autocomplete="off">
+        <button type="button" id="discard-token-btn" class="fb-btn-small">トークンを破棄</button>
+      </div>
+      <button type="button" id="pr-btn" class="fb-btn">PRを作成</button>
+      <div id="pr-result" class="fb-pr-result"></div>
+    </section>
+
+  </main>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
