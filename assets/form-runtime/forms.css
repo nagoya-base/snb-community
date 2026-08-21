@@ -1,0 +1,257 @@
+/*
+ * form-builder が生成する公開フォームページ用の共通スタイル。
+ * 3柱（baseball=緑 / community=赤 / portrait=青）はページ側の
+ * <body data-accent="baseball|community|portrait"> で配色を切り替える。
+ * 各フォームHTMLへ個別にCSSをベタ書きしない（重複防止）。
+ */
+
+:root {
+  --ff-ink: #161819;
+  --ff-paper: #f5f1eb;
+  --ff-card: #ffffff;
+  --ff-muted: #6d6962;
+  --ff-line: #ded8cf;
+  --ff-danger: #c62828;
+  --ff-accent: #1c1a17;
+  --ff-accent-lt: #6a6258;
+}
+
+body[data-accent="baseball"] {
+  --ff-accent: #3a7d44;
+  --ff-accent-lt: #6fae78;
+}
+
+body[data-accent="community"] {
+  --ff-accent: #c62828;
+  --ff-accent-lt: #e05a5a;
+}
+
+body[data-accent="portrait"] {
+  --ff-accent: #1976d2;
+  --ff-accent-lt: #5aa4e8;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body.ff-form-page {
+  margin: 0;
+  font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+  background: var(--ff-paper);
+  color: var(--ff-ink);
+  line-height: 1.7;
+  padding: 0 0 4rem;
+}
+
+.ff-container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 1.1rem;
+}
+
+.ff-header {
+  padding: 2rem 0 1rem;
+}
+
+.ff-header h1 {
+  font-size: 1.4rem;
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+}
+
+.ff-header p {
+  color: var(--ff-muted);
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.ff-event-meta {
+  background: var(--ff-card);
+  border: 1px solid var(--ff-line);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  margin: 1rem 0;
+  font-size: 0.92rem;
+}
+
+.ff-event-meta dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0.35rem 0.8rem; }
+.ff-event-meta dt { color: var(--ff-muted); }
+.ff-event-meta dd { margin: 0; }
+
+.ff-test-mode-note,
+.ff-preview-mode-note {
+  background: #fff3cd;
+  border: 1px solid #e0c060;
+  color: #6b5300;
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.85rem;
+  margin: 1rem 0;
+}
+
+.ff-status-closed {
+  background: #f3f1ec;
+  border: 1px solid var(--ff-line);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.ff-form-card {
+  background: var(--ff-card);
+  border: 1px solid var(--ff-line);
+  border-radius: 12px;
+  padding: 1.2rem 1.1rem;
+  margin: 1rem 0;
+}
+
+.ff-field {
+  margin: 0 0 1.3rem;
+}
+
+.ff-field:last-child { margin-bottom: 0; }
+
+.ff-field label.ff-field-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+}
+
+.ff-required-badge {
+  display: inline-block;
+  color: #fff;
+  background: var(--ff-danger);
+  font-size: 0.7rem;
+  border-radius: 4px;
+  padding: 0.05rem 0.4rem;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.ff-optional-badge {
+  display: inline-block;
+  color: var(--ff-muted);
+  font-size: 0.7rem;
+  border: 1px solid var(--ff-line);
+  border-radius: 4px;
+  padding: 0.05rem 0.4rem;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.ff-help-text {
+  color: var(--ff-muted);
+  font-size: 0.8rem;
+  margin: 0.2rem 0 0.4rem;
+}
+
+.ff-field input[type="text"],
+.ff-field input[type="email"],
+.ff-field input[type="date"],
+.ff-field textarea,
+.ff-field select {
+  width: 100%;
+  font: inherit;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--ff-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ff-ink);
+}
+
+.ff-field textarea { min-height: 6rem; resize: vertical; }
+
+.ff-choice-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.ff-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--ff-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.ff-choice input { margin-top: 0.2rem; flex-shrink: 0; }
+
+.ff-date-block {
+  border: 1px solid var(--ff-line);
+  border-radius: 8px;
+  padding: 0.7rem 0.8rem;
+  margin-bottom: 0.6rem;
+}
+
+.ff-date-block__label { font-weight: 600; margin-bottom: 0.5rem; }
+
+.ff-date-block__choices { display: flex; flex-direction: column; gap: 0.5rem; }
+
+@media (min-width: 480px) {
+  .ff-date-block__choices { flex-direction: row; gap: 0.8rem; }
+}
+
+.ff-field-error {
+  color: var(--ff-danger);
+  font-size: 0.82rem;
+  margin: 0.35rem 0 0;
+  display: none;
+}
+
+.ff-field-error.is-visible { display: block; }
+
+.ff-honey { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+.ff-actions {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 1.3rem;
+}
+
+.ff-btn {
+  flex: 1;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--ff-accent);
+  background: #fff;
+  color: var(--ff-accent);
+  cursor: pointer;
+}
+
+.ff-btn--primary {
+  background: var(--ff-accent);
+  color: #fff;
+}
+
+.ff-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ff-summary-list { margin: 0; }
+.ff-summary-list dt { color: var(--ff-muted); font-size: 0.82rem; margin-top: 0.7rem; }
+.ff-summary-list dd { margin: 0.15rem 0 0; }
+
+.ff-notice {
+  border-radius: 8px;
+  padding: 0.8rem 0.9rem;
+  font-size: 0.88rem;
+  margin: 0.8rem 0;
+}
+
+.ff-notice--error { background: #fbeaea; border: 1px solid #e5b3b3; color: #8a1f1f; }
+.ff-notice--success { background: #eaf6ec; border: 1px solid #a9d6b1; color: #205a2a; }
+
+.ff-hidden { display: none !important; }
+
+.ff-footer {
+  text-align: center;
+  color: var(--ff-muted);
+  font-size: 0.8rem;
+  margin-top: 2rem;
+}
+
+@media (min-width: 900px) {
+  .ff-container { max-width: 720px; }
+  .ff-header h1 { font-size: 1.7rem; }
+}
