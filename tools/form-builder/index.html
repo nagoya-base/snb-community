@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>フォームジェネレーター（管理用）｜SNBコミュニティ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="fb-app" id="fb-app">
+    <header class="fb-topbar">
+      <h1>フォームジェネレーター</h1>
+      <p class="fb-topbar__note">運営内部ツール。公開サイトのナビゲーションには掲載されません。</p>
+    </header>
+
+    <nav class="fb-steps" id="fb-steps" aria-label="作成手順">
+      <button type="button" class="fb-step" data-step="0">① テンプレート</button>
+      <button type="button" class="fb-step" data-step="1">② 入力</button>
+      <button type="button" class="fb-step" data-step="2">③ プレビュー</button>
+      <button type="button" class="fb-step" data-step="3">④ PR作成</button>
+    </nav>
+
+    <main id="fb-panels">
+      <section class="fb-panel" data-panel="0">
+        <h2>1. テンプレートを選択</h2>
+        <div id="fb-template-list" class="fb-card-list"></div>
+        <h3>前回を複製</h3>
+        <p class="fb-hint">現行の代表フォームを雛形として読み込みます。読み込み後、日付・料金・slug等は必ず編集してください。</p>
+        <div id="fb-preset-list" class="fb-card-list"></div>
+      </section>
+
+      <section class="fb-panel" data-panel="1" hidden>
+        <h2>2. 内容を入力</h2>
+        <div id="fb-edit-form"></div>
+      </section>
+
+      <section class="fb-panel" data-panel="2" hidden>
+        <h2>3. プレビュー</h2>
+        <p class="fb-hint">このプレビューでは送信操作をしてもGAS保存・メール通知・GA4送信は一切発生しません。</p>
+        <div id="fb-validation-errors" class="fb-errors" hidden></div>
+        <div class="fb-preview-toolbar">
+          <button type="button" class="fb-btn" data-preview-width="390">📱 390px</button>
+          <button type="button" class="fb-btn" data-preview-width="1440">🖥 1440px</button>
+        </div>
+        <p class="fb-hint">生成先URL（想定）: <code id="fb-preview-url"></code></p>
+        <div class="fb-preview-frame-wrap" id="fb-preview-frame-wrap">
+          <iframe id="fb-preview-iframe" title="フォームプレビュー"></iframe>
+        </div>
+      </section>
+
+      <section class="fb-panel" data-panel="3" hidden>
+        <h2>4. GitHubへPR作成</h2>
+        <div id="fb-pr-panel"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="templates/schema.js"></script>
+  <script src="templates/presets.js"></script>
+  <script src="templates/renderer.js"></script>
+  <script src="validate.js"></script>
+  <script src="github-api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

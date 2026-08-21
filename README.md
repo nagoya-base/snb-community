@@ -38,6 +38,8 @@ snb-community/
 │   ├── index.html
 │   └── style.css
 ├── images/                 # 画像（WebP中心・OGP用JPEGあり）
+├── assets/form-runtime/    # form-builder生成フォーム用の共通CSS/JS（forms.css / forms.js）
+├── tools/form-builder/     # フォームジェネレーター（運営内部ツール、公開ナビ非掲載。詳細は同ディレクトリのREADME参照）
 ├── robots.txt
 ├── sitemap.xml
 └── REVIEW_CHECKLIST.md     # コードレビュー観点チェックリスト
