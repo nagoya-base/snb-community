@@ -40,9 +40,19 @@
 
   function weekdayOf(isoDate) {
     if (!isoDate) return '';
-    var d = new Date(isoDate + 'T00:00:00+09:00');
-    if (isNaN(d.getTime())) return '';
-    return WEEKDAY_LABELS[d.getDay()];
+    var parts = isoDate.split('-');
+    if (parts.length !== 3) return '';
+    var y = Number(parts[0]), m = Number(parts[1]), d = Number(parts[2]);
+    if (!y || !m || !d) return '';
+    /*
+     * 曜日はカレンダー上の日付そのものに対して一意に決まる値なので、
+     * 実行環境のローカルタイムゾーンに依存しない Date.UTC + getUTCDay()
+     * で計算する（"+09:00"付きでDateを作りgetDay()を使うと、実行環境の
+     * ローカルタイムゾーンによって前日扱いになり曜日がずれることがある）。
+     */
+    var utcDate = new Date(Date.UTC(y, m - 1, d));
+    if (isNaN(utcDate.getTime())) return '';
+    return WEEKDAY_LABELS[utcDate.getUTCDay()];
   }
 
   function shortLabel(isoDate) {

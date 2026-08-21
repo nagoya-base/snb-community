@@ -25,6 +25,19 @@
     return json.replace(/<\/(script)/gi, '<\\/$1');
   }
 
+  function buildPublicConfig(config) {
+    /*
+     * 埋め込みJSON（公開ページが実際に読み込む設定）には、OFFにした
+     * プリセット質問を含めない。questions[] を丸ごと埋め込むと、
+     * enabled:false の質問も公開ページ側で描画・検証・送信されてしまう
+     * （公開ランタイムforms.jsはenabledを見ない設計のため、ここで除外する）。
+     * 履歴用に保存する .form.json 側は enabled を含む全量を保持する。
+     */
+    var publicConfig = JSON.parse(JSON.stringify(config));
+    publicConfig.questions = (publicConfig.questions || []).filter(function (q) { return q.enabled !== false; });
+    return publicConfig;
+  }
+
   function buildJsonLd(config) {
     if (config.type !== 'event_entry' || !config.event || !config.event.eventDate) return null;
     var ev = config.event;
@@ -55,7 +68,7 @@
     var ogImage = escapeHtml(config.meta.ogImage || '');
     var robots = config.meta.noindex ? 'noindex, nofollow' : 'index, follow';
 
-    var configJson = escapeForInlineJson(JSON.stringify(config));
+    var configJson = escapeForInlineJson(JSON.stringify(buildPublicConfig(config)));
     var jsonLd = buildJsonLd(config);
 
     var headParts = [];

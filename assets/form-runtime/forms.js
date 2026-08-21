@@ -38,7 +38,7 @@
   }
 
   function analytics() {
-    if (isTestMode) return null;
+    if (isTestMode || isClosedPreview) return null;
     return window.SNBAnalytics || null;
   }
 
@@ -216,8 +216,8 @@
   /* ── 候補日ブロック ── */
 
   function isPastDeadline(deadline) {
-    if (!deadline) return false;
     if (isClosedPreview) return true;
+    if (!deadline) return false;
     var d = new Date(deadline + 'T23:59:59+09:00');
     return Date.now() > d.getTime();
   }
@@ -506,7 +506,7 @@
     }
     if (isClosedPreview) {
       container.appendChild(el('div', { class: 'ff-test-mode-note' }, [
-        text('※これは「受付終了」表示のプレビューです（?test=closed）。')
+        text('※これは「受付終了」表示のプレビューです（?test=closed）。送信してもデータの保存・通知・アクセス解析への送信は行われません。')
       ]));
     }
 
@@ -592,7 +592,7 @@
         sendBtn.disabled = true;
         backBtn.disabled = true;
 
-        if (isTestMode) {
+        if (isTestMode || isClosedPreview) {
           showCompletion(true);
           return;
         }
