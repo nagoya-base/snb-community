@@ -1,0 +1,137 @@
+/*
+ * SNBコミュニティ共通 フォームランタイム用スタイル。
+ * form-runtime.js が描画する要素（community/*.html, baseball/*.html の生成フォーム）用。
+ * モバイル優先（390px前後）。
+ */
+:root {
+  --snb-ink: #161819;
+  --snb-paper: #f5f1eb;
+  --snb-card: #ffffff;
+  --snb-muted: #6d6962;
+  --snb-line: #ded8cf;
+  --snb-red: #c62828;
+  --snb-green: #176b48;
+  --snb-accent: #1c72c5;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--snb-paper);
+  color: var(--snb-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, textarea, select { font: inherit; }
+button { touch-action: manipulation; cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 3px solid var(--snb-accent);
+  outline-offset: 2px;
+}
+[hidden] { display: none !important; }
+
+.snb-form-page {
+  width: min(720px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 4rem;
+}
+.snb-form-header h1 { font-size: clamp(1.4rem, 5vw, 1.9rem); margin-bottom: .4rem; }
+.snb-form-subtitle { color: var(--snb-muted); margin-top: 0; }
+
+.snb-honey { position: absolute !important; left: -9999px !important; width: 1px; height: 1px; overflow: hidden; }
+
+.snb-mode-banner {
+  background: #fff6e0;
+  border: 1px solid #e0c46a;
+  color: #6b5300;
+  padding: .75rem 1rem;
+  border-radius: .5rem;
+  font-size: .9rem;
+}
+
+.snb-fieldset {
+  background: var(--snb-card);
+  border: 1px solid var(--snb-line);
+  border-radius: .75rem;
+  padding: 1rem 1.1rem;
+  margin: 1rem 0;
+}
+.snb-fieldset legend { font-weight: 600; padding: 0 .3rem; }
+.snb-help { color: var(--snb-muted); font-size: .88rem; margin: .3rem 0 .7rem; }
+
+.req-badge { font-size: .72rem; padding: .1rem .5rem; border-radius: 999px; margin-left: .3rem; }
+.req-badge--required { background: var(--snb-red); color: #fff; }
+.req-badge--optional { background: #e7e2d8; color: var(--snb-muted); }
+
+.snb-field input[type="text"],
+.snb-field input[type="email"],
+.snb-field textarea,
+.snb-field select {
+  width: 100%;
+  padding: .7rem .8rem;
+  border: 1px solid var(--snb-line);
+  border-radius: .5rem;
+  background: #fff;
+}
+.snb-field textarea { resize: vertical; }
+
+.snb-choice-grid { display: grid; gap: .5rem; }
+.snb-choice {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .65rem .8rem;
+  border: 1px solid var(--snb-line);
+  border-radius: .6rem;
+  background: #fff;
+}
+.snb-choice input { flex: none; }
+.snb-choice--chip { border-radius: 999px; }
+
+.snb-conditional {
+  margin-top: .7rem;
+  padding-top: .7rem;
+  border-top: 1px dashed var(--snb-line);
+}
+.snb-conditional input { width: 100%; padding: .6rem .7rem; border: 1px solid var(--snb-line); border-radius: .5rem; }
+
+.snb-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  margin: 1.2rem 0;
+  font-size: .92rem;
+}
+
+.snb-form-error {
+  color: var(--snb-red);
+  font-size: .9rem;
+  min-height: 1.2em;
+}
+
+.snb-btn {
+  display: block;
+  width: 100%;
+  padding: .9rem 1rem;
+  border-radius: .6rem;
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-top: .7rem;
+}
+.snb-btn--primary { background: var(--snb-accent); color: #fff; }
+.snb-btn--secondary { background: #fff; color: var(--snb-ink); border: 1px solid var(--snb-line); }
+
+.snb-summary { background: var(--snb-card); border: 1px solid var(--snb-line); border-radius: .75rem; padding: 1rem 1.2rem; }
+.snb-summary dt { font-weight: 600; margin-top: .8rem; }
+.snb-summary dt:first-child { margin-top: 0; }
+.snb-summary dd { margin: .2rem 0 0; color: var(--snb-ink); }
+
+.snb-form-done { text-align: center; padding: 2rem 1rem; }
+.snb-form-done__message { font-size: 1.1rem; font-weight: 600; }
+
+@media (min-width: 720px) {
+  .snb-choice-grid { grid-template-columns: repeat(2, 1fr); }
+}
