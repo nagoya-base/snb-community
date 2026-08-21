@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "type": "date_survey",
+  "section": "baseball",
+  "slug": "enquete_202609",
+  "title": "9月キャッチボール会 参加日アンケート",
+  "subtitle": "候補日ごとに参加できるかどうかを教えてください。",
+  "description": "名古屋野球ユニ部の2026年9月キャッチボール会の参加可能日を伺うアンケートです。",
+  "ogImagePath": "images/baseball/catchball/meta-ogp-main.jpg",
+  "event": {},
+  "dates": [
+    { "key": "date_0905", "date": "2026-09-05", "label": "9/5（土）", "hosted": true },
+    { "key": "date_0913", "date": "2026-09-13", "label": "9/13（日）", "hosted": true },
+    { "key": "date_0906", "date": "2026-09-06", "label": "9/6（日）", "hosted": false },
+    { "key": "date_0912", "date": "2026-09-12", "label": "9/12（土）", "hosted": false }
+  ],
+  "questions": [
+    {
+      "key": "display_name",
+      "type": "text",
+      "label": "お名前／表示名",
+      "required": true,
+      "maxLength": 60
+    },
+    {
+      "key": "participation_intent",
+      "type": "radio",
+      "label": "参加意向",
+      "required": true,
+      "options": [
+        { "label": "参加する" },
+        { "label": "参加できるか未定" }
+      ]
+    },
+    {
+      "key": "concerns",
+      "type": "checkbox",
+      "label": "不安・質問",
+      "required": false,
+      "options": [
+        { "label": "特にない" },
+        { "label": "未経験で参加できるか不安" },
+        { "label": "持ち物がわからない" }
+      ],
+      "allowOther": true
+    },
+    {
+      "key": "free_comment",
+      "type": "textarea",
+      "label": "運営への質問・備考",
+      "required": false,
+      "maxLength": 300
+    }
+  ],
+  "contact": { "email": true, "x": true },
+  "consent": { "enabled": false, "label": "" },
+  "analytics": {
+    "formName": "baseball_enquete_202609_form",
+    "leadEvent": "survey_submit",
+    "leadType": ""
+  },
+  "gas": {
+    "execUrl": "",
+    "deployedManually": false
+  }
+}

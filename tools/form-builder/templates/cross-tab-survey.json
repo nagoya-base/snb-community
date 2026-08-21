@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "type": "cross_tab_survey",
+  "section": "community",
+  "slug": "enquete_202609",
+  "title": "9月企画アンケート",
+  "subtitle": "候補企画・候補日・料金感について教えてください。",
+  "description": "SNBコミュニティ 9月の企画候補についてのクロス集計アンケートです。",
+  "ogImagePath": "images/community/enquete-202609/meta-ogp-main.jpg",
+  "event": {},
+  "dates": [
+    { "key": "date_0919", "date": "2026-09-19", "label": "9/19（土）", "hosted": true },
+    { "key": "date_0926", "date": "2026-09-26", "label": "9/26（土）", "hosted": true },
+    { "key": "date_0905", "date": "2026-09-05", "label": "9/5（土）", "hosted": false },
+    { "key": "date_0912", "date": "2026-09-12", "label": "9/12（土）", "hosted": false }
+  ],
+  "questions": [
+    {
+      "key": "q1_first_choice",
+      "type": "radio",
+      "label": "第一希望企画",
+      "required": true,
+      "options": [
+        { "label": "屋内スタジオ撮影会" },
+        { "label": "屋外ロケ撮影会" },
+        { "label": "交流会のみ" }
+      ]
+    },
+    {
+      "key": "q3_participation_intent",
+      "type": "radio",
+      "label": "参加意向",
+      "required": true,
+      "options": [
+        { "label": "参加したい" },
+        { "label": "内容次第で検討" },
+        { "label": "今回は見送り" }
+      ]
+    },
+    {
+      "key": "q4_price",
+      "type": "radio",
+      "label": "許容できる料金感",
+      "required": true,
+      "options": [
+        { "label": "〜2,000円" },
+        { "label": "〜3,000円" },
+        { "label": "〜5,000円" }
+      ]
+    },
+    {
+      "key": "q2_wear_items",
+      "type": "checkbox",
+      "label": "参加時に着てみたい衣装",
+      "required": false,
+      "options": [
+        { "label": "私服" },
+        { "label": "制服風衣装" }
+      ],
+      "allowOther": true
+    },
+    {
+      "key": "q6_concerns",
+      "type": "checkbox",
+      "label": "不安・懸念",
+      "required": false,
+      "options": [
+        { "label": "特にない" },
+        { "label": "人見知りが心配" }
+      ],
+      "allowOther": true
+    },
+    {
+      "key": "free_comment",
+      "type": "textarea",
+      "label": "自由記述",
+      "required": false,
+      "maxLength": 300
+    }
+  ],
+  "contact": { "email": true, "x": true },
+  "consent": { "enabled": false, "label": "" },
+  "analytics": {
+    "formName": "enquete_202609_form",
+    "leadEvent": "survey_submit",
+    "leadType": ""
+  },
+  "gas": {
+    "execUrl": "",
+    "deployedManually": false
+  }
+}

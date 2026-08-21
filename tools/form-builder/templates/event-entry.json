@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "type": "event_entry",
+  "section": "community",
+  "slug": "classroom_20260912",
+  "title": "9/12教室セット撮影会 参加申込",
+  "subtitle": "教室セットでの少人数撮影会です。定員になり次第締め切ります。",
+  "description": "SNBコミュニティ 9/12開催・教室セット撮影会の参加申込フォームです。",
+  "ogImagePath": "images/community/enquete-202609-classroom/meta-ogp-main.jpg",
+  "event": {
+    "eventDate": "2026-09-12",
+    "startTime": "13:00",
+    "endTime": "16:00",
+    "fee": "3,000円",
+    "capacity": 10,
+    "venue": "上前津スタジオ",
+    "deadline": "2026-09-10T23:59:59+09:00",
+    "entryStatus": "open"
+  },
+  "dates": [],
+  "questions": [
+    {
+      "key": "display_name",
+      "type": "text",
+      "label": "お名前／表示名",
+      "required": true,
+      "help": "",
+      "maxLength": 60
+    },
+    {
+      "key": "wear_items",
+      "type": "checkbox",
+      "label": "参加時の衣装",
+      "required": true,
+      "options": [
+        { "label": "私服" },
+        { "label": "制服風衣装" },
+        { "label": "貸し出し衣装を希望" }
+      ],
+      "allowOther": true
+    },
+    {
+      "key": "concerns",
+      "type": "checkbox",
+      "label": "参加にあたって不安なこと",
+      "required": false,
+      "options": [
+        { "label": "特にない" },
+        { "label": "初参加で勝手がわからない" },
+        { "label": "他の参加者と話せるか不安" }
+      ],
+      "allowOther": true
+    },
+    {
+      "key": "free_comment",
+      "type": "textarea",
+      "label": "運営への質問・備考",
+      "required": false,
+      "maxLength": 300
+    }
+  ],
+  "contact": { "email": true, "x": true },
+  "consent": {
+    "enabled": true,
+    "label": "撮影会の注意事項・キャンセルポリシーに同意します"
+  },
+  "analytics": {
+    "formName": "classroom_20260912_form",
+    "leadEvent": "generate_lead",
+    "leadType": "snbc_event_entry"
+  },
+  "gas": {
+    "execUrl": "",
+    "deployedManually": false
+  }
+}

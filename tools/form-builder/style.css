@@ -1,0 +1,133 @@
+/* form-builder 管理画面用スタイル。公開サイトの common.css には依存しない（運営内部ツールのため独立させる）。 */
+
+:root {
+  --ink: #1c1a17;
+  --paper: #fdfcfa;
+  --card: #ffffff;
+  --border: #e2ddd4;
+  --muted: #6a6258;
+  --accent: #2f6f4f;
+  --accent-lt: #4d8f6c;
+  --danger: #b3392f;
+  --danger-bg: #fdecec;
+  --warn-bg: #fff4ca;
+  --warn-ink: #664c00;
+  --max-w: 720px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+.app-header { padding: 1.25rem 1rem .75rem; max-width: var(--max-w); margin: 0 auto; }
+.app-header h1 { margin: 0 0 .35rem; font-size: 1.25rem; }
+.app-header__note { margin: 0; font-size: .78rem; color: var(--muted); }
+
+.steps {
+  display: flex;
+  gap: .4rem;
+  overflow-x: auto;
+  padding: .5rem 1rem 1rem;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  -webkit-overflow-scrolling: touch;
+}
+.steps__item {
+  flex: 0 0 auto;
+  padding: .45rem .8rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: .74rem;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.steps__item[aria-current="step"] { border-color: var(--accent); color: var(--accent); background: #eaf3ee; }
+.steps__item:disabled { opacity: .45; cursor: not-allowed; }
+
+.app-main { max-width: var(--max-w); margin: 0 auto; padding: 0 1rem 4rem; }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem; margin-bottom: 1rem; }
+.card h2 { margin: 0 0 .3rem; font-size: 1.05rem; }
+.card__note { margin: 0 0 .9rem; font-size: .8rem; color: var(--muted); }
+
+.field { margin-bottom: .9rem; }
+.field label { display: block; margin-bottom: .35rem; font-size: .82rem; font-weight: 700; }
+.field .hint { display: block; margin-top: .3rem; font-size: .72rem; color: var(--muted); font-weight: 400; }
+input[type="text"], input[type="email"], input[type="url"], input[type="number"], input[type="date"], input[type="time"], input[type="password"], textarea, select {
+  width: 100%; padding: .65rem .75rem; border: 1px solid var(--border); border-radius: 9px;
+  background: #fff; color: var(--ink); font: inherit; font-size: .92rem;
+}
+textarea { min-height: 80px; resize: vertical; }
+.checkbox-row { display: flex; align-items: center; gap: .5rem; font-size: .85rem; font-weight: 600; }
+.checkbox-row input { width: 1.05rem; height: 1.05rem; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+@media (max-width: 480px) { .grid-2 { grid-template-columns: 1fr; } }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  padding: .7rem 1.2rem; border-radius: 999px; border: 2px solid transparent;
+  font-size: .88rem; font-weight: 800; cursor: pointer; text-decoration: none;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-lt); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.btn-outline { background: #fff; border-color: var(--border); color: var(--ink); }
+.btn-danger { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+.btn-sm { padding: .4rem .8rem; font-size: .76rem; }
+.btn-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; }
+
+.template-grid { display: grid; grid-template-columns: 1fr; gap: .7rem; }
+@media (min-width: 560px) { .template-grid { grid-template-columns: 1fr 1fr; } }
+.template-card {
+  text-align: left; border: 1px solid var(--border); border-radius: 12px; padding: .9rem;
+  background: #fff; cursor: pointer; font: inherit;
+}
+.template-card:hover { border-color: var(--accent); }
+.template-card h3 { margin: 0 0 .3rem; font-size: .92rem; }
+.template-card p { margin: 0; font-size: .76rem; color: var(--muted); }
+
+.list-item { border: 1px solid var(--border); border-radius: 12px; padding: .85rem; margin-bottom: .7rem; background: #fdfdfc; }
+.list-item__head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .6rem; }
+.list-item__head strong { font-size: .84rem; }
+.list-item__actions { display: flex; gap: .35rem; }
+.icon-btn {
+  border: 1px solid var(--border); background: #fff; border-radius: 8px; width: 2rem; height: 2rem;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: .85rem;
+}
+.icon-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+.option-row { display: flex; gap: .5rem; margin-bottom: .4rem; align-items: center; }
+.option-row input { flex: 1; }
+
+.notice { border-radius: 10px; padding: .75rem .9rem; font-size: .82rem; margin-bottom: .9rem; }
+.notice--error { background: var(--danger-bg); color: var(--danger); border: 1px solid #f0c4c0; }
+.notice--warn { background: var(--warn-bg); color: var(--warn-ink); border: 1px solid #e6cf7a; }
+.notice--ok { background: #eaf3ee; color: var(--accent); border: 1px solid #bfe0cd; }
+.notice ul { margin: .4rem 0 0; padding-left: 1.1rem; }
+
+.preview-toolbar { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .8rem; align-items: center; }
+.preview-frame-wrap {
+  border: 1px solid var(--border); border-radius: 14px; overflow: auto; background: #efece6;
+  padding: 1rem; display: flex; justify-content: center;
+}
+.preview-frame {
+  border: 1px solid var(--border); background: #fff; height: 720px; transition: width .15s;
+}
+.preview-frame.w-mobile { width: 390px; }
+.preview-frame.w-desktop { width: 100%; max-width: 1200px; }
+
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+pre.log { background: #14140f; color: #d8e8d8; padding: .8rem; border-radius: 10px; font-size: .74rem; max-height: 260px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+
+.app-footer { max-width: var(--max-w); margin: 0 auto; padding: 1.5rem 1rem 3rem; font-size: .76rem; color: var(--muted); }
+.app-footer a { color: var(--accent); }
