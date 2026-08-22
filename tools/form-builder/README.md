@@ -2,28 +2,29 @@
 
 SNBコミュニティの応募フォーム・アンケートを、スマホから雛形選択→入力→プレビュー→PR作成まで完結させる運営内部ツールです。公開サイトの通常ナビゲーションには掲載されません。
 
-対応Issue: [#256](https://github.com/nagoya-base/snb-community/issues/256)
+対応Issue: [#256](https://github.com/nagoya-base/snb-community/issues/256) / [#266](https://github.com/nagoya-base/snb-community/issues/266)（通知メール全項目対応・GASテンプレート生成）
 
 ## できること／できないこと
 
 **できること**
 - 3種類のテンプレート（イベント応募フォーム／開催日アンケート／企画・クロス集計アンケート）から選んで入力
-- 「前回を複製」で現行の代表フォームに近い雛形を読み込み
+- 「前回を複製」で現行の代表フォームに近い雛形を読み込み（野球ユニ部プリセットは[Issue #263](https://github.com/nagoya-base/snb-community/issues/263)の24項目通知に対応した質問構成を初期値で持つ）
 - 390px（iPhone Safari相当）〜1440px（PC）でのプレビュー（**送信操作をしてもGAS保存・メール通知・GA4送信は一切発生しません**）
-- 入力内容から公開用HTML＋設定JSONを生成し、GitHub上にブランチ作成→コミット→Pull Request作成まで自動化
+- 通知メール設定（ON/OFF・件名・通知対象項目と日本語ラベル）を入力・確認。既定では、そのフォームが保存する全項目が通知メールに含まれる（未回答も省略しない）
+- 入力内容から公開用HTML＋設定JSON＋GASバックエンドテンプレートを生成し、GitHub上にブランチ作成→コミット→Pull Request作成まで自動化
 
 **できないこと（対象外・手動作業が必要）**
 - 新しいGoogle Apps Scriptプロジェクトの作成・Google側での初回Web Appデプロイ・新しい `/exec` URLの発行・Googleアカウント認可
-  → これらは運営者がGoogle側で事前に手動実施し、発行済みの `/exec` URL を「GAS Web App連携」欄に入力してください
+  → これらは運営者が、生成された `{pageDir}/gas/{slug}_backend.gs` の内容をGoogle側で手動反映（新規プロジェクト作成→貼り付け→デプロイ）し、発行済みの `/exec` URL を「GAS Web App連携」欄に入力してください
 - 集計・resultsページ（`*_results.html` 相当）の自動生成
-- 既存フォームで実装されているbaseball方式の連絡先upsert（同一人物の再回答による行更新）
+- 既存フォームで実装されているbaseball方式の連絡先upsert（同一人物の再回答による行更新）。生成されるGASテンプレートは `submission_id` による冪等性のみを持ち、再回答は新しい行として追記される
 - **「PRを作成」＝GitHub上に公開用PRが作成されるところまでを意味します。GASの手動デプロイが未完了の場合、そのPRはマージしてもフォーム送信が機能しません。** マージ前にGAS側の準備状況を必ず確認してください。
 
 ## 使い方
 
 1. `tools/form-builder/index.html` をブラウザで開く（ローカルでの動作確認は `python3 -m http.server` 等の静的サーバーで可）
 2. テンプレートを選択、または「前回を複製」から雛形を読み込む
-3. タイトル・slug・公開先ディレクトリ・候補日・質問項目・GAS `/exec` URL などを入力
+3. タイトル・slug・公開先ディレクトリ・候補日・質問項目・通知メール設定・GAS `/exec` URL などを入力
 4. プレビューで表示・入力操作を確認（390px / 1440px 切り替え可能）
 5. 「PR作成」画面でGitHubトークンを入力し、「PRを作成」を押す
 6. 作成されたPRのURLが表示されるので、内容を確認して人間がmergeする（**main直接commit・auto-mergeはしない**）
@@ -62,10 +63,32 @@ Fine-grained PATで `Pull requests: Read and write` を付与してもPR作成�
 
 `tools/form-builder/templates/schema.js` のコメントを参照してください。生成されるフォームページは `assets/form-runtime/forms.js` が設定JSONを読み込んで描画する共通ランタイム方式です（フォームごとにHTML/CSS/JSを個別に書きません）。
 
+## 通知メール（Issue #266）
+
+生成されるGASテンプレートは、フォームが保存する全項目（連絡先・候補日・質問。無効化した質問は含まない）を通知メール本文へ日本語ラベル付きで掲載する。未回答の項目も「（未入力）」として省略しない。項目一覧は `config.notification.fields`（`tools/form-builder/templates/schema.js` の `buildFieldSpecs()` / `syncNotificationFields()` が導出）に保持され、「入力」画面の「通知メール」セクションでON/OFF・件名・各項目のラベルを確認・編集できる。「保存項目をすべて通知する」を外すと、項目ごとに通知対象を選べる（保存自体は常に全項目行われる）。
+
+野球ユニ部プリセット（「9月キャッチボール会アンケートを雛形にする」）は、[Issue #263](https://github.com/nagoya-base/snb-community/issues/263)で `baseball/gas/enquete_202609_backend.gs` に定義された24項目（`submission_id` 〜 `x_contact_method`）と同じキー構成・日本語ラベルを初期値として持つ。ただし baseball方式固有の「同一人物1票・連絡先upsert」照合ロジックは対象外（下記「できないこと」参照）。
+
+## GASバックエンドテンプレート（Issue #266）
+
+生成先は `{pageDir}/gas/{slug}_backend.gs`。`tools/form-builder/templates/gas-renderer.js` が設定JSONから生成する。含まれる内容：
+
+- `doPost` / Sheetへの保存（列構成は保存対象の全項目から自動生成）
+- `submission_id` による冪等性（同じIDの再送は行を増やさず、通知もしない）
+- 保存値確定後の値を使った通知メール本文組み立て（`buildNotificationBody_`）・`MailApp.sendEmail()`
+- POST先URLへの `?test=1` 相当（`test_responses` シートへ書き込み、通知メールは送らない）
+- メール送信失敗を回答保存の失敗として扱わない
+- Formula Injection対策・サーバー側allowlist（選択肢系項目）による簡易バリデーション
+
+「入力」画面の「GAS Web App連携」セクションから、PR作成前でもテンプレート内容をプレビュー・コピーできる（`/exec` URLがまだ無い状態でも、先にこの内容をGoogle Apps Scriptへ貼り付けて手動デプロイし、発行されたURLを入力してからPRを作成する運用を想定）。PR作成時は、その時点の設定内容から改めて同じ内容が生成されコミットされる。
+
+このテンプレートを生成・コミットするだけではGoogle Apps Script側は一切変更されない（新規プロジェクト作成・認可・初回Web Appデプロイ・`/exec` URL発行は引き続き手動）。
+
 ## 生成されるファイル
 
 - `{pageDir}/{slug}.html` … 公開用フォームページ（`assets/form-runtime/forms.js` / `forms.css` / `../analytics.js` を参照する薄いシェル）
-- `{pageDir}/{slug}.form.json` … 設定JSON（生成の元データ。将来の再編集・再生成にも利用可能）
+- `{pageDir}/{slug}.form.json` … 設定JSON（生成の元データ。通知メール設定を含む。将来の再編集・再生成にも利用可能）
+- `{pageDir}/gas/{slug}_backend.gs` … GASバックエンドテンプレート（上記「GASバックエンドテンプレート」参照。運営者による手動デプロイが別途必要）
 
 ## `.nojekyll` / front matter対策
 
@@ -94,4 +117,6 @@ Fine-grained PATで `Pull requests: Read and write` を付与してもPR作成�
 - 生成HTMLの先頭 front matter 非混入、`<!DOCTYPE html>` 開始を確認済み
 - 生成HTMLへの入力値（タイトル・質問ラベル・JSON-LD等）がエスケープされ、`<script>`タグ等を注入できないことを確認済み
 - GitHub API連携（branch作成→commit→PR作成）はリクエスト形状（URL・メソッド・認証ヘッダー・ボディ）を検証済み。**実際のFine-grained PATを使ったブラウザ操作でのE2E確認も運営者により完了済み**（PR #262、詳細は上記「Fine-grained PATスパイク結果／実PAT E2E確認」参照）
+- （Issue #266）野球ユニ部プリセットで通知対象項目が24件（`submission_id`〜`x_contact_method`、Issue #263と同じキー）揃うこと、質問をOFFにすると通知対象からも消えること（24→23件）、「保存項目をすべて通知する」を外すと項目ごとの通知ON/OFFが選べること、390px幅で横スクロールが発生しないことを Chromium（Playwright）で確認済み
+- （Issue #266）生成されるGASテンプレートの構文（`node --check`）、および doPost の主要経路（新規保存・重複submission_idの抑止・バリデーションエラー・`?test=1`でのtest_responsesへの書き込みと通知抑止・通知メール本文の内容）をNode.jsのモックGAS環境で確認済み。実際のGoogle Apps Script環境への貼り付け・デプロイでの動作確認は運営者による手動作業が必要です
 - GitHub Pagesへのデプロイ後、実URLでの表示確認はPRマージ後に実施が必要です（本ツールの実装時点では未デプロイ）

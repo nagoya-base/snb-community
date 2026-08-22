@@ -5,7 +5,7 @@
 (function (global) {
   'use strict';
 
-  var RESERVED_KEYS = ['display_name', 'contact_email', 'contact_x', 'agree_terms', 'unavailable', 'website', 'submission_id', 'form_type', 'form_version', 'dates'];
+  var RESERVED_KEYS = ['display_name', 'contact_email', 'contact_x', 'agree_terms', 'unavailable', 'website', 'submission_id', 'form_type', 'form_version', 'dates', 'created_at', 'updated_at'];
   var SLUG_RE = /^[a-z][a-z0-9_]{2,60}$/;
   var GAS_EXEC_RE = /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/;
   var ALLOWED_DIRS = ['community', 'baseball', 'portrait'];
@@ -53,6 +53,9 @@
 
     var seenKeys = {};
     RESERVED_KEYS.forEach(function (k) { seenKeys[k] = true; });
+    if (dm && dm.dates) {
+      dm.dates.forEach(function (d) { if (d.key) seenKeys['date_' + d.key] = true; });
+    }
     enabledQuestions(config).forEach(function (q, i) {
       if (!q.key || !/^[a-z][a-z0-9_]*$/.test(q.key)) {
         fail('questions[' + i + '].key', '質問' + (i + 1) + 'のkeyは英小文字で始まる英数字・アンダースコアのみで入力してください。');
@@ -81,6 +84,16 @@
 
     if (!config.analytics || !config.analytics.formName || !/^[a-z][a-z0-9_]*$/.test(config.analytics.formName)) {
       fail('analytics.formName', 'analytics用のform_nameが不正です。');
+    }
+
+    if (config.notification && config.notification.enabled) {
+      if (!config.notification.subject || !config.notification.subject.trim()) {
+        fail('notification.subject', '通知メールを送信する場合は件名を入力してください。');
+      }
+      if (!config.notification.autoAllFields) {
+        var anyNotifyField = (config.notification.fields || []).some(function (f) { return f.enabled !== false; });
+        if (!anyNotifyField) fail('notification.fields', '通知メールを送信する場合は、通知対象項目を1つ以上有効にしてください。');
+      }
     }
 
     return errors;
