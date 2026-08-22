@@ -157,9 +157,11 @@
  *   すべて ok:false を返し、Sheetへは一切書き込まない）
  * ・duplicate時（同一submission_id再送）の重複保存・重複通知抑止
  * ・新規回答／更新回答で通知メールの件名を分ける
- * ・通知メール本文にはメール・Xアカウント文字列・自由記述・submission_id・
- *   初参加者向け追加5項目・x_follow_approval_ackを含めない（x_contact_methodのみ運営上
- *   有用なため、該当時に限り本文へ追加する。Issue #234）
+ * ・通知メール本文にはCOLUMNS（24列）すべてを日本語ラベル付きで掲載する（Issue #263）。
+ *   メールアドレス・Xアカウント文字列・自由記述・submission_id・DMグループ希望
+ *   （x_contact_method）・x_follow_approval_ackも含め、未入力の項目も省略せず
+ *   「（未入力）」として明示する。運営が受信メールだけで全項目を確認できるようにするため。
+ *   実際にSheetへ保存された確定値（created_at/updated_at含む）を使用する。
  */
 
 var SHEET_NAME = 'responses';
@@ -245,6 +247,35 @@ var DATE_LABELS = {
   date_0919: '9/19（土）',
   date_0920: '9/20（日）',
   date_0927: '9/27（日）'
+};
+
+/* 通知メール本文にCOLUMNS（24列）を漏れなく掲載するための日本語ラベル（Issue #263）。
+   COLUMNSと1対1で対応させること。日付6列は上のDATE_LABELSをそのまま流用する。 */
+var NOTIFICATION_COLUMN_LABELS = {
+  submission_id: '送信ID',
+  created_at: '初回受付日時',
+  updated_at: '今回受付日時',
+  display_name: 'お名前／ハンドルネーム',
+  participation_history: '参加経験',
+  first_time_motivation: '参加のきっかけ',
+  age_group: '年代',
+  sports_experience: '運動経験',
+  uniform_status: 'ユニフォーム着用予定',
+  glove_availability: 'グローブ準備状況',
+  contact_email: 'メールアドレス',
+  contact_x: 'Xアカウント',
+  participation_intent: '参加意向',
+  date_0905: DATE_LABELS.date_0905,
+  date_0906: DATE_LABELS.date_0906,
+  date_0913: DATE_LABELS.date_0913,
+  date_0919: DATE_LABELS.date_0919,
+  date_0920: DATE_LABELS.date_0920,
+  date_0927: DATE_LABELS.date_0927,
+  time_preferences: '希望時間帯',
+  activity_preferences: 'やってみたいこと',
+  free_comment: '自由記述',
+  x_follow_approval_ack: 'Xフォロー確認',
+  x_contact_method: 'X連絡方法（DMグループ希望など）'
 };
 
 /* ── 許可値のallowlist（フロント側HTMLの選択肢と1対1で一致させること。
@@ -618,26 +649,35 @@ function processSubmission_(e, isTestMode) {
     // 再回答upsert時、旧回答が該当していた場合でも今回が非該当であれば旧値を残さずここで
     // 空に上書きする（Issue #234）。
     var xContactFieldKeys = ['x_follow_approval_ack', 'x_contact_method'];
-    var row = COLUMNS.map(function (key) {
-      if (key === 'created_at') return createdAt;
-      if (key === 'updated_at') return now;
-      if (key === 'submission_id') return sanitizeForSheet_(data.submission_id);
-      if (key === 'display_name') return sanitizeForSheet_(validated.displayName);
-      if (key === 'contact_email') return sanitizeForSheet_(validated.normalizedEmail);
-      if (key === 'contact_x') return sanitizeForSheet_(validated.normalizedX);
-      if (key === 'free_comment') return sanitizeForSheet_(data.free_comment);
+    // 列ごとの確定値（Sheetの数式インジェクション対策=sanitizeForSheet_を適用する前の、
+    // 論理的な値）をここで一度だけ計算する。Sheetへの書き込み（row）と通知メール本文
+    // （notifyData）の両方がこの同じ値を参照することで、メールが必ずSheetの保存内容と
+    // 一致するようにする（Issue #263：以前はnotifyDataがdataを生のままコピーしており、
+    // display_name/contact_email/contact_xがtrim・正規化前の値になりうる不整合があった）。
+    var resolvedFieldValues = {};
+    COLUMNS.forEach(function (key) {
+      if (key === 'created_at') { resolvedFieldValues[key] = createdAt; return; }
+      if (key === 'updated_at') { resolvedFieldValues[key] = now; return; }
+      if (key === 'submission_id') { resolvedFieldValues[key] = data.submission_id; return; }
+      if (key === 'display_name') { resolvedFieldValues[key] = validated.displayName; return; }
+      if (key === 'contact_email') { resolvedFieldValues[key] = validated.normalizedEmail; return; }
+      if (key === 'contact_x') { resolvedFieldValues[key] = validated.normalizedX; return; }
       if (firstTimeFieldKeys.indexOf(key) !== -1) {
-        if (!validated.isFirstTime) return '';
-        return key === 'first_time_motivation' ? sanitizeForSheet_(data.first_time_motivation) : data[key];
+        resolvedFieldValues[key] = validated.isFirstTime ? data[key] : '';
+        return;
       }
       if (xContactFieldKeys.indexOf(key) !== -1) {
-        if (!validated.xContactApplicable) return '';
-        return data[key];
+        resolvedFieldValues[key] = validated.xContactApplicable ? data[key] : '';
+        return;
       }
-      if (key === 'date_0905' || key === 'date_0913') return resolvedDates[key];
-      if (NON_HOSTED_DATE_KEYS.indexOf(key) !== -1) return '×';
+      if (key === 'date_0905' || key === 'date_0913') { resolvedFieldValues[key] = resolvedDates[key]; return; }
+      if (NON_HOSTED_DATE_KEYS.indexOf(key) !== -1) { resolvedFieldValues[key] = '×'; return; }
       var value = data[key];
-      return value === undefined || value === null ? '' : value;
+      resolvedFieldValues[key] = value === undefined || value === null ? '' : value;
+    });
+
+    var row = COLUMNS.map(function (key) {
+      return sanitizeForSheet_(resolvedFieldValues[key]);
     });
 
     if (isUpdate) {
@@ -646,17 +686,19 @@ function processSubmission_(e, isTestMode) {
       sheet.appendRow(row);
     }
 
-    // 通知メールは実際にSheetへ保存された値を反映する（Issue #247：締切済み日程は
-    // クライアント送信値と実際の保存値が異なりうるため、生のdataをそのまま使わない）。
-    var notifyData = {};
-    Object.keys(data).forEach(function (k) { notifyData[k] = data[k]; });
-    notifyData.date_0905 = resolvedDates.date_0905;
-    notifyData.date_0913 = resolvedDates.date_0913;
-    NON_HOSTED_DATE_KEYS.forEach(function (k) { notifyData[k] = '×'; });
+    // 通知メールは実際にSheetへ保存された確定値（resolvedFieldValues）をそのまま使う
+    // （Issue #247：締切済み日程はクライアント送信値と実際の保存値が異なりうる。
+    // Issue #263：display_name等もtrim・正規化後の確定値で一致させる）。
+    var notifyData = resolvedFieldValues;
 
     return {
       response: jsonResponse_({ ok: true, duplicate: false, test_mode: isTestMode, action: isUpdate ? 'update' : 'new' }),
-      notify: { data: notifyData, displayName: validated.displayName, timestamp: now, isUpdate: isUpdate, xContactApplicable: validated.xContactApplicable }
+      notify: {
+        data: notifyData,
+        timestamp: now,
+        createdAt: createdAt,
+        isUpdate: isUpdate
+      }
     };
   } catch (err) {
     return { response: jsonResponse_({ ok: false, error: 'server_error', message: String(err) }), notify: null };
@@ -704,45 +746,41 @@ function jsonResponse_(obj) {
 }
 
 /**
- * Q4（参加候補日）を通知メール向けの短い文字列に整形する。
- * 6日すべてが「×」の場合は「9月は参加できない（6日すべて×）」を先頭に付ける
- * （専用stateは持たないため、この文言はここで動的に判定する）。
+ * 通知メール本文向けに1列分の表示値を決める。未入力・空文字列は「（未入力）」として
+ * 明示し、省略しない（Issue #263）。created_at/updated_atはSheetへの実際の保存値
+ * （notify.createdAt / notify.timestamp）を日時文字列に整形して使う。
  */
-function formatDateSelectionForNotification_(data) {
-  var parts = DATE_KEYS.map(function (key) { return DATE_LABELS[key] + '：' + data[key]; });
-  var allCross = DATE_KEYS.every(function (key) { return data[key] === '×'; });
-  var prefix = allCross ? '9月は参加できない（6日すべて×）／' : '';
-  return prefix + parts.join('、');
+function formatNotificationValue_(key, notify) {
+  if (key === 'created_at') {
+    return Utilities.formatDate(notify.createdAt, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  }
+  if (key === 'updated_at') {
+    return Utilities.formatDate(notify.timestamp, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  }
+  var value = notify.data[key];
+  return value === undefined || value === null || value === '' ? '（未入力）' : String(value);
 }
 
 /**
  * 通知メール本文を組み立てる。
- * 個人情報の保存場所を増やさないため、contact_email / contact_x / free_comment / submission_id は
- * 意図的に含めない。display_name（お名前／ハンドルネーム）は記名式アンケートの通知として
- * 運営が把握できるよう本文に含める。詳細な内容はGoogleスプレッドシート側で確認する運用とする。
+ * Issue #263：以前は個人情報の保存場所を増やさない方針でメール・Xアカウント・自由記述・
+ * submission_id・初参加者向け追加項目などを意図的に除外していたが、運営から
+ * 「メール本文だけで全項目を確認したい」との要望を受け、COLUMNS（24列）すべてを
+ * 日本語ラベル付きで漏れなく掲載する方針に変更した。実際にSheetへ保存された確定値
+ * （notify.data。締切済み日程などサーバー側で確定させた値を反映済み）を使う。
  */
 function buildNotificationBody_(notify) {
-  var data = notify.data;
-  var receivedAt = Utilities.formatDate(notify.timestamp, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
   var lines = [
     '名古屋野球ユニ部 9月キャッチボール会 日程アンケートに' + (notify.isUpdate ? '更新回答' : '新しい回答') + 'がありました。',
     '',
-    '受付日時: ' + receivedAt,
     '種別: ' + (notify.isUpdate ? '再回答（既存回答の更新）' : '新規回答'),
-    'お名前／ハンドルネーム: ' + notify.displayName,
-    '参加意向: ' + data.participation_intent,
-    '参加可能日: ' + formatDateSelectionForNotification_(data),
-    '希望時間帯: ' + (data.time_preferences || '（未回答）'),
-    'やってみたいこと: ' + (data.activity_preferences || '（未回答）'),
-    '参加経験: ' + data.participation_history,
-    // X連絡方法は運営上有用なため通知本文に含める。ただしXアカウント文字列そのもの・
-    // メールアドレス・submission_id・フォロー承認確認（x_follow_approval_ack）は含めない
-    // （Sheet保存のみでよい。Issue #234）。notify.xContactApplicableで該当時のみ表示する
-    // （非該当時にdata.x_contact_methodが未検証の値である可能性を避けるため）。
-    'X連絡方法: ' + (notify.xContactApplicable ? data.x_contact_method : '（該当なし）'),
-    '',
-    '詳細はGoogleスプレッドシートで確認してください。'
+    ''
   ];
+  COLUMNS.forEach(function (key) {
+    lines.push(NOTIFICATION_COLUMN_LABELS[key] + ': ' + formatNotificationValue_(key, notify));
+  });
+  lines.push('');
+  lines.push('詳細はGoogleスプレッドシートで確認してください。');
   return lines.join('\n');
 }
 
