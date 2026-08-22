@@ -144,9 +144,9 @@
 
         <section class="section">
           <div class="section__head">
-            <h2>候補日同士の重複マトリクス</h2>
-            <p class="section__note" id="matrix-note">表示中の基準（〇のみ／〇＋△）で両方の候補日に該当する人数です。対角線はその日自体の人数です。</p>
-            <div class="matrix-toggle" id="matrix-toggle" role="group" aria-label="重複マトリクスの基準切り替え">
+            <h2>候補日ペアの参加可能人数</h2>
+            <p class="section__note" id="matrix-note">2つの日程のどちらか一方以上に参加できる人数を表示します（表示中の基準：〇のみ／〇＋△）。対角線はその日自体の人数です。</p>
+            <div class="matrix-toggle" id="matrix-toggle" role="group" aria-label="候補日ペアの参加可能人数の基準切り替え">
               <button type="button" data-matrix-mode="confirmed" class="is-active">〇のみ</button>
               <button type="button" data-matrix-mode="including_maybe">〇＋△</button>
             </div>
@@ -182,7 +182,7 @@
 
       // 直近取得した集計データ。60秒自動更新のたびに参照を差し替えるが、matrixModeはリセットしない。
       var latestData = null;
-      // 重複マトリクスの表示基準。'confirmed'（〇のみ）または 'including_maybe'（〇＋△）。
+      // 候補日ペアの参加可能人数の表示基準。'confirmed'（〇のみ）または 'including_maybe'（〇＋△）。
       var matrixMode = 'confirmed';
       var MATRIX_MODE_LABELS = { confirmed: '〇のみ', including_maybe: '〇＋△' };
 
