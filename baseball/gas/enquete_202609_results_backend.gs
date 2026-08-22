@@ -120,9 +120,10 @@ function doGet(e) {
  * なくRESULTS_TEST_SHEET_NAMEになる（APIレベルのテストモード。ファイル冒頭コメント参照）。
  * - total: 総回答数（現在Sheetに保存されている行数。1人1行のupsert後の件数）
  * - date_counts: 候補日ごとの参加可能人数。confirmed（〇のみ）／including_maybe（〇＋△）の2系統。
- * - matrix: 候補日6日×6日の重複人数マトリクス。confirmed／including_maybeの2系統。
- *   matrix.confirmed[A][B] は「AもBも〇」の人数、matrix.including_maybe[A][B] は
- *   「AもBも〇または△」の人数。対角線 matrix.X[A][A] は date_counts.X[A] と一致する。
+ * - matrix: 候補日6日×6日の「候補日ペアの参加可能人数」マトリクス。confirmed／including_maybeの2系統。
+ *   OR集計（Issue #265）：matrix.confirmed[A][B] は「AまたはBが〇」の人数、
+ *   matrix.including_maybe[A][B] は「AまたはBが〇または△」の人数。
+ *   対角線 matrix.X[A][A] は A||A=A のため、従来どおり date_counts.X[A] と一致する。
  * - date_intent: 候補日 × 参加意向のクロス集計（〇の回答のみを対象とする）。
  * - history_counts: 初参加／既参加の内訳（付随情報）。
  * - no_available_count: 6日すべて「×」の行数として動的算出する（専用stateは持たないため）。
@@ -183,16 +184,16 @@ function buildSurveySummary_(isTestMode) {
       if (confirmedFlags[i]) {
         dateCountsConfirmed[keyA] += 1;
         if (dateIntent[keyA] && dateIntent[keyA][intent] !== undefined) dateIntent[keyA][intent] += 1;
-        dateKeys.forEach(function (keyB, j) {
-          if (confirmedFlags[j]) matrixConfirmed[keyA][keyB] += 1;
-        });
       }
       if (includingMaybeFlags[i]) {
         dateCountsIncludingMaybe[keyA] += 1;
-        dateKeys.forEach(function (keyB, j) {
-          if (includingMaybeFlags[j]) matrixIncludingMaybe[keyA][keyB] += 1;
-        });
       }
+      // matrix.*[A][B] はOR集計（AまたはBのどちらかを満たす人数）のため、
+      // confirmedFlags[i]/includingMaybeFlags[i]のガード外で全ペアを加算する（Issue #265）。
+      dateKeys.forEach(function (keyB, j) {
+        if (confirmedFlags[i] || confirmedFlags[j]) matrixConfirmed[keyA][keyB] += 1;
+        if (includingMaybeFlags[i] || includingMaybeFlags[j]) matrixIncludingMaybe[keyA][keyB] += 1;
+      });
     });
   });
 
