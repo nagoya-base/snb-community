@@ -377,7 +377,7 @@
       ce('p', { class: 'fb-field-note', text: 'GASテンプレートが送る運営向け通知メールの内容です。保存対象の項目（連絡先・候補日・質問）から自動的に一覧が作られます。未回答の項目も本文から省略されません。' })
     ]);
     section.appendChild(checkboxLine(notif.enabled, '通知メールを送信する', function (v) { notif.enabled = v; }));
-    section.appendChild(field('件名', textInput(notif.subject, function (v) { notif.subject = v; })));
+    section.appendChild(field('件名', textInput(notif.subject, function (v) { notif.subject = v; notif.subjectIsCustom = true; })));
     section.appendChild(checkboxLine(notif.autoAllFields, '保存項目をすべて通知する（既定ON）', function (v) {
       notif.autoAllFields = v;
       window.FFSchema.syncNotificationFields(config);

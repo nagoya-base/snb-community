@@ -35,16 +35,19 @@
  *
  * notification（Issue #266）：
  * {
- *   enabled: boolean,       // 通知メールを送信するか
- *   subject: string,        // 件名（新規・更新の別なし。GASテンプレートは
- *                            // upsertを実装しないため常に新規回答扱い）
- *   autoAllFields: boolean, // true＝保存対象の全項目を通知（既定）。
- *                            // falseの場合のみ fields[].enabled を個別に見る
+ *   enabled: boolean,          // 通知メールを送信するか
+ *   subject: string,           // 件名（新規・更新の別なし。GASテンプレートは
+ *                               // upsertを実装しないため常に新規回答扱い）
+ *   subjectIsCustom: boolean,  // true＝運営者が件名を手編集済み（以後タイトル変更に
+ *                               // 追従させない）。false＝タイトル変更に自動追従する既定値
+ *   autoAllFields: boolean,    // true＝保存対象の全項目を通知（既定）。
+ *                               // falseの場合のみ fields[].enabled を個別に見る
  *   fields: [{ key, label, enabled, labelIsCustom }]
  * }
  * fields[] は buildFieldSpecs() が導出する「保存される全項目」から
  * syncNotificationFields() が自動生成・同期する。labelIsCustomがtrueの項目は
  * 質問ラベル等が変わっても自動追従させない（ユーザーが手動編集した値を保持する）。
+ * subjectとsubjectIsCustomも同じ考え方（下のsyncNotificationFields()コメント参照）。
  */
 (function (global) {
   'use strict';
@@ -320,11 +323,21 @@
    * labelIsCustomがtrueの項目はラベルの自動追従（質問ラベル変更等の反映）をしない。
    * 保存対象から外れた項目（質問OFF・削除等）はfieldsからも取り除かれる（Issue #266
    * 完了条件「質問をOFFにした場合、その項目は…通知対象からも除外される」）。
+   *
+   * 件名（notif.subject）も同じ考え方：subjectIsCustomがfalse（既定）の間はタイトル変更に
+   * 追従し続け、運営者が件名欄を直接編集した時点でsubjectIsCustom=trueとなり、以後は
+   * タイトルが変わっても上書きしない（labelIsCustomと対称。空のままにはしない安全策として、
+   * subjectIsCustomがtrueでも空文字列の場合のみ既定値を補う）。
+   *
    * config.notification が未初期化の場合はここで作成する。副作用として config を書き換える。
    */
   function syncNotificationFields(config) {
-    var notif = config.notification || { enabled: true, subject: '', autoAllFields: true, fields: [] };
-    if (!notif.subject) notif.subject = defaultNotificationSubject(config);
+    var notif = config.notification || { enabled: true, subject: '', autoAllFields: true, subjectIsCustom: false, fields: [] };
+    if (notif.subjectIsCustom) {
+      if (!notif.subject) notif.subject = defaultNotificationSubject(config);
+    } else {
+      notif.subject = defaultNotificationSubject(config);
+    }
 
     var existingByKey = {};
     (notif.fields || []).forEach(function (f) { existingByKey[f.key] = f; });
@@ -364,7 +377,7 @@
       questions: JSON.parse(JSON.stringify(def.presetQuestions)).map(function (q) { return Object.assign({ enabled: true }, q); }),
       endpoints: { submitUrl: '' },
       analytics: Object.assign({ formName: '' }, def.analyticsDefaults),
-      notification: { enabled: true, subject: '', autoAllFields: true, fields: [] }
+      notification: { enabled: true, subject: '', autoAllFields: true, subjectIsCustom: false, fields: [] }
     };
     syncNotificationFields(config);
     return config;

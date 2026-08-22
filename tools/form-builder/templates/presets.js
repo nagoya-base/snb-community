@@ -15,11 +15,12 @@
     });
     /*
      * createConfig()時点ではmeta.titleが空のため、通知メール件名の既定値も
-     * 空タイトルを元に生成されている。ここでpreset側のタイトル確定後に
-     * 作り直す（build()側で候補日・質問を追加変更する場合は、その後さらに
-     * syncNotificationFields()を呼んで項目一覧を最新化すること）。
+     * 空タイトルを元に生成されている。subjectIsCustomが false（既定）のままなら
+     * syncNotificationFields() が呼ばれるたびにタイトルへ追従して作り直されるため、
+     * ここではpreset側のタイトル確定後に一度呼ぶだけでよい（build()側で候補日・質問を
+     * 追加変更する場合は、その後さらにsyncNotificationFields()を呼んで項目一覧を
+     * 最新化すること）。
      */
-    config.notification.subject = global.FFSchema.defaultNotificationSubject(config);
     global.FFSchema.syncNotificationFields(config);
     return config;
   }
@@ -177,8 +178,11 @@
           return Object.assign({ enabled: true }, q);
         });
         global.FFSchema.syncNotificationFields(config);
-        /* Issue #263のNOTIFICATION_COLUMN_LABELSに合わせる（他はbuildFieldSpecsの既定と一致）。 */
+        /* Issue #263のNOTIFICATION_COLUMN_LABELSに合わせる（他はbuildFieldSpecsの既定と一致）。
+           subjectIsCustom=trueにしないと、以後のsyncNotificationFields()呼び出し
+           （renderEditForm等）でタイトル追従の既定件名に上書きされてしまう。 */
         config.notification.subject = '【名古屋野球ユニ部】9月日程アンケートに新しい回答があります';
+        config.notification.subjectIsCustom = true;
         config.notification.fields.forEach(function (f) {
           if (f.key === 'display_name') { f.label = 'お名前／ハンドルネーム'; f.labelIsCustom = true; }
         });
