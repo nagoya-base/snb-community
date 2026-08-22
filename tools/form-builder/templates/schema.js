@@ -32,6 +32,22 @@
  * 個人情報（氏名・連絡先・同意）は identity ブロックとして固定の型を持ち、
  * questions[] には含めない（analytics.js の「個人情報は送信しない」規約と
  * 直接関わるため、汎用質問と混在させず明示的に扱う）。
+ *
+ * notification（Issue #266）：
+ * {
+ *   enabled: boolean,          // 通知メールを送信するか
+ *   subject: string,           // 件名（新規・更新の別なし。GASテンプレートは
+ *                               // upsertを実装しないため常に新規回答扱い）
+ *   subjectIsCustom: boolean,  // true＝運営者が件名を手編集済み（以後タイトル変更に
+ *                               // 追従させない）。false＝タイトル変更に自動追従する既定値
+ *   autoAllFields: boolean,    // true＝保存対象の全項目を通知（既定）。
+ *                               // falseの場合のみ fields[].enabled を個別に見る
+ *   fields: [{ key, label, enabled, labelIsCustom }]
+ * }
+ * fields[] は buildFieldSpecs() が導出する「保存される全項目」から
+ * syncNotificationFields() が自動生成・同期する。labelIsCustomがtrueの項目は
+ * 質問ラベル等が変わっても自動追従させない（ユーザーが手動編集した値を保持する）。
+ * subjectとsubjectIsCustomも同じ考え方（下のsyncNotificationFields()コメント参照）。
  */
 (function (global) {
   'use strict';
@@ -221,10 +237,127 @@
     return 'community';
   }
 
+  /*
+   * フォームが実際に保存する全項目（system fields + identity + dateModel + questions）を、
+   * key・日本語ラベル・型・必須・選択肢等のメタ情報付きで列挙する（Issue #266）。
+   * この一覧が「保存対象の全項目」の唯一の情報源であり、
+   * - 通知メール項目の既定値（syncNotificationFields）
+   * - GASテンプレートのSheet列構成・サーバー側バリデーション（gas-renderer.js）
+   * の両方がここから導出される。forms.js の collectPayload() が実際に送信する
+   * payloadのキー構成と1対1で対応させること（対応関係が崩れるとSheet列とpayloadが
+   * ずれるため、forms.js側を変更した場合はここも必ず同期する）。
+   *
+   * 各要素の形：
+   * { key, label, kind, required, maxLength, options, allowOther, otherOf, dateKey }
+   * kind: 'system' | 'text' | 'textarea' | 'email' | 'bool' | 'radio' | 'select' |
+   *       'checkbox' | 'dateRadio' | 'dateBool'
+   */
+  function buildFieldSpecs(config) {
+    var specs = [];
+
+    specs.push({ key: 'submission_id', label: '送信ID', kind: 'system', required: true, maxLength: 100 });
+    specs.push({ key: 'created_at', label: '初回受付日時', kind: 'system' });
+    specs.push({ key: 'updated_at', label: '今回受付日時', kind: 'system' });
+
+    specs.push({ key: 'display_name', label: 'お名前／表示名', kind: 'text', required: true, maxLength: 50 });
+    specs.push({ key: 'contact_email', label: 'メールアドレス', kind: 'email', required: false, maxLength: 200 });
+    if (config.identity && config.identity.showXAccount !== false) {
+      specs.push({ key: 'contact_x', label: 'Xアカウント', kind: 'text', required: false, maxLength: 200 });
+    }
+    if (config.type === 'event_entry' && config.identity && config.identity.consent && config.identity.consent.enabled) {
+      specs.push({ key: 'agree_terms', label: '同意事項への同意', kind: 'bool', required: true });
+    }
+
+    var dm = config.dateModel;
+    if (dm && dm.mode !== 'none') {
+      (dm.dates || []).forEach(function (d) {
+        specs.push({
+          key: 'date_' + d.key,
+          label: d.label || d.date,
+          kind: dm.mode === 'per-date-radio' ? 'dateRadio' : 'dateBool',
+          required: dm.mode === 'per-date-radio',
+          dateKey: d.key
+        });
+      });
+      if (dm.mode === 'multi-select' && dm.allowNoneOption) {
+        specs.push({ key: 'unavailable', label: 'どの日も難しい', kind: 'bool', required: false });
+      }
+    }
+
+    (config.questions || []).forEach(function (q) {
+      if (q.enabled === false) return;
+      var optionValues = (q.options || []).map(function (o) { return o.value; });
+      if (q.type === 'text' || q.type === 'textarea') {
+        specs.push({ key: q.key, label: q.label || q.key, kind: q.type, required: !!q.required, maxLength: q.maxLength || (q.type === 'textarea' ? 300 : 200) });
+        return;
+      }
+      if (q.type === 'select') {
+        specs.push({ key: q.key, label: q.label || q.key, kind: 'select', required: !!q.required, options: optionValues });
+        return;
+      }
+      if (q.type === 'radio' || q.type === 'checkbox') {
+        specs.push({ key: q.key, label: q.label || q.key, kind: q.type, required: !!q.required, options: optionValues, allowOther: !!q.otherOption });
+        if (q.otherOption) {
+          specs.push({ key: q.key + '_other', label: (q.label || q.key) + '（その他自由記述）', kind: 'text', required: false, maxLength: 100, otherOf: q.key });
+        }
+      }
+    });
+
+    return specs;
+  }
+
+  function computeNotificationSourceFields(config) {
+    return buildFieldSpecs(config).map(function (spec) {
+      return { key: spec.key, label: spec.label };
+    });
+  }
+
+  function defaultNotificationSubject(config) {
+    var title = (config.meta && config.meta.title) || '（無題フォーム）';
+    return '【SNBコミュニティ】' + title + 'に新しい回答がありました';
+  }
+
+  /*
+   * notification.fields を、その時点の保存対象全項目（computeNotificationSourceFields）と
+   * 同期する。既存フィールドは originally保持していたenabled/labelをできる限り維持し、
+   * labelIsCustomがtrueの項目はラベルの自動追従（質問ラベル変更等の反映）をしない。
+   * 保存対象から外れた項目（質問OFF・削除等）はfieldsからも取り除かれる（Issue #266
+   * 完了条件「質問をOFFにした場合、その項目は…通知対象からも除外される」）。
+   *
+   * 件名（notif.subject）も同じ考え方：subjectIsCustomがfalse（既定）の間はタイトル変更に
+   * 追従し続け、運営者が件名欄を直接編集した時点でsubjectIsCustom=trueとなり、以後は
+   * タイトルが変わっても上書きしない（labelIsCustomと対称。空のままにはしない安全策として、
+   * subjectIsCustomがtrueでも空文字列の場合のみ既定値を補う）。
+   *
+   * config.notification が未初期化の場合はここで作成する。副作用として config を書き換える。
+   */
+  function syncNotificationFields(config) {
+    var notif = config.notification || { enabled: true, subject: '', autoAllFields: true, subjectIsCustom: false, fields: [] };
+    if (notif.subjectIsCustom) {
+      if (!notif.subject) notif.subject = defaultNotificationSubject(config);
+    } else {
+      notif.subject = defaultNotificationSubject(config);
+    }
+
+    var existingByKey = {};
+    (notif.fields || []).forEach(function (f) { existingByKey[f.key] = f; });
+
+    var source = computeNotificationSourceFields(config);
+    notif.fields = source.map(function (s) {
+      var existing = existingByKey[s.key];
+      var label = existing && existing.labelIsCustom ? existing.label : s.label;
+      var enabled = notif.autoAllFields ? true : (existing ? existing.enabled !== false : true);
+      return { key: s.key, label: label, enabled: enabled, labelIsCustom: !!(existing && existing.labelIsCustom) };
+    });
+
+    config.notification = notif;
+    return config;
+  }
+
   function createConfig(type) {
     var def = TEMPLATE_DEFS[type];
     if (!def) throw new Error('unknown template type: ' + type);
-    return {
+    var config = {
       formVersion: 1,
       type: type,
       meta: {
@@ -243,8 +376,11 @@
       identity: JSON.parse(JSON.stringify(def.identityDefaults)),
       questions: JSON.parse(JSON.stringify(def.presetQuestions)).map(function (q) { return Object.assign({ enabled: true }, q); }),
       endpoints: { submitUrl: '' },
-      analytics: Object.assign({ formName: '' }, def.analyticsDefaults)
+      analytics: Object.assign({ formName: '' }, def.analyticsDefaults),
+      notification: { enabled: true, subject: '', autoAllFields: true, subjectIsCustom: false, fields: [] }
     };
+    syncNotificationFields(config);
+    return config;
   }
 
   global.FFSchema = {
@@ -253,6 +389,10 @@
     weekdayOf: weekdayOf,
     shortLabel: shortLabel,
     makeDateEntry: makeDateEntry,
-    accentForDir: accentForDir
+    accentForDir: accentForDir,
+    buildFieldSpecs: buildFieldSpecs,
+    computeNotificationSourceFields: computeNotificationSourceFields,
+    defaultNotificationSubject: defaultNotificationSubject,
+    syncNotificationFields: syncNotificationFields
   };
 })(window);

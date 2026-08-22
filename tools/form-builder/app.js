@@ -331,6 +331,63 @@
     if (config.type === 'event_entry') {
       section.appendChild(field('lead_type（GA4 generate_lead用）', textInput(config.analytics.leadType, function (v) { config.analytics.leadType = v; })));
     }
+
+    section.appendChild(ce('p', { class: 'fb-field-note', text: '/exec URLがまだ無い場合は、先にGASテンプレートを表示してコピーし、新規Apps Scriptプロジェクトへ貼り付けてデプロイしてから、発行された/exec URLを上の欄に入力してください（Issue #266）。PR作成時も、その時点の設定内容から同じテンプレートが生成されコミットされます。' }));
+    var gasWrap = ce('div', {});
+    var toggleBtn = ce('button', { type: 'button', class: 'fb-btn fb-btn--small', text: 'GASテンプレートを表示' });
+    gasWrap.appendChild(toggleBtn);
+    section.appendChild(gasWrap);
+    toggleBtn.addEventListener('click', function () {
+      var existing = gasWrap.querySelector('textarea');
+      if (existing) { existing.remove(); toggleBtn.textContent = 'GASテンプレートを表示'; return; }
+      var src = window.FFGasRenderer.render(config);
+      var ta = ce('textarea', { class: 'fb-gas-preview', readonly: true, rows: 12 });
+      ta.value = src;
+      ta.addEventListener('focus', function () { ta.select(); });
+      gasWrap.appendChild(ta);
+      toggleBtn.textContent = 'GASテンプレートを閉じる';
+    });
+
+    return section;
+  }
+
+  function renderNotificationFieldRow(f, config) {
+    var row = ce('div', { class: 'fb-notif-row' });
+    row.appendChild(ce('code', { class: 'fb-notif-row__key', text: f.key }));
+    var labelInput = ce('input', { type: 'text', value: f.label });
+    labelInput.addEventListener('input', function () {
+      f.label = labelInput.value;
+      f.labelIsCustom = true;
+    });
+    row.appendChild(labelInput);
+    if (!config.notification.autoAllFields) {
+      var cb = ce('input', { type: 'checkbox' });
+      cb.checked = f.enabled !== false;
+      cb.addEventListener('change', function () { f.enabled = cb.checked; });
+      row.appendChild(ce('label', { class: 'fb-checkbox-line fb-notif-row__enable' }, [cb, ce('span', { text: '通知' })]));
+    }
+    return row;
+  }
+
+  function renderNotificationSection(config) {
+    window.FFSchema.syncNotificationFields(config);
+    var notif = config.notification;
+    var section = ce('div', { class: 'fb-section' }, [
+      ce('h3', { text: '通知メール（Issue #266）' }),
+      ce('p', { class: 'fb-field-note', text: 'GASテンプレートが送る運営向け通知メールの内容です。保存対象の項目（連絡先・候補日・質問）から自動的に一覧が作られます。未回答の項目も本文から省略されません。' })
+    ]);
+    section.appendChild(checkboxLine(notif.enabled, '通知メールを送信する', function (v) { notif.enabled = v; }));
+    section.appendChild(field('件名', textInput(notif.subject, function (v) { notif.subject = v; notif.subjectIsCustom = true; })));
+    section.appendChild(checkboxLine(notif.autoAllFields, '保存項目をすべて通知する（既定ON）', function (v) {
+      notif.autoAllFields = v;
+      window.FFSchema.syncNotificationFields(config);
+      renderEditForm();
+    }));
+
+    var list = ce('div', { class: 'fb-notif-list' });
+    notif.fields.forEach(function (f) { list.appendChild(renderNotificationFieldRow(f, config)); });
+    section.appendChild(field('通知対象項目（' + notif.fields.length + '件）とラベル', list, notif.autoAllFields ? '保存対象の全項目が通知されます。ラベルのみ編集できます。' : 'チェックを外した項目は通知メールから除外されます（保存自体は行われます）。'));
+
     return section;
   }
 
@@ -338,6 +395,7 @@
     var root = document.getElementById('fb-edit-form');
     root.textContent = '';
     var config = state.config;
+    window.FFSchema.syncNotificationFields(config);
     root.appendChild(renderBasicInfoSection(config));
     var ev = renderEventSection(config);
     if (ev) root.appendChild(ev);
@@ -345,6 +403,7 @@
     if (dates) root.appendChild(dates);
     root.appendChild(renderIdentitySection(config));
     root.appendChild(renderQuestionsSection(config));
+    root.appendChild(renderNotificationSection(config));
     root.appendChild(renderEndpointSection(config));
 
     var nav = ce('div', { class: 'fb-nav-actions' }, [
@@ -448,12 +507,15 @@
       if (errors.length) { appendLog('✗ 入力内容にエラーがあります。入力画面に戻って修正してください。'); return; }
 
       var config = state.config;
+      window.FFSchema.syncNotificationFields(config);
       var html = window.FFRenderer.render(config, { forcePreview: false });
       var fm = window.FFValidate.checkFrontMatter(html);
       if (!fm.ok) { appendLog('✗ ' + fm.message); return; }
+      var gasSource = window.FFGasRenderer.render(config);
 
       var htmlPath = config.meta.pageDir + '/' + config.meta.fileName;
       var jsonPath = config.meta.pageDir + '/' + config.meta.slug + '.form.json';
+      var gasPath = config.meta.pageDir + '/gas/' + config.meta.slug + '_backend.gs';
       var branchName = 'form-builder/' + config.meta.slug + '-' + Date.now();
 
       runBtn.disabled = true;
@@ -471,6 +533,11 @@
         })
         .then(function (exists) {
           if (exists) throw new Error('既に ' + jsonPath + ' が存在します。slugを変更してください。');
+          appendLog('・既存ファイルとの衝突を確認中: ' + gasPath);
+          return window.FFGitHubApi.fileExists(token, gasPath);
+        })
+        .then(function (exists) {
+          if (exists) throw new Error('既に ' + gasPath + ' が存在します。slugを変更してください。');
           appendLog('・main の最新SHAを取得中…');
           return window.FFGitHubApi.getMainSha(token);
         })
@@ -488,11 +555,15 @@
           return window.FFGitHubApi.putFile(token, branchName, jsonPath, JSON.stringify(config, null, 2) + '\n', 'chore: add form config for ' + config.meta.slug);
         })
         .then(function () {
+          appendLog('・GASテンプレートをコミット中: ' + gasPath);
+          return window.FFGitHubApi.putFile(token, branchName, gasPath, gasSource, 'chore: add GAS backend template for ' + config.meta.slug);
+        })
+        .then(function () {
           appendLog('・Pull Requestを作成中…');
           return window.FFGitHubApi.createPullRequest(token, {
             title: '[form-builder] ' + config.meta.title,
             head: branchName,
-            body: buildPrBody(config, htmlPath, jsonPath)
+            body: buildPrBody(config, htmlPath, jsonPath, gasPath)
           });
         })
         .then(function (pr) {
@@ -514,20 +585,28 @@
     });
   }
 
-  function buildPrBody(config, htmlPath, jsonPath) {
+  function buildPrBody(config, htmlPath, jsonPath, gasPath) {
+    var notif = config.notification || {};
+    var notifFieldCount = (notif.fields || []).filter(function (f) { return f.enabled !== false; }).length;
     return [
       '## 概要',
       'form-builder（`tools/form-builder/`）から生成した「' + window.FFSchema.TEMPLATE_DEFS[config.type].label + '」です。',
       '',
       '## 生成物',
       '- ' + htmlPath,
-      '- ' + jsonPath + '（設定JSON）',
+      '- ' + jsonPath + '（設定JSON。通知メール設定を含む）',
+      '- ' + gasPath + '（GASバックエンドテンプレート。Issue #266）',
+      '',
+      '## 通知メール（Issue #266）',
+      '- 通知メール: ' + (notif.enabled ? 'ON' : 'OFF') + '　件名: ' + (notif.subject || '（未設定）'),
+      '- 通知対象項目: ' + notifFieldCount + '件（保存対象の全項目から自動生成、未回答も本文から省略しない）',
       '',
       '## 確認事項',
       '- [ ] front matter(`---`)混入なしを確認済み（form-builderが自動チェック）',
       '- [ ] GitHub Pagesデプロイ後、実URLで表示確認（' + config.meta.canonicalUrl + '）',
       '- [ ] 390px幅で表示・操作確認',
-      '- [ ] GAS Web Appの初回デプロイは運営者が手動で完了させていること（このPRはGitHub公開までが範囲です）',
+      '- [ ] `' + gasPath + '` の内容をGoogle Apps Scriptプロジェクトへ手動で反映し、NOTIFICATION_EMAILの書き換え・初回Web Appデプロイ・/exec URL発行を完了させていること（このPRはGASテンプレートの生成・GitHub公開までが範囲で、実際のデプロイは含みません）',
+      '- [ ] 発行済み/exec URLが `' + jsonPath + '` の endpoints.submitUrl と一致していること',
       '',
       '---',
       '_Generated by [Claude Code](https://claude.ai/code) via form-builder_'
