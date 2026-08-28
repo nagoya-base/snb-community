@@ -887,13 +887,13 @@
        * このブロックはFormspreeの/f/{form_id}エンドポイントへ fetch + Accept: application/json で
        * POSTするだけで、Googleスプレッドシートへの保存やGASの人数集計は一切行わない（Issue #284）。
        *
-       * FORMSPREE_ENDPOINTはこのPR時点で未確定のため空文字のまま。
-       * プレースホルダーURL（https://formspree.io/f/xxxxxxxx）は実送信用として設定しない。
-       * 空文字の間は送信ボタンをdisabledにし、「現在準備中」の表示に切り替える。
-       * 実エンドポイントを設定し、実送信・Formspreeの通知メール受信を確認したあとで
+       * FORMSPREE_ENDPOINTはbbuni.ngo@gmail.com宛の通知先として発行されたフォームID（xwlkkjgb）。
+       * このセッションの実行環境からはformspree.ioへの外向き通信がネットワークポリシーで
+       * ブロックされているため、実送信・通知メール受信確認はこのセッション内では実施できていない。
+       * 実送信・Formspreeの通知メール受信を運営側で確認したあとで
        * community/index.html の #mixed-uniform-20260919 のhiddenを解除すること。
        */
-      var FORMSPREE_ENDPOINT = '';
+      var FORMSPREE_ENDPOINT = 'https://formspree.io/f/xwlkkjgb';
       var FORM_NAME = 'school_uniform_20260919_form';
       var isTestMode = window.SNB_TEST_MODE === true;
       var isFormConfigured = FORMSPREE_ENDPOINT.trim() !== '';
