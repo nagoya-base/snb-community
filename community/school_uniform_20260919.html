@@ -796,8 +796,9 @@
                   </div>
                   <div class="conditional-field" id="concern-other-field" hidden>
                     <label for="concern-other">具体的に教えてください <span class="required">必須</span></label>
-                    <input type="text" id="concern-other" maxlength="200" placeholder="例：〇〇が不安です">
+                    <input type="text" id="concern-other" name="不安なこと（その他）" maxlength="200" placeholder="例：〇〇が不安です">
                   </div>
+                  <p class="field-error" id="err-concern" role="alert" aria-live="polite"></p>
                 </fieldset>
 
                 <div class="free-field">
@@ -807,8 +808,8 @@
 
                 <fieldset class="field-group">
                   <legend class="question-title sr-only">参加ルールへの同意</legend>
-                  <label class="switch-row"><input type="checkbox" id="entry-agree-1"><span><strong>「イベント参加の心得」に同意します <span class="required">必須</span></strong><small><a href="../legal/community-rules.html" target="_blank" rel="noopener noreferrer" data-cta-name="terms" data-cta-location="form_agree">イベント参加の心得</a>を確認しました</small></span></label>
-                  <label class="switch-row" style="margin-top:.6rem;"><input type="checkbox" id="entry-agree-2"><span><strong>キャンセル・参加費条件に同意します <span class="required">必須</span></strong><small>「<a href="../legal/community-rules.html#cancellation" target="_blank" rel="noopener noreferrer" data-cta-name="terms" data-cta-location="form_agree">キャンセル・参加費について</a>」を確認し、本イベントは最少催行5名で、5名未満の場合は主催判断で中止となり、その場合キャンセル料はかからないことを確認しました。</small></span></label>
+                  <label class="switch-row"><input type="checkbox" id="entry-agree-1" name="イベント参加の心得への同意" value="同意する"><span><strong>「イベント参加の心得」に同意します <span class="required">必須</span></strong><small><a href="../legal/community-rules.html" target="_blank" rel="noopener noreferrer" data-cta-name="terms" data-cta-location="form_agree">イベント参加の心得</a>を確認しました</small></span></label>
+                  <label class="switch-row" style="margin-top:.6rem;"><input type="checkbox" id="entry-agree-2" name="キャンセル・参加費条件への同意" value="同意する"><span><strong>キャンセル・参加費条件に同意します <span class="required">必須</span></strong><small>「<a href="../legal/community-rules.html#cancellation" target="_blank" rel="noopener noreferrer" data-cta-name="terms" data-cta-location="form_agree">キャンセル・参加費について</a>」を確認し、本イベントは最少催行5名で、5名未満の場合は主催判断で中止となり、その場合キャンセル料はかからないことを確認しました。</small></span></label>
                   <p class="field-error" id="err-agree" role="alert" aria-live="polite"></p>
                 </fieldset>
 
@@ -962,7 +963,7 @@
       }
 
       function clearAllErrors() {
-        ['err-name', 'err-email', 'err-wear', 'err-rental', 'err-agree', 'entry-error'].forEach(clearFieldError);
+        ['err-name', 'err-email', 'err-wear', 'err-rental', 'err-concern', 'err-agree', 'entry-error'].forEach(clearFieldError);
       }
 
       function updateRentalDetailState() {
@@ -981,8 +982,10 @@
       function updateConcernOtherState() {
         concernOtherField.hidden = !concernOtherCheckbox.checked;
         if (!concernOtherCheckbox.checked) concernOtherInput.value = '';
+        clearFieldError('err-concern');
       }
       concernOtherCheckbox.addEventListener('change', updateConcernOtherState);
+      concernOtherInput.addEventListener('input', function () { clearFieldError('err-concern'); });
 
       nameInput.addEventListener('input', function () { clearFieldError('err-name'); });
       emailInput.addEventListener('input', function () { clearFieldError('err-email'); });
@@ -1036,7 +1039,7 @@
         }
 
         if (concernOtherCheckbox.checked && !concernOtherInput.value.trim()) {
-          showFieldError('err-wear', '不安事項「その他」を選んだ場合は、具体的な内容を教えてください。', 'concern_other_missing');
+          showFieldError('err-concern', '不安事項「その他」を選んだ場合は、具体的な内容を教えてください。', 'concern_other_missing');
           focusAndScroll(concernOtherInput);
           return false;
         }
