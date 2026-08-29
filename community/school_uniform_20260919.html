@@ -908,10 +908,8 @@
        * POSTするだけで、Googleスプレッドシートへの保存やGASの人数集計は一切行わない（Issue #284）。
        *
        * FORMSPREE_ENDPOINTはbbuni.ngo@gmail.com宛の通知先として発行されたフォームID（xwlkkjgb）。
-       * このセッションの実行環境からはformspree.ioへの外向き通信がネットワークポリシーで
-       * ブロックされているため、実送信・通知メール受信確認はこのセッション内では実施できていない。
-       * 実送信・Formspreeの通知メール受信を運営側で確認したあとで
-       * community/index.html の #mixed-uniform-20260919 のhiddenを解除すること。
+       * 実送信・Formspreeの通知メール受信は運営側で確認済み（Issue #284）。
+       * community/index.html の #mixed-uniform-20260919 のhiddenも解除済み。
        */
       var FORMSPREE_ENDPOINT = 'https://formspree.io/f/xwlkkjgb';
       var FORM_NAME = 'school_uniform_20260919_form';
@@ -1190,44 +1188,18 @@
         var currentSubmissionId = getSubmissionId();
         formData.append('submission_id', currentSubmissionId);
 
-        // 一時デバッグ計測（PR #285：Formspree実送信テストの失敗原因調査用）。
-        // HTTPステータス・Formspreeのerrors/errorを画面とconsole.errorに出し、原因特定後は
-        // 通常のエラーメッセージ表示に戻すこと。フォーム入力内容そのものはconsoleへ出さない。
-        function extractFormspreeError(data) {
-          if (!data || typeof data !== 'object') return null;
-          if (Array.isArray(data.errors) && data.errors.length) {
-            return data.errors.map(function (e) {
-              if (!e) return '不明なエラー';
-              var field = e.field ? e.field + ': ' : '';
-              return field + (e.message || e.code || '不明なエラー');
-            }).join('; ');
-          }
-          if (typeof data.error === 'string') return data.error;
-          if (typeof data.message === 'string') return data.message;
-          return null;
-        }
-
         fetch(FORMSPREE_ENDPOINT, {
           method: 'POST',
           body: formData,
           headers: { Accept: 'application/json' }
         })
           .then(function (response) {
-            var httpStatus = response.status;
-            var ok = response.ok;
-            return response.json()
-              .catch(function () { return null; })
-              .then(function (data) {
-                if (!ok) {
-                  var httpError = new Error('送信に失敗しました');
-                  httpError.failureType = 'server';
-                  httpError.httpStatus = httpStatus;
-                  httpError.formspreeMessage = extractFormspreeError(data);
-                  httpError.rawData = data;
-                  throw httpError;
-                }
-                return data;
-              });
+            if (!response.ok) {
+              var httpError = new Error('送信に失敗しました');
+              httpError.failureType = 'server';
+              throw httpError;
+            }
+            return response.json();
           })
           .then(function () {
             hasSubmittedSuccessfully = true;
@@ -1243,27 +1215,7 @@
             submissionInFlight = false;
             setSubmitting(false);
             if (analytics()) analytics().trackFormError(FORM_NAME, (error && error.failureType) || 'network');
-
-            var httpStatus = error && error.httpStatus;
-            var formspreeMessage = error && error.formspreeMessage;
-            var debugParts = [];
-            if (httpStatus) debugParts.push('HTTP ' + httpStatus);
-            if (formspreeMessage) debugParts.push('Formspree: ' + formspreeMessage);
-            if (!debugParts.length) debugParts.push((error && error.message) || 'ネットワークエラー');
-            var debugText = debugParts.join(' / ');
-
-            console.error('[school_uniform_20260919] Formspree送信エラー（デバッグ用・一時措置）:', {
-              httpStatus: httpStatus || null,
-              formspreeMessage: formspreeMessage || null,
-              rawResponseData: (error && error.rawData) || null,
-              failureType: (error && error.failureType) || 'network'
-            });
-
-            showFieldError(
-              'entry-error',
-              '送信に失敗しました。通信環境をご確認のうえ、もう一度お試しください。改善しない場合はXのDMまたは問い合わせフォームからご連絡ください。（デバッグ情報：' + debugText + '）',
-              (error && error.failureType) || 'network'
-            );
+            showFieldError('entry-error', '送信に失敗しました。通信環境をご確認のうえ、もう一度お試しください。改善しない場合はXのDMまたは問い合わせフォームからご連絡ください。', (error && error.failureType) || 'network');
             document.getElementById('entry-error').scrollIntoView({ behavior: 'smooth', block: 'center' });
           });
       });
