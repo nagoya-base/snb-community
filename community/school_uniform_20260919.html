@@ -748,9 +748,29 @@
                   </div>
                   <p class="field-error" id="err-email" role="alert" aria-live="polite"></p>
 
-                  <div class="form-field">
-                    <label for="entry-x">Xアカウント <span class="optional">任意</span></label>
+                </fieldset>
+
+                <fieldset class="field-group">
+                  <legend class="question-title">Xアカウントについて</legend>
+                  <p class="question-lead">Xアカウントをお持ちですか？ <span class="required">必須</span></p>
+                  <div class="intent-grid" id="x-owner-grid">
+                    <label class="choice"><input type="radio" name="Xアカウントの有無" value="はい"><span class="choice__body"><span class="choice__title">はい</span></span></label>
+                    <label class="choice"><input type="radio" name="Xアカウントの有無" value="いいえ"><span class="choice__body"><span class="choice__title">いいえ</span></span></label>
+                  </div>
+                  <p class="field-error" id="err-x-owner" role="alert" aria-live="polite"></p>
+
+                  <div class="conditional-field" id="x-account-field" hidden>
+                    <label for="entry-x">Xアカウント（Xをお持ちの方は必須） <span class="required">必須</span></label>
                     <input type="text" id="entry-x" name="Xアカウント" maxlength="200" autocomplete="off" placeholder="@account">
+                    <p style="margin:.4rem 0 0;color:var(--muted);font-size:.78rem;line-height:1.7;">Xアカウントをお持ちの方は、必ずご記入ください。</p>
+
+                    <div class="info-note" style="margin-top:.9rem;">
+                      <span class="info-note__icon" aria-hidden="true">🔒</span>
+                      <span>鍵アカウントの方は、@baseballuni2022 をフォローし、DMを受信できる状態にしてください。DMでご連絡できない場合は、受付を完了できません。申込後の確認連絡をX DMで行う場合があります。</span>
+                    </div>
+
+                    <label class="switch-row" style="margin-top:.9rem;"><input type="checkbox" id="entry-agree-x-lock" name="鍵アカウントの場合のDM受信条件への同意" value="同意する"><span><strong>鍵アカウントの場合、@baseballuni2022 をフォローし、DMを受信できる状態にすることを確認しました <span class="required">必須</span></strong></span></label>
+                    <p class="field-error" id="err-x" role="alert" aria-live="polite"></p>
                   </div>
                 </fieldset>
 
@@ -920,6 +940,10 @@
 
       var nameInput = document.getElementById('entry-name');
       var emailInput = document.getElementById('entry-email');
+      var xOwnerInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="Xアカウントの有無"]'));
+      var xAccountField = document.getElementById('x-account-field');
+      var xAccountInput = document.getElementById('entry-x');
+      var xLockAgree = document.getElementById('entry-agree-x-lock');
       var wearInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="wear"]'));
       var rentalInputs = Array.prototype.slice.call(form.querySelectorAll('input[name="衣装レンタル希望"]'));
       var rentalDetailField = document.getElementById('rental-detail-field');
@@ -963,8 +987,24 @@
       }
 
       function clearAllErrors() {
-        ['err-name', 'err-email', 'err-wear', 'err-rental', 'err-concern', 'err-agree', 'entry-error'].forEach(clearFieldError);
+        ['err-name', 'err-email', 'err-x-owner', 'err-x', 'err-wear', 'err-rental', 'err-concern', 'err-agree', 'entry-error'].forEach(clearFieldError);
       }
+
+      function updateXAccountState() {
+        var hasX = xOwnerInputs.some(function (input) { return input.checked && input.value === 'はい'; });
+        xAccountField.hidden = !hasX;
+        if (!hasX) {
+          xAccountInput.value = '';
+          xLockAgree.checked = false;
+        }
+        clearFieldError('err-x-owner');
+        clearFieldError('err-x');
+      }
+      xOwnerInputs.forEach(function (input) {
+        input.addEventListener('change', updateXAccountState);
+      });
+      xAccountInput.addEventListener('input', function () { clearFieldError('err-x'); });
+      xLockAgree.addEventListener('change', function () { clearFieldError('err-x'); });
 
       function updateRentalDetailState() {
         var wantsRental = rentalInputs.some(function (input) { return input.checked && input.value === '希望する'; });
@@ -1016,6 +1056,26 @@
           showFieldError('err-email', 'メールアドレスの形式を確認してください。', 'email_invalid');
           focusAndScroll(emailInput);
           return false;
+        }
+
+        var xOwnerChecked = xOwnerInputs.some(function (input) { return input.checked; });
+        if (!xOwnerChecked) {
+          showFieldError('err-x-owner', 'Xアカウントをお持ちか選んでください。', 'x_owner_missing');
+          focusAndScroll(xOwnerInputs[0]);
+          return false;
+        }
+        var hasX = xOwnerInputs.some(function (input) { return input.checked && input.value === 'はい'; });
+        if (hasX) {
+          if (!xAccountInput.value.trim()) {
+            showFieldError('err-x', 'Xアカウントを入力してください。', 'x_account_missing');
+            focusAndScroll(xAccountInput);
+            return false;
+          }
+          if (!xLockAgree.checked) {
+            showFieldError('err-x', '鍵アカウントの場合のDM受信条件についての確認が必要です。', 'x_lock_agree_missing');
+            focusAndScroll(xLockAgree);
+            return false;
+          }
         }
 
         var wearChecked = wearInputs.some(function (input) { return input.checked; });
@@ -1208,6 +1268,7 @@
           });
       });
 
+      updateXAccountState();
       updateRentalDetailState();
       updateConcernOtherState();
     })();
