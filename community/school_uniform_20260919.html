@@ -221,6 +221,28 @@
     }
     .hero__cta:hover { transform: translateY(-2px); }
 
+    .status-card-section { padding: 1.3rem 0 0; }
+    .status-card {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .4rem 1rem;
+      padding: .95rem 1.3rem;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
+      box-shadow: 0 8px 24px rgba(25, 22, 18, .08);
+    }
+    .status-card__label { flex: 0 0 auto; font-size: .78rem; font-weight: 800; letter-spacing: .04em; color: var(--muted); }
+    .status-card__text { font-size: .92rem; font-weight: 800; color: var(--ink); }
+    .status-card__text[data-state="open-exact"] { color: var(--green); }
+    .status-card__updated { margin-left: auto; color: #928c84; font-size: .7rem; white-space: nowrap; }
+    .status-card__note { flex-basis: 100%; margin-top: .1rem; color: var(--muted); font-size: .72rem; }
+    @media (max-width: 480px) {
+      .status-card { padding: .85rem 1rem; }
+      .status-card__updated { margin-left: 0; }
+    }
+
     .page-nav {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -567,6 +589,17 @@
             <li class="meta-chip meta-chip--deadline">⏳ <strong>一次申込締切：9/13（日）23:59</strong></li>
           </ul>
           <button class="hero__cta" id="hero-cta" type="button">申込方法を見る</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="status-card-section" aria-label="現在の申込状況">
+      <div class="container">
+        <div class="status-card">
+          <span class="status-card__label">申込状況</span>
+          <span class="status-card__text" data-state="open-exact">1 / 6人</span>
+          <span class="status-card__updated">2026/09/01 18時現在</span>
+          <span class="status-card__note">5名以上で開催</span>
         </div>
       </div>
     </section>
