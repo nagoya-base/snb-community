@@ -1597,6 +1597,16 @@
           </div>
           <p class="form-hint">XのDMを希望する場合は、Xアカウントを入力してください。</p>
         </div>
+
+        <div class="form-field form-field--dm-notice" id="pf-dm-field" hidden>
+          <div class="form-notice form-notice--carrier">
+            <p><strong>鍵アカウントの方へ</strong><br>鍵アカウント（非公開設定）の場合、フォローされていないアカウントからのDMは届かないことがあります。@baseballuni2022 をフォローし、DMを受信できる状態にしてください。DMが届かない場合、内容の確認や予約確定のご連絡ができません。</p>
+          </div>
+          <label class="checkbox-option checkbox-option--agree">
+            <input type="checkbox" id="pf-dm-ack" name="DM受信条件の確認" value="確認した">
+            鍵アカウントの場合、@baseballuni2022 をフォローし、DMを受信できる状態にすることを確認しました
+          </label>
+        </div>
       </fieldset>
 
       <fieldset class="consult-form__fieldset is-booking-only" data-scope="booking">
@@ -1897,6 +1907,8 @@
   var xField = document.getElementById('pf-x');
   var carrierField = document.getElementById('pf-carrier-field');
   var carrierCheckbox = document.getElementById('pf-carrier-ack');
+  var dmField = document.getElementById('pf-dm-field');
+  var dmCheckbox = document.getElementById('pf-dm-ack');
   var contactMethodRadios = form.querySelectorAll('input[name="希望する連絡方法"]');
   var submitBtn = document.getElementById('pf-submit-btn');
   var successBox = document.getElementById('pf-success');
@@ -2085,6 +2097,19 @@
     }
   }
 
+  /* DMで実際にやり取りする可能性がある場合（XのDMを希望、またはメール未入力でどちらでもよい）にDM受信確認欄を表示・必須化する */
+  function updateDmAckRequirement(hasX, preferred, hasEmail) {
+    if (!dmField || !dmCheckbox) return;
+    var needsDmAck = hasX && (preferred === 'XのDM' || (preferred === 'どちらでもよい' && !hasEmail));
+    dmField.hidden = !needsDmAck;
+    if (needsDmAck) {
+      dmCheckbox.setAttribute('required', 'required');
+    } else {
+      dmCheckbox.removeAttribute('required');
+      dmCheckbox.checked = false;
+    }
+  }
+
   function updateContactValidity() {
     if (!emailField || !xField) return;
 
@@ -2095,6 +2120,7 @@
     emailField.setCustomValidity('');
     xField.setCustomValidity('');
     updateCarrierAckRequirement(hasEmail);
+    updateDmAckRequirement(hasX, preferred, hasEmail);
 
     if (!hasEmail && !hasX) {
       emailField.setCustomValidity('メールアドレスまたはXアカウントのどちらかを入力してください。');
