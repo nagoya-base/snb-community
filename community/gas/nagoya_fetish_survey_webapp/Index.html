@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <div id="app">
+    <header class="page-header">
+      <h1>名古屋のフェチ・衣装交流に関するアンケート</h1>
+      <p class="lead">
+        名古屋エリアでのフェチ・衣装系の交流や撮影について、今後の企画検討の参考にするための匿名アンケートです。
+      </p>
+    </header>
+
+    <div id="loading" class="state-panel">読み込み中です…</div>
+
+    <div id="already-answered" class="state-panel" hidden>
+      <p>
+        このブラウザからはすでに回答済みです。<br>
+        アンケートの正確性を保つため、回答はお一人1回でお願いします。
+      </p>
+    </div>
+
+    <div id="load-error" class="state-panel state-panel--error" hidden>
+      <p>読み込み中にエラーが発生しました。時間をおいて再度開き直してください。</p>
+    </div>
+
+    <div id="submitted" class="state-panel" hidden>
+      <p>ご回答ありがとうございました。</p>
+      <p>
+        本アンケートは市場調査を目的としたものであり、イベントへの参加申込・予約ではありません。<br>
+        いただいた回答は、今後の企画検討の参考として利用します。
+      </p>
+    </div>
+
+    <form id="survey-form" novalidate hidden>
+      <div class="notice-box">
+        <p><strong>【重要】</strong></p>
+        <p>
+          このアンケートはイベント募集・個人セッション募集・参加申込ではありません。
+          回答いただいても、イベントへの参加予約・参加表明にはなりません。
+          また、現時点で特定の日程・内容の開催を決定するものでもありません。
+        </p>
+        <p>回答時間：約3〜4分</p>
+      </div>
+
+      <div id="questions"></div>
+
+      <div class="notice-box notice-box--privacy">
+        <p>
+          回答は匿名で保存します。重複回答を抑止するため、このブラウザ内にランダムな識別子を保存し、
+          サーバー側ではその識別子をハッシュ化した値のみ記録します。
+          氏名・メールアドレス・Googleアカウントは取得しません。
+          ブラウザデータを削除した場合などは再回答できる場合があります。
+        </p>
+      </div>
+
+      <button type="submit" id="submit-button" class="submit-button">回答を送信する</button>
+      <p id="form-error" class="form-error" hidden></p>
+    </form>
+  </div>
+
+  <?!= include('Script'); ?>
+</body>
+</html>
