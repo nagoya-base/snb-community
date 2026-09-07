@@ -32,12 +32,111 @@
     '18〜24歳', '25〜29歳', '30〜39歳', '40〜49歳', '50〜59歳', '60歳以上', '回答しない'
   ];
 
-  var CLOTHING_OPTIONS = [
+  // ── Issue #293：interest_categories（Q4相当）── Code.gs側と必ず一致させること。
+  // 視覚的にスポーツ・ユニフォーム系／制服・職業服系／コスプレ・キャラクター系の
+  // 3ブロックに分けて表示する。
+  var INTEREST_SPORTS_OPTIONS = [
     '野球ユニフォーム', 'サッカーユニフォーム', 'バスケットボールユニフォーム',
-    'ラグビー・アメリカンフットボール', '陸上競技ウェア', 'スイムウェア',
-    'レスリング・シングレット', '学校制服', 'ジャージ・トレーニングウェア',
-    'スーツ', '作業着・職業制服', 'コスプレ衣装'
+    'ラグビー・アメリカンフットボール', '陸上競技ウェア', '競パン',
+    '水泳・競泳ウェア（競パン以外）', 'レスリング・シングレット',
+    'ジャージ・トレーニングウェア', '体操服'
   ];
+
+  var INTEREST_UNIFORM_JOB_OPTIONS = [
+    '学校制服', 'スーツ', '作業着', '職業制服'
+  ];
+
+  var INTEREST_COSPLAY_OPTIONS = [
+    '全身タイツ', 'ヒーロー系', '悪役・ヴィラン系', '特撮系', 'コスプレ衣装',
+    'アニメ・ゲームキャラクター', 'ケモノ・着ぐるみ・獣人系', 'マスク・覆面系'
+  ];
+
+  var INTEREST_CATEGORY_OPTIONS = INTEREST_SPORTS_OPTIONS
+    .concat(INTEREST_UNIFORM_JOB_OPTIONS)
+    .concat(INTEREST_COSPLAY_OPTIONS);
+
+  // STEP2（SNBCユニ会）のゲート条件。「スーツ」は含めない（Code.gs側と必ず一致させること）。
+  var UNIFORM_GATE_CATEGORIES = INTEREST_SPORTS_OPTIONS.concat(['学校制服', '作業着', '職業制服']);
+  var SUIT_GATE_CATEGORY = 'スーツ';
+
+  var ENGAGEMENT_OPTIONS = [
+    '自分で着たい', '人が着ているのを見たい', '両方',
+    '撮る側として関わりたい', '撮られる側として関わりたい', '交流のきっかけとして楽しみたい'
+  ];
+
+  var SNBC_AWARENESS_OPTIONS = ['知っている', '名前だけ見たことがある', '知らなかった'];
+  var SNBC_INTEREST_OPTIONS = ['はい', 'いいえ', 'どちらともいえない'];
+  var SNBC_UNCERTAIN_REASON_OPTIONS = [
+    'どんな企画かまだよく分からない', '参加者の雰囲気が分からない', '名古屋まで遠い',
+    '料金や内容が分からない', '自分向けか分からない'
+  ];
+
+  var SUIT_ENGAGEMENT_OPTIONS = [
+    '自分で着たい', '人が着ているのを見たい', '両方',
+    '撮る側として関わりたい', '撮られる側として関わりたい'
+  ];
+
+  var SUIT_TYPES_OPTIONS = [
+    'ビジネススーツ', 'リクルート・就活系', 'タイト・細身', 'ダブル・セットアップ',
+    '礼服・フォーマル', 'ホスト・ナイト系', '教師・営業など職業のスーツ', 'ワイシャツ・ネクタイ'
+  ];
+
+  var SUIT_STATES_OPTIONS = [
+    'ジャケットを着たまま', 'ワイシャツ・ネクタイ', 'ベスト / スラックス / 革靴・ベルト',
+    '着崩し', '脱ぐ過程', '着たままの空気'
+  ];
+
+  var SUIT_EVENT_INTEREST_OPTIONS = ['はい', 'いいえ', 'どちらともいえない'];
+
+  // 回答者の状態遷移から機械的に決まる値（Code.gs側の
+  // computeExpectedSurveyPath_ / computeExpectedCompletionStage_ と必ず一致させること）。
+  function hasUniformGate(values) {
+    return (values.interestCategories || []).some(function (c) { return UNIFORM_GATE_CATEGORIES.indexOf(c) !== -1; });
+  }
+  function hasSuitGate(values) {
+    return (values.interestCategories || []).indexOf(SUIT_GATE_CATEGORY) !== -1;
+  }
+  // primaryInterestCategory（Q5）の候補：Q4の選択から「その他」の自由記述を除いたもの。
+  // dynamicOptionsとcondition両方から参照し、判定基準がずれないようにする。
+  function primaryInterestCandidates(values) {
+    return (values.interestCategories || []).filter(function (v) { return v.indexOf(OTHER_PREFIX) !== 0; });
+  }
+  function deepDiveTriggered(values) {
+    return (hasUniformGate(values) && values.snbcInterest === 'はい') ||
+      (hasSuitGate(values) && values.suitEventInterest === 'はい');
+  }
+  // 深掘り一式（STEP3）は、実際にどちらの経路から発火したかで冒頭の案内文を出し分ける
+  // （PR #294レビュー指摘：ゲートに該当しているだけでは発火の理由にならないため、
+  // 「snbc_interest=はい」「suit_event_interest=はい」の実際の値で判定する）。
+  function deepDiveIntroText(values) {
+    var uniformTriggered = hasUniformGate(values) && values.snbcInterest === 'はい';
+    var suitTriggered = hasSuitGate(values) && values.suitEventInterest === 'はい';
+    var subject = 'SNBCのユニフォーム企画';
+    if (uniformTriggered && suitTriggered) subject = 'SNBCのユニフォーム企画・スーツ企画';
+    else if (suitTriggered) subject = 'スーツ企画';
+    return 'ここからは、' + subject + 'に興味があると回答した方へ、参加しやすさについてもう少し詳しく伺います。' +
+      '引き続き市場調査であり、参加申込ではありません。';
+  }
+  function computeSurveyPath(values) {
+    var uniform = hasUniformGate(values);
+    var suit = hasSuitGate(values);
+    if (uniform && suit) return 'uniform_and_suit';
+    if (uniform) return 'uniform_only';
+    if (suit) return 'suit_only';
+    return 'none';
+  }
+  function computeCompletionStage(values) {
+    var uniform = hasUniformGate(values);
+    var suit = hasSuitGate(values);
+    if (suit) return 'suit_interest';
+    if (uniform) {
+      if (values.snbcInterest === 'はい') return 'snbc_deep_dive';
+      if (values.snbcInterest === 'どちらともいえない') return 'snbc_uncertain';
+      if (values.snbcInterest === 'いいえ') return 'snbc_not_interested';
+      return '';
+    }
+    return 'no_gate_reached';
+  }
 
   var FREQUENCY_OPTIONS = [
     '月2回程度', '月1回程度', '1〜2か月に1回程度', '2〜3か月に1回程度',
@@ -163,8 +262,21 @@
   /* 設問定義。typeは 'select'（プルダウン単一選択）/ 'radio'（単一選択）/
      'checkbox'（複数選択）/ 'textarea'（自由記述）。
      condition(values) を指定した設問は、条件を満たす間だけ表示・収集する
-     （非表示の間は空値として送信する＝サーバー側の制約と矛盾しないようにする）。 */
+     （非表示の間は空値として送信する＝サーバー側の制約と矛盾しないようにする）。
+     optionGroups は選択肢を視覚的にブロック分けして表示する（checkboxのみ）。
+     dynamicOptions(values) は選択肢をcurrentValuesから動的に組み立てる（primaryInterestCategoryのみ）。
+
+     【Issue #293：分岐の実装方針】
+     このフォームは元々「1枚の縦長ページに、条件を満たす設問だけを表示する」構成のため、
+     STEP2/STEP2Bのようなページ単位の分岐にはせず、既存の仕組みを踏襲して
+     hasUniformGate/hasSuitGate/deepDiveTriggeredをcondition()に渡す形で実装する。
+     DOM上の並び順は「STEP1→STEP1A→STEP2→STEP3(深掘り)→STEP2B」で固定してあり、
+     ユニフォーム系＋スーツの両方に該当する回答者は、画面をスクロールしていくと
+     STEP2（該当すればSTEP3まで）が先に表示され、その後にSTEP2Bが現れる
+     （STEP2をスキップしてSTEP2Bだけに進む場合も、この並び順の中でSTEP2側のカードが
+     単に非表示になるだけなので、結果としてSTEP2Bへ直接進む）。 */
   var QUESTIONS = [
+    /* ── STEP1：全回答者 ── */
     {
       key: 'prefecture', type: 'select', required: true,
       label: 'お住まいの都道府県を教えてください',
@@ -182,78 +294,167 @@
       label: '年代を教えてください',
       options: AGE_OPTIONS
     },
+
+    /* ── STEP1A：衣装・服装嗜好（分析の主） ── */
     {
-      key: 'clothingInterests', type: 'checkbox', required: true, allowOther: true,
-      label: '好き・興味のある服装を教えてください（複数回答可）',
-      options: CLOTHING_OPTIONS
+      key: 'interestCategories', type: 'checkbox', required: true, allowOther: true,
+      label: '興味のある衣装・服装・キャラクター表現を教えてください（複数回答可）',
+      help: 'この設問を分析の主とします。次の「特に好きなジャンル」は補助的な位置づけとして扱います。',
+      optionGroups: [
+        { label: 'スポーツ・ユニフォーム系', options: INTEREST_SPORTS_OPTIONS },
+        { label: '制服・職業服系', options: INTEREST_UNIFORM_JOB_OPTIONS },
+        { label: 'コスプレ・キャラクター系', options: INTEREST_COSPLAY_OPTIONS }
+      ]
     },
     {
-      key: 'preferredFrequency', type: 'radio', required: true,
+      key: 'primaryInterestCategory', type: 'radio', required: false,
+      label: '特に好きなジャンルを1つ選ぶとしたら、どれですか？',
+      help: '直前の設問で選んだ項目だけが候補になります。あくまで補助的な質問のため、無回答でも構いません。',
+      // 「その他」の自由記述は候補から除外する（dynamicOptionsと同じ判定基準にすること。
+      // ここがconditionとずれると、Q4で「その他」しか選んでいない回答者に対して
+      // 候補ゼロの空の選択肢カードを表示してしまう）。
+      dynamicOptions: function (values) {
+        return primaryInterestCandidates(values);
+      },
+      condition: function (v) { return primaryInterestCandidates(v).length > 0; }
+    },
+    {
+      key: 'engagementPreferences', type: 'checkbox', required: true, allowOther: true,
+      label: 'その衣装・服装とどう関わりたいですか？（複数回答可）',
+      options: ENGAGEMENT_OPTIONS
+    },
+
+    /* ── STEP2：ユニフォーム系ゲート該当者のみ（Q4で選んだ項目から自動判定） ── */
+    {
+      key: 'snbcAwareness', type: 'radio', required: true,
+      label: 'Studio Nagoya Base Community（SNBC）を知っていますか？',
+      help: '名古屋・上前津のStudio Nagoya Baseを拠点に、ユニフォームなどをテーマにした交流・撮影企画を行っているコミュニティです。',
+      options: SNBC_AWARENESS_OPTIONS,
+      condition: function (v) { return hasUniformGate(v); }
+    },
+    {
+      key: 'snbcInterest', type: 'radio', required: true,
+      label: 'SNBC（Studio Nagoya Base Community）が行う、ユニフォームをテーマにした少人数の交流・撮影企画に興味がありますか？',
+      help: '「参加しますか」ではなく「興味がありますか」をお聞きしています。回答いただいても参加表明にはなりません。',
+      options: SNBC_INTEREST_OPTIONS,
+      condition: function (v) { return hasUniformGate(v); }
+    },
+    {
+      key: 'snbcInterestUncertainReasons', type: 'checkbox', required: false, allowOther: true,
+      label: '「どちらともいえない」の理由に近いものがあれば教えてください（複数回答可・任意）',
+      options: SNBC_UNCERTAIN_REASON_OPTIONS,
+      condition: function (v) { return hasUniformGate(v) && v.snbcInterest === 'どちらともいえない'; }
+    },
+
+    /* ── STEP3：SNBCユニ会に興味ありの人だけ深掘り（PR #292由来、スーツ経由でも再利用） ── */
+    {
+      key: 'preferredFrequency', type: 'radio', required: true, group: 'deepDive',
       label: '名古屋市内で少人数のフェチ・衣装交流や撮影企画がある場合、どの程度の頻度なら参加を検討しやすいですか？',
       help: '「開催してほしい頻度」ではなく、「ご自身が参加を検討しやすい頻度」をお答えください。特定の頻度・日程での開催を約束するものではありません。',
-      options: FREQUENCY_OPTIONS
+      sectionNote: deepDiveIntroText, // 発火経路（ユニフォーム/スーツ/両方）に応じて文面を出し分ける
+      options: FREQUENCY_OPTIONS,
+      condition: function (v) { return deepDiveTriggered(v); }
     },
     {
-      key: 'preferredPrice', type: 'radio', required: true,
+      key: 'preferredPrice', type: 'radio', required: true, group: 'deepDive',
       label: '1回3時間程度の少人数企画を想定した場合、参加しやすい料金はいくらですか？',
-      options: PRICE_OPTIONS
+      options: PRICE_OPTIONS,
+      condition: function (v) { return deepDiveTriggered(v); }
     },
     {
-      key: 'preferredGroupSize', type: 'radio', required: true,
+      key: 'preferredGroupSize', type: 'radio', required: true, group: 'deepDive',
       label: '1回の参加人数は何人くらいが参加しやすいと思いますか？',
-      options: GROUP_SIZE_OPTIONS
+      options: GROUP_SIZE_OPTIONS,
+      condition: function (v) { return deepDiveTriggered(v); }
     },
     {
-      key: 'preferredFormat', type: 'checkbox', required: true, allowOther: true,
+      key: 'preferredFormat', type: 'checkbox', required: true, group: 'deepDive', allowOther: true,
       label: 'どのような参加形式なら参加しやすいですか？（複数回答可）',
       help: 'このアンケートはイベント募集・個人セッション募集・参加申込ではありません。人数の選択肢は、あくまで参加しやすさの傾向を尋ねるためのものです。',
-      options: FORMAT_OPTIONS
+      options: FORMAT_OPTIONS,
+      condition: function (v) { return deepDiveTriggered(v); }
     },
     {
-      key: 'eventAwareness', type: 'radio', required: true,
+      key: 'eventAwareness', type: 'radio', required: true, group: 'deepDive',
       label: '名古屋でフェチ・衣装系の交流企画の告知を見たことがありますか？',
-      options: EVENT_AWARENESS_OPTIONS
+      options: EVENT_AWARENESS_OPTIONS,
+      condition: function (v) { return deepDiveTriggered(v); }
     },
     {
-      key: 'barriers', type: 'checkbox', required: true, allowOther: true,
+      key: 'barriers', type: 'checkbox', required: true, group: 'deepDive', allowOther: true,
       label: '「興味がある」と思った企画でも、実際には申し込まなかった理由があれば教えてください（複数回答可）',
       help: '該当する理由がなければ「該当しない」を選んでください。',
-      options: BARRIER_OPTIONS
+      options: BARRIER_OPTIONS,
+      condition: function (v) { return deepDiveTriggered(v); }
     },
     {
-      key: 'helpfulInformation', type: 'checkbox', required: false, allowOther: true,
+      key: 'helpfulInformation', type: 'checkbox', required: false, group: 'deepDive', allowOther: true,
       label: '参加を決める際、どのような情報が分かれば申し込みやすくなりますか？（複数回答可）',
       help: '特に無ければ「特にない」を選んでください。',
-      options: HELPFUL_INFO_OPTIONS
+      options: HELPFUL_INFO_OPTIONS,
+      condition: function (v) { return deepDiveTriggered(v); }
     },
     {
-      key: 'preferredAtmosphere', type: 'radio', required: true,
+      key: 'preferredAtmosphere', type: 'radio', required: true, group: 'deepDive',
       label: '衣装・フェチ系の交流企画では、どのような雰囲気が参加しやすいですか？',
-      options: ATMOSPHERE_OPTIONS
+      options: ATMOSPHERE_OPTIONS,
+      condition: function (v) { return deepDiveTriggered(v); }
     },
     {
-      key: 'hypotheticalIntent', type: 'radio', required: true,
+      key: 'hypotheticalIntent', type: 'radio', required: true, group: 'deepDive',
       label: '仮に以下の条件の企画が名古屋市内であった場合、実際に申し込む可能性に最も近いものを教えてください',
       help: HYPOTHETICAL_CONDITION_TEXT,
       sectionNote: '以下は実際の募集ではありません。参加意向を把握するための仮定の質問です。',
-      options: HYPOTHETICAL_INTENT_OPTIONS
+      options: HYPOTHETICAL_INTENT_OPTIONS,
+      condition: function (v) { return deepDiveTriggered(v); }
     },
     {
-      key: 'surveyToSignupGap', type: 'radio', required: true,
+      key: 'surveyToSignupGap', type: 'radio', required: true, group: 'deepDive',
       label: 'アンケートでは「参加したい・興味がある」と回答しても、実際の募集になると申し込まないことはありますか？',
-      options: GAP_OPTIONS
+      options: GAP_OPTIONS,
+      condition: function (v) { return deepDiveTriggered(v); }
     },
     {
-      key: 'gapReasons', type: 'checkbox', required: false, allowOther: true,
+      key: 'gapReasons', type: 'checkbox', required: false, group: 'deepDive', allowOther: true,
       label: 'その理由として近いものを教えてください（複数回答可）',
       help: '直前の質問で「よくある」「ときどきある」と回答した方のみの質問です。',
       options: GAP_REASON_OPTIONS,
-      condition: function (v) { return v.surveyToSignupGap === 'よくある' || v.surveyToSignupGap === 'ときどきある'; }
+      condition: function (v) {
+        return deepDiveTriggered(v) && (v.surveyToSignupGap === 'よくある' || v.surveyToSignupGap === 'ときどきある');
+      }
     },
     {
-      key: 'freeComment', type: 'textarea', required: false,
+      key: 'freeComment', type: 'textarea', required: false, group: 'deepDive',
       label: 'その他、名古屋でのフェチ・衣装系交流についてご意見があれば自由にお書きください',
-      help: '任意でご記入ください。'
+      help: '任意でご記入ください。',
+      condition: function (v) { return deepDiveTriggered(v); }
+    },
+
+    /* ── STEP2B：Q4で「スーツ」を選んだ回答者だけの短い専用STEP ── */
+    {
+      key: 'suitEngagementPreferences', type: 'checkbox', required: true, allowOther: false,
+      label: 'スーツとどう関わりたいですか？（複数回答可）',
+      sectionNote: 'ここからは、スーツについて伺います。',
+      options: SUIT_ENGAGEMENT_OPTIONS,
+      condition: function (v) { return hasSuitGate(v); }
+    },
+    {
+      key: 'suitTypes', type: 'checkbox', required: true, allowOther: true,
+      label: 'どんなスーツが好きですか？（複数回答可）',
+      options: SUIT_TYPES_OPTIONS,
+      condition: function (v) { return hasSuitGate(v); }
+    },
+    {
+      key: 'suitStates', type: 'checkbox', required: true, allowOther: false,
+      label: 'どの状態に惹かれますか？（複数回答可）',
+      options: SUIT_STATES_OPTIONS,
+      condition: function (v) { return hasSuitGate(v); }
+    },
+    {
+      key: 'suitEventInterest', type: 'radio', required: true,
+      label: 'スーツをテーマにした少人数の交流・撮影企画に興味がありますか？',
+      options: SUIT_EVENT_INTEREST_OPTIONS,
+      condition: function (v) { return hasSuitGate(v); }
     }
   ];
 
@@ -367,6 +568,26 @@
   var currentValues = {}; // key -> string | string[]
   var fieldElements = {}; // key -> { card, inputs: [...], otherCheckbox, otherText, errorEl }
 
+  /* STEP3（深掘り一式、group: 'deepDive'）は、ユニフォーム系ゲート経由（STEP2の直後）でも
+     スーツ経由（STEP2Bの直後）でも同じ設問セットを再利用する。DOM上の並び順は固定のため、
+     questionsContainer内で deepDiveContainer 自体を anchorUniformPos（STEP2直後の定位置）と
+     anchorEnd（STEP2Bの後＝末尾）のどちらかへ、hasUniformGate()の値に応じて動かす
+     （hasUniformGateがtrueなら常にSTEP2/3の定位置、falseならSTEP2Bの後ろ＝スーツ経由の
+     位置。ユニフォーム系ゲート該当者はスーツも選んでいてもSTEP2/3が先に完走する設計のため）。 */
+  var questionsContainer = null;
+  var deepDiveContainer = null;
+  var anchorUniformPos = null;
+  var anchorEnd = null;
+
+  /**
+   * question.sectionNoteは固定文字列、または現在の回答からその場で文面を組み立てる
+   * function(values)のいずれかを許容する（例：deepDiveIntroTextはユニフォーム/スーツ/
+   * 両方のどの経路で発火したかにより文面を変える）。
+   */
+  function resolveSectionNote(question, values) {
+    return typeof question.sectionNote === 'function' ? question.sectionNote(values) : question.sectionNote;
+  }
+
   function initialValueFor(question) {
     if (question.type === 'checkbox') return [];
     return '';
@@ -392,12 +613,32 @@
   function renderQuestions() {
     var container = document.getElementById('questions');
     container.innerHTML = '';
+    questionsContainer = container;
+    deepDiveContainer = null;
+    anchorUniformPos = null;
+    anchorEnd = null;
 
     QUESTIONS.forEach(function (question, index) {
+      var appendTarget = container;
+      if (question.group === 'deepDive') {
+        if (!deepDiveContainer) {
+          // STEP2の直後（デフォルトの定位置）にアンカーとコンテナを作る。
+          anchorUniformPos = el('div', { hidden: 'hidden' });
+          container.appendChild(anchorUniformPos);
+          deepDiveContainer = el('div', { id: 'deep-dive-group' });
+          container.appendChild(deepDiveContainer);
+        }
+        appendTarget = deepDiveContainer;
+      }
+
+      var sectionNoteEl = null;
+      var sectionNoteTextEl = null;
       if (question.sectionNote) {
-        container.appendChild(el('div', { class: 'notice-box' }, [
-          el('p', { text: question.sectionNote })
-        ]));
+        // data-section-note-forはテスト（jsdom）から表示状態を特定するための目印。
+        // 表示ロジック自体はこの属性を参照しない。
+        sectionNoteTextEl = el('p', { text: resolveSectionNote(question, currentValues) });
+        sectionNoteEl = el('div', { class: 'notice-box', 'data-section-note-for': question.key }, [sectionNoteTextEl]);
+        appendTarget.appendChild(sectionNoteEl);
       }
 
       var legend = el('legend', {}, [document.createTextNode(question.label)]);
@@ -411,7 +652,10 @@
         card.appendChild(el('p', { class: 'q-help', text: question.help }));
       }
 
-      var record = { card: card, inputs: [], otherCheckbox: null, otherText: null };
+      var record = {
+        card: card, inputs: [], otherCheckbox: null, otherText: null,
+        sectionNoteEl: sectionNoteEl, sectionNoteTextEl: sectionNoteTextEl
+      };
 
       if (question.type === 'select') {
         var select = el('select', { class: 'q-select', id: 'field-' + question.key });
@@ -425,26 +669,48 @@
         card.appendChild(select);
         record.inputs.push(select);
       } else if (question.type === 'radio' || question.type === 'checkbox') {
-        var optionsWrap = el('div', { class: 'q-options' });
         var inputType = question.type === 'radio' ? 'radio' : 'checkbox';
         var groupName = 'field-' + question.key;
+        var groupsWrap = el('div', { class: 'q-options-groups' });
+        var optionsWraps = [];
+        var optionCounter = 0;
 
-        question.options.forEach(function (opt, optIndex) {
-          var input = el('input', {
-            type: inputType,
-            name: groupName,
-            id: groupName + '-' + optIndex,
-            value: opt
+        if (question.dynamicOptions) {
+          // primaryInterestCategoryのように、選択肢を他設問の回答から動的に組み立てる設問。
+          // 実際の選択肢描画・再描画はrebuildDynamicOptions()（applyConditions内から呼ぶ）に任せる。
+          var dynWrap = el('div', { class: 'q-options' });
+          groupsWrap.appendChild(dynWrap);
+          record.optionsWrap = dynWrap;
+          record.groupName = groupName;
+        } else {
+          var optionGroups = question.optionGroups || [{ label: null, options: question.options }];
+          optionGroups.forEach(function (group) {
+            if (group.label) {
+              groupsWrap.appendChild(el('p', { class: 'q-option-group-label', text: group.label }));
+            }
+            var optionsWrap = el('div', { class: 'q-options' });
+            group.options.forEach(function (opt) {
+              var input = el('input', {
+                type: inputType,
+                name: groupName,
+                id: groupName + '-' + (optionCounter++),
+                value: opt
+              });
+              input.addEventListener('change', function () { onOptionChange(question); });
+              var label = el('label', { class: 'q-option', for: input.id }, [
+                input, el('span', { text: opt })
+              ]);
+              optionsWrap.appendChild(label);
+              record.inputs.push(input);
+            });
+            groupsWrap.appendChild(optionsWrap);
+            optionsWraps.push(optionsWrap);
           });
-          input.addEventListener('change', function () { onOptionChange(question); });
-          var label = el('label', { class: 'q-option', for: input.id }, [
-            input, el('span', { text: opt })
-          ]);
-          optionsWrap.appendChild(label);
-          record.inputs.push(input);
-        });
+        }
 
         if (question.allowOther) {
+          var otherWrap = optionsWraps.length ? optionsWraps[optionsWraps.length - 1] : el('div', { class: 'q-options' });
+          if (!optionsWraps.length) groupsWrap.appendChild(otherWrap);
           var otherInput = el('input', {
             type: inputType,
             name: groupName,
@@ -459,7 +725,7 @@
           var otherLabel = el('label', { class: 'q-option', for: otherInput.id }, [
             otherInput, el('span', { text: 'その他' })
           ]);
-          optionsWrap.appendChild(otherLabel);
+          otherWrap.appendChild(otherLabel);
           record.inputs.push(otherInput);
           record.otherCheckbox = otherInput;
 
@@ -472,10 +738,10 @@
           });
           otherText.addEventListener('input', function () { onOptionChange(question); });
           record.otherText = otherText;
-          card.appendChild(optionsWrap);
+          card.appendChild(groupsWrap);
           card.appendChild(otherText);
         } else {
-          card.appendChild(optionsWrap);
+          card.appendChild(groupsWrap);
         }
       } else if (question.type === 'textarea') {
         var textarea = el('textarea', {
@@ -495,8 +761,11 @@
       record.errorEl = errorEl;
 
       fieldElements[question.key] = record;
-      container.appendChild(card);
+      appendTarget.appendChild(card);
     });
+
+    anchorEnd = el('div', { hidden: 'hidden' });
+    container.appendChild(anchorEnd);
 
     applyConditions();
   }
@@ -540,22 +809,92 @@
   }
 
   /**
-   * condition() を持つ設問（aichiArea / gapReasons）の表示・非表示を切り替える。
-   * 非表示にする際は入力値も初期値へ戻す（画面から消えた設問の古い値が
-   * 送信されないようにするため）。
+   * condition() を持つ設問（aichiArea / snbcAwareness / preferredFrequency 等）の
+   * 表示・非表示を切り替える。非表示にする際は入力値も初期値へ戻す
+   * （画面から消えた設問の古い値が送信されないようにするため）。
+   * dynamicOptions を持つ設問（primaryInterestCategory）は、表示・非表示の判定より前に
+   * 選択肢自体を最新のcurrentValuesから再構築する。
    */
   function applyConditions() {
     QUESTIONS.forEach(function (question) {
+      if (question.dynamicOptions) rebuildDynamicOptions(question);
       if (!question.condition) return;
       var visible = question.condition(currentValues);
       var record = fieldElements[question.key];
       record.card.hidden = !visible;
+      // sectionNote（STEP見出しの案内文）はcondition付き設問のカードと同じ表示条件で
+      // 出し入れする。ここを怠ると、設問カード自体は隠れているのに見出し文だけ
+      // 全回答者に見えてしまう（例：ユニフォーム系ゲート非該当者にもSTEP3の案内文が出る）。
+      if (record.sectionNoteEl) {
+        record.sectionNoteEl.hidden = !visible;
+        // 文面が発火経路（ユニフォーム/スーツ/両方）で変わる設問（deepDiveIntroText）のため、
+        // 表示するたびに現在のcurrentValuesから文面を再計算する。
+        if (visible && record.sectionNoteTextEl) {
+          record.sectionNoteTextEl.textContent = resolveSectionNote(question, currentValues);
+        }
+      }
       if (!visible) {
         resetFieldInputs(question);
         currentValues[question.key] = initialValueFor(question);
         clearFieldError(question.key);
       }
     });
+
+    repositionDeepDiveGroup();
+  }
+
+  /**
+   * STEP3（深掘り一式）のDOM位置を、回答者の経路に応じて動かす。
+   * ユニフォーム系ゲート該当者（スーツも選んでいる場合を含む）は常にSTEP2直後の定位置
+   * （anchorUniformPos）に固定し、スーツのみ選択している回答者（ユニフォーム系ゲート
+   * 非該当）でsuit_event_interest=はいにより深掘りが発火した場合だけ、STEP2Bの後ろ
+   * （anchorEnd直前）へ移動する。こうしないと、スーツのみの回答者がS4で「はい」と
+   * 答えたときに、深掘りの設問群が画面のずっと上（未回答のS1〜S4より前）に
+   * 突然現れてしまう。
+   */
+  function repositionDeepDiveGroup() {
+    if (!deepDiveContainer) return;
+    var visible = deepDiveTriggered(currentValues);
+    deepDiveContainer.hidden = !visible;
+    if (!visible) return;
+
+    if (hasUniformGate(currentValues)) {
+      questionsContainer.insertBefore(deepDiveContainer, anchorUniformPos.nextSibling);
+    } else {
+      questionsContainer.insertBefore(deepDiveContainer, anchorEnd);
+    }
+  }
+
+  /**
+   * dynamicOptions(values)を持つ設問（primaryInterestCategory）の選択肢を
+   * 最新のcurrentValuesから再構築する。選択済みの値が新しい候補に含まれなくなった場合は
+   * 選択を解除する（Q4の選択を変えてQ5の候補から外れた項目を選んだままにしないため）。
+   */
+  function rebuildDynamicOptions(question) {
+    var record = fieldElements[question.key];
+    var options = question.dynamicOptions(currentValues);
+    var previousValue = currentValues[question.key];
+    var stillValid = options.indexOf(previousValue) !== -1;
+
+    record.optionsWrap.innerHTML = '';
+    record.inputs = [];
+    options.forEach(function (opt, i) {
+      var input = el('input', {
+        type: 'radio',
+        name: record.groupName,
+        id: record.groupName + '-dyn-' + i,
+        value: opt
+      });
+      if (stillValid && opt === previousValue) input.checked = true;
+      input.addEventListener('change', function () { onOptionChange(question); });
+      var label = el('label', { class: 'q-option', for: input.id }, [input, el('span', { text: opt })]);
+      record.optionsWrap.appendChild(label);
+      record.inputs.push(input);
+    });
+
+    if (!stillValid && previousValue !== '') {
+      currentValues[question.key] = '';
+    }
   }
 
   function resetFieldInputs(question) {
@@ -635,7 +974,16 @@
       prefecture: currentValues.prefecture,
       aichiArea: currentValues.aichiArea,
       age: currentValues.age,
-      clothingInterests: currentValues.clothingInterests,
+      interestCategories: currentValues.interestCategories,
+      primaryInterestCategory: currentValues.primaryInterestCategory,
+      engagementPreferences: currentValues.engagementPreferences,
+      snbcAwareness: currentValues.snbcAwareness,
+      snbcInterest: currentValues.snbcInterest,
+      snbcInterestUncertainReasons: currentValues.snbcInterestUncertainReasons,
+      suitEngagementPreferences: currentValues.suitEngagementPreferences,
+      suitTypes: currentValues.suitTypes,
+      suitStates: currentValues.suitStates,
+      suitEventInterest: currentValues.suitEventInterest,
       preferredFrequency: currentValues.preferredFrequency,
       preferredPrice: currentValues.preferredPrice,
       preferredGroupSize: currentValues.preferredGroupSize,
@@ -647,7 +995,9 @@
       hypotheticalIntent: currentValues.hypotheticalIntent,
       surveyToSignupGap: currentValues.surveyToSignupGap,
       gapReasons: currentValues.gapReasons,
-      freeComment: currentValues.freeComment
+      freeComment: currentValues.freeComment,
+      surveyPath: computeSurveyPath(currentValues),
+      completionStage: computeCompletionStage(currentValues)
     };
   }
 
