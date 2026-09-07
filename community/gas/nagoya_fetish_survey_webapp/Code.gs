@@ -115,9 +115,11 @@ var PREFECTURES = [
   '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県', '海外'
 ];
 
+/* Q1で愛知県を選んだ人だけに表示する設問のため、「愛知県外」は選択肢に含めない
+   （含めるとQ1=愛知県・Q2=愛知県外という矛盾回答をサーバー側で許してしまうため）。 */
 var AICHI_AREA_OPTIONS = [
   '名古屋市', '尾張地域（名古屋市以外）', '知多地域', '西三河地域',
-  '東三河地域', '愛知県外', 'わからない・その他'
+  '東三河地域', 'わからない・その他'
 ];
 
 var AGE_OPTIONS = [
@@ -406,9 +408,8 @@ function validateAnswers_(a) {
     if (typeof a[key] !== 'string' || options.indexOf(a[key]) === -1) return key + '_invalid';
   }
 
-  // preferredAtmosphereは任意設問（空文字列を許可）。
-  if (typeof a.preferredAtmosphere !== 'string') return 'preferred_atmosphere_invalid_type';
-  if (a.preferredAtmosphere !== '' && ATMOSPHERE_OPTIONS.indexOf(a.preferredAtmosphere) === -1) {
+  // preferredAtmosphereは今回の調査の核心的な設問のため必須（「わからない」で回避可能）。
+  if (typeof a.preferredAtmosphere !== 'string' || ATMOSPHERE_OPTIONS.indexOf(a.preferredAtmosphere) === -1) {
     return 'preferred_atmosphere_invalid';
   }
 
@@ -423,7 +424,9 @@ function validateAnswers_(a) {
   var clothing = validateMultiSelect_(a.clothingInterests, CLOTHING_OPTIONS, true);
   if (clothing.error) return 'clothing_interests_' + clothing.error;
 
-  var format = validateMultiSelect_(a.preferredFormat, FORMAT_OPTIONS, false);
+  // preferredFormatも今回の調査の核心的な設問のため必須（「人数より雰囲気や内容が重要」
+  // 「わからない」があるため、必須化しても1対1・大人数のどちらかに無理に誘導することにはならない）。
+  var format = validateMultiSelect_(a.preferredFormat, FORMAT_OPTIONS, true);
   if (format.error) return 'preferred_format_' + format.error;
 
   // barriersはこのバージョンから必須（「該当しない」で回避可能）。
@@ -505,7 +508,7 @@ function buildRowValues_(hash, a) {
     a.eventAwareness,
     sanitizeForSheet_(a.barriers.join('、')),
     sanitizeForSheet_((a.helpfulInformation || []).join('、')),
-    a.preferredAtmosphere || '',
+    a.preferredAtmosphere, // 必須設問のためvalidateAnswers_通過後は常に非空文字列
     a.hypotheticalIntent,
     a.surveyToSignupGap,
     sanitizeForSheet_((a.gapReasons || []).join('、')),

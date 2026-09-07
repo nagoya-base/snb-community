@@ -21,9 +21,11 @@
     '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県', '海外'
   ];
 
+  // Q1で愛知県を選んだ人だけに表示する設問のため、「愛知県外」は選択肢に含めない
+  // （Code.gs側のAICHI_AREA_OPTIONSと必ず一致させること）。
   var AICHI_AREA_OPTIONS = [
     '名古屋市', '尾張地域（名古屋市以外）', '知多地域', '西三河地域',
-    '東三河地域', '愛知県外', 'わからない・その他'
+    '東三河地域', 'わからない・その他'
   ];
 
   var AGE_OPTIONS = [
@@ -190,7 +192,7 @@
       options: GROUP_SIZE_OPTIONS
     },
     {
-      key: 'preferredFormat', type: 'checkbox', required: false, allowOther: true,
+      key: 'preferredFormat', type: 'checkbox', required: true, allowOther: true,
       label: 'どのような参加形式なら参加しやすいですか？（複数回答可）',
       help: 'このアンケートはイベント募集・個人セッション募集・参加申込ではありません。「個室で1対1」も、あくまで参加しやすさの傾向を尋ねる選択肢の一つです。',
       options: FORMAT_OPTIONS
@@ -213,7 +215,7 @@
       options: HELPFUL_INFO_OPTIONS
     },
     {
-      key: 'preferredAtmosphere', type: 'radio', required: false,
+      key: 'preferredAtmosphere', type: 'radio', required: true,
       label: '衣装・フェチ系の交流企画では、どのような雰囲気が参加しやすいですか？',
       options: ATMOSPHERE_OPTIONS
     },
