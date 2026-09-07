@@ -6,6 +6,18 @@
  * 「同一人物による意図的な繰り返し回答を抑止する」ためにApps ScriptのHTML Serviceで
  * 独自のWebアプリとして作り直したもの。Googleフォームは使わない。
  *
+ * 【Issue #293：ファネル型市場調査への再設計】
+ * PR #292時点は単一フローの調査だったが、本バージョンからは
+ * 「前半は服装・キャラクター嗜好を広く把握し、ユニフォーム系・スーツ系に興味を示した
+ * 回答者だけ後半でSNBC（Studio Nagoya Base Community）企画への需要を深掘りする」
+ * ファネル型に再設計している。分岐の詳細は下記コメントとvalidateAnswers_()を参照。
+ * ・分析の主は複数回答の`interest_categories`（Q4相当）。第一嗜好`primary_interest_category`
+ *   （Q5相当）は補助指標であり、回答者を1ジャンルに固定して解釈しない。
+ * ・旧`clothing_interests`（12択）は別列として残すが、新規回答では書き込まない
+ *   （旧→新の選択肢は機械的に対応しないため、遡及マッピングは行わない）。
+ * ・`completion_stage`はサーバー側で回答内容から再計算し、クライアントの送信値と
+ *   一致するかを必ず検証する（クライアントを無条件に信用しない）。
+ *
  * 【重要：このスクリプトが保証すること／しないこと】
  * ・保証すること：ブラウザにローカル保存されるランダムなUUID（localStorage / Cookie）を手がかりに、
  *   「同じブラウザから連打・再送信するような、ごく普通の重複回答」を十分面倒にして防ぐ。
@@ -75,7 +87,7 @@ var COLUMNS = [
   'prefecture',
   'aichi_area',
   'age',
-  'clothing_interests',
+  'clothing_interests', // 旧12択（PR #292）。新規回答では書き込まない。読み取り専用の参考値として保持。
   'preferred_frequency',
   'preferred_price',
   'preferred_group_size',
@@ -87,7 +99,21 @@ var COLUMNS = [
   'hypothetical_intent',
   'survey_to_signup_gap',
   'gap_reasons',
-  'free_comment'
+  'free_comment',
+  /* ここから Issue #293 で追加した新規列。既存の18列は変更せず末尾に追加する
+     （既存responsesシートの列がずれる事故を防ぐため）。 */
+  'interest_categories',
+  'primary_interest_category',
+  'engagement_preferences',
+  'snbc_awareness',
+  'snbc_interest',
+  'snbc_interest_uncertain_reasons',
+  'suit_engagement_preferences',
+  'suit_types',
+  'suit_states',
+  'suit_event_interest',
+  'survey_path',
+  'completion_stage'
 ];
 
 /* 集計用の補助列（生データではなく、prefecture/aichi_areaから機械的に算出する値）。
@@ -126,12 +152,86 @@ var AGE_OPTIONS = [
   '18〜24歳', '25〜29歳', '30〜39歳', '40〜49歳', '50〜59歳', '60歳以上', '回答しない'
 ];
 
+/* 旧12択（PR #292、`clothing_interests`列に対応）。Issue #293以降の新規回答では
+   使わない（=validateAnswers_からは参照しない）。過去回答データの列見出しとして
+   COLUMNSに残っているため、意味の記録用にここにも残す。新カテゴリへは機械的に
+   対応しない（例：旧「スイムウェア」は新「競パン」「水泳・競泳ウェア（競パン以外）」に
+   分岐しうるため、遡及マッピングは行わない）。 */
 var CLOTHING_OPTIONS = [
   '野球ユニフォーム', 'サッカーユニフォーム', 'バスケットボールユニフォーム',
   'ラグビー・アメリカンフットボール', '陸上競技ウェア', 'スイムウェア',
   'レスリング・シングレット', '学校制服', 'ジャージ・トレーニングウェア',
   'スーツ', '作業着・職業制服', 'コスプレ衣装'
 ];
+
+/* ── Issue #293：`interest_categories`（Q4相当）── 分析の主となる複数回答設問。
+   視覚的にスポーツ・ユニフォーム系／制服・職業服系／コスプレ・キャラクター系の
+   3ブロックに分けて表示するため、Code.gs側でもブロック単位の配列として持つ
+   （Script.html側のQUESTIONS定義のoptionGroupsと必ず一致させること）。
+   「その他（自由記述）」はOTHER_PREFIXによる自由記述として扱うため、
+   これらの配列そのものには含めない。 */
+var INTEREST_SPORTS_OPTIONS = [
+  '野球ユニフォーム', 'サッカーユニフォーム', 'バスケットボールユニフォーム',
+  'ラグビー・アメリカンフットボール', '陸上競技ウェア', '競パン',
+  '水泳・競泳ウェア（競パン以外）', 'レスリング・シングレット',
+  'ジャージ・トレーニングウェア', '体操服'
+];
+
+var INTEREST_UNIFORM_JOB_OPTIONS = [
+  '学校制服', 'スーツ', '作業着', '職業制服'
+];
+
+var INTEREST_COSPLAY_OPTIONS = [
+  '全身タイツ', 'ヒーロー系', '悪役・ヴィラン系', '特撮系', 'コスプレ衣装',
+  'アニメ・ゲームキャラクター', 'ケモノ・着ぐるみ・獣人系', 'マスク・覆面系'
+];
+
+var INTEREST_CATEGORY_OPTIONS = INTEREST_SPORTS_OPTIONS
+  .concat(INTEREST_UNIFORM_JOB_OPTIONS)
+  .concat(INTEREST_COSPLAY_OPTIONS);
+
+/* STEP2（SNBCユニ会）のゲート条件：スポーツ・ユニフォーム系のいずれか、または
+   学校制服／作業着／職業制服を選んだ場合に成立する。「スーツ」は含めない
+   （スーツは別途STEP2Bのゲートになる。UNIFORM_GATE_CATEGORIESとSUIT_GATE_CATEGORYの
+   両方に該当する回答者は、STEP2（該当すればSTEP3まで）を先に完走してからSTEP2Bに進む）。 */
+var UNIFORM_GATE_CATEGORIES = INTEREST_SPORTS_OPTIONS.concat(['学校制服', '作業着', '職業制服']);
+var SUIT_GATE_CATEGORY = 'スーツ';
+
+/* Q6相当：その衣装・服装とどう関わりたいか。 */
+var ENGAGEMENT_OPTIONS = [
+  '自分で着たい', '人が着ているのを見たい', '両方',
+  '撮る側として関わりたい', '撮られる側として関わりたい', '交流のきっかけとして楽しみたい'
+];
+
+/* Q7相当：SNBC認知。 */
+var SNBC_AWARENESS_OPTIONS = ['知っている', '名前だけ見たことがある', '知らなかった'];
+
+/* Q8相当：SNBCユニ会企画への興味（「参加しますか」ではなく「興味がありますか」）。 */
+var SNBC_INTEREST_OPTIONS = ['はい', 'いいえ', 'どちらともいえない'];
+
+/* Q8=どちらともいえない、のときだけ表示する任意の理由設問。 */
+var SNBC_UNCERTAIN_REASON_OPTIONS = [
+  'どんな企画かまだよく分からない', '参加者の雰囲気が分からない', '名古屋まで遠い',
+  '料金や内容が分からない', '自分向けか分からない'
+];
+
+/* STEP2B（スーツ専用の短いSTEP）。Q4で「スーツ」を選んだ回答者にのみ表示する。 */
+var SUIT_ENGAGEMENT_OPTIONS = [
+  '自分で着たい', '人が着ているのを見たい', '両方',
+  '撮る側として関わりたい', '撮られる側として関わりたい'
+];
+
+var SUIT_TYPES_OPTIONS = [
+  'ビジネススーツ', 'リクルート・就活系', 'タイト・細身', 'ダブル・セットアップ',
+  '礼服・フォーマル', 'ホスト・ナイト系', '教師・営業など職業のスーツ', 'ワイシャツ・ネクタイ'
+];
+
+var SUIT_STATES_OPTIONS = [
+  'ジャケットを着たまま', 'ワイシャツ・ネクタイ', 'ベスト / スラックス / 革靴・ベルト',
+  '着崩し', '脱ぐ過程', '着たままの空気'
+];
+
+var SUIT_EVENT_INTEREST_OPTIONS = ['はい', 'いいえ', 'どちらともいえない'];
 
 var FREQUENCY_OPTIONS = [
   '月2回程度', '月1回程度', '1〜2か月に1回程度', '2〜3か月に1回程度',
@@ -399,36 +499,62 @@ function isDuplicateHash_(sheet, hash) {
  * ══════════════════════════════════════════════════════════════ */
 
 /**
+ * interest_categoriesの内容から、STEP2（SNBCユニ会）ゲートに該当するかを判定する。
+ * 「スーツ」はこのゲートには含めない（スーツは別途hasSuitGate_で判定する）。
+ */
+function hasUniformGate_(interestCategories) {
+  return interestCategories.some(function (c) { return UNIFORM_GATE_CATEGORIES.indexOf(c) !== -1; });
+}
+
+function hasSuitGate_(interestCategories) {
+  return interestCategories.indexOf(SUIT_GATE_CATEGORY) !== -1;
+}
+
+/**
+ * survey_pathの期待値（回答内容から機械的に決まる値。クライアントの送信値と一致させる）。
+ */
+function computeExpectedSurveyPath_(hasUniformGate, hasSuitGate) {
+  if (hasUniformGate && hasSuitGate) return 'uniform_and_suit';
+  if (hasUniformGate) return 'uniform_only';
+  if (hasSuitGate) return 'suit_only';
+  return 'none';
+}
+
+/**
+ * completion_stageの期待値。1回答者につき「最後に完走したstep」を表す1値のみとする
+ * （Issue #293の状態遷移表）。実行順序は「該当すればSTEP2→STEP3を先に完走→その後STEP2B」
+ * で固定のため、スーツゲートに該当する回答者は常にsuit_interestが最終地点になる。
+ */
+function computeExpectedCompletionStage_(hasUniformGate, hasSuitGate, snbcInterest) {
+  if (hasSuitGate) return 'suit_interest';
+  if (hasUniformGate) {
+    if (snbcInterest === 'はい') return 'snbc_deep_dive';
+    if (snbcInterest === 'どちらともいえない') return 'snbc_uncertain';
+    if (snbcInterest === 'いいえ') return 'snbc_not_interested';
+    return null; // ゲート該当なのにsnbcInterestが不正・未回答＝矛盾
+  }
+  return 'no_gate_reached';
+}
+
+/**
  * answersの内容をサーバー側で検証する。問題なければnull、問題があればエラーコード文字列を返す。
  * クライアント側でも同じ制約を検証しているが、Webアプリは公開エンドポイントであり、
  * google.script.runを介さない直接POST等は行えないものの、フロントの改変やバグに備えて
  * サーバー側でも必ず同じ制約を再検証する。
+ *
+ * Issue #293以降は分岐アンケートのため、フラットな全項目必須ではなく、
+ * 「STEP1・STEP1Aは常に必須」「STEP2はユニフォーム系ゲート該当時のみ必須・非該当時は空必須」
+ * 「STEP2BはスーツQ選択時のみ必須・非選択時は空必須」「#292由来の深掘り一式は
+ * ユニフォーム系ゲート×snbc_interest=はい、またはスーツ×suit_event_interest=はい、
+ * のどちらかで発火した場合のみ必須・それ以外は空必須」という条件付き必須判定に書き直している
+ * （旧validateAnswers_はフラット必須だったため使い回さず新規実装）。
  */
 function validateAnswers_(a) {
   if (!a || typeof a !== 'object') return 'payload_invalid';
 
-  var singleRequired = [
-    ['prefecture', PREFECTURES],
-    ['age', AGE_OPTIONS],
-    ['preferredFrequency', FREQUENCY_OPTIONS],
-    ['preferredPrice', PRICE_OPTIONS],
-    ['preferredGroupSize', GROUP_SIZE_OPTIONS],
-    ['eventAwareness', EVENT_AWARENESS_OPTIONS],
-    ['hypotheticalIntent', HYPOTHETICAL_INTENT_OPTIONS],
-    ['surveyToSignupGap', GAP_OPTIONS]
-  ];
-  for (var i = 0; i < singleRequired.length; i++) {
-    var key = singleRequired[i][0];
-    var options = singleRequired[i][1];
-    if (typeof a[key] !== 'string' || options.indexOf(a[key]) === -1) return key + '_invalid';
-  }
+  /* ── STEP1：全回答者共通・常に必須 ── */
+  if (typeof a.prefecture !== 'string' || PREFECTURES.indexOf(a.prefecture) === -1) return 'prefecture_invalid';
 
-  // preferredAtmosphereは今回の調査の核心的な設問のため必須（「わからない」で回避可能）。
-  if (typeof a.preferredAtmosphere !== 'string' || ATMOSPHERE_OPTIONS.indexOf(a.preferredAtmosphere) === -1) {
-    return 'preferred_atmosphere_invalid';
-  }
-
-  // aichiArea：prefectureが愛知県のときのみ有効な選択肢が必須。それ以外は空文字列必須。
   if (typeof a.aichiArea !== 'string') return 'aichi_area_invalid_type';
   if (a.prefecture === '愛知県') {
     if (AICHI_AREA_OPTIONS.indexOf(a.aichiArea) === -1) return 'aichi_area_required';
@@ -436,26 +562,137 @@ function validateAnswers_(a) {
     return 'aichi_area_must_be_blank';
   }
 
-  var clothing = validateMultiSelect_(a.clothingInterests, CLOTHING_OPTIONS, true);
-  if (clothing.error) return 'clothing_interests_' + clothing.error;
+  if (typeof a.age !== 'string' || AGE_OPTIONS.indexOf(a.age) === -1) return 'age_invalid';
 
-  // preferredFormatも今回の調査の核心的な設問のため必須（「人数より雰囲気や内容が重要」
-  // 「わからない」があるため、必須化しても1対1・大人数のどちらかに無理に誘導することにはならない）。
-  var format = validateMultiSelect_(a.preferredFormat, FORMAT_OPTIONS, true);
-  if (format.error) return 'preferred_format_' + format.error;
+  /* ── STEP1A：全回答者共通・常に必須（Q6のみ必須、Q5は補助指標のため任意） ── */
+  var interestCategories = validateMultiSelect_(a.interestCategories, INTEREST_CATEGORY_OPTIONS, true);
+  if (interestCategories.error) return 'interest_categories_' + interestCategories.error;
 
-  // barriersはこのバージョンから必須（「該当しない」で回避可能）。
-  var barriers = validateMultiSelect_(a.barriers, BARRIER_OPTIONS, true);
-  if (barriers.error) return 'barriers_' + barriers.error;
+  if (typeof a.primaryInterestCategory !== 'string') return 'primary_interest_category_invalid_type';
+  if (a.primaryInterestCategory !== '' && a.interestCategories.indexOf(a.primaryInterestCategory) === -1) {
+    // Q5の候補はQ4で選択した項目だけのため、Q4の選択に含まれない値は不正とする。
+    return 'primary_interest_category_not_in_interest_categories';
+  }
 
-  var helpfulInfo = validateMultiSelect_(a.helpfulInformation, HELPFUL_INFO_OPTIONS, false);
-  if (helpfulInfo.error) return 'helpful_information_' + helpfulInfo.error;
+  var engagementPreferences = validateMultiSelect_(a.engagementPreferences, ENGAGEMENT_OPTIONS, true);
+  if (engagementPreferences.error) return 'engagement_preferences_' + engagementPreferences.error;
 
-  var gapReasons = validateMultiSelect_(a.gapReasons, GAP_REASON_OPTIONS, false);
-  if (gapReasons.error) return 'gap_reasons_' + gapReasons.error;
+  var hasUniformGate = hasUniformGate_(a.interestCategories);
+  var hasSuitGate = hasSuitGate_(a.interestCategories);
 
-  if (typeof a.freeComment !== 'string') return 'free_comment_invalid_type';
-  if (a.freeComment.length > MAX_FREE_COMMENT_LENGTH) return 'free_comment_too_long';
+  /* ── STEP2：ユニフォーム系ゲート該当時のみ ── */
+  if (hasUniformGate) {
+    if (typeof a.snbcAwareness !== 'string' || SNBC_AWARENESS_OPTIONS.indexOf(a.snbcAwareness) === -1) {
+      return 'snbc_awareness_invalid';
+    }
+    if (typeof a.snbcInterest !== 'string' || SNBC_INTEREST_OPTIONS.indexOf(a.snbcInterest) === -1) {
+      return 'snbc_interest_invalid';
+    }
+  } else {
+    if (a.snbcAwareness !== '') return 'snbc_awareness_must_be_blank';
+    if (a.snbcInterest !== '') return 'snbc_interest_must_be_blank';
+  }
+
+  // snbc_interest_uncertain_reasonsは任意設問（Q8=どちらともいえないのときだけ表示・入力可）。
+  var uncertainReasons = validateMultiSelect_(a.snbcInterestUncertainReasons, SNBC_UNCERTAIN_REASON_OPTIONS, false);
+  if (uncertainReasons.error) return 'snbc_interest_uncertain_reasons_' + uncertainReasons.error;
+  var uncertainReasonsAllowed = hasUniformGate && a.snbcInterest === 'どちらともいえない';
+  if (!uncertainReasonsAllowed && a.snbcInterestUncertainReasons.length > 0) {
+    return 'snbc_interest_uncertain_reasons_must_be_blank';
+  }
+
+  /* ── STEP2B：Q4で「スーツ」を選んだ回答者のみ ── */
+  if (hasSuitGate) {
+    var suitEngagement = validateMultiSelect_(a.suitEngagementPreferences, SUIT_ENGAGEMENT_OPTIONS, true);
+    if (suitEngagement.error) return 'suit_engagement_preferences_' + suitEngagement.error;
+
+    var suitTypes = validateMultiSelect_(a.suitTypes, SUIT_TYPES_OPTIONS, true);
+    if (suitTypes.error) return 'suit_types_' + suitTypes.error;
+
+    var suitStates = validateMultiSelect_(a.suitStates, SUIT_STATES_OPTIONS, true);
+    if (suitStates.error) return 'suit_states_' + suitStates.error;
+
+    if (typeof a.suitEventInterest !== 'string' || SUIT_EVENT_INTEREST_OPTIONS.indexOf(a.suitEventInterest) === -1) {
+      return 'suit_event_interest_invalid';
+    }
+  } else {
+    if (!Array.isArray(a.suitEngagementPreferences) || a.suitEngagementPreferences.length > 0) {
+      return 'suit_engagement_preferences_must_be_blank';
+    }
+    if (!Array.isArray(a.suitTypes) || a.suitTypes.length > 0) return 'suit_types_must_be_blank';
+    if (!Array.isArray(a.suitStates) || a.suitStates.length > 0) return 'suit_states_must_be_blank';
+    if (a.suitEventInterest !== '') return 'suit_event_interest_must_be_blank';
+  }
+
+  /* ── STEP3（#292由来の深掘り一式）：ユニフォーム系経由でsnbc_interest=はい、
+     または スーツ経由でsuit_event_interest=はい、のどちらかで発火する（設問カード自体は
+     STEP2直後に1セットだけ用意し、S4=はいの場合も同じセットを再利用する。二重に聞かない）。 ── */
+  var deepDiveTriggered = (hasUniformGate && a.snbcInterest === 'はい') ||
+    (hasSuitGate && a.suitEventInterest === 'はい');
+
+  if (deepDiveTriggered) {
+    if (typeof a.preferredFrequency !== 'string' || FREQUENCY_OPTIONS.indexOf(a.preferredFrequency) === -1) {
+      return 'preferred_frequency_invalid';
+    }
+    if (typeof a.preferredPrice !== 'string' || PRICE_OPTIONS.indexOf(a.preferredPrice) === -1) {
+      return 'preferred_price_invalid';
+    }
+    if (typeof a.preferredGroupSize !== 'string' || GROUP_SIZE_OPTIONS.indexOf(a.preferredGroupSize) === -1) {
+      return 'preferred_group_size_invalid';
+    }
+    var format = validateMultiSelect_(a.preferredFormat, FORMAT_OPTIONS, true);
+    if (format.error) return 'preferred_format_' + format.error;
+
+    if (typeof a.eventAwareness !== 'string' || EVENT_AWARENESS_OPTIONS.indexOf(a.eventAwareness) === -1) {
+      return 'event_awareness_invalid';
+    }
+    var barriers = validateMultiSelect_(a.barriers, BARRIER_OPTIONS, true);
+    if (barriers.error) return 'barriers_' + barriers.error;
+
+    var helpfulInfo = validateMultiSelect_(a.helpfulInformation, HELPFUL_INFO_OPTIONS, false);
+    if (helpfulInfo.error) return 'helpful_information_' + helpfulInfo.error;
+
+    if (typeof a.preferredAtmosphere !== 'string' || ATMOSPHERE_OPTIONS.indexOf(a.preferredAtmosphere) === -1) {
+      return 'preferred_atmosphere_invalid';
+    }
+    if (typeof a.hypotheticalIntent !== 'string' || HYPOTHETICAL_INTENT_OPTIONS.indexOf(a.hypotheticalIntent) === -1) {
+      return 'hypothetical_intent_invalid';
+    }
+    if (typeof a.surveyToSignupGap !== 'string' || GAP_OPTIONS.indexOf(a.surveyToSignupGap) === -1) {
+      return 'survey_to_signup_gap_invalid';
+    }
+
+    var gapReasons = validateMultiSelect_(a.gapReasons, GAP_REASON_OPTIONS, false);
+    if (gapReasons.error) return 'gap_reasons_' + gapReasons.error;
+    var gapReasonsAllowed = a.surveyToSignupGap === 'よくある' || a.surveyToSignupGap === 'ときどきある';
+    if (!gapReasonsAllowed && a.gapReasons.length > 0) return 'gap_reasons_must_be_blank';
+
+    if (typeof a.freeComment !== 'string') return 'free_comment_invalid_type';
+    if (a.freeComment.length > MAX_FREE_COMMENT_LENGTH) return 'free_comment_too_long';
+  } else {
+    if (a.preferredFrequency !== '') return 'preferred_frequency_must_be_blank';
+    if (a.preferredPrice !== '') return 'preferred_price_must_be_blank';
+    if (a.preferredGroupSize !== '') return 'preferred_group_size_must_be_blank';
+    if (!Array.isArray(a.preferredFormat) || a.preferredFormat.length > 0) return 'preferred_format_must_be_blank';
+    if (a.eventAwareness !== '') return 'event_awareness_must_be_blank';
+    if (!Array.isArray(a.barriers) || a.barriers.length > 0) return 'barriers_must_be_blank';
+    if (!Array.isArray(a.helpfulInformation) || a.helpfulInformation.length > 0) return 'helpful_information_must_be_blank';
+    if (a.preferredAtmosphere !== '') return 'preferred_atmosphere_must_be_blank';
+    if (a.hypotheticalIntent !== '') return 'hypothetical_intent_must_be_blank';
+    if (a.surveyToSignupGap !== '') return 'survey_to_signup_gap_must_be_blank';
+    if (!Array.isArray(a.gapReasons) || a.gapReasons.length > 0) return 'gap_reasons_must_be_blank';
+    if (typeof a.freeComment !== 'string' || a.freeComment !== '') return 'free_comment_must_be_blank';
+  }
+
+  /* ── survey_path / completion_stage：クライアントの送信値を無条件に信用せず、
+     回答内容から再計算した期待値と一致するかを必ず検証する。 ── */
+  if (typeof a.surveyPath !== 'string') return 'survey_path_invalid_type';
+  var expectedSurveyPath = computeExpectedSurveyPath_(hasUniformGate, hasSuitGate);
+  if (a.surveyPath !== expectedSurveyPath) return 'survey_path_mismatch';
+
+  if (typeof a.completionStage !== 'string') return 'completion_stage_invalid_type';
+  var expectedCompletionStage = computeExpectedCompletionStage_(hasUniformGate, hasSuitGate, a.snbcInterest);
+  if (!expectedCompletionStage || a.completionStage !== expectedCompletionStage) return 'completion_stage_mismatch';
 
   return null;
 }
@@ -515,19 +752,31 @@ function buildRowValues_(hash, a) {
     a.prefecture,
     a.aichiArea,
     a.age,
-    sanitizeForSheet_(a.clothingInterests.join('、')),
-    a.preferredFrequency,
-    a.preferredPrice,
-    a.preferredGroupSize,
+    '', // clothing_interests：旧12択の列。新規回答では書き込まない（Issue #293、遡及マッピング不可のため）。
+    a.preferredFrequency || '',
+    a.preferredPrice || '',
+    a.preferredGroupSize || '',
     sanitizeForSheet_((a.preferredFormat || []).join('、')),
-    a.eventAwareness,
-    sanitizeForSheet_(a.barriers.join('、')),
+    a.eventAwareness || '',
+    sanitizeForSheet_((a.barriers || []).join('、')),
     sanitizeForSheet_((a.helpfulInformation || []).join('、')),
-    a.preferredAtmosphere, // 必須設問のためvalidateAnswers_通過後は常に非空文字列
-    a.hypotheticalIntent,
-    a.surveyToSignupGap,
+    a.preferredAtmosphere || '',
+    a.hypotheticalIntent || '',
+    a.surveyToSignupGap || '',
     sanitizeForSheet_((a.gapReasons || []).join('、')),
-    sanitizeForSheet_(a.freeComment || '')
+    sanitizeForSheet_(a.freeComment || ''),
+    sanitizeForSheet_(a.interestCategories.join('、')),
+    sanitizeForSheet_(a.primaryInterestCategory || ''),
+    sanitizeForSheet_(a.engagementPreferences.join('、')),
+    a.snbcAwareness || '',
+    a.snbcInterest || '',
+    sanitizeForSheet_((a.snbcInterestUncertainReasons || []).join('、')),
+    sanitizeForSheet_((a.suitEngagementPreferences || []).join('、')),
+    sanitizeForSheet_((a.suitTypes || []).join('、')),
+    sanitizeForSheet_((a.suitStates || []).join('、')),
+    a.suitEventInterest || '',
+    a.surveyPath,
+    a.completionStage
   ];
 }
 
@@ -616,6 +865,17 @@ function setupSpreadsheet() {
  * COLUMNSの直後の列に用意する。ARRAYFORMULAのスピル式1本のみを配置するため、
  * 行の追加に対して自動で追従する（コピー式より壊れにくい）。
  * 既に正しいヘッダーが設定済みなら何もしない（べき等）。
+ *
+ * 【Issue #293での列追加に関する注意】COLUMNSの末尾に新しい列を追加したため、この補助列の
+ * 位置（COLUMNS.length + 1）も右へ移動する。既存スプレッドシートで本関数を再実行すると、
+ * 新しい位置に補助列が作られる一方、Issue #293以前の位置にあった古い補助列（数式のみで
+ * 生データではない）はそのまま残る。実データを破壊するものではないため自動削除はしないが、
+ * 手動でクリーンアップする場合は「古い位置の列を削除してよい」（数式のみのため）。
+ *
+ * 【Issue #293以降の集計との関係】新しい集計シート（集計_地域等）はこの4分類ではなく、
+ * prefecture/aichi_area列から直接5区分（名古屋市／愛知県その他／岐阜県／三重県／その他）を
+ * 算出しているため、この補助列自体は集計コードから参照しなくなった。既存スプレッドシートの
+ * 利用者が個別に参照している可能性を考慮し、後方互換のため列の生成自体は維持している。
  */
 function ensureResidenceHelperColumn_(sheet) {
   var colIndex = COLUMNS.length + 1;
@@ -655,10 +915,6 @@ function columnToLetter_(colIndex) {
   return letter;
 }
 
-function residenceHelperColumnLetter_() {
-  return columnToLetter_(COLUMNS.length + 1);
-}
-
 /* ══════════════════════════════════════════════════════════════
  * 集計シート生成
  * 個票を複製せず、QUERY関数・SUMPRODUCT+SEARCH関数だけで responses シートを参照する。
@@ -667,15 +923,20 @@ function residenceHelperColumnLetter_() {
  * 選択順序や他項目との組み合わせに影響されない。
  * ══════════════════════════════════════════════════════════════ */
 
-var SHEET_RESIDENCE = '集計_居住地';
-var SHEET_AGE = '集計_年代';
-var SHEET_FORMAT = '集計_参加形式';
-var SHEET_BARRIER = '集計_参加障壁';
-var SHEET_ATMOSPHERE = '集計_温度感';
-var SHEET_GAP = '集計_ギャップ';
-var SHEET_WEAR = '集計_服装';
-var SHEET_INFO = '集計_情報要望';
-var SHEET_BASIC = '集計_基本属性';
+/* Issue #293でのファネル再設計に合わせ、集計シートも「集計_地域」「集計_衣装カテゴリ」
+   「集計_関わり方」「集計_SNBC認知」「集計_SNBC興味」「集計_スーツ」「深掘り集計」の
+   構成に作り直す。旧clothing_interests基準の集計は集計_服装（旧12択・参考値）として
+   最低限だけ残す（新集計と混同しないようタイトルに明記する）。 */
+var SHEET_REGION = '集計_地域';
+var SHEET_CLOTHING = '集計_衣装カテゴリ';
+var SHEET_ENGAGEMENT = '集計_関わり方';
+var SHEET_SNBC_AWARENESS = '集計_SNBC認知';
+var SHEET_SNBC_INTEREST = '集計_SNBC興味';
+var SHEET_SUIT = '集計_スーツ';
+var SHEET_DEEP_DIVE = '深掘り集計';
+var SHEET_LEGACY_CLOTHING = '集計_服装（旧12択・参考値）';
+
+var REGION_BUCKETS = ['名古屋市', '愛知県その他', '岐阜県', '三重県', 'その他'];
 
 var BLOCK_ROW_STEP = 60;
 
@@ -689,87 +950,226 @@ function buildAggregationSheets() {
   ensureResidenceHelperColumn_(sheet);
 
   var range = respQueryRange_();
-  var P = residenceHelperColumnLetter_(); // 居住地4分類
   var col = {}; // ヘッダ名 → 列文字
-  ['timestamp', 'age', 'clothing_interests', 'preferred_frequency', 'preferred_price',
-    'preferred_group_size', 'preferred_format', 'event_awareness', 'barriers',
-    'helpful_information', 'preferred_atmosphere', 'hypothetical_intent',
-    'survey_to_signup_gap', 'gap_reasons'].forEach(function (name) {
+  ['timestamp', 'prefecture', 'aichi_area', 'age', 'clothing_interests',
+    'preferred_frequency', 'preferred_price', 'preferred_group_size', 'preferred_format',
+    'event_awareness', 'barriers', 'helpful_information', 'preferred_atmosphere',
+    'hypothetical_intent', 'survey_to_signup_gap', 'gap_reasons',
+    'interest_categories', 'primary_interest_category', 'engagement_preferences',
+    'snbc_awareness', 'snbc_interest', 'suit_engagement_preferences', 'suit_types',
+    'suit_states', 'suit_event_interest'].forEach(function (name) {
     col[name] = columnLetterForHeader_(name);
   });
 
-  recreateSheet_(ss, SHEET_RESIDENCE, function (s) {
-    writeTitledFormula_(s, 0, '居住地4分類 単純集計',
-      queryFormula_(range, "select " + P + ", count(" + col.timestamp + ") group by " + P + " label count(" + col.timestamp + ") '回答数'"));
-    writeTitledFormula_(s, 1, '居住地4分類 × 希望頻度',
-      queryFormula_(range, "select " + P + ", count(" + col.timestamp + ") group by " + P + " pivot " + col.preferred_frequency + " label count(" + col.timestamp + ") '回答数'"));
-    writeTitledFormula_(s, 2, '居住地4分類 × 価格',
-      queryFormula_(range, "select " + P + ", count(" + col.timestamp + ") group by " + P + " pivot " + col.preferred_price + " label count(" + col.timestamp + ") '回答数'"));
-    writeTitledFormula_(s, 3, '居住地4分類 × 希望人数',
-      queryFormula_(range, "select " + P + ", count(" + col.timestamp + ") group by " + P + " pivot " + col.preferred_group_size + " label count(" + col.timestamp + ") '回答数'"));
-    writeMultiVsSingleGrid_(s, 4, '居住地4分類 × 参加形式　※列=居住地4分類、行=参加形式、延べ件数',
-      respColRange_(col.preferred_format), FORMAT_OPTIONS, respColRange_(P), ['名古屋市', '愛知県（名古屋市以外）', '岐阜県・三重県', 'その他地域']);
+  var prefRange = respColRange_(col.prefecture);
+  var aichiRange = respColRange_(col.aichi_area);
+  var snbcInterestRange = respColRange_(col.snbc_interest);
+
+  /* ── 集計_地域 ── */
+  recreateSheet_(ss, SHEET_REGION, function (s) {
+    writeTitledFormula_(s, 0, '都道府県別回答数',
+      queryFormula_(range, "select " + col.prefecture + ", count(" + col.timestamp + ") where " +
+        col.prefecture + " is not null group by " + col.prefecture + " label count(" + col.timestamp + ") '回答数'"));
+
+    var row = 1 + 1 * BLOCK_ROW_STEP;
+    sheet_setTitle_(s, row, '地域5区分（名古屋市／愛知県その他／岐阜県／三重県／その他） 単純集計');
+    var headerRow = row + 1;
+    s.getRange(headerRow, 1).setValue('区分');
+    s.getRange(headerRow, 2).setValue('回答数');
+    s.getRange(headerRow, 1, 1, 2).setFontWeight('bold');
+    regionBucketFormulas_(prefRange, aichiRange).forEach(function (formula, i) {
+      s.getRange(headerRow + 1 + i, 1).setValue(REGION_BUCKETS[i]);
+      s.getRange(headerRow + 1 + i, 2).setFormula(formula);
+    });
   });
 
-  recreateSheet_(ss, SHEET_AGE, function (s) {
-    writeTitledFormula_(s, 0, '年代 × 希望頻度',
-      queryFormula_(range, "select " + col.age + ", count(" + col.timestamp + ") group by " + col.age + " pivot " + col.preferred_frequency + " label count(" + col.timestamp + ") '回答数'"));
-    writeTitledFormula_(s, 1, '年代 × 価格',
-      queryFormula_(range, "select " + col.age + ", count(" + col.timestamp + ") group by " + col.age + " pivot " + col.preferred_price + " label count(" + col.timestamp + ") '回答数'"));
-    writeTitledFormula_(s, 2, '年代 × 温度感',
-      queryFormula_(range, "select " + col.age + ", count(" + col.timestamp + ") group by " + col.age + " pivot " + col.preferred_atmosphere + " label count(" + col.timestamp + ") '回答数'"));
-    writeMultiVsSingleGrid_(s, 3, '年代 × 参加形式　※列=年代、行=参加形式、延べ件数',
-      respColRange_(col.preferred_format), FORMAT_OPTIONS, respColRange_(col.age), AGE_OPTIONS);
-    writeMultiVsSingleGrid_(s, 4, '年代 × 好きな服装　※列=年代、行=服装、延べ件数',
+  /* ── 集計_衣装カテゴリ（分析の主：interest_categoriesの複数回答） ── */
+  recreateSheet_(ss, SHEET_CLOTHING, function (s) {
+    writeMultiTally_(s, 0, '興味のある衣装・服装・キャラクター表現 単純集計（複数回答、延べ件数、分析の主）',
+      respColRange_(col.interest_categories), INTEREST_CATEGORY_OPTIONS);
+    writeMultiVsSingleGrid_(s, 1, '都道府県 × 衣装カテゴリ　※列=都道府県、行=カテゴリ、延べ件数',
+      respColRange_(col.interest_categories), INTEREST_CATEGORY_OPTIONS, prefRange, PREFECTURES);
+    writeMultiVsSingleGrid_(s, 2, '年代 × 衣装カテゴリ　※列=年代、行=カテゴリ、延べ件数',
+      respColRange_(col.interest_categories), INTEREST_CATEGORY_OPTIONS, respColRange_(col.age), AGE_OPTIONS);
+    writeMultiVsSingleGrid_(s, 3, '愛知県内地域 × 衣装カテゴリ　※列=愛知県内地域、行=カテゴリ、延べ件数',
+      respColRange_(col.interest_categories), INTEREST_CATEGORY_OPTIONS, aichiRange, AICHI_AREA_OPTIONS);
+
+    writeTitledFormula_(s, 4, '都道府県 × 第一嗜好（補助指標）',
+      queryFormula_(range, "select " + col.prefecture + ", count(" + col.timestamp + ") where " +
+        col.primary_interest_category + " is not null and " + col.primary_interest_category + " <> '' group by " +
+        col.prefecture + " pivot " + col.primary_interest_category + " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, 5, '年代 × 第一嗜好（補助指標）',
+      queryFormula_(range, "select " + col.age + ", count(" + col.timestamp + ") where " +
+        col.primary_interest_category + " is not null and " + col.primary_interest_category + " <> '' group by " +
+        col.age + " pivot " + col.primary_interest_category + " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, 6, '愛知県内地域 × 第一嗜好（補助指標）',
+      queryFormula_(range, "select " + col.aichi_area + ", count(" + col.timestamp + ") where " +
+        col.primary_interest_category + " is not null and " + col.primary_interest_category + " <> '' group by " +
+        col.aichi_area + " pivot " + col.primary_interest_category + " label count(" + col.timestamp + ") '回答数'"));
+  });
+
+  /* ── 集計_関わり方 ── */
+  recreateSheet_(ss, SHEET_ENGAGEMENT, function (s) {
+    writeMultiTally_(s, 0, '関わり方 単純集計（複数回答、延べ件数）', respColRange_(col.engagement_preferences), ENGAGEMENT_OPTIONS);
+    writeMultiVsSingleGrid_(s, 1, '地域 × 関わり方　※列=地域、行=関わり方、延べ件数',
+      respColRange_(col.engagement_preferences), ENGAGEMENT_OPTIONS, prefRange, PREFECTURES);
+    writeTitledFormula_(s, 2, '第一嗜好 × 関わり方（補助指標）',
+      queryFormula_(range, "select " + col.primary_interest_category + " where " + col.primary_interest_category +
+        " is not null and " + col.primary_interest_category + " <> '' label " + col.primary_interest_category + " '第一嗜好'"));
+  });
+
+  /* ── 集計_SNBC認知 ── */
+  recreateSheet_(ss, SHEET_SNBC_AWARENESS, function (s) {
+    writeTitledFormula_(s, 0, 'SNBC認知率　※ユニフォーム系ゲート該当者のみ回答',
+      queryFormula_(range, "select " + col.snbc_awareness + ", count(" + col.timestamp + ") where " +
+        col.snbc_awareness + " <> '' group by " + col.snbc_awareness + " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, 1, '都道府県 × SNBC認知',
+      queryFormula_(range, "select " + col.prefecture + ", count(" + col.timestamp + ") where " +
+        col.snbc_awareness + " <> '' group by " + col.prefecture + " pivot " + col.snbc_awareness +
+        " label count(" + col.timestamp + ") '回答数'"));
+
+    var row = 1 + 2 * BLOCK_ROW_STEP;
+    sheet_setTitle_(s, row, '名古屋市／愛知県その他／岐阜県／三重県／その他 × SNBC認知');
+    var headerRow = row + 1;
+    s.getRange(headerRow, 1).setValue('区分');
+    SNBC_AWARENESS_OPTIONS.forEach(function (opt, c) { s.getRange(headerRow, 2 + c).setValue(opt); });
+    s.getRange(headerRow, 1, 1, SNBC_AWARENESS_OPTIONS.length + 1).setFontWeight('bold');
+    var bucketFormulas = regionBucketFormulas_(prefRange, aichiRange);
+    REGION_BUCKETS.forEach(function (bucket, r) {
+      s.getRange(headerRow + 1 + r, 1).setValue(bucket);
+      SNBC_AWARENESS_OPTIONS.forEach(function (opt, c) {
+        // regionBucketFormulas_は「=SUMPRODUCT(...)」の完成形なので、SNBC認知列条件を掛け合わせるため式を作り直す。
+        s.getRange(headerRow + 1 + r, 2 + c).setFormula(
+          regionBucketFormulaWithExtraCondition_(prefRange, aichiRange, r, columnEqualsExpr_(col.snbc_awareness, opt))
+        );
+      });
+    });
+
+    writeMultiVsSingleGrid_(s, 3, '衣装カテゴリ × SNBC認知　※列=SNBC認知、行=カテゴリ、延べ件数',
+      respColRange_(col.interest_categories), INTEREST_CATEGORY_OPTIONS, respColRange_(col.snbc_awareness), SNBC_AWARENESS_OPTIONS);
+    writeTitledFormula_(s, 4, '年代 × SNBC認知',
+      queryFormula_(range, "select " + col.age + ", count(" + col.timestamp + ") where " +
+        col.snbc_awareness + " <> '' group by " + col.age + " pivot " + col.snbc_awareness +
+        " label count(" + col.timestamp + ") '回答数'"));
+  });
+
+  /* ── 集計_SNBC興味 ── */
+  recreateSheet_(ss, SHEET_SNBC_INTEREST, function (s) {
+    writeTitledFormula_(s, 0, 'SNBC興味あり／なし／どちらともいえない　※ユニフォーム系ゲート該当者のみ回答',
+      queryFormula_(range, "select " + col.snbc_interest + ", count(" + col.timestamp + ") where " +
+        col.snbc_interest + " <> '' group by " + col.snbc_interest + " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, 1, '地域 × SNBC興味',
+      queryFormula_(range, "select " + col.prefecture + ", count(" + col.timestamp + ") where " +
+        col.snbc_interest + " <> '' group by " + col.prefecture + " pivot " + col.snbc_interest +
+        " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, 2, 'SNBC認知 × SNBC興味',
+      queryFormula_(range, "select " + col.snbc_awareness + ", count(" + col.timestamp + ") where " +
+        col.snbc_interest + " <> '' group by " + col.snbc_awareness + " pivot " + col.snbc_interest +
+        " label count(" + col.timestamp + ") '回答数'"));
+    writeMultiVsSingleGrid_(s, 3, '衣装カテゴリ × SNBC興味　※列=SNBC興味、行=カテゴリ、延べ件数',
+      respColRange_(col.interest_categories), INTEREST_CATEGORY_OPTIONS, respColRange_(col.snbc_interest), SNBC_INTEREST_OPTIONS);
+    // 「見る専門」と「自分で着たい」を混同しないよう、関わり方はカテゴリではなく個別選択肢のまま行に取る。
+    writeMultiVsSingleGrid_(s, 4, '関わり方（着たい／見たい等） × SNBC興味　※列=SNBC興味、行=関わり方、延べ件数',
+      respColRange_(col.engagement_preferences), ENGAGEMENT_OPTIONS, respColRange_(col.snbc_interest), SNBC_INTEREST_OPTIONS);
+  });
+
+  /* ── 集計_スーツ ── */
+  recreateSheet_(ss, SHEET_SUIT, function (s) {
+    writeTitledFormula_(s, 0, 'スーツ選択者数　※suit_event_interestが空でない回答者数',
+      queryFormula_(range, "select count(" + col.timestamp + ") where " + col.suit_event_interest + " <> '' label count(" +
+        col.timestamp + ") 'スーツ選択者数'"));
+    writeMultiTally_(s, 1, 'スーツの関わり方 単純集計（複数回答、延べ件数）', respColRange_(col.suit_engagement_preferences), SUIT_ENGAGEMENT_OPTIONS);
+    writeMultiTally_(s, 2, 'スーツタイプ 単純集計（複数回答、延べ件数）', respColRange_(col.suit_types), SUIT_TYPES_OPTIONS);
+    writeMultiTally_(s, 3, 'スーツの状態 単純集計（複数回答、延べ件数）', respColRange_(col.suit_states), SUIT_STATES_OPTIONS);
+    writeTitledFormula_(s, 4, 'スーツ企画への興味 単純集計',
+      queryFormula_(range, "select " + col.suit_event_interest + ", count(" + col.timestamp + ") where " +
+        col.suit_event_interest + " <> '' group by " + col.suit_event_interest + " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, 5, 'スーツ企画興味 × 場の温度感',
+      queryFormula_(range, "select " + col.suit_event_interest + ", count(" + col.timestamp + ") where " +
+        col.suit_event_interest + " <> '' group by " + col.suit_event_interest + " pivot " + col.preferred_atmosphere +
+        " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, 6, 'スーツ企画興味 × ユニ会興味（snbc_interest）　※両方に興味がある回答者のみ両方の値を持つ',
+      queryFormula_(range, "select " + col.suit_event_interest + ", count(" + col.timestamp + ") where " +
+        col.suit_event_interest + " <> '' group by " + col.suit_event_interest + " pivot " + col.snbc_interest +
+        " label count(" + col.timestamp + ") '回答数'"));
+  });
+
+  /* ── 深掘り集計（#292由来。snbc_interest='はい'の回答者のみを対象にする） ── */
+  recreateSheet_(ss, SHEET_DEEP_DIVE, function (s) {
+    writeTitledFormula_(s, 0, '地域 × 頻度　※snbc_interest=はいの回答者のみ対象',
+      queryFormula_(range, "select " + col.prefecture + ", count(" + col.timestamp + ") where " +
+        col.snbc_interest + "='はい' group by " + col.prefecture + " pivot " + col.preferred_frequency +
+        " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, 1, '地域 × 価格　※snbc_interest=はいの回答者のみ対象',
+      queryFormula_(range, "select " + col.prefecture + ", count(" + col.timestamp + ") where " +
+        col.snbc_interest + "='はい' group by " + col.prefecture + " pivot " + col.preferred_price +
+        " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, 2, '地域 × 人数　※snbc_interest=はいの回答者のみ対象',
+      queryFormula_(range, "select " + col.prefecture + ", count(" + col.timestamp + ") where " +
+        col.snbc_interest + "='はい' group by " + col.prefecture + " pivot " + col.preferred_group_size +
+        " label count(" + col.timestamp + ") '回答数'"));
+    writeMultiVsSingleGrid_(s, 3, '地域 × 参加形式　※列=地域、行=参加形式、延べ件数、snbc_interest=はいのみ対象',
+      respColRange_(col.preferred_format), FORMAT_OPTIONS, prefRange, PREFECTURES, snbcInterestRange, 'はい');
+    writeMultiVsSingleGrid_(s, 4, '「2人だけ」志向 × 仮定企画への参加意向　※snbc_interest=はいのみ対象',
+      respColRange_(col.preferred_format), ['少人数の部屋で2人だけ'], respColRange_(col.hypothetical_intent), HYPOTHETICAL_INTENT_OPTIONS, snbcInterestRange, 'はい');
+    writeMultiVsSingleGrid_(s, 5, '「5〜6人程度」志向 × 仮定企画への参加意向　※snbc_interest=はいのみ対象',
+      respColRange_(col.preferred_format), ['5〜6人程度の少人数'], respColRange_(col.hypothetical_intent), HYPOTHETICAL_INTENT_OPTIONS, snbcInterestRange, 'はい');
+    writeTitledFormula_(s, 6, '場の温度感 × 仮定企画への参加意向　※snbc_interest=はいの回答者のみ対象',
+      queryFormula_(range, "select " + col.preferred_atmosphere + ", count(" + col.timestamp + ") where " +
+        col.snbc_interest + "='はい' group by " + col.preferred_atmosphere + " pivot " + col.hypothetical_intent +
+        " label count(" + col.timestamp + ") '回答数'"));
+    writeMultiVsSingleGrid_(s, 7, '参加障壁 × 仮定企画への参加意向　※列=参加意向、行=障壁、延べ件数、snbc_interest=はいのみ対象',
+      respColRange_(col.barriers), BARRIER_OPTIONS, respColRange_(col.hypothetical_intent), HYPOTHETICAL_INTENT_OPTIONS, snbcInterestRange, 'はい');
+    writeMultiVsSingleGrid_(s, 8, 'survey_to_signup_gap × gap_reasons　※列=gap、行=理由、延べ件数、snbc_interest=はいのみ対象',
+      respColRange_(col.gap_reasons), GAP_REASON_OPTIONS, respColRange_(col.survey_to_signup_gap), GAP_OPTIONS, snbcInterestRange, 'はい');
+  });
+
+  /* ── 集計_服装（旧12択・参考値） ── 遡及マッピングはしない。旧データの参考値としてのみ残す。 */
+  recreateSheet_(ss, SHEET_LEGACY_CLOTHING, function (s) {
+    writeTitledFormula_(s, 0, '【旧12択・参考値】このシートはPR #292時点のclothing_interests列（12択）を集計したものです。' +
+      'Issue #293以降の新規回答はclothing_interestsに保存されないため空欄のままです。新しい衣装カテゴリ集計は「' +
+      SHEET_CLOTHING + '」を参照してください。',
+      queryFormula_(range, "select " + col.clothing_interests + ", count(" + col.timestamp + ") where " +
+        col.clothing_interests + " <> '' group by " + col.clothing_interests + " label count(" + col.timestamp + ") '回答数'"));
+    writeMultiVsSingleGrid_(s, 1, '【旧12択・参考値】年代 × 好きな服装　※列=年代、行=服装、延べ件数',
       respColRange_(col.clothing_interests), CLOTHING_OPTIONS, respColRange_(col.age), AGE_OPTIONS);
   });
 
-  recreateSheet_(ss, SHEET_FORMAT, function (s) {
-    writeMultiTally_(s, 0, '参加形式 単純集計（複数回答、延べ件数）', respColRange_(col.preferred_format), FORMAT_OPTIONS);
-    writeMultiVsSingleGrid_(s, 1, '参加形式 × 仮定企画への参加意向　※列=参加意向、行=参加形式、延べ件数',
-      respColRange_(col.preferred_format), FORMAT_OPTIONS, respColRange_(col.hypothetical_intent), HYPOTHETICAL_INTENT_OPTIONS);
-    writeMultiVsSingleGrid_(s, 2, '「2人だけ」志向 と「5〜6人程度」志向 の比較 × 仮定企画への参加意向',
-      respColRange_(col.preferred_format), ['少人数の部屋で2人だけ', '5〜6人程度の少人数'], respColRange_(col.hypothetical_intent), HYPOTHETICAL_INTENT_OPTIONS);
-  });
-
-  recreateSheet_(ss, SHEET_BARRIER, function (s) {
-    writeMultiTally_(s, 0, '参加障壁 単純集計（複数回答、延べ件数）', respColRange_(col.barriers), BARRIER_OPTIONS);
-    writeMultiVsSingleGrid_(s, 1, '参加障壁 × 仮定企画への参加意向　※列=参加意向、行=障壁、延べ件数',
-      respColRange_(col.barriers), BARRIER_OPTIONS, respColRange_(col.hypothetical_intent), HYPOTHETICAL_INTENT_OPTIONS);
-  });
-
-  recreateSheet_(ss, SHEET_ATMOSPHERE, function (s) {
-    writeTitledFormula_(s, 0, '温度感 単純集計',
-      queryFormula_(range, "select " + col.preferred_atmosphere + ", count(" + col.timestamp + ") group by " + col.preferred_atmosphere + " label count(" + col.timestamp + ") '回答数'"));
-    writeTitledFormula_(s, 1, '温度感 × 仮定企画への参加意向',
-      queryFormula_(range, "select " + col.preferred_atmosphere + ", count(" + col.timestamp + ") group by " + col.preferred_atmosphere + " pivot " + col.hypothetical_intent + " label count(" + col.timestamp + ") '回答数'"));
-  });
-
-  recreateSheet_(ss, SHEET_GAP, function (s) {
-    writeTitledFormula_(s, 0, 'Q12相当（アンケートと実申込のギャップ） 単純集計',
-      queryFormula_(range, "select " + col.survey_to_signup_gap + ", count(" + col.timestamp + ") group by " + col.survey_to_signup_gap + " label count(" + col.timestamp + ") '回答数'"));
-    writeMultiVsSingleGrid_(s, 1, 'Q12相当 × ギャップの理由　※列=Q12相当、行=理由、延べ件数',
-      respColRange_(col.gap_reasons), GAP_REASON_OPTIONS, respColRange_(col.survey_to_signup_gap), GAP_OPTIONS);
-  });
-
-  recreateSheet_(ss, SHEET_WEAR, function (s) {
-    writeMultiTally_(s, 0, '好きな服装 単純集計（複数回答、延べ件数）', respColRange_(col.clothing_interests), CLOTHING_OPTIONS);
-    writeMultiVsSingleGrid_(s, 1, '好きな服装 × 仮定企画への参加意向　※列=参加意向、行=服装、延べ件数',
-      respColRange_(col.clothing_interests), CLOTHING_OPTIONS, respColRange_(col.hypothetical_intent), HYPOTHETICAL_INTENT_OPTIONS);
-  });
-
-  recreateSheet_(ss, SHEET_INFO, function (s) {
-    writeMultiTally_(s, 0, '申込をためらう情報不足 単純集計（複数回答、延べ件数）', respColRange_(col.helpful_information), HELPFUL_INFO_OPTIONS);
-  });
-
-  recreateSheet_(ss, SHEET_BASIC, function (s) {
-    writeTitledFormula_(s, 0, '告知の認知・参加経験 単純集計',
-      queryFormula_(range, "select " + col.event_awareness + ", count(" + col.timestamp + ") group by " + col.event_awareness + " label count(" + col.timestamp + ") '回答数'"));
-    writeTitledFormula_(s, 1, '仮定企画への参加意向 単純集計',
-      queryFormula_(range, "select " + col.hypothetical_intent + ", count(" + col.timestamp + ") group by " + col.hypothetical_intent + " label count(" + col.timestamp + ") '回答数'"));
-  });
-
   Logger.log('buildAggregationSheets: 集計シートを再生成しました。');
+}
+
+/**
+ * 地域5区分（名古屋市／愛知県その他／岐阜県／三重県／その他）それぞれの回答数を数える
+ * SUMPRODUCT式を、REGION_BUCKETSと同じ順序の配列で返す。
+ */
+function regionBucketFormulas_(prefRange, aichiRange) {
+  return [
+    '=SUMPRODUCT((' + aichiRange + '="名古屋市")*1)',
+    '=SUMPRODUCT((' + prefRange + '="愛知県")*(' + aichiRange + '<>"名古屋市")*1)',
+    '=SUMPRODUCT((' + prefRange + '="岐阜県")*1)',
+    '=SUMPRODUCT((' + prefRange + '="三重県")*1)',
+    '=SUMPRODUCT((' + prefRange + '<>"")*(' + prefRange + '<>"愛知県")*(' + prefRange + '<>"岐阜県")*(' + prefRange + '<>"三重県")*1)'
+  ];
+}
+
+/**
+ * regionBucketFormulas_の各式に、追加の絞り込み条件（例：SNBC認知列が特定の値）を
+ * 掛け合わせた完成形の式を1つ返す（bucketIndexはREGION_BUCKETSの添字）。
+ */
+function regionBucketFormulaWithExtraCondition_(prefRange, aichiRange, bucketIndex, extraConditionExpr) {
+  var base = regionBucketFormulas_(prefRange, aichiRange)[bucketIndex];
+  // 末尾の ")" の直前に "*(条件)" を挿入する。
+  return base.slice(0, -1) + '*(' + extraConditionExpr + '))';
+}
+
+function columnEqualsExpr_(columnLetter, value) {
+  return respColRange_(columnLetter) + '="' + escapeForFormula_(value) + '"';
+}
+
+function sheet_setTitle_(sheet, row, title) {
+  var titleCell = sheet.getRange(row, 1);
+  titleCell.setValue(title);
+  titleCell.setFontWeight('bold');
 }
 
 /**
@@ -813,8 +1213,10 @@ function writeTitledFormula_(sheet, blockIndex, title, formula) {
  * SUMPRODUCT(ISNUMBER(SEARCH(...))) によるセル内文字列の部分一致で集計する。
  * 完全一致（値の組み合わせそのもので照合する方式）ではないため、
  * 他の選択肢との組み合わせや選択順序に依存しない安全な集計になる。
+ * filterRangeA1・filterValueを指定すると、その列が指定値と一致する行のみを対象にする
+ * （例：深掘り集計をsnbc_interest='はい'の回答者だけに絞る）。
  */
-function writeMultiTally_(sheet, blockIndex, title, multiRangeA1, categories) {
+function writeMultiTally_(sheet, blockIndex, title, multiRangeA1, categories, filterRangeA1, filterValue) {
   var row = 1 + blockIndex * BLOCK_ROW_STEP;
   var titleCell = sheet.getRange(row, 1);
   titleCell.setValue(title);
@@ -828,7 +1230,8 @@ function writeMultiTally_(sheet, blockIndex, title, multiRangeA1, categories) {
   categories.forEach(function (category, i) {
     var dataRow = headerRow + 1 + i;
     sheet.getRange(dataRow, 1).setValue(category);
-    var formula = '=SUMPRODUCT(ISNUMBER(SEARCH("' + escapeForFormula_(category) + '",' + multiRangeA1 + ')))';
+    var formula = '=SUMPRODUCT(ISNUMBER(SEARCH("' + escapeForFormula_(category) + '",' + multiRangeA1 + '))' +
+      filterTerm_(filterRangeA1, filterValue) + ')';
     sheet.getRange(dataRow, 2).setFormula(formula);
   });
 }
@@ -837,8 +1240,9 @@ function writeMultiTally_(sheet, blockIndex, title, multiRangeA1, categories) {
  * 「複数選択設問 × 単一選択設問」のクロス集計グリッド。
  * 行＝rowCategories（複数選択側）、列＝colCategories（単一選択側）。
  * セルはSEARCHによる部分一致 × 単一選択列の完全一致、で延べ件数を数える。
+ * filterRangeA1・filterValueの意味はwriteMultiTally_と同じ。
  */
-function writeMultiVsSingleGrid_(sheet, blockIndex, title, multiRangeA1, rowCategories, singleRangeA1, colCategories) {
+function writeMultiVsSingleGrid_(sheet, blockIndex, title, multiRangeA1, rowCategories, singleRangeA1, colCategories, filterRangeA1, filterValue) {
   var row = 1 + blockIndex * BLOCK_ROW_STEP;
   var titleCell = sheet.getRange(row, 1);
   titleCell.setValue(title);
@@ -856,10 +1260,19 @@ function writeMultiVsSingleGrid_(sheet, blockIndex, title, multiRangeA1, rowCate
     sheet.getRange(dataRow, 1).setValue(rowCategory);
     colCategories.forEach(function (colCategory, c) {
       var formula = '=SUMPRODUCT(ISNUMBER(SEARCH("' + escapeForFormula_(rowCategory) + '",' + multiRangeA1 + '))*(' +
-        singleRangeA1 + '="' + escapeForFormula_(colCategory) + '"))';
+        singleRangeA1 + '="' + escapeForFormula_(colCategory) + '")' + filterTerm_(filterRangeA1, filterValue) + ')';
       sheet.getRange(dataRow, 2 + c).setFormula(formula);
     });
   });
+}
+
+/**
+ * SUMPRODUCT式に絞り込み条件を追加するための"*(range="value")"項を作る。
+ * filterRangeA1が未指定の場合は空文字列（絞り込みなし）を返す。
+ */
+function filterTerm_(filterRangeA1, filterValue) {
+  if (!filterRangeA1) return '';
+  return '*(' + filterRangeA1 + '="' + escapeForFormula_(filterValue) + '")';
 }
 
 /* ══════════════════════════════════════════════════════════════
