@@ -121,6 +121,10 @@ assert(
   sandbox.FORMAT_OPTIONS.every((o) => o.indexOf('1対1') === -1),
   'FORMAT_OPTIONS contains no "1対1" wording at all, got: ' + JSON.stringify(sandbox.FORMAT_OPTIONS)
 );
+assert(
+  sandbox.GAP_REASON_OPTIONS.every((o) => o.indexOf('1対1') === -1),
+  'GAP_REASON_OPTIONS contains no "1対1" wording either (wording consistency with FORMAT_OPTIONS), got: ' + JSON.stringify(sandbox.GAP_REASON_OPTIONS)
+);
 
 // ── barriers（重複統合の確認） ──
 assert(
