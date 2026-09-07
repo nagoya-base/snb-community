@@ -186,11 +186,35 @@ function deepDiveAnswerCommon(doc, window) {
 }
 
 /* ══════════════════════════════════════════════════════════════
+ * Q5：Q4で「その他」の自由記述しか選んでいない場合、候補がゼロになるので
+ * primaryInterestCategory自体を表示しない（候補ゼロの空カードを見せない）
+ * ══════════════════════════════════════════════════════════════ */
+{
+  const { window, doc, showForm } = boot();
+  showForm();
+
+  const interestCard = doc.querySelector('.q-card[data-key="interestCategories"]');
+  const primaryCard = doc.querySelector('.q-card[data-key="primaryInterestCategory"]');
+  const otherCheckbox = interestCard.querySelector('input[id$="-other"]');
+  otherCheckbox.checked = true;
+  otherCheckbox.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+  assert(
+    primaryCard.hidden === true,
+    'primaryInterestCategory stays hidden when interestCategories only contains a free-text その他 entry'
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
  * ユニフォーム系ゲート：STEP2/STEP3の表示制御
  * ══════════════════════════════════════════════════════════════ */
 {
   const { window, doc, showForm } = boot();
   showForm();
+
+  function sectionNoteHiddenFor(key) {
+    return doc.querySelector('.notice-box[data-section-note-for="' + key + '"]').hidden;
+  }
 
   // 全身タイツだけ：ユニフォーム系ゲート非該当 → SNBC設問が出ない
   check(doc, window, 'interestCategories', '全身タイツ');
@@ -202,6 +226,10 @@ function deepDiveAnswerCommon(doc, window) {
   assert(!isHidden(doc, 'snbcAwareness'), 'uniform gate category reveals snbcAwareness');
   assert(!isHidden(doc, 'snbcInterest'), 'uniform gate category reveals snbcInterest');
   assert(isHidden(doc, 'preferredFrequency'), 'STEP3 (deep dive) stays hidden before snbcInterest=はい');
+  assert(
+    sectionNoteHiddenFor('preferredFrequency') === true,
+    'STEP3 sectionNote ("ここからは、SNBCのユニフォーム企画...") stays hidden together with the (still hidden) STEP3 cards'
+  );
 
   // SNBC興味=いいえ：STEP3は表示されない
   check(doc, window, 'snbcInterest', 'いいえ');
@@ -211,6 +239,10 @@ function deepDiveAnswerCommon(doc, window) {
   check(doc, window, 'snbcInterest', 'はい');
   assert(!isHidden(doc, 'preferredFrequency'), 'STEP3 shown when snbcInterest=はい');
   assert(!isHidden(doc, 'freeComment'), 'STEP3 free comment field shown when snbcInterest=はい');
+  assert(
+    sectionNoteHiddenFor('preferredFrequency') === false,
+    'STEP3 sectionNote becomes visible together with the STEP3 cards once snbcInterest=はい'
+  );
 
   // どちらともいえない：任意の理由設問が表示される
   check(doc, window, 'snbcInterest', 'どちらともいえない');
@@ -231,6 +263,26 @@ function deepDiveAnswerCommon(doc, window) {
   assert(!isHidden(doc, 'suitTypes'), 'STEP2B S2 shown for suit selectors');
   assert(!isHidden(doc, 'suitStates'), 'STEP2B S3 shown for suit selectors');
   assert(!isHidden(doc, 'suitEventInterest'), 'STEP2B S4 shown for suit selectors');
+  assert(
+    doc.querySelector('.notice-box[data-section-note-for="suitEngagementPreferences"]').hidden === false,
+    'STEP2B sectionNote ("ここからは、スーツについて伺います。") shown together with S1'
+  );
+
+  // suit_event_interest=はいの場合、#292深掘り一式が再利用されるが、DOM上はS1〜S4の
+  // 「後ろ」（STEP2Bの後）に現れる必要がある（ユニフォーム系ゲートを経由していないため）。
+  check(doc, window, 'suitEngagementPreferences', '自分で着たい');
+  check(doc, window, 'suitTypes', 'ビジネススーツ');
+  check(doc, window, 'suitStates', 'ジャケットを着たまま');
+  check(doc, window, 'suitEventInterest', 'はい');
+  assert(!isHidden(doc, 'preferredFrequency'), 'suit_event_interest=はい reveals the shared deep-dive fields');
+  const cardsAfterSuitYes = Array.from(doc.querySelectorAll('.q-card'));
+  const idxSuitEventInterest = cardsAfterSuitYes.findIndex((c) => c.dataset.key === 'suitEventInterest');
+  const idxPreferredFrequencySuitOnly = cardsAfterSuitYes.findIndex((c) => c.dataset.key === 'preferredFrequency');
+  assert(
+    idxPreferredFrequencySuitOnly > idxSuitEventInterest,
+    'suit-only path: deep-dive block is repositioned AFTER STEP2B (suitEventInterest) in the DOM, not before it, got indices: ' +
+      JSON.stringify({ suitEventInterest: idxSuitEventInterest, preferredFrequency: idxPreferredFrequencySuitOnly })
+  );
 }
 
 /* ══════════════════════════════════════════════════════════════
