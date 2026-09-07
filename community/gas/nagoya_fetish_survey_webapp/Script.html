@@ -1,0 +1,730 @@
+<script>
+(function () {
+  'use strict';
+
+  /* ══════════════════════════════════════════════════════════════
+   * 設問・選択肢の定義
+   * Code.gs側のALLOWED配列と必ず一致させること（サーバー側で必ず再検証されるため、
+   * ここだけを書き換えても選択肢を追加できない。両方を同時に更新すること）。
+   * ══════════════════════════════════════════════════════════════ */
+
+  var OTHER_PREFIX = 'その他:';
+  var OTHER_VALUE = '__OTHER__'; // 「その他」チェックボックス自体を表す内部値（送信はしない）
+
+  var PREFECTURES = [
+    '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
+    '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
+    '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
+    '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
+    '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
+    '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
+    '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県', '海外'
+  ];
+
+  var AICHI_AREA_OPTIONS = [
+    '名古屋市', '尾張地域（名古屋市以外）', '知多地域', '西三河地域',
+    '東三河地域', '愛知県外', 'わからない・その他'
+  ];
+
+  var AGE_OPTIONS = [
+    '18〜24歳', '25〜29歳', '30〜39歳', '40〜49歳', '50〜59歳', '60歳以上', '回答しない'
+  ];
+
+  var CLOTHING_OPTIONS = [
+    '野球ユニフォーム', 'サッカーユニフォーム', 'バスケットボールユニフォーム',
+    'ラグビー・アメリカンフットボール', '陸上競技ウェア', 'スイムウェア',
+    'レスリング・シングレット', '学校制服', 'ジャージ・トレーニングウェア',
+    'スーツ', '作業着・職業制服', 'コスプレ衣装'
+  ];
+
+  var FREQUENCY_OPTIONS = [
+    '月2回程度', '月1回程度', '1〜2か月に1回程度', '2〜3か月に1回程度',
+    '半年に1回程度', '頻度はあまり関係ない', 'わからない'
+  ];
+
+  var PRICE_OPTIONS = [
+    '2,000円以下', '2,500円程度', '3,000円程度', '3,500円程度',
+    '4,000円程度', '5,000円程度', '内容によっては5,000円以上でもよい'
+  ];
+
+  var GROUP_SIZE_OPTIONS = [
+    '3〜4人', '5〜6人', '7〜8人', '9〜10人', '11人以上', '人数はあまり気にならない'
+  ];
+
+  var FORMAT_OPTIONS = [
+    '個室で1対1',
+    '3〜4人程度のごく少人数',
+    '5〜6人程度の少人数',
+    '7〜10人程度',
+    '10人以上の交流会',
+    'まず1対1や少人数で知り合ってから、大人数にも参加したい',
+    '知り合いと一緒なら大人数でも参加しやすい',
+    '人数より、参加者の雰囲気や内容の方が重要',
+    'わからない'
+  ];
+
+  var EVENT_AWARENESS_OPTIONS = [
+    '見たことがあり、実際に参加したことがある',
+    '見たことはあるが、申し込んだことはない',
+    '申し込もうと思ったが見送ったことがある',
+    '告知を見たことがない',
+    '覚えていない'
+  ];
+
+  var BARRIER_OPTIONS = [
+    '日程が合わなかった', '開催時間が合わなかった', '開催場所が遠かった',
+    '料金が高いと感じた', '一人参加が不安だった', '知り合いがいなかった',
+    '参加者の年齢層が分からなかった', 'どんな人が来るか分からなかった',
+    '自分の好きなジャンルと合うか不安だった', '何をするイベントなのか分かりにくかった',
+    '写真撮影が不安だった', 'SNS掲載が不安だった', '衣装を用意するのが面倒だった',
+    '申し込み方法が面倒だった', '予定を早く決められなかった',
+    '直前になると行く気がなくなった', '興味はあるが、実際に参加するほどではなかった',
+    '自分の年齢や体型が、その場に合うか不安だった',
+    '参加者の雰囲気やタイプが分からなかった',
+    '常連同士ですでに仲良さそうに見えた',
+    '内容が健全・真面目すぎて、参加するほどの魅力を感じなかった',
+    '逆に、性的な雰囲気や接触に発展しそうで不安だった',
+    '嫌なことを断ったときに気まずくなりそうだった',
+    '該当しない'
+  ];
+
+  var HELPFUL_INFO_OPTIONS = [
+    '参加予定人数', '参加者の年代', '初参加者が何人いるか', '一人参加者が何人いるか',
+    '当日の流れ', 'どんな衣装の人が参加するか', '写真撮影のルール', 'SNS掲載ルール',
+    '会場の写真', '主催者についての情報', '過去開催の様子', '過去参加者の感想',
+    'キャンセル規定',
+    '参加者の雰囲気や年代の目安', '初参加者がどの程度いるか', '常連と初参加者の割合',
+    'その回が交流中心か撮影中心か', '身体的接触の有無についてのルール',
+    '嫌なことを断っても問題ないというルール', '更衣・撮影スペースの使い方',
+    '初参加者が孤立しない進行方法',
+    '特にない'
+  ];
+
+  var ATMOSPHERE_OPTIONS = [
+    '会話や衣装を楽しむことが中心',
+    'フェチについて気軽に話せるが、身体的な接触はない',
+    '撮影やポーズなど、少し踏み込んだ表現も楽しめる',
+    'お互いの同意があれば、ある程度距離の近い交流もあってよい',
+    '交流の雰囲気が少し刺激的な方が参加したくなる',
+    '性的な雰囲気を感じる企画には参加しにくい',
+    '事前に雰囲気が明確ならどちらでもよい',
+    'わからない'
+  ];
+
+  var HYPOTHETICAL_INTENT_OPTIONS = [
+    '日程が合えば申し込む可能性が高い', '内容や参加者を見てから決める',
+    '興味はあるが、たぶん申し込まない', '参加しない', 'わからない'
+  ];
+
+  var GAP_OPTIONS = [
+    'よくある', 'ときどきある', 'あまりない', 'ない', 'わからない'
+  ];
+
+  var GAP_REASON_OPTIONS = [
+    'アンケートでは予定を具体的に考えていない', '実際の日程になると都合が合わない',
+    '実際にお金を払う段階になると迷う', '知らない人と会うことに不安を感じる',
+    '申し込み後に断りづらくなるのが嫌', '当日まで参加する気分が続くか不安',
+    '興味を示すことと、実際に参加することは別だと思っている',
+    '告知を詳しく見ると、自分が想像していた雰囲気と違った',
+    '参加者の顔ぶれや雰囲気が分からず、申し込む決め手がなかった',
+    '思ったより性的な方向に進みそうで不安になった',
+    '逆に、わざわざ参加するほど魅力のある内容に見えなかった',
+    'その場で嫌なことを断れる自信がなかった',
+    '大人数より1対1や少人数の方が自分には合っていると思った',
+    '該当しない'
+  ];
+
+  var HYPOTHETICAL_CONDITION_TEXT = [
+    '【条件（あくまで仮定です）】',
+    '・3時間程度',
+    '・5〜6名程度',
+    '・参加費3,500円',
+    '・一人参加可',
+    '・会話・衣装・希望者の撮影を中心とし、本人の同意のない身体的接触は行わない',
+    '・写真やSNS掲載は本人の了承なしでは行わない',
+    '',
+    'この条件での開催を決定・約束するものではありません。'
+  ].join('\n');
+
+  /* 設問定義。typeは 'select'（プルダウン単一選択）/ 'radio'（単一選択）/
+     'checkbox'（複数選択）/ 'textarea'（自由記述）。
+     condition(values) を指定した設問は、条件を満たす間だけ表示・収集する
+     （非表示の間は空値として送信する＝サーバー側の制約と矛盾しないようにする）。 */
+  var QUESTIONS = [
+    {
+      key: 'prefecture', type: 'select', required: true,
+      label: 'お住まいの都道府県を教えてください',
+      options: PREFECTURES
+    },
+    {
+      key: 'aichiArea', type: 'radio', required: true,
+      label: 'お住まいの地域を教えてください',
+      help: '愛知県を選んだ方のみの質問です。',
+      options: AICHI_AREA_OPTIONS,
+      condition: function (v) { return v.prefecture === '愛知県'; }
+    },
+    {
+      key: 'age', type: 'radio', required: true,
+      label: '年代を教えてください',
+      options: AGE_OPTIONS
+    },
+    {
+      key: 'clothingInterests', type: 'checkbox', required: true, allowOther: true,
+      label: '好き・興味のある服装を教えてください（複数回答可）',
+      options: CLOTHING_OPTIONS
+    },
+    {
+      key: 'preferredFrequency', type: 'radio', required: true,
+      label: '名古屋市内で少人数のフェチ・衣装交流や撮影企画がある場合、どの程度の頻度なら参加を検討しやすいですか？',
+      help: '「開催してほしい頻度」ではなく、「ご自身が参加を検討しやすい頻度」をお答えください。特定の頻度・日程での開催を約束するものではありません。',
+      options: FREQUENCY_OPTIONS
+    },
+    {
+      key: 'preferredPrice', type: 'radio', required: true,
+      label: '1回3時間程度の少人数企画を想定した場合、参加しやすい料金はいくらですか？',
+      options: PRICE_OPTIONS
+    },
+    {
+      key: 'preferredGroupSize', type: 'radio', required: true,
+      label: '1回の参加人数は何人くらいが参加しやすいと思いますか？',
+      options: GROUP_SIZE_OPTIONS
+    },
+    {
+      key: 'preferredFormat', type: 'checkbox', required: false, allowOther: true,
+      label: 'どのような参加形式なら参加しやすいですか？（複数回答可）',
+      help: 'このアンケートはイベント募集・個人セッション募集・参加申込ではありません。「個室で1対1」も、あくまで参加しやすさの傾向を尋ねる選択肢の一つです。',
+      options: FORMAT_OPTIONS
+    },
+    {
+      key: 'eventAwareness', type: 'radio', required: true,
+      label: '名古屋でフェチ・衣装系の交流企画の告知を見たことがありますか？',
+      options: EVENT_AWARENESS_OPTIONS
+    },
+    {
+      key: 'barriers', type: 'checkbox', required: true, allowOther: true,
+      label: '「興味がある」と思った企画でも、実際には申し込まなかった理由があれば教えてください（複数回答可）',
+      help: '該当する理由がなければ「該当しない」を選んでください。',
+      options: BARRIER_OPTIONS
+    },
+    {
+      key: 'helpfulInformation', type: 'checkbox', required: false, allowOther: true,
+      label: '参加を決める際、どのような情報が分かれば申し込みやすくなりますか？（複数回答可）',
+      help: '特に無ければ「特にない」を選んでください。',
+      options: HELPFUL_INFO_OPTIONS
+    },
+    {
+      key: 'preferredAtmosphere', type: 'radio', required: false,
+      label: '衣装・フェチ系の交流企画では、どのような雰囲気が参加しやすいですか？',
+      options: ATMOSPHERE_OPTIONS
+    },
+    {
+      key: 'hypotheticalIntent', type: 'radio', required: true,
+      label: '仮に以下の条件の企画が名古屋市内であった場合、実際に申し込む可能性に最も近いものを教えてください',
+      help: HYPOTHETICAL_CONDITION_TEXT,
+      sectionNote: '以下は実際の募集ではありません。参加意向を把握するための仮定の質問です。',
+      options: HYPOTHETICAL_INTENT_OPTIONS
+    },
+    {
+      key: 'surveyToSignupGap', type: 'radio', required: true,
+      label: 'アンケートでは「参加したい・興味がある」と回答しても、実際の募集になると申し込まないことはありますか？',
+      options: GAP_OPTIONS
+    },
+    {
+      key: 'gapReasons', type: 'checkbox', required: false, allowOther: true,
+      label: 'その理由として近いものを教えてください（複数回答可）',
+      help: '直前の質問で「よくある」「ときどきある」と回答した方のみの質問です。',
+      options: GAP_REASON_OPTIONS,
+      condition: function (v) { return v.surveyToSignupGap === 'よくある' || v.surveyToSignupGap === 'ときどきある'; }
+    },
+    {
+      key: 'freeComment', type: 'textarea', required: false,
+      label: 'その他、名古屋でのフェチ・衣装系交流についてご意見があれば自由にお書きください',
+      help: '任意でご記入ください。'
+    }
+  ];
+
+  /* ══════════════════════════════════════════════════════════════
+   * ブラウザUUID：localStorage / Cookie 両方に保存し、片方が消えても復元できるようにする
+   * ══════════════════════════════════════════════════════════════ */
+
+  var UUID_STORAGE_KEY = 'survey_browser_uuid';
+  var COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 400; // 約400日（主要ブラウザのCookie上限に合わせた「最低1年程度」の実質最大値）
+
+  function generateUuid() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+    return fallbackUuidV4();
+  }
+
+  // crypto.randomUUID()非対応ブラウザ向けフォールバック。
+  // crypto.getRandomValues()（暗号学的乱数）が使える場合はそれを使い、
+  // 完全に使えない極めて古い環境でのみMath.randomにフォールバックする。
+  function fallbackUuidV4() {
+    var bytes = new Uint8Array(16);
+    if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+      window.crypto.getRandomValues(bytes);
+    } else {
+      for (var i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
+    }
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 10
+
+    var hex = [];
+    for (var j = 0; j < 256; j++) hex[j] = (j + 0x100).toString(16).slice(1);
+
+    return (
+      hex[bytes[0]] + hex[bytes[1]] + hex[bytes[2]] + hex[bytes[3]] + '-' +
+      hex[bytes[4]] + hex[bytes[5]] + '-' +
+      hex[bytes[6]] + hex[bytes[7]] + '-' +
+      hex[bytes[8]] + hex[bytes[9]] + '-' +
+      hex[bytes[10]] + hex[bytes[11]] + hex[bytes[12]] + hex[bytes[13]] + hex[bytes[14]] + hex[bytes[15]]
+    );
+  }
+
+  function readLocalStorage(key) {
+    try {
+      return window.localStorage.getItem(key);
+    } catch (e) {
+      // プライベートブラウズ等でlocalStorageへのアクセス自体が例外になる環境がある。
+      return null;
+    }
+  }
+
+  function writeLocalStorage(key, value) {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch (e) {
+      // 書き込み失敗は無視する（Cookie側が代替として機能する場合がある）。
+    }
+  }
+
+  function readCookie(name) {
+    var match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  function writeCookie(name, value) {
+    // Apps ScriptのWebアプリは常時HTTPSで配信されるためSecureを付与できる。
+    // SameSite=Laxはトップレベル遷移でのCookie送信を許可しつつCSRF的なリスクを抑える設定。
+    var attrs = 'path=/; max-age=' + COOKIE_MAX_AGE_SECONDS + '; SameSite=Lax; Secure';
+    document.cookie = name + '=' + encodeURIComponent(value) + '; ' + attrs;
+  }
+
+  /**
+   * ブラウザUUIDの復元・発行ルール（仕様理由）：
+   * 1. localStorageにUUIDがある → それを採用する。
+   *    Cookie側の値と食い違っていても、新規UUIDは発行せずlocalStorage側を正としてCookieを同期する。
+   *    （理由：Cookieは有効期限切れ・サードパーティCookie制限などで消えたり
+   *    分離されたりしやすく、localStorageの方が同一ブラウザでの継続性が高いと判断したため。
+   *    ここで新規UUIDを発行してしまうと、Cookieだけが何らかの理由で書き換わった
+   *    ケースで毎回別人扱いになってしまう）。
+   * 2. localStorageが空でCookieがある → Cookieの値を採用し、localStorageにも保存する
+   *    （localStorageのみ消去された場合の復元）。
+   * 3. 両方とも空 → 新規UUIDを生成し、両方に保存する。
+   */
+  function resolveBrowserUuid() {
+    var localValue = readLocalStorage(UUID_STORAGE_KEY);
+    var cookieValue = readCookie(UUID_STORAGE_KEY);
+
+    if (localValue) {
+      if (cookieValue !== localValue) {
+        writeCookie(UUID_STORAGE_KEY, localValue);
+      }
+      return localValue;
+    }
+
+    if (cookieValue) {
+      writeLocalStorage(UUID_STORAGE_KEY, cookieValue);
+      return cookieValue;
+    }
+
+    var newUuid = generateUuid();
+    writeLocalStorage(UUID_STORAGE_KEY, newUuid);
+    writeCookie(UUID_STORAGE_KEY, newUuid);
+    return newUuid;
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+   * フォーム描画
+   * ══════════════════════════════════════════════════════════════ */
+
+  var browserUuid = null;
+  var currentValues = {}; // key -> string | string[]
+  var fieldElements = {}; // key -> { card, inputs: [...], otherCheckbox, otherText, errorEl }
+
+  function initialValueFor(question) {
+    if (question.type === 'checkbox') return [];
+    return '';
+  }
+
+  QUESTIONS.forEach(function (q) {
+    currentValues[q.key] = initialValueFor(q);
+  });
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        if (k === 'class') node.className = attrs[k];
+        else if (k === 'text') node.textContent = attrs[k];
+        else node.setAttribute(k, attrs[k]);
+      });
+    }
+    (children || []).forEach(function (child) { if (child) node.appendChild(child); });
+    return node;
+  }
+
+  function renderQuestions() {
+    var container = document.getElementById('questions');
+    container.innerHTML = '';
+
+    QUESTIONS.forEach(function (question, index) {
+      if (question.sectionNote) {
+        container.appendChild(el('div', { class: 'notice-box' }, [
+          el('p', { text: question.sectionNote })
+        ]));
+      }
+
+      var legend = el('legend', {}, [document.createTextNode(question.label)]);
+      if (question.required) {
+        legend.appendChild(el('span', { class: 'q-required', text: '必須' }));
+      }
+
+      var card = el('fieldset', { class: 'q-card', 'data-key': question.key });
+      card.appendChild(legend);
+      if (question.help) {
+        card.appendChild(el('p', { class: 'q-help', text: question.help }));
+      }
+
+      var record = { card: card, inputs: [], otherCheckbox: null, otherText: null };
+
+      if (question.type === 'select') {
+        var select = el('select', { class: 'q-select', id: 'field-' + question.key });
+        select.appendChild(el('option', { value: '' }, [document.createTextNode('選択してください')]));
+        question.options.forEach(function (opt) {
+          select.appendChild(el('option', { value: opt }, [document.createTextNode(opt)]));
+        });
+        select.addEventListener('change', function () {
+          setValue(question.key, select.value);
+        });
+        card.appendChild(select);
+        record.inputs.push(select);
+      } else if (question.type === 'radio' || question.type === 'checkbox') {
+        var optionsWrap = el('div', { class: 'q-options' });
+        var inputType = question.type === 'radio' ? 'radio' : 'checkbox';
+        var groupName = 'field-' + question.key;
+
+        question.options.forEach(function (opt, optIndex) {
+          var input = el('input', {
+            type: inputType,
+            name: groupName,
+            id: groupName + '-' + optIndex,
+            value: opt
+          });
+          input.addEventListener('change', function () { onOptionChange(question); });
+          var label = el('label', { class: 'q-option', for: input.id }, [
+            input, el('span', { text: opt })
+          ]);
+          optionsWrap.appendChild(label);
+          record.inputs.push(input);
+        });
+
+        if (question.allowOther) {
+          var otherInput = el('input', {
+            type: inputType,
+            name: groupName,
+            id: groupName + '-other',
+            value: OTHER_VALUE
+          });
+          otherInput.addEventListener('change', function () {
+            otherText.disabled = !otherInput.checked;
+            if (!otherInput.checked) otherText.value = '';
+            onOptionChange(question);
+          });
+          var otherLabel = el('label', { class: 'q-option', for: otherInput.id }, [
+            otherInput, el('span', { text: 'その他' })
+          ]);
+          optionsWrap.appendChild(otherLabel);
+          record.inputs.push(otherInput);
+          record.otherCheckbox = otherInput;
+
+          var otherText = el('input', {
+            type: 'text',
+            class: 'q-other-text',
+            maxlength: '100',
+            placeholder: '自由にご記入ください',
+            disabled: 'disabled'
+          });
+          otherText.addEventListener('input', function () { onOptionChange(question); });
+          record.otherText = otherText;
+          card.appendChild(optionsWrap);
+          card.appendChild(otherText);
+        } else {
+          card.appendChild(optionsWrap);
+        }
+      } else if (question.type === 'textarea') {
+        var textarea = el('textarea', {
+          class: 'q-textarea',
+          id: 'field-' + question.key,
+          maxlength: '300'
+        });
+        textarea.addEventListener('input', function () {
+          setValue(question.key, textarea.value);
+        });
+        card.appendChild(textarea);
+        record.inputs.push(textarea);
+      }
+
+      var errorEl = el('p', { class: 'q-error', text: 'この項目は必須です。' });
+      card.appendChild(errorEl);
+      record.errorEl = errorEl;
+
+      fieldElements[question.key] = record;
+      container.appendChild(card);
+    });
+
+    applyConditions();
+  }
+
+  function onOptionChange(question) {
+    if (question.type === 'radio') {
+      var record = fieldElements[question.key];
+      var selected = record.inputs.filter(function (i) { return i.checked; })[0];
+      if (!selected) {
+        setValue(question.key, '');
+      } else if (question.allowOther && selected === record.otherCheckbox) {
+        setValue(question.key, OTHER_PREFIX + record.otherText.value.trim());
+      } else {
+        setValue(question.key, selected.value);
+      }
+    } else if (question.type === 'checkbox') {
+      var rec = fieldElements[question.key];
+      var values = [];
+      rec.inputs.forEach(function (input) {
+        if (!input.checked) return;
+        if (question.allowOther && input === rec.otherCheckbox) {
+          values.push(OTHER_PREFIX + rec.otherText.value.trim());
+        } else {
+          values.push(input.value);
+        }
+      });
+      setValue(question.key, values);
+    }
+  }
+
+  /**
+   * すべての値変更（select/radio/checkbox/textareaいずれも）はここを経由するため、
+   * 条件付き表示（applyConditions）の再評価も常にここで行う。
+   * select（都道府県）の変更でaichiAreaの表示条件が変わるケースを取りこぼさないよう、
+   * 個々のイベントハンドラ側では呼ばずここに一本化している。
+   */
+  function setValue(key, value) {
+    currentValues[key] = value;
+    clearFieldError(key);
+    applyConditions();
+  }
+
+  /**
+   * condition() を持つ設問（aichiArea / gapReasons）の表示・非表示を切り替える。
+   * 非表示にする際は入力値も初期値へ戻す（画面から消えた設問の古い値が
+   * 送信されないようにするため）。
+   */
+  function applyConditions() {
+    QUESTIONS.forEach(function (question) {
+      if (!question.condition) return;
+      var visible = question.condition(currentValues);
+      var record = fieldElements[question.key];
+      record.card.hidden = !visible;
+      if (!visible) {
+        resetFieldInputs(question);
+        currentValues[question.key] = initialValueFor(question);
+        clearFieldError(question.key);
+      }
+    });
+  }
+
+  function resetFieldInputs(question) {
+    var record = fieldElements[question.key];
+    record.inputs.forEach(function (input) {
+      if (input.type === 'radio' || input.type === 'checkbox') input.checked = false;
+      else input.value = '';
+    });
+    if (record.otherText) {
+      record.otherText.value = '';
+      record.otherText.disabled = true;
+    }
+  }
+
+  function clearFieldError(key) {
+    var record = fieldElements[key];
+    if (record) record.card.classList.remove('q-card--invalid');
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+   * バリデーション・送信データの組み立て
+   * ══════════════════════════════════════════════════════════════ */
+
+  function isQuestionVisible(question) {
+    return !question.condition || question.condition(currentValues);
+  }
+
+  function validateForm() {
+    var firstInvalidCard = null;
+
+    QUESTIONS.forEach(function (question) {
+      var record = fieldElements[question.key];
+      record.card.classList.remove('q-card--invalid');
+      if (!question.required || !isQuestionVisible(question)) return;
+
+      var value = currentValues[question.key];
+      var invalid = question.type === 'checkbox' ? value.length === 0 : value === '';
+
+      // 「その他」を選んだのに自由記述が空、も不正として扱う。
+      if (!invalid && record.otherCheckbox && record.otherCheckbox.checked && record.otherText.value.trim() === '') {
+        invalid = true;
+      }
+
+      if (invalid) {
+        record.card.classList.add('q-card--invalid');
+        if (!firstInvalidCard) firstInvalidCard = record.card;
+      }
+    });
+
+    // 必須ではない設問でも、「その他」を選んだのに自由記述が空の場合は不正とする。
+    QUESTIONS.forEach(function (question) {
+      if (question.required || !isQuestionVisible(question)) return;
+      var record = fieldElements[question.key];
+      if (record.otherCheckbox && record.otherCheckbox.checked && record.otherText.value.trim() === '') {
+        record.card.classList.add('q-card--invalid');
+        if (!firstInvalidCard) firstInvalidCard = record.card;
+      }
+    });
+
+    if (firstInvalidCard) {
+      // 古いWebView等でscrollIntoViewが無い場合でも送信ブロック自体は成立させる
+      // （ここで例外になるとvalidateForm()全体が失敗し、意図せず送信されてしまうため）。
+      if (typeof firstInvalidCard.scrollIntoView === 'function') {
+        try {
+          firstInvalidCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (scrollError) {
+          firstInvalidCard.scrollIntoView();
+        }
+      }
+      return false;
+    }
+    return true;
+  }
+
+  function buildAnswersPayload() {
+    return {
+      prefecture: currentValues.prefecture,
+      aichiArea: currentValues.aichiArea,
+      age: currentValues.age,
+      clothingInterests: currentValues.clothingInterests,
+      preferredFrequency: currentValues.preferredFrequency,
+      preferredPrice: currentValues.preferredPrice,
+      preferredGroupSize: currentValues.preferredGroupSize,
+      preferredFormat: currentValues.preferredFormat,
+      eventAwareness: currentValues.eventAwareness,
+      barriers: currentValues.barriers,
+      helpfulInformation: currentValues.helpfulInformation,
+      preferredAtmosphere: currentValues.preferredAtmosphere,
+      hypotheticalIntent: currentValues.hypotheticalIntent,
+      surveyToSignupGap: currentValues.surveyToSignupGap,
+      gapReasons: currentValues.gapReasons,
+      freeComment: currentValues.freeComment
+    };
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+   * 画面状態の切り替え
+   * ══════════════════════════════════════════════════════════════ */
+
+  function showOnly(id) {
+    ['loading', 'already-answered', 'load-error', 'submitted', 'survey-form'].forEach(function (elementId) {
+      document.getElementById(elementId).hidden = elementId !== id;
+    });
+  }
+
+  function setFormError(message) {
+    var errorEl = document.getElementById('form-error');
+    if (message) {
+      errorEl.textContent = message;
+      errorEl.hidden = false;
+    } else {
+      errorEl.hidden = true;
+      errorEl.textContent = '';
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+   * 起動処理
+   * ══════════════════════════════════════════════════════════════ */
+
+  function init() {
+    try {
+      renderQuestions();
+      browserUuid = resolveBrowserUuid();
+    } catch (renderError) {
+      // フォーム描画やUUID解決自体で例外が起きると「読み込み中」のまま止まってしまうため、
+      // ここだけは明示的にエラー表示へ切り替える。
+      showOnly('load-error');
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(function (result) {
+        if (result && result.answered) {
+          showOnly('already-answered');
+        } else {
+          showOnly('survey-form');
+        }
+      })
+      .withFailureHandler(function () {
+        // 状態確認自体が失敗しても、最終的な二重回答防止はsubmitSurvey側のサーバー判定が
+        // 担保するため、フォームは表示する（ユーザーを不必要にブロックしない）。
+        showOnly('survey-form');
+      })
+      .checkSubmissionStatus(browserUuid);
+  }
+
+  function onSubmit(event) {
+    event.preventDefault();
+    setFormError('');
+
+    if (!validateForm()) return;
+
+    var submitButton = document.getElementById('submit-button');
+    submitButton.disabled = true;
+    submitButton.textContent = '送信中…';
+
+    // サーバーからSUCCESS / DUPLICATE / ERRORのいずれかが返るまで、
+    // ボタンを無効化したまま再送信を防ぐ（通常の二重クリック対策）。
+    // 最終的な重複判定はサーバー側のLockService内で必ず行われる。
+    google.script.run
+      .withSuccessHandler(function (result) {
+        if (result && result.status === 'SUCCESS') {
+          showOnly('submitted');
+        } else if (result && result.status === 'DUPLICATE') {
+          showOnly('already-answered');
+        } else {
+          submitButton.disabled = false;
+          submitButton.textContent = '回答を送信する';
+          setFormError('送信できませんでした。入力内容をご確認のうえ、もう一度お試しください。');
+        }
+      })
+      .withFailureHandler(function () {
+        submitButton.disabled = false;
+        submitButton.textContent = '回答を送信する';
+        setFormError('通信エラーが発生しました。時間をおいて再度お試しください。');
+      })
+      .submitSurvey(browserUuid, buildAnswersPayload());
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('survey-form').addEventListener('submit', onSubmit);
+    init();
+  });
+})();
+</script>

@@ -1,0 +1,217 @@
+<style>
+  /* SNBCサイト（community/style.css）のトーンに合わせた最小限のスタイル。
+     外部スタイルシートは読み込まず、Apps Script Webアプリ単体で完結させる。 */
+  :root {
+    --bg: #F5F2EC;
+    --bg-card: #FFFFFF;
+    --text: #1C1A17;
+    --text-muted: #6A6258;
+    --border: #DDD8CF;
+    --accent: #C62828;
+    --accent-lt: #E5A3A3;
+    --error: #B3261E;
+    --radius: 10px;
+  }
+
+  * , *::before, *::after { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
+    font-size: 15px;
+    line-height: 1.75;
+    -webkit-text-size-adjust: 100%;
+    overflow-x: hidden; /* 横スクロール防止 */
+  }
+
+  #app {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  .page-header h1 {
+    font-size: clamp(1.2rem, 4.5vw, 1.5rem);
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    margin: 0 0 0.5rem;
+  }
+
+  .page-header .lead {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    margin: 0 0 1.25rem;
+  }
+
+  .state-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+  }
+
+  .state-panel--error {
+    border-color: var(--error);
+    color: var(--error);
+  }
+
+  .notice-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 0.9rem 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .notice-box p { margin: 0 0 0.4rem; }
+  .notice-box p:last-child { margin-bottom: 0; }
+  .notice-box strong { color: var(--text); }
+
+  .notice-box--privacy {
+    border-left-color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  .q-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1rem 1.1rem;
+    margin: 0 0 1rem;
+  }
+
+  .q-card legend {
+    font-weight: 700;
+    font-size: 0.98rem;
+    line-height: 1.5;
+    padding: 0;
+    margin-bottom: 0.35rem;
+  }
+
+  .q-required {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+  }
+
+  .q-help {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    white-space: pre-line;
+    margin: 0 0 0.7rem;
+  }
+
+  .q-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .q-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    min-height: 44px; /* タップ領域確保 */
+    cursor: pointer;
+  }
+
+  .q-option input[type="radio"],
+  .q-option input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    margin-top: 0.1rem;
+    accent-color: var(--accent);
+  }
+
+  .q-option span {
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .q-other-text {
+    width: 100%;
+    margin-top: 0.4rem;
+    padding: 0.55rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: inherit;
+  }
+
+  .q-other-text:disabled {
+    background: var(--bg);
+    color: var(--text-muted);
+  }
+
+  textarea.q-textarea {
+    width: 100%;
+    min-height: 6.5rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    resize: vertical;
+  }
+
+  .q-error {
+    color: var(--error);
+    font-size: 0.82rem;
+    margin-top: 0.5rem;
+    display: none;
+  }
+
+  .q-card--invalid {
+    border-color: var(--error);
+  }
+
+  .q-card--invalid .q-error {
+    display: block;
+  }
+
+  .submit-button {
+    display: block;
+    width: 100%;
+    padding: 0.95rem 1rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    min-height: 48px;
+  }
+
+  .submit-button:disabled {
+    background: var(--accent-lt);
+    cursor: not-allowed;
+  }
+
+  .form-error {
+    color: var(--error);
+    font-size: 0.88rem;
+    text-align: center;
+    margin-top: 0.75rem;
+  }
+
+  [hidden] { display: none !important; }
+</style>
