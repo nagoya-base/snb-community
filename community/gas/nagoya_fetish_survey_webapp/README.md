@@ -3,6 +3,25 @@
 Google Apps ScriptのHTML Serviceで動く、匿名の市場調査アンケートWebアプリ。
 Googleログイン・メールアドレスを一切要求せず、回答はGoogleスプレッドシートへ保存する。
 
+> ## ⚠️ 設問・選択肢を変更する前に必ず読むこと
+>
+> 設問・選択肢の定義は **`Code.gs`（サーバー側検証・正本）と`Script.html`（クライアント側
+> 表示・複製）の2箇所** に存在する。Apps ScriptはNode.jsのようなモジュール分割・import
+> ができないため、この二重管理は構造上の制約であり、ここを1箇所に統合することはできない。
+>
+> **設問・選択肢を追加・変更・削除するときは、必ず`Code.gs`と`Script.html`の両方を
+> 同時に更新し、コミット前に`tests/`のテスト（特に`compare_arrays.js`）を実行して
+> 両者が完全一致することを確認すること。** 手順：
+>
+> ```sh
+> cd community/gas/nagoya_fetish_survey_webapp/tests
+> npm install   # 初回のみ
+> npm test
+> ```
+>
+> `compare_arrays.js`が`MISMATCH`を出した場合、選択肢の追加・削除・文言変更のどちらかを
+> 片方のファイルにしか反映できていない。両ファイルの該当箇所を再度見比べて修正すること。
+
 以前のバージョン（`community/gas/nagoya_fetish_survey_form_generator.gs`、Googleフォームを
 自動生成する方式）は本バージョンで役目を終えたため削除した。理由は「同一ブラウザからの
 意図的な繰り返し回答をブラウザ側の識別子で抑止する」仕組みがGoogleフォームでは組み込めず、
@@ -38,23 +57,25 @@ Googleログイン・メールアドレスを一切要求せず、回答はGoogl
 「（プロジェクト名）に移動」→「許可」の順に進める（自作の未公開スクリプトのため想定通りの警告）。
 要求される権限はスプレッドシートの読み書きとWebアプリの実行のみ。
 
-## テスト結果（jsdomによる自動シミュレーション）
+## テスト結果（`tests/`配下、Node.js + jsdomによる自動シミュレーション）
 
-Apps Script自体は実行環境の制約上この開発環境では動かせないため、代わりに
-`Index.html` + `Script.html` を Node.js + jsdom 上で実際にレンダリング・操作するテストを
-実行し、下記を確認済み（`Code.gs`の`validateAnswers_`等サーバー側の検証ロジックも
-Node.js上に直接ロードして同様に確認済み）。
+Apps Script自体は実行環境の制約上この開発環境では動かせないため、代わりに`tests/`配下に
+Node.js + jsdomによる検証スクリプトを置いている（README冒頭の注意も参照）。
+`cd tests && npm install && npm test` で誰でも再現できる。
 
 - [x] 設問カードが16件（QUESTIONS定義どおり）描画される
 - [x] 初回アクセスでUUIDが生成され、localStorage・Cookie両方に同一値が保存される
-- [x] Q1で「愛知県」を選ぶとaichiArea設問が表示され、他県に変えると再び非表示に戻る（愛知県外では値も空文字列に戻る）
+- [x] Q1で「愛知県」を選ぶとaichiArea設問が表示され、他県に変えると再び非表示に戻る（愛知県外は選択肢自体に存在しない）
 - [x] survey_to_signup_gap相当で「よくある」を選ぶとgap_reasons相当の設問が表示される
 - [x] 複数選択設問で「その他」をチェックすると自由記述欄が有効化され、チェックを外すと無効化・クリアされる
-- [x] 必須項目が未入力の状態では送信がブロックされ、`submitSurvey`は呼ばれない（該当カードに`q-card--invalid`が付与される）
+- [x] preferred_format・preferred_atmosphere（いずれも必須）が未入力だと送信がブロックされる（該当カードに`q-card--invalid`が付与される）
+- [x] 必須項目が未入力の状態では送信がブロックされ、`submitSurvey`は呼ばれない
 - [x] 「その他」を選択したのに自由記述が空の場合も送信がブロックされる（必須・任意設問どちらでも）
 - [x] 必須項目をすべて入力すると`submitSurvey(uuid, answers)`が呼ばれ、送信ボタンが`disabled`かつ「送信中…」表示になる
 - [x] `SUCCESS`応答で送信済みパネルが表示される
 - [x] サーバー側`validateAnswers_`：正常系の受理、prefecture/aichiArea/barriers等の不正値・型不一致・必須未入力・重複選択・「その他」空文字・文字数超過をそれぞれ個別に拒否することを確認
+- [x] `aichiArea='愛知県外'`は`prefecture='愛知県'`でもサーバー側で拒否されることを確認（矛盾回答の防止）
+- [x] BARRIER_OPTIONS / HELPFUL_INFO_OPTIONSの重複統合後の件数（23件・21件）と、FORMAT_OPTIONSに「1対1」という語が一切残っていないことを確認
 - [x] `buildRowValues_`：`COLUMNS`と同じ列数の配列を返し、自由記述の先頭が`=`等の場合に数式インジェクション対策（`'`プレフィックス）が効くことを確認
 - [x] `Code.gs`（サーバー側の正本）と`Script.html`（クライアント側の表示用コピー）の全選択肢配列が完全一致することを確認（設問追加時の転記漏れ検出）
 

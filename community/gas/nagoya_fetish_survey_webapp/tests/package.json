@@ -1,0 +1,11 @@
+{
+  "name": "nagoya-fetish-survey-webapp-tests",
+  "private": true,
+  "description": "community/gas/nagoya_fetish_survey_webapp のCode.gs/Script.htmlに対する検証用スクリプト。実際のGAS実行環境は使わず、Node.js + jsdomで代替検証する。",
+  "scripts": {
+    "test": "node test_backend.js && node compare_arrays.js && node test_frontend.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}
