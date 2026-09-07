@@ -105,6 +105,18 @@
     return (hasUniformGate(values) && values.snbcInterest === 'はい') ||
       (hasSuitGate(values) && values.suitEventInterest === 'はい');
   }
+  // 深掘り一式（STEP3）は、実際にどちらの経路から発火したかで冒頭の案内文を出し分ける
+  // （PR #294レビュー指摘：ゲートに該当しているだけでは発火の理由にならないため、
+  // 「snbc_interest=はい」「suit_event_interest=はい」の実際の値で判定する）。
+  function deepDiveIntroText(values) {
+    var uniformTriggered = hasUniformGate(values) && values.snbcInterest === 'はい';
+    var suitTriggered = hasSuitGate(values) && values.suitEventInterest === 'はい';
+    var subject = 'SNBCのユニフォーム企画';
+    if (uniformTriggered && suitTriggered) subject = 'SNBCのユニフォーム企画・スーツ企画';
+    else if (suitTriggered) subject = 'スーツ企画';
+    return 'ここからは、' + subject + 'に興味があると回答した方へ、参加しやすさについてもう少し詳しく伺います。' +
+      '引き続き市場調査であり、参加申込ではありません。';
+  }
   function computeSurveyPath(values) {
     var uniform = hasUniformGate(values);
     var suit = hasSuitGate(values);
@@ -339,7 +351,7 @@
       key: 'preferredFrequency', type: 'radio', required: true, group: 'deepDive',
       label: '名古屋市内で少人数のフェチ・衣装交流や撮影企画がある場合、どの程度の頻度なら参加を検討しやすいですか？',
       help: '「開催してほしい頻度」ではなく、「ご自身が参加を検討しやすい頻度」をお答えください。特定の頻度・日程での開催を約束するものではありません。',
-      sectionNote: 'ここからは、SNBCのユニフォーム企画に興味があると回答した方へ、参加しやすさについてもう少し詳しく伺います。引き続き市場調査であり、参加申込ではありません。',
+      sectionNote: deepDiveIntroText, // 発火経路（ユニフォーム/スーツ/両方）に応じて文面を出し分ける
       options: FREQUENCY_OPTIONS,
       condition: function (v) { return deepDiveTriggered(v); }
     },
@@ -567,6 +579,15 @@
   var anchorUniformPos = null;
   var anchorEnd = null;
 
+  /**
+   * question.sectionNoteは固定文字列、または現在の回答からその場で文面を組み立てる
+   * function(values)のいずれかを許容する（例：deepDiveIntroTextはユニフォーム/スーツ/
+   * 両方のどの経路で発火したかにより文面を変える）。
+   */
+  function resolveSectionNote(question, values) {
+    return typeof question.sectionNote === 'function' ? question.sectionNote(values) : question.sectionNote;
+  }
+
   function initialValueFor(question) {
     if (question.type === 'checkbox') return [];
     return '';
@@ -611,12 +632,12 @@
       }
 
       var sectionNoteEl = null;
+      var sectionNoteTextEl = null;
       if (question.sectionNote) {
         // data-section-note-forはテスト（jsdom）から表示状態を特定するための目印。
         // 表示ロジック自体はこの属性を参照しない。
-        sectionNoteEl = el('div', { class: 'notice-box', 'data-section-note-for': question.key }, [
-          el('p', { text: question.sectionNote })
-        ]);
+        sectionNoteTextEl = el('p', { text: resolveSectionNote(question, currentValues) });
+        sectionNoteEl = el('div', { class: 'notice-box', 'data-section-note-for': question.key }, [sectionNoteTextEl]);
         appendTarget.appendChild(sectionNoteEl);
       }
 
@@ -631,7 +652,10 @@
         card.appendChild(el('p', { class: 'q-help', text: question.help }));
       }
 
-      var record = { card: card, inputs: [], otherCheckbox: null, otherText: null, sectionNoteEl: sectionNoteEl };
+      var record = {
+        card: card, inputs: [], otherCheckbox: null, otherText: null,
+        sectionNoteEl: sectionNoteEl, sectionNoteTextEl: sectionNoteTextEl
+      };
 
       if (question.type === 'select') {
         var select = el('select', { class: 'q-select', id: 'field-' + question.key });
@@ -801,7 +825,14 @@
       // sectionNote（STEP見出しの案内文）はcondition付き設問のカードと同じ表示条件で
       // 出し入れする。ここを怠ると、設問カード自体は隠れているのに見出し文だけ
       // 全回答者に見えてしまう（例：ユニフォーム系ゲート非該当者にもSTEP3の案内文が出る）。
-      if (record.sectionNoteEl) record.sectionNoteEl.hidden = !visible;
+      if (record.sectionNoteEl) {
+        record.sectionNoteEl.hidden = !visible;
+        // 文面が発火経路（ユニフォーム/スーツ/両方）で変わる設問（deepDiveIntroText）のため、
+        // 表示するたびに現在のcurrentValuesから文面を再計算する。
+        if (visible && record.sectionNoteTextEl) {
+          record.sectionNoteTextEl.textContent = resolveSectionNote(question, currentValues);
+        }
+      }
       if (!visible) {
         resetFieldInputs(question);
         currentValues[question.key] = initialValueFor(question);

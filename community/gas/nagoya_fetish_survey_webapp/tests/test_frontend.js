@@ -283,6 +283,47 @@ function deepDiveAnswerCommon(doc, window) {
     'suit-only path: deep-dive block is repositioned AFTER STEP2B (suitEventInterest) in the DOM, not before it, got indices: ' +
       JSON.stringify({ suitEventInterest: idxSuitEventInterest, preferredFrequency: idxPreferredFrequencySuitOnly })
   );
+  assert(
+    deepDiveIntroNoteText(doc).indexOf('スーツ企画') !== -1 && deepDiveIntroNoteText(doc).indexOf('ユニフォーム企画') === -1,
+    'suit-only deep-dive intro note mentions スーツ企画 (not ユニフォーム企画), got: ' + deepDiveIntroNoteText(doc)
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * 深掘り一式の冒頭案内文：発火経路（ユニフォームのみ／スーツのみ／両方）で文面を出し分ける
+ * （PR #294レビュー指摘：スーツのみ経由の発火でも「SNBCのユニフォーム企画」と誤表示していた）
+ * ══════════════════════════════════════════════════════════════ */
+function deepDiveIntroNoteText(doc) {
+  return doc.querySelector('.notice-box[data-section-note-for="preferredFrequency"] p').textContent;
+}
+
+{
+  const { window, doc, showForm } = boot();
+  showForm();
+  check(doc, window, 'interestCategories', '野球ユニフォーム');
+  check(doc, window, 'snbcInterest', 'はい');
+  const text = deepDiveIntroNoteText(doc);
+  assert(
+    text.indexOf('ユニフォーム企画') !== -1 && text.indexOf('スーツ企画') === -1,
+    'uniform-only deep-dive intro note mentions ユニフォーム企画 (not スーツ企画), got: ' + text
+  );
+}
+
+{
+  const { window, doc, showForm } = boot();
+  showForm();
+  check(doc, window, 'interestCategories', '野球ユニフォーム');
+  check(doc, window, 'interestCategories', 'スーツ');
+  check(doc, window, 'snbcInterest', 'はい');
+  check(doc, window, 'suitEngagementPreferences', '自分で着たい');
+  check(doc, window, 'suitTypes', 'ビジネススーツ');
+  check(doc, window, 'suitStates', 'ジャケットを着たまま');
+  check(doc, window, 'suitEventInterest', 'はい');
+  const text = deepDiveIntroNoteText(doc);
+  assert(
+    text.indexOf('ユニフォーム企画') !== -1 && text.indexOf('スーツ企画') !== -1,
+    'combined (both triggered) deep-dive intro note mentions both ユニフォーム企画 and スーツ企画, got: ' + text
+  );
 }
 
 /* ══════════════════════════════════════════════════════════════
