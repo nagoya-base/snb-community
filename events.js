@@ -10,11 +10,11 @@
   window.SNB_EVENTS = [
     {
       id: "baseball-next-activity",
-      title: "9月キャッチボール会",
+      title: "9〜10月キャッチボール会",
       date: null,
-      /* 9/5・9/13の2日開催のため、単一date運用（自動finished判定）は使わない。
-         9/13開催終了後、statusを手動で"finished"へ切り替えること（Issue #247）。 */
-      dateLabel: "9/5（土）・9/13（日）",
+      /* 複数日開催のため、単一date運用（自動finished判定）は使わない。
+         開催終了後は対象日を表示から外し、最後の開催終了後にstatusを更新する。 */
+      dateLabel: "9/13（日）・10/1（木）・10/31（土）",
       timeLabel: "13:00〜15:00",
       venue: "名古屋市内（公園・グラウンド）",
       fee: "基本無料",
@@ -22,7 +22,7 @@
       minimum: null,
       condition: "グローブ必須・ユニフォーム推奨",
       status: "recruiting",
-      url: "baseball/enquete_202609.html"
+      url: "contact/?category=baseball"
     }
   ];
 
@@ -233,6 +233,73 @@
         fillField(el, field, ev);
       }
     }
+  }
+
+  function buildBaseballEventCard(id, dateLabel, weekday) {
+    var div = document.createElement("div");
+    div.className = "next-banner";
+    div.id = id;
+    div.style.marginTop = "1.25rem";
+    div.innerHTML =
+      '<span class="next-dot active"></span>' +
+      '<div class="next-event">' +
+      '<p class="next-event-title">⚾ 名古屋野球ユニ部｜<strong>' + dateLabel + ' キャッチボール会</strong></p>' +
+      '<ul class="next-event-detail">' +
+      '<li>' + dateLabel + '（' + weekday + '）13:00〜15:00</li>' +
+      '<li>募集中</li>' +
+      '</ul>' +
+      '<p class="next-event-note"><a href="../baseball/#schedule" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="' + id.replace("event-", "") + '">開催情報・参加方法を見る →</a></p>' +
+      '</div>';
+    return div;
+  }
+
+  function syncBaseballScheduleMarkup() {
+    var body = document.body;
+    if (!body) return;
+
+    if (body.getAttribute("data-site-section") === "community") {
+      var ended = document.getElementById("event-baseball-0905");
+      if (ended) ended.remove();
+
+      var schedule = document.getElementById("schedule");
+      if (schedule) {
+        var intro = schedule.querySelector(".container > p[style]");
+        if (intro) {
+          intro.textContent = "2026年9〜10月は、野球ユニ部のキャッチボール会（9/13・10/1・10/31）とSNBC教室撮影会（9/12）、学校・部活ユニ交流撮影会（9/19）を開催予定です。";
+        }
+        var container = schedule.querySelector(".container");
+        if (container && !document.getElementById("event-baseball-1001")) {
+          container.appendChild(buildBaseballEventCard("event-baseball-1001", "10/1", "木"));
+          container.appendChild(buildBaseballEventCard("event-baseball-1031", "10/31", "土"));
+        }
+      }
+    }
+
+    if (body.getAttribute("data-site-section") === "baseball") {
+      var cta = document.querySelector("#schedule .survey-cta");
+      if (cta) {
+        cta.innerHTML =
+          '<p class="survey-cta__title">🎉 9〜10月キャッチボール会 募集中！</p>' +
+          '<p class="survey-cta__note">' +
+          '9/13（日）13:00〜15:00<br>' +
+          '10/1（木）13:00〜15:00<br>' +
+          '10/31（土）13:00〜15:00<br>' +
+          '初参加の方も歓迎です。参加希望は問い合わせフォームからご連絡ください。' +
+          '</p>' +
+          '<a href="../contact/?category=baseball" class="btn btn-primary" data-cta-name="baseball_entry_202610" data-cta-location="schedule">参加希望を送る</a>';
+      }
+    }
+  }
+
+  function init() {
+    render("baseball-next-activity");
+    syncBaseballScheduleMarkup();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
   }
 
   window.SNBEventStatus = {
