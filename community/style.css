@@ -185,6 +185,28 @@
   line-height: 1.75;
 }
 
+/* ── Survey（実施中アンケート・Hero直下で目立たせる） ── */
+.survey-highlight {
+  background: var(--bg-tint);
+  border-bottom: 1px solid var(--border);
+  padding: 2.75rem 0 3rem;
+}
+.survey-highlight .next-banner {
+  border-color: var(--accent-lt);
+  background: var(--bg-card);
+}
+.survey-highlight .next-event-note a {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.65rem 1.3rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.survey-highlight .next-event-note a:hover { background: var(--accent-lt); }
+
 /* ── next event banner ── */
 .next-banner {
   background: var(--bg-card);
@@ -275,6 +297,7 @@
 
 @media (max-width: 480px) {
   .hero { padding: 3rem 0 2.5rem; }
+  .survey-highlight { padding: 2rem 0 2.25rem; }
   .format-card { padding: 1.25rem; }
   .format-key { width: 5.5rem; }
   .next-banner { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
