@@ -368,19 +368,59 @@ function buildMultiTallyRows(categories, countsMap) {
 }
 
 // writeTitledFormula_()のQUERY(...)出力（タイトル行→QUERYヘッダ行→[ラベル,件数]…）を、
-// 指定したblockIndexの位置（BLOCK_ROW_STEP間隔）に配置したシート全体の行配列を作る。
-function buildRegionSheetRows(prefecturePairs, agePairs) {
-  const rows = [];
+// 指定したblockIndexの位置（BLOCK_ROW_STEP間隔）に配置する（rowsは呼び出し側の配列を書き換えて返す）。
+function placeQueryPairsBlock(rows, blockIndex, headerLabel, pairs) {
   const step = sandbox.BLOCK_ROW_STEP;
-  const placeBlock = (blockIndex, pairs) => {
-    const titleRow0 = blockIndex * step; // 0始まりindex（1+blockIndex*step の1行目がindex blockIndex*step）
-    rows[titleRow0] = 'タイトル行';
-    rows[titleRow0 + 1] = ['prefecture', '回答数'];
-    pairs.forEach((pair, i) => { rows[titleRow0 + 2 + i] = [pair[0], pair[1]]; });
-  };
-  placeBlock(0, prefecturePairs);
-  placeBlock(sandbox.PUBLIC_AGE_TALLY_BLOCK_INDEX, agePairs);
+  const titleRow0 = blockIndex * step; // 0始まりindex（1+blockIndex*step の1行目がindex blockIndex*step）
+  rows[titleRow0] = 'タイトル行';
+  rows[titleRow0 + 1] = [headerLabel, '回答数'];
+  pairs.forEach((pair, i) => { rows[titleRow0 + 2 + i] = [pair[0], pair[1]]; });
+  return rows;
+}
+
+/**
+ * 集計_地域シート全体を模した行配列を作る。
+ * - allTimePrefecturePairs：ブロック0（都道府県別回答数・Issue #293以前からの全期間集計。
+ *   公開結果はここを読まない）。
+ * - publicPrefecturePairs：PUBLIC_PREFECTURE_TALLY_BLOCK_INDEX（公開結果用・
+ *   completion_stage<>''で絞り込み済みの都道府県別回答数）。
+ * - agePairs：PUBLIC_AGE_TALLY_BLOCK_INDEX（公開結果用の年代別回答数）。
+ */
+function buildRegionSheetRows({ allTimePrefecturePairs, publicPrefecturePairs, agePairs } = {}) {
+  let rows = [];
+  if (allTimePrefecturePairs) rows = placeQueryPairsBlock(rows, 0, 'prefecture', allTimePrefecturePairs);
+  if (publicPrefecturePairs) rows = placeQueryPairsBlock(rows, sandbox.PUBLIC_PREFECTURE_TALLY_BLOCK_INDEX, 'prefecture', publicPrefecturePairs);
+  if (agePairs) rows = placeQueryPairsBlock(rows, sandbox.PUBLIC_AGE_TALLY_BLOCK_INDEX, 'age', agePairs);
   for (let i = 0; i < rows.length; i++) if (rows[i] === undefined) rows[i] = [];
+  return rows;
+}
+
+/**
+ * COLUMNSの並びに従った1回答分の行（配列）を、ヘッダ名指定のoverridesから作る
+ * （列番号を書き手が意識しなくてよいようにするテスト用ヘルパー）。
+ */
+function makeColumnsRow(overrides) {
+  const row = new Array(sandbox.COLUMNS.length).fill('');
+  Object.keys(overrides || {}).forEach((key) => {
+    const idx = sandbox.COLUMNS.indexOf(key);
+    if (idx === -1) throw new Error('test helper: unknown COLUMNS header "' + key + '"');
+    row[idx] = overrides[key];
+  });
+  return row;
+}
+
+/**
+ * responsesシートを模した行配列を作る。legacyRows（completion_stageを持たない#292以前の
+ * 旧回答。値はそのまま行として使う）とnewRows（completion_stageを明示指定するIssue #293以降の
+ * 新回答のoverrides）を混在させる。
+ */
+function buildResponsesRows(legacyRows, newRowOverridesList) {
+  const rows = [new Array(sandbox.COLUMNS.length).fill('header')];
+  legacyRows.forEach((overrides) => rows.push(makeColumnsRow(overrides)));
+  newRowOverridesList.forEach((overrides) => {
+    if (!overrides.completion_stage) throw new Error('test helper: newRow must set completion_stage (defines the new-survey population)');
+    rows.push(makeColumnsRow(overrides));
+  });
   return rows;
 }
 
@@ -491,18 +531,18 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
 
 /* ── countOtherFreeTextEntries_：ヘッダ名ベース（列番号固定禁止）でその他自由記述を数える ── */
 {
-  const rows = [];
-  rows[0] = new Array(sandbox.COLUMNS.length).fill('');
-  const idx = sandbox.COLUMNS.indexOf('interest_categories');
-  const r1 = new Array(sandbox.COLUMNS.length).fill('');
-  r1[idx] = '野球ユニフォーム、その他:レザー系';
-  const r2 = new Array(sandbox.COLUMNS.length).fill('');
-  r2[idx] = 'その他:着ぐるみっぽいもの、その他:全身タイツ風';
-  const r3 = new Array(sandbox.COLUMNS.length).fill('');
-  r3[idx] = 'ヒーロー系';
-  const sheetRows = [new Array(sandbox.COLUMNS.length).fill('header'), r1, r2, r3];
+  const sheetRows = buildResponsesRows(
+    // 旧#292回答：completion_stageを持たない。仮にinterest_categoriesに値が紛れ込んでいても
+    // （実運用では起こらないが）新回答の母集団には含めない、という頑健性を確認する。
+    [{ interest_categories: 'その他:旧回答に紛れ込んだ値' }],
+    [
+      { completion_stage: 'no_gate_reached', interest_categories: '野球ユニフォーム、その他:レザー系' },
+      { completion_stage: 'no_gate_reached', interest_categories: 'その他:着ぐるみっぽいもの、その他:全身タイツ風' },
+      { completion_stage: 'no_gate_reached', interest_categories: 'ヒーロー系' }
+    ]
+  );
   const count = countOtherFreeTextEntries_(fakeSheetFromRows(sheetRows));
-  assert(count === 3, 'countOtherFreeTextEntries_ counts every その他: item across rows (延べ件数), got ' + count);
+  assert(count === 3, 'countOtherFreeTextEntries_ counts その他: items only within completion_stage<>\'\' rows (延べ件数), got ' + count);
 }
 
 /* ── readMultiTallyBlock_ / readQueryPairsBlock_：集計_*シートの固定レイアウトを読み取れる ── */
@@ -513,36 +553,137 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
     'readMultiTallyBlock_ reads the writeMultiTally_ layout correctly');
 }
 {
-  const regionRows = buildRegionSheetRows([['愛知県', 12], ['東京都', 5]], [['18〜24歳', 7]]);
+  const regionRows = buildRegionSheetRows({
+    allTimePrefecturePairs: [['愛知県', 12], ['東京都', 5]],
+    agePairs: [['18〜24歳', 7]]
+  });
   const prefMap = readQueryPairsBlock_(fakeSheetFromRows(regionRows), 0, sandbox.PREFECTURES.length + 5);
-  assert(prefMap['愛知県'] === 12 && prefMap['東京都'] === 5, 'readQueryPairsBlock_ reads block0 (prefecture QUERY output)');
+  assert(prefMap['愛知県'] === 12 && prefMap['東京都'] === 5, 'readQueryPairsBlock_ reads block0 (all-time prefecture QUERY output)');
   const ageMap = readQueryPairsBlock_(fakeSheetFromRows(regionRows), sandbox.PUBLIC_AGE_TALLY_BLOCK_INDEX, sandbox.AGE_OPTIONS.length + 5);
   assert(ageMap['18〜24歳'] === 7, 'readQueryPairsBlock_ reads the age tally block added for Issue #298');
 }
 
-/* ── buildPublicResultsPayload_：total<10で全グラフ非表示、非公開項目が含まれないこと ── */
+/* ══════════════════════════════════════════════════════════════
+ * レビュー指摘（PR #299）対応：公開結果の母集団は「responses全行」ではなく
+ * completion_stageが空でない行（Issue #293以降の新アンケート回答）に限定すること
+ * ══════════════════════════════════════════════════════════════ */
+
+/* ── buildAggregationSheets：公開結果用の年代・都道府県ブロックのQUERYが
+   completion_stage<>''で絞り込まれていること（数式文字列を直接検証する）。 ── */
 {
-  const responsesSheet = fakeSheetFromRows(new Array(9).fill([])); // ヘッダ行含め9行＝回答8件 < 10
+  // writeTitledFormula_(s, PUBLIC_AGE_TALLY_BLOCK_INDEX, ...) 呼び出し以降、直近の
+  // WINDOW文字だけを見て、そのQUERY文にcompletion_stage<>''条件が含まれるかを確認する
+  // （呼び出し全体をパースするのではなく、十分広い窓で文字列検索する簡便な静的チェック）。
+  const WINDOW = 500;
+  const extractCallWindow = (marker) => {
+    const markerIndex = code.indexOf('writeTitledFormula_(s, ' + marker);
+    assert(markerIndex !== -1, marker + ' is used in a writeTitledFormula_ call in buildAggregationSheets()');
+    return code.slice(markerIndex, markerIndex + WINDOW);
+  };
+
+  const ageBlockCall = extractCallWindow('PUBLIC_AGE_TALLY_BLOCK_INDEX');
+  assert(/completion_stage\s*\+\s*" <> ''/.test(ageBlockCall),
+    'the public age tally block QUERY (集計_地域) filters by completion_stage <> \'\' to exclude legacy #292 responses');
+
+  const prefBlockCall = extractCallWindow('PUBLIC_PREFECTURE_TALLY_BLOCK_INDEX');
+  assert(/completion_stage\s*\+\s*" <> ''/.test(prefBlockCall),
+    'the public prefecture tally block QUERY (集計_地域) filters by completion_stage <> \'\' to exclude legacy #292 responses');
+}
+
+/* ── buildPublicResultsPayload_：旧回答20件＋新回答9件 → public total = 9、グラフ非表示 ── */
+{
+  const legacyRows = [];
+  for (let i = 0; i < 20; i++) legacyRows.push({ prefecture: '愛知県', age: '30〜39歳' });
+  const newRows = [];
+  for (let i = 0; i < 9; i++) newRows.push({ completion_stage: 'no_gate_reached', prefecture: '東京都', age: '18〜24歳' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows(legacyRows, newRows));
+
   const payload = buildPublicResultsPayload_(responsesSheet, { getSheetByName: () => { throw new Error('must not be called when total < 10'); } });
-  assert(payload.ready === false, 'ready=false when total < PUBLIC_MIN_TOTAL_FOR_CHARTS(10)');
-  assert(payload.total === 8, 'total is still reported even when charts are hidden, got ' + payload.total);
-  assert(payload.categories === undefined && payload.region === undefined && payload.age === undefined && payload.engagement === undefined,
-    'no breakdown fields are present when charts are hidden');
+  assert(payload.total === 9, '旧回答20件+新回答9件 のとき total は新回答数の9件のみ（旧回答混入なし）, got ' + payload.total);
+  assert(payload.ready === false, '新回答9件 < PUBLIC_MIN_TOTAL_FOR_CHARTS(10) のためready=false（旧回答を含めた29件では判定しない）');
+}
+
+/* ── buildPublicResultsPayload_：旧回答20件＋新回答10件 → public total = 10、グラフ表示 ── */
+{
+  const legacyRows = [];
+  for (let i = 0; i < 20; i++) legacyRows.push({ prefecture: '愛知県', age: '30〜39歳' });
+  const newRows = [];
+  for (let i = 0; i < 10; i++) newRows.push({ completion_stage: 'no_gate_reached', prefecture: '東京都', age: '18〜24歳' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows(legacyRows, newRows));
+
+  const sheetsByName = {};
+  sheetsByName[sandbox.SHEET_CLOTHING] = fakeSheetFromRows(buildMultiTallyRows(sandbox.INTEREST_CATEGORY_OPTIONS, {}));
+  sheetsByName[sandbox.SHEET_ENGAGEMENT] = fakeSheetFromRows(buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, {}));
+  sheetsByName[sandbox.SHEET_REGION] = fakeSheetFromRows(buildRegionSheetRows({ publicPrefecturePairs: [['東京都', 10]], agePairs: [['18〜24歳', 10]] }));
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] };
+
+  const payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+  assert(payload.total === 10, '旧回答20件+新回答10件 のとき total は新回答数の10件のみ, got ' + payload.total);
+  assert(payload.ready === true, '新回答10件 >= PUBLIC_MIN_TOTAL_FOR_CHARTS(10) のためready=true（旧回答を含めた30件が閾値を満たしたからではない）');
+}
+
+/* ── buildPublicResultsPayload_：旧回答に都道府県・年代があっても公開の地域/年代には混入しない ── */
+{
+  const legacyRows = [];
+  // 旧回答にも都道府県・年代の値自体は入っている（PR #292時点から存在する列のため）。
+  for (let i = 0; i < 20; i++) legacyRows.push({ prefecture: '愛知県', age: '30〜39歳' });
+  const newRows = [];
+  for (let i = 0; i < 10; i++) newRows.push({ completion_stage: 'no_gate_reached', prefecture: '東京都', age: '18〜24歳' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows(legacyRows, newRows));
+
+  const sheetsByName = {};
+  sheetsByName[sandbox.SHEET_CLOTHING] = fakeSheetFromRows(buildMultiTallyRows(sandbox.INTEREST_CATEGORY_OPTIONS, {}));
+  sheetsByName[sandbox.SHEET_ENGAGEMENT] = fakeSheetFromRows(buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, {}));
+  // ブロック0（全期間・未フィルタ）には旧回答込みの愛知県30件を置き、公開用ブロックには
+  // 新回答だけの東京都10件を置く。payloadがブロック0側の値を拾ってしまえば「混入」を検出できる。
+  sheetsByName[sandbox.SHEET_REGION] = fakeSheetFromRows(buildRegionSheetRows({
+    allTimePrefecturePairs: [['愛知県', 30]],
+    publicPrefecturePairs: [['東京都', 10]],
+    agePairs: [['18〜24歳', 10]]
+  }));
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] };
+
+  const payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+  assert(!payload.region.find((r) => r.name === '中部'), '公開結果の地域に、旧回答混入込みの全期間ブロック（愛知県30件→中部）の値が出ない');
+  assert(payload.region.find((r) => r.name === '関東').count === 10, '公開結果の地域は、completion_stageで絞り込んだ公開専用ブロック（東京都10件→関東）の値のみを使う');
+  assert(payload.age.find((a) => a.name === '20代以下').count === 10, '公開結果の年代も新回答（18〜24歳10件→20代以下）のみを反映する');
+}
+
+/* ── buildPublicResultsPayload_：新回答8/10が野球ユニフォーム → 80.0% ── */
+{
+  const legacyRows = [];
+  for (let i = 0; i < 20; i++) legacyRows.push({ prefecture: '愛知県', age: '30〜39歳' });
+  const newRows = [];
+  for (let i = 0; i < 10; i++) newRows.push({ completion_stage: 'no_gate_reached' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows(legacyRows, newRows));
+
+  const sheetsByName = {};
+  // 集計_衣装カテゴリはinterest_categoriesが空欄の旧回答をSEARCH不一致で自然に除外するため、
+  // 新回答10件のうち8件が野球ユニフォームだった場合の値をそのまま置ける。
+  sheetsByName[sandbox.SHEET_CLOTHING] = fakeSheetFromRows(buildMultiTallyRows(sandbox.INTEREST_CATEGORY_OPTIONS, { '野球ユニフォーム': 8 }));
+  sheetsByName[sandbox.SHEET_ENGAGEMENT] = fakeSheetFromRows(buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, {}));
+  sheetsByName[sandbox.SHEET_REGION] = fakeSheetFromRows(buildRegionSheetRows({ publicPrefecturePairs: [], agePairs: [] }));
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] };
+
+  const payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+  assert(payload.total === 10, 'total is the new-survey count (10), not 30 (20 legacy + 10 new)');
+  const baseball = payload.categories.find((c) => c.name === '野球ユニフォーム');
+  assert(!!baseball && baseball.count === 8, '野球ユニフォーム count is 8 (from the new-survey-only aggregation sheet tally)');
+  assert(baseball.percent === 80, '野球ユニフォーム percent is 8/10*100 = 80.0%, not 8/30 (mixed with legacy responses), got ' + baseball.percent);
 }
 
 /* ── buildPublicResultsPayload_：total>=10のときは各ブロックを組み立てて返し、非公開項目を含まない ── */
 {
-  const totalResponses = 20;
-  const responsesRows = [new Array(sandbox.COLUMNS.length).fill('')];
-  for (let i = 0; i < totalResponses; i++) responsesRows.push(new Array(sandbox.COLUMNS.length).fill(''));
-  const interestIdx = sandbox.COLUMNS.indexOf('interest_categories');
+  const newRows = [];
+  for (let i = 0; i < 20; i++) newRows.push({ completion_stage: 'no_gate_reached' });
   // n<5で除外されないことも確認するため、自由記述を5件（延べ件数）用意する。
-  for (let i = 1; i <= 5; i++) responsesRows[i][interestIdx] = 'その他:テスト' + i;
-  const responsesSheet = fakeSheetFromRows(responsesRows);
+  for (let i = 0; i < 5; i++) newRows[i].interest_categories = 'その他:テスト' + i;
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const totalResponses = 20;
 
   const categoryTallyRows = buildMultiTallyRows(sandbox.INTEREST_CATEGORY_OPTIONS, { '野球ユニフォーム': 12 });
   const engagementTallyRows = buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, { '自分で着たい': 15 });
-  const regionRows = buildRegionSheetRows([['愛知県', 12], ['東京都', 8]], [['18〜24歳', 11]]);
+  const regionRows = buildRegionSheetRows({ publicPrefecturePairs: [['愛知県', 12], ['東京都', 8]], agePairs: [['18〜24歳', 11]] });
 
   const sheetsByName = {};
   sheetsByName[sandbox.SHEET_CLOTHING] = fakeSheetFromRows(categoryTallyRows);
@@ -552,7 +693,7 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
 
   const payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
   assert(payload.ready === true, 'ready=true when total >= 10');
-  assert(payload.total === totalResponses, 'total matches responses row count - 1(header)');
+  assert(payload.total === totalResponses, 'total matches the number of new-survey (completion_stage<>\'\') rows');
   assert(payload.categories.find((c) => c.name === '野球ユニフォーム').count === 12, 'categories block reflects aggregation sheet tally');
   assert(payload.categories.find((c) => c.name === 'その他').count === 5, 'categories block counts free-text entries from responses');
   assert(payload.engagement.find((e) => e.name === '自分で着たい').count === 15, 'engagement block reflects aggregation sheet tally');
