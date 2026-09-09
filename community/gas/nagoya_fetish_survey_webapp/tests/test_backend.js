@@ -346,7 +346,8 @@ const buildPublicCategoryBreakdown_ = sandbox.buildPublicCategoryBreakdown_;
 const buildPublicRegionBreakdown_ = sandbox.buildPublicRegionBreakdown_;
 const buildPublicAgeBreakdown_ = sandbox.buildPublicAgeBreakdown_;
 const buildPublicResultsPayload_ = sandbox.buildPublicResultsPayload_;
-const countOtherFreeTextEntries_ = sandbox.countOtherFreeTextEntries_;
+const splitMultiValue_ = sandbox.splitMultiValue_;
+const countPublicInterestGroupsByRespondent_ = sandbox.countPublicInterestGroupsByRespondent_;
 const readMultiTallyBlock_ = sandbox.readMultiTallyBlock_;
 const readQueryPairsBlock_ = sandbox.readQueryPairsBlock_;
 
@@ -487,64 +488,94 @@ assert(
     'その他 bucket has no fixed categories (counted separately via free text)');
 }
 
-/* ── buildPublicSimpleBreakdown_：n<5除外・降順ソート・小数点1桁の割合 ── */
+/* ── buildPublicSimpleBreakdown_（Issue #304）：PUBLIC_MIN_CATEGORY_COUNT(=1)未満（＝0件）のみ
+   除外・降順ソート・小数点1桁の割合。旧仕様（n<5除外）は撤廃されたことを確認する。 ── */
+assert(sandbox.PUBLIC_MIN_CATEGORY_COUNT === 1, 'PUBLIC_MIN_CATEGORY_COUNT is 1 (Issue #304: 1件以上なら表示する)');
 {
   const result = buildPublicSimpleBreakdown_([
-    { name: 'A', count: 10 }, { name: 'B', count: 4 }, { name: 'C', count: 20 }
+    { name: 'A', count: 10 }, { name: 'B', count: 4 }, { name: 'C', count: 20 }, { name: 'D', count: 1 }
   ], 40);
-  assert(result.length === 2, 'items with count < 5 are excluded, got length ' + result.length);
-  assert(result[0].name === 'C' && result[1].name === 'A', 'items are sorted by count desc');
+  assert(result.length === 4, 'items with count >= 1 are all included (旧n<5除外は撤廃), got length ' + result.length);
+  assert(
+    result[0].name === 'C' && result[1].name === 'A' && result[2].name === 'B' && result[3].name === 'D',
+    'items are sorted by count desc, including the count=4 and count=1 items that used to be hidden under the old threshold'
+  );
   assert(result[0].percent === 50 && result[1].percent === 25, 'percent is count/total*100 rounded to 1 decimal');
+  assert(result[3].percent === 2.5, 'a count=1 item (1/40) is shown with its correct percent instead of being hidden');
 }
-assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 'zero-count items are excluded (below n<5 threshold)');
+assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 'zero-count items are still excluded (count < 1)');
 
-/* ── buildPublicCategoryBreakdown_：まとめカテゴリの合算とその他自由記述の合算 ── */
+/* ── buildPublicCategoryBreakdown_：countPublicInterestGroupsByRespondent_が返す「グループ単位の
+   ユニーク回答者数」をそのまま整形するだけで、カテゴリ単位の値を合算し直したりしないこと ── */
 {
-  const tally = {};
-  sandbox.INTEREST_CATEGORY_OPTIONS.forEach((c) => { tally[c] = 0; });
-  tally['野球ユニフォーム'] = 12;
-  tally['バスケットボールユニフォーム'] = 3;
-  tally['ジャージ・トレーニングウェア'] = 4;
-  tally['学校制服'] = 6;
-  tally['スーツ'] = 7;
-  tally['ヒーロー系'] = 5;
-  const result = buildPublicCategoryBreakdown_(tally, 8, 100);
+  const groupCounts = {
+    '野球ユニフォーム': 12,
+    'その他スポーツ・ユニフォーム': 7,
+    '制服・職業服': 6,
+    'スーツ': 7,
+    'コスプレ・キャラクター': 5,
+    'その他': 8
+  };
+  const result = buildPublicCategoryBreakdown_(groupCounts, 100);
   const byName = {};
   result.forEach((item) => { byName[item.name] = item; });
-  assert(byName['野球ユニフォーム'].count === 12, '野球ユニフォーム is shown standalone with its own count');
-  assert(byName['その他スポーツ・ユニフォーム'].count === 7, 'その他スポーツ・ユニフォーム sums バスケ(3)+ジャージ(4)=7');
-  assert(byName['制服・職業服'].count === 6, '制服・職業服 sums 学校制服(6)');
+  assert(byName['野球ユニフォーム'].count === 12, '野球ユニフォーム reflects the group count as-is');
+  assert(byName['その他スポーツ・ユニフォーム'].count === 7, 'その他スポーツ・ユニフォーム reflects the group count as-is');
+  assert(byName['制服・職業服'].count === 6, '制服・職業服 reflects the group count as-is');
   assert(byName['スーツ'].count === 7, 'スーツ is its own bucket, separate from 制服・職業服');
-  assert(byName['コスプレ・キャラクター'].count === 5, 'コスプレ・キャラクター sums ヒーロー系(5)');
-  assert(byName['その他'].count === 8, 'その他 uses the free-text count passed in, not a category tally');
-  assert(!byName['レスリング・シングレット'], '0-count standalone category is excluded (below n<5 threshold)');
+  assert(byName['コスプレ・キャラクター'].count === 5, 'コスプレ・キャラクター reflects the group count as-is');
+  assert(byName['その他'].count === 8, 'その他 reflects the group count as-is (unique respondents with an OTHER_PREFIX entry)');
+  assert(!byName['レスリング・シングレット'], '0-count standalone category (absent from groupCounts) is excluded');
 }
 
-/* ── buildPublicRegionBreakdown_：都道府県別回答数→全国7ブロックへの変換、三重県→近畿 ── */
+/* ── splitMultiValue_：「、」区切りセルを要素配列へ分解する ── */
 {
-  const counts = { '愛知県': 20, '東京都': 8, '三重県': 6, '大阪府': 3, '北海道': 0 };
-  const result = buildPublicRegionBreakdown_(counts, 40);
-  const byName = {};
-  result.forEach((item) => { byName[item.name] = item; });
-  assert(byName['中部'].count === 20, '中部 includes 愛知県(20)');
-  assert(byName['関東'].count === 8, '関東 includes 東京都(8)');
-  assert(byName['近畿'].count === 9, '近畿 includes 三重県(6)+大阪府(3)=9, confirming 三重県→近畿 mapping');
-  assert(!byName['中国・四国'], '中国・四国 has no data here and is excluded (count 0 < 5)');
-  assert(!byName['北海道'], '北海道 with count 0 is excluded (below n<5 threshold)');
+  assert(JSON.stringify(splitMultiValue_('学校制服、職業制服')) === JSON.stringify(['学校制服', '職業制服']),
+    'splitMultiValue_ splits a multi-select cell on 、');
+  assert(JSON.stringify(splitMultiValue_('')) === '[]', 'splitMultiValue_ returns [] for an empty string');
+  assert(JSON.stringify(splitMultiValue_(null)) === '[]', 'splitMultiValue_ returns [] for non-string values');
 }
 
-/* ── buildPublicAgeBreakdown_：年代→簡略年代への変換 ── */
+/* ══════════════════════════════════════════════════════════════
+ * Issue #304：countPublicInterestGroupsByRespondent_ — 衣装・服装の公開大分類は
+ * 「延べ選択数」ではなく「ユニーク回答者数」で数える（同一回答者が同一グループ内で
+ * 複数カテゴリを選んでも1カウント）
+ * ══════════════════════════════════════════════════════════════ */
+
+/* ── ケース1：1回答者が「学校制服」+「職業制服」を両方選択 → 制服・職業服は1人 ── */
 {
-  const counts = { '18〜24歳': 6, '25〜29歳': 5, '30〜39歳': 9, '50〜59歳': 3, '60歳以上': 4 };
-  const result = buildPublicAgeBreakdown_(counts, 40);
-  const byName = {};
-  result.forEach((item) => { byName[item.name] = item; });
-  assert(byName['20代以下'].count === 11, '20代以下 sums 18〜24歳(6)+25〜29歳(5)=11');
-  assert(byName['30代'].count === 9, '30代 sums 30〜39歳(9)');
-  assert(byName['50代以上'].count === 7, '50代以上 sums 50〜59歳(3)+60歳以上(4)=7 (each alone would be <5)');
+  const rows = buildResponsesRows([], [
+    { completion_stage: 'no_gate_reached', interest_categories: '学校制服、職業制服' }
+  ]);
+  const counts = countPublicInterestGroupsByRespondent_(fakeSheetFromRows(rows));
+  assert(counts['制服・職業服'] === 1,
+    '学校制服+職業制服を両方選んだ1人は、制服・職業服グループで2件ではなく1件と数えられる, got ' + counts['制服・職業服']);
 }
 
-/* ── countOtherFreeTextEntries_：ヘッダ名ベース（列番号固定禁止）でその他自由記述を数える ── */
+/* ── ケース2：1回答者が「コスプレ衣装」+「ヒーロー系」+「悪役・ヴィラン系」を選択 → コスプレ・キャラクターは1人 ── */
+{
+  const rows = buildResponsesRows([], [
+    { completion_stage: 'no_gate_reached', interest_categories: 'コスプレ衣装、ヒーロー系、悪役・ヴィラン系' }
+  ]);
+  const counts = countPublicInterestGroupsByRespondent_(fakeSheetFromRows(rows));
+  assert(counts['コスプレ・キャラクター'] === 1,
+    'コスプレ衣装+ヒーロー系+悪役・ヴィラン系を選んだ1人は、コスプレ・キャラクターグループで3件ではなく1件と数えられる, got ' + counts['コスプレ・キャラクター']);
+}
+
+/* ── ケース3：複数回答者が同一グループ内で複数選択しても、グループcountがtotal（新回答数）を超えない ── */
+{
+  const newRows = [];
+  for (let i = 0; i < 10; i++) {
+    newRows.push({ completion_stage: 'no_gate_reached', interest_categories: '学校制服、職業制服、作業着' });
+  }
+  const rows = buildResponsesRows([], newRows);
+  const counts = countPublicInterestGroupsByRespondent_(fakeSheetFromRows(rows));
+  assert(counts['制服・職業服'] === 10,
+    '10人全員が制服・職業服グループ内の複数カテゴリ(3つ)を選んでも、countは回答者数10のまま' +
+    '（延べ選択数の30にならない）, got ' + counts['制服・職業服']);
+}
+
+/* ── その他（自由記述）：ヘッダ名ベース（列番号固定禁止）で、延べ件数ではなくユニーク回答者数を数える ── */
 {
   const sheetRows = buildResponsesRows(
     // 旧#292回答：completion_stageを持たない。仮にinterest_categoriesに値が紛れ込んでいても
@@ -556,8 +587,86 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
       { completion_stage: 'no_gate_reached', interest_categories: 'ヒーロー系' }
     ]
   );
-  const count = countOtherFreeTextEntries_(fakeSheetFromRows(sheetRows));
-  assert(count === 3, 'countOtherFreeTextEntries_ counts その他: items only within completion_stage<>\'\' rows (延べ件数), got ' + count);
+  const counts = countPublicInterestGroupsByRespondent_(fakeSheetFromRows(sheetRows));
+  assert(counts['その他'] === 2,
+    'その他 counts unique respondents (レザー系の人＋着ぐるみ/全身タイツ風の人=2人)、延べ件数(3件)ではない, got ' + counts['その他']);
+  assert(counts['野球ユニフォーム'] === 1,
+    '「その他」を同時に選んでいても、野球ユニフォームグループは別途正しく1人と数えられる');
+}
+
+/* ── 旧#292回答（completion_stageなし）はグループcountに混入しない ── */
+{
+  const rows = buildResponsesRows(
+    [{ interest_categories: '学校制服、職業制服' }],
+    [{ completion_stage: 'no_gate_reached', interest_categories: '野球ユニフォーム' }]
+  );
+  const counts = countPublicInterestGroupsByRespondent_(fakeSheetFromRows(rows));
+  assert(counts['制服・職業服'] === 0, '旧回答のinterest_categoriesは公開グループcountに混入しない');
+  assert(counts['野球ユニフォーム'] === 1, '新回答だけが正しく数えられる');
+}
+
+/* ── buildPublicRegionBreakdown_：都道府県別回答数→全国7ブロックへの変換、三重県→近畿 ── */
+{
+  const counts = { '愛知県': 20, '東京都': 8, '三重県': 6, '大阪府': 3, '北海道': 0 };
+  const result = buildPublicRegionBreakdown_(counts, 40);
+  const byName = {};
+  result.forEach((item) => { byName[item.name] = item; });
+  assert(byName['中部'].count === 20, '中部 includes 愛知県(20)');
+  assert(byName['関東'].count === 8, '関東 includes 東京都(8)');
+  assert(byName['近畿'].count === 9, '近畿 includes 三重県(6)+大阪府(3)=9, confirming 三重県→近畿 mapping');
+  assert(!byName['中国・四国'], '中国・四国 has no data here and is excluded (count 0)');
+  assert(!byName['北海道'], '北海道 with count 0 is excluded (count < PUBLIC_MIN_CATEGORY_COUNT=1)');
+}
+
+/* ── buildPublicAgeBreakdown_：年代→簡略年代への変換 ── */
+{
+  const counts = { '18〜24歳': 6, '25〜29歳': 5, '30〜39歳': 9, '50〜59歳': 3, '60歳以上': 4 };
+  const result = buildPublicAgeBreakdown_(counts, 40);
+  const byName = {};
+  result.forEach((item) => { byName[item.name] = item; });
+  assert(byName['20代以下'].count === 11, '20代以下 sums 18〜24歳(6)+25〜29歳(5)=11');
+  assert(byName['30代'].count === 9, '30代 sums 30〜39歳(9)');
+  assert(byName['50代以上'].count === 7, '50代以上 sums 50〜59歳(3)+60歳以上(4)=7');
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * Issue #304：少数件（1件〜4件）でも公開結果に表示されること（PUBLIC_MIN_CATEGORY_COUNT=1）
+ * ══════════════════════════════════════════════════════════════ */
+{
+  const regionResult = buildPublicRegionBreakdown_({ '北海道': 1 }, 40);
+  assert(regionResult.find((r) => r.name === '北海道' && r.count === 1) !== undefined,
+    '地域1人（北海道）でも公開結果の地域に表示される');
+
+  const ageResult = buildPublicAgeBreakdown_({ '回答しない': 1 }, 40);
+  assert(ageResult.find((a) => a.name === '回答しない' && a.count === 1) !== undefined,
+    '年代1人（回答しない）でも公開結果の年代に表示される');
+
+  const categoryResult = buildPublicCategoryBreakdown_({ 'レスリング・シングレット': 1 }, 40);
+  assert(categoryResult.find((c) => c.name === 'レスリング・シングレット' && c.count === 1) !== undefined,
+    '衣装大分類1件（レスリング・シングレット）でも公開結果に表示される');
+
+  const engagementResult = buildPublicSimpleBreakdown_([{ name: '交流のきっかけとして楽しみたい', count: 1 }], 40);
+  assert(engagementResult.find((e) => e.name === '交流のきっかけとして楽しみたい' && e.count === 1) !== undefined,
+    '関わり方1件でも公開結果に表示される');
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * Issue #304：「関東10人なのに公開結果に出ない」の再発防止
+ * 関東10人が、7都県のうち複数県にまたがって分散していても、buildPublicRegionBreakdown_で
+ * 正しく合算されて{ name: '関東', count: 10 }として表示されることを確認する
+ * （個別の都県ごとに閾値判定してから合算するような実装だと、各県が少人数の場合に
+ * 関東ブロック全体が欠落しうる。現状の実装は先に7都県分を合算してから閾値判定するため
+ * この問題は起きないが、回帰防止のため明示的にテストする）。
+ * ══════════════════════════════════════════════════════════════ */
+{
+  // 茨城・栃木・群馬・埼玉・千葉・東京・神奈川の7都県に2人ずつ・0人ずつ混在させて合計10人にする。
+  const counts = { '茨城県': 2, '栃木県': 2, '群馬県': 0, '埼玉県': 3, '千葉県': 0, '東京都': 2, '神奈川県': 1 };
+  const result = buildPublicRegionBreakdown_(counts, 10);
+  const kanto = result.find((r) => r.name === '関東');
+  assert(!!kanto && kanto.count === 10,
+    '関東の複数都県に分散した10人の合計が、関東ブロックとして正しく10人と表示される, got ' +
+    (kanto ? kanto.count : 'undefined'));
+  assert(kanto.percent === 100, '関東10人／総回答数10人のとき、percentは100.0%');
 }
 
 /* ── readMultiTallyBlock_ / readQueryPairsBlock_：集計_*シートの固定レイアウトを読み取れる ── */
@@ -627,7 +736,6 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
   const responsesSheet = fakeSheetFromRows(buildResponsesRows(legacyRows, newRows));
 
   const sheetsByName = {};
-  sheetsByName[sandbox.SHEET_CLOTHING] = fakeSheetFromRows(buildMultiTallyRows(sandbox.INTEREST_CATEGORY_OPTIONS, {}));
   sheetsByName[sandbox.SHEET_ENGAGEMENT] = fakeSheetFromRows(buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, {}));
   sheetsByName[sandbox.SHEET_REGION] = fakeSheetFromRows(buildRegionSheetRows({ publicPrefecturePairs: [['東京都', 10]], agePairs: [['18〜24歳', 10]] }));
   const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] };
@@ -647,7 +755,6 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
   const responsesSheet = fakeSheetFromRows(buildResponsesRows(legacyRows, newRows));
 
   const sheetsByName = {};
-  sheetsByName[sandbox.SHEET_CLOTHING] = fakeSheetFromRows(buildMultiTallyRows(sandbox.INTEREST_CATEGORY_OPTIONS, {}));
   sheetsByName[sandbox.SHEET_ENGAGEMENT] = fakeSheetFromRows(buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, {}));
   // ブロック0（全期間・未フィルタ）には旧回答込みの愛知県30件を置き、公開用ブロックには
   // 新回答だけの東京都10件を置く。payloadがブロック0側の値を拾ってしまえば「混入」を検出できる。
@@ -664,18 +771,22 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
   assert(payload.age.find((a) => a.name === '20代以下').count === 10, '公開結果の年代も新回答（18〜24歳10件→20代以下）のみを反映する');
 }
 
-/* ── buildPublicResultsPayload_：新回答8/10が野球ユニフォーム → 80.0% ── */
+/* ── buildPublicResultsPayload_：新回答8/10が野球ユニフォーム → 80.0%（ユニーク回答者数ベース） ── */
 {
   const legacyRows = [];
-  for (let i = 0; i < 20; i++) legacyRows.push({ prefecture: '愛知県', age: '30〜39歳' });
+  // 旧回答にも野球ユニフォームの値自体は入っている（PR #292時点から存在する列のため）。
+  // これが公開結果の分子に混入しないことも合わせて確認する。
+  for (let i = 0; i < 20; i++) legacyRows.push({ prefecture: '愛知県', age: '30〜39歳', interest_categories: '野球ユニフォーム' });
   const newRows = [];
-  for (let i = 0; i < 10; i++) newRows.push({ completion_stage: 'no_gate_reached' });
+  for (let i = 0; i < 10; i++) {
+    newRows.push({
+      completion_stage: 'no_gate_reached',
+      interest_categories: i < 8 ? '野球ユニフォーム' : 'サッカーユニフォーム'
+    });
+  }
   const responsesSheet = fakeSheetFromRows(buildResponsesRows(legacyRows, newRows));
 
   const sheetsByName = {};
-  // 集計_衣装カテゴリはinterest_categoriesが空欄の旧回答をSEARCH不一致で自然に除外するため、
-  // 新回答10件のうち8件が野球ユニフォームだった場合の値をそのまま置ける。
-  sheetsByName[sandbox.SHEET_CLOTHING] = fakeSheetFromRows(buildMultiTallyRows(sandbox.INTEREST_CATEGORY_OPTIONS, { '野球ユニフォーム': 8 }));
   sheetsByName[sandbox.SHEET_ENGAGEMENT] = fakeSheetFromRows(buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, {}));
   sheetsByName[sandbox.SHEET_REGION] = fakeSheetFromRows(buildRegionSheetRows({ publicPrefecturePairs: [], agePairs: [] }));
   const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] };
@@ -683,25 +794,27 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
   const payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
   assert(payload.total === 10, 'total is the new-survey count (10), not 30 (20 legacy + 10 new)');
   const baseball = payload.categories.find((c) => c.name === '野球ユニフォーム');
-  assert(!!baseball && baseball.count === 8, '野球ユニフォーム count is 8 (from the new-survey-only aggregation sheet tally)');
-  assert(baseball.percent === 80, '野球ユニフォーム percent is 8/10*100 = 80.0%, not 8/30 (mixed with legacy responses), got ' + baseball.percent);
+  assert(!!baseball && baseball.count === 8,
+    '野球ユニフォーム count is 8 unique new-survey respondents (legacy responses with 野球ユニフォーム do not leak in), got ' +
+    (baseball && baseball.count));
+  assert(baseball.percent === 80, '野球ユニフォーム percent is 8/10*100 = 80.0%, not mixed with legacy responses, got ' + baseball.percent);
 }
 
 /* ── buildPublicResultsPayload_：total>=10のときは各ブロックを組み立てて返し、非公開項目を含まない ── */
 {
   const newRows = [];
   for (let i = 0; i < 20; i++) newRows.push({ completion_stage: 'no_gate_reached' });
-  // n<5で除外されないことも確認するため、自由記述を5件（延べ件数）用意する。
-  for (let i = 0; i < 5; i++) newRows[i].interest_categories = 'その他:テスト' + i;
+  // 衣装大分類は12人が野球ユニフォーム、5人がその他自由記述（ユニーク回答者数、重複なし）。
+  for (let i = 0; i < 12; i++) newRows[i].interest_categories = '野球ユニフォーム';
+  // count=1件（PUBLIC_MIN_CATEGORY_COUNT）でも除外されないことを確認するため、その他は5件用意する。
+  for (let i = 12; i < 17; i++) newRows[i].interest_categories = 'その他:テスト' + i;
   const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
   const totalResponses = 20;
 
-  const categoryTallyRows = buildMultiTallyRows(sandbox.INTEREST_CATEGORY_OPTIONS, { '野球ユニフォーム': 12 });
   const engagementTallyRows = buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, { '自分で着たい': 15 });
   const regionRows = buildRegionSheetRows({ publicPrefecturePairs: [['愛知県', 12], ['東京都', 8]], agePairs: [['18〜24歳', 11]] });
 
   const sheetsByName = {};
-  sheetsByName[sandbox.SHEET_CLOTHING] = fakeSheetFromRows(categoryTallyRows);
   sheetsByName[sandbox.SHEET_ENGAGEMENT] = fakeSheetFromRows(engagementTallyRows);
   sheetsByName[sandbox.SHEET_REGION] = fakeSheetFromRows(regionRows);
   const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] };
@@ -709,8 +822,8 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
   const payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
   assert(payload.ready === true, 'ready=true when total >= 10');
   assert(payload.total === totalResponses, 'total matches the number of new-survey (completion_stage<>\'\') rows');
-  assert(payload.categories.find((c) => c.name === '野球ユニフォーム').count === 12, 'categories block reflects aggregation sheet tally');
-  assert(payload.categories.find((c) => c.name === 'その他').count === 5, 'categories block counts free-text entries from responses');
+  assert(payload.categories.find((c) => c.name === '野球ユニフォーム').count === 12, 'categories block reflects unique-respondent counts from raw responses');
+  assert(payload.categories.find((c) => c.name === 'その他').count === 5, 'categories block counts unique respondents with free-text その他 entries');
   assert(payload.engagement.find((e) => e.name === '自分で着たい').count === 15, 'engagement block reflects aggregation sheet tally');
   assert(payload.region.find((r) => r.name === '中部').count === 12, 'region block reflects prefecture tally mapped to national blocks');
   assert(payload.age.find((a) => a.name === '20代以下').count === 11, 'age block reflects age tally mapped to simplified groups');
@@ -720,6 +833,34 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
   assert(json.indexOf('uuid') === -1 && json.indexOf('UUID') === -1, 'payload does not leak UUID-related data');
   assert(json.indexOf('free_comment') === -1, 'payload does not leak free_comment content');
   assert(json.indexOf('テスト') === -1, 'payload does not leak the raw free-text content itself (count only)');
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * Issue #304：buildPublicResultsPayload_ 経由で「関東10人」がエンドツーエンドで表示されること
+ * （responsesの生回答 → buildAggregationSheetsが書く集計_地域の公開ブロックのレイアウト →
+ * readQueryPairsBlock_ → buildPublicRegionBreakdown_ → payload.region の全段を通す）
+ * ══════════════════════════════════════════════════════════════ */
+{
+  const newRows = [];
+  // 関東7都県のうち4都県に分散する形で、新回答10人を作る（1都県あたり5件未満でも欠落しないことの確認）。
+  ['茨城県', '栃木県', '埼玉県', '埼玉県', '千葉県', '千葉県', '東京都', '東京都', '東京都', '神奈川県'].forEach((prefecture) => {
+    newRows.push({ completion_stage: 'no_gate_reached', prefecture: prefecture, age: '30〜39歳' });
+  });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+
+  const sheetsByName = {};
+  sheetsByName[sandbox.SHEET_ENGAGEMENT] = fakeSheetFromRows(buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, {}));
+  sheetsByName[sandbox.SHEET_REGION] = fakeSheetFromRows(buildRegionSheetRows({
+    publicPrefecturePairs: [['茨城県', 1], ['栃木県', 1], ['埼玉県', 2], ['千葉県', 2], ['東京都', 3], ['神奈川県', 1]],
+    agePairs: [['30〜39歳', 10]]
+  }));
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] };
+
+  const payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+  const kanto = payload.region.find((r) => r.name === '関東');
+  assert(!!kanto && kanto.count === 10,
+    '関東7都県に分散した新回答10人が、公開結果のregionで { name: "関東", count: 10 } として表示される, got ' +
+    JSON.stringify(kanto));
 }
 
 /* ══════════════════════════════════════════════════════════════

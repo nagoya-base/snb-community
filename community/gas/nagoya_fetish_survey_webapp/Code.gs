@@ -394,7 +394,9 @@ var AGE_SIMPLE_GROUPS = [
 /* interest_categories（22択＋その他自由記述）→ 公開用の11カテゴリ。
    単独表示する6カテゴリ以外は、既存Issue #293のカテゴリ定義を基準にまとめる。
    「その他」バケットのみ、INTEREST_CATEGORY_OPTIONSに含まれないOTHER_PREFIX付き
-   自由記述の件数をcountOtherFreeTextEntries_()で別途数える（categoriesは空配列）。 */
+   自由記述の有無をcountPublicInterestGroupsByRespondent_()で別途判定する
+   （categoriesは空配列）。各グループの件数はカテゴリ単位の延べ選択数の合算ではなく、
+   1回答者につき最大1カウントのユニーク回答者数（Issue #304）。 */
 var PUBLIC_INTEREST_GROUPS = [
   { name: '野球ユニフォーム', categories: ['野球ユニフォーム'] },
   { name: 'サッカーユニフォーム', categories: ['サッカーユニフォーム'] },
@@ -412,7 +414,10 @@ var PUBLIC_INTEREST_GROUPS = [
 var PUBLIC_RESULTS_CACHE_KEY = 'publicResultsV1';
 var PUBLIC_RESULTS_CACHE_TTL_SECONDS = 45; // CacheServiceの最大は6時間だが、要件どおり30〜60秒に収める
 var PUBLIC_MIN_TOTAL_FOR_CHARTS = 10; // 総回答数がこれ未満の場合は全グラフ非表示
-var PUBLIC_MIN_CATEGORY_COUNT = 5; // カテゴリ件数がこれ未満の場合はそのカテゴリをグラフから非表示
+/* Issue #304：公開粒度は大分類（衣装11区分・関わり方・地域7ブロック・年代5区分）のみで、
+   個票が推測されうる詳細クロス集計・自由記述本文はそもそも公開しない設計のため、
+   この大分類粒度については1件以上あれば表示してよい（5件未満を隠す必要性は無い）。 */
+var PUBLIC_MIN_CATEGORY_COUNT = 1; // カテゴリ件数がこれ未満（＝0件）の場合のみそのカテゴリをグラフから非表示
 
 /* ══════════════════════════════════════════════════════════════
  * Webアプリのエントリーポイント
@@ -524,12 +529,17 @@ function submitSurvey(uuid, answers) {
 /**
  * `?view=results` の初期表示・ポーリングから呼び出す。公開結果を返す。
  *
- * 【集計元の方針（Issue #298）】ここではresponses全行を元にした集計処理を
- * 全面的に二重実装しない。原則として既存buildAggregationSheets()が作る集計_*シート
- * （集計_衣装カテゴリ・集計_関わり方・集計_地域）を正本として読み取り、公開用カテゴリへ
- * 束ね直すだけにする。例外は「その他（自由記述）」の件数のみで、これはINTEREST_CATEGORY_OPTIONS
- * に含まれないため既存集計_*シートには現れず、countOtherFreeTextEntries_()でresponsesシートを
- * ヘッダ名ベース（列番号固定禁止）で直接数える（理由はREADME参照）。
+ * 【集計元の方針（Issue #298／#304）】関わり方（engagement_preferences）・地域・年代は、
+ * 既存buildAggregationSheets()が作る集計_*シート（集計_関わり方・集計_地域）を正本として
+ * 読み取り、公開用カテゴリへ束ね直すだけにする（responses全行を元にした集計処理を
+ * 全面的に二重実装しない）。
+ * 衣装・服装の公開大分類（PUBLIC_INTEREST_GROUPS）だけは例外で、集計_衣装カテゴリ
+ * （22カテゴリ単位・SEARCHによる延べ選択数）は使わず、countPublicInterestGroupsByRespondent_()が
+ * responsesシートの生回答を1行ずつ走査してユニーク回答者数を数え直す（Issue #304）。
+ * 22カテゴリ単位の延べ件数を公開グループ単位でそのまま合算すると、同一回答者が同一公開
+ * グループ内で複数カテゴリを選んだ場合に二重・三重カウントされてしまう（例：「学校制服」＋
+ * 「職業制服」を選んだ1人を「制服・職業服」2件と数えてしまう）ため、集計済みの延べ件数からは
+ * 逆算しない。
  *
  * 【プライバシー】ここで返す値は集計結果（件数・割合・地域7ブロック・簡略年代）のみ。
  * 生回答・自由記述・respondent_hash・UUID関連・個別の回答日時・クロス集計は一切含めない。
@@ -586,19 +596,20 @@ function buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet) {
     return { total: total, generatedAt: generatedAt, ready: false };
   }
 
-  var categorySheet = aggregationSpreadsheet.getSheetByName(SHEET_CLOTHING);
   var engagementSheet = aggregationSpreadsheet.getSheetByName(SHEET_ENGAGEMENT);
   var regionSheet = aggregationSpreadsheet.getSheetByName(SHEET_REGION);
-  if (!categorySheet || !engagementSheet || !regionSheet) {
+  if (!engagementSheet || !regionSheet) {
     throw new Error('集計_*シートが見つかりません。先にbuildAggregationSheets()を実行してください。');
   }
 
-  // 集計_衣装カテゴリ／集計_関わり方は、interest_categories／engagement_preferencesが
-  // 旧回答では常に空欄（新規回答時にのみ書き込まれる列のため）で、SEARCHによる部分一致は
-  // 空欄セルにヒットしない。したがって新アンケート回答だけが自然に集計される
-  // （completion_stageによる絞り込みを別途行わなくても母集団がずれない）。
-  var categoryTally = readMultiTallyBlock_(categorySheet, 0, INTEREST_CATEGORY_OPTIONS);
-  var otherFreeTextCount = countOtherFreeTextEntries_(responsesSheet);
+  // 衣装・服装の公開大分類はユニーク回答者数で数え直す必要があるため、集計_衣装カテゴリの
+  // 延べ選択数（SEARCHによる部分一致集計）は使わず、responsesシートの生回答を直接走査する
+  // （Issue #304、countPublicInterestGroupsByRespondent_のコメント参照）。completion_stageが
+  // 空でない行だけを対象にするため、旧#292回答は自然に除外される。
+  var groupCounts = countPublicInterestGroupsByRespondent_(responsesSheet);
+  // 集計_関わり方は、engagement_preferencesが旧回答では常に空欄（新規回答時にのみ書き込まれる
+  // 列のため）で、SEARCHによる部分一致は空欄セルにヒットしない。したがって新アンケート回答だけが
+  // 自然に集計される（completion_stageによる絞り込みを別途行わなくても母集団がずれない）。
   var engagementTally = readMultiTallyBlock_(engagementSheet, 0, ENGAGEMENT_OPTIONS);
   // 都道府県・年代はresponsesの生値をそのまま数える集計のため、旧回答にも値が入っている
   // ことがある。集計_地域側のQUERY自体にcompletion_stage<>''条件を含めたブロックを
@@ -610,7 +621,7 @@ function buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet) {
     total: total,
     generatedAt: generatedAt,
     ready: true,
-    categories: buildPublicCategoryBreakdown_(categoryTally, otherFreeTextCount, total),
+    categories: buildPublicCategoryBreakdown_(groupCounts, total),
     engagement: buildPublicSimpleBreakdown_(
       ENGAGEMENT_OPTIONS.map(function (option) { return { name: option, count: engagementTally[option] || 0 }; }),
       total
@@ -621,15 +632,14 @@ function buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet) {
 }
 
 /**
- * interest_categoriesの22カテゴリ集計値（+その他自由記述件数）を、
- * PUBLIC_INTEREST_GROUPSの11カテゴリへ束ね、n<5のカテゴリを除外して返す。
+ * countPublicInterestGroupsByRespondent_()が数えたPUBLIC_INTEREST_GROUPSごとのユニーク
+ * 回答者数を、表示用の配列へ整形して返す（n<PUBLIC_MIN_CATEGORY_COUNTのグループは除外）。
+ * 件数の合算（1回答者につき最大1カウント）はcountPublicInterestGroupsByRespondent_側で
+ * 既に済んでいるため、ここではカテゴリ単位の値を合算し直すようなことはしない。
  */
-function buildPublicCategoryBreakdown_(categoryTally, otherFreeTextCount, total) {
+function buildPublicCategoryBreakdown_(groupCounts, total) {
   var items = PUBLIC_INTEREST_GROUPS.map(function (group) {
-    var count = group.name === 'その他'
-      ? otherFreeTextCount
-      : group.categories.reduce(function (sum, category) { return sum + (categoryTally[category] || 0); }, 0);
-    return { name: group.name, count: count };
+    return { name: group.name, count: groupCounts[group.name] || 0 };
   });
   return buildPublicSimpleBreakdown_(items, total);
 }
@@ -657,9 +667,10 @@ function buildPublicAgeBreakdown_(ageCounts, total) {
 }
 
 /**
- * { name, count } の配列から、件数5件未満の項目を除外し、割合（小数点1桁）を付与して
- * 件数の多い順に並べ替える。Q4（interest_categories）等の複数回答は割合合計が100%にならなくてよい
- * （分母は常にtotal＝総回答数であり、複数回答の延べ件数合計ではないため）。
+ * { name, count } の配列から、件数がPUBLIC_MIN_CATEGORY_COUNT未満（＝0件）の項目を除外し、
+ * 割合（小数点1桁）を付与して件数の多い順に並べ替える。Q4（interest_categories）等の複数回答は
+ * 割合合計が100%にならなくてよい（分母は常にtotal＝総回答数であり、複数回答の延べ件数合計では
+ * ないため）。
  */
 function buildPublicSimpleBreakdown_(items, total) {
   return items
@@ -702,36 +713,58 @@ function countNewSurveyResponses_(responsesSheet) {
 }
 
 /**
- * responsesシートのinterest_categories列から、OTHER_PREFIX付きの自由記述項目の延べ件数を数える。
- * 列番号は固定せずCOLUMNSからヘッダ名で解決する。completion_stageが空でない行（新アンケート回答）
- * だけを対象にし、他の公開集計値と同じ母集団に揃える（旧回答はinterest_categories自体が
- * 常に空欄のため実質影響しないが、母集団の定義を明示的に揃えるため判定を入れている）。
- *
- * 【集計_*シートで代替できない理由】集計_衣装カテゴリのwriteMultiTally_はINTEREST_CATEGORY_OPTIONS
- * （固定22択）だけを対象にしており、OTHER_PREFIXによる自由記述は数えていない
- * （自由記述の内容ごとに列を作るわけにはいかないため）。公開結果の「その他」バケットの件数だけは
- * この関数でresponsesシートから直接集計する。自由記述の内容そのものはここでは一切読み取って
- * 返さない（件数のみ）。
+ * 複数選択設問（「、」区切りで1セルに保存）のセル値を要素配列へ分解する。
+ * 空文字列・非文字列は空配列を返す（呼び出し側でtypeofチェックを重複させないため）。
  */
-function countOtherFreeTextEntries_(responsesSheet) {
+function splitMultiValue_(cell) {
+  if (typeof cell !== 'string' || cell === '') return [];
+  return cell.split('、');
+}
+
+/**
+ * PUBLIC_INTEREST_GROUPS（衣装・服装の公開大分類）ごとに、「そのグループ内のいずれかの
+ * カテゴリを1つ以上選んだ回答者数」＝ユニーク回答者数を数える（Issue #304）。
+ *
+ * 【集計_衣装カテゴリで代替できない理由】集計_衣装カテゴリのwriteMultiTally_はカテゴリ単位
+ * （INTEREST_CATEGORY_OPTIONSの22択）の延べ選択数であり、公開グループ単位
+ * （PUBLIC_INTEREST_GROUPS）の値ではない。1人の回答者が同一グループ内の複数カテゴリ
+ * （例：「学校制服」＋「職業制服」）を選んだ場合、カテゴリ単位の延べ件数をグループ内で
+ * 単純加算すると「制服・職業服」が2件になってしまう（実際は1人）。この二重・三重カウントを
+ * 避けるため、集計済みの延べ件数からは逆算せず、responsesシートの生回答を1行ずつ走査し、
+ * 1回答者につき各公開グループは最大1カウントとする。
+ *
+ * 「その他」グループはINTEREST_CATEGORY_OPTIONSに含まれないOTHER_PREFIX付き自由記述の
+ * 有無で判定する（自由記述の内容そのものはここでは一切読み取って返さない。件数のみ）。
+ *
+ * completion_stageが空でない行（Issue #293以降の新アンケート回答）だけを対象にし、
+ * 他の公開集計値と同じ母集団に揃える。列番号は固定せずCOLUMNSからヘッダ名で解決する。
+ */
+function countPublicInterestGroupsByRespondent_(responsesSheet) {
+  var counts = {};
+  PUBLIC_INTEREST_GROUPS.forEach(function (group) { counts[group.name] = 0; });
+
   var lastRow = responsesSheet.getLastRow();
-  if (lastRow < 2) return 0;
+  if (lastRow < 2) return counts;
 
   var interestColumnIndex = COLUMNS.indexOf('interest_categories') + 1;
   var stageColumnIndex = COLUMNS.indexOf('completion_stage') + 1;
   var interestValues = responsesSheet.getRange(2, interestColumnIndex, lastRow - 1, 1).getValues();
   var stageValues = responsesSheet.getRange(2, stageColumnIndex, lastRow - 1, 1).getValues();
 
-  var count = 0;
   for (var i = 0; i < interestValues.length; i++) {
     if (!isNewSurveyCompletionStage_(stageValues[i][0])) continue;
-    var cell = interestValues[i][0];
-    if (typeof cell !== 'string' || cell === '') continue;
-    cell.split('、').forEach(function (item) {
-      if (item.indexOf(OTHER_PREFIX) === 0) count++;
+    var selected = splitMultiValue_(interestValues[i][0]);
+    if (selected.length === 0) continue;
+
+    PUBLIC_INTEREST_GROUPS.forEach(function (group) {
+      var hasMatch = group.name === 'その他'
+        ? selected.some(function (item) { return item.indexOf(OTHER_PREFIX) === 0; })
+        : selected.some(function (item) { return group.categories.indexOf(item) !== -1; });
+      if (hasMatch) counts[group.name]++;
     });
   }
-  return count;
+
+  return counts;
 }
 
 /**
