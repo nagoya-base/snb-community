@@ -269,6 +269,7 @@ Node.js + jsdomによる検証スクリプトを置いている（README冒頭�
 - [x] `buildPublicResultsPayload_`が返すJSONに`respondent_hash`・UUID関連・`free_comment`・自由記述の内容そのものが一切含まれないことを確認
 - [x] （レビュー指摘対応）公開結果の母集団が`completion_stage`が空でない行（新アンケート回答）に限定されていることを確認：旧回答20件+新回答9件→`total=9`・`ready=false`、旧回答20件+新回答10件→`total=10`・`ready=true`、旧回答に都道府県・年代の値があっても公開の地域/年代ブロックに混入しないこと、新回答10件中8件が野球ユニフォームのとき`80.0%`（旧回答込みの分母にならない）ことを確認
 - [x] `集計_地域`の公開結果用QUERYブロック（都道府県・年代）が`completion_stage <> ''`で絞り込まれていることを数式文字列で確認
+- [x] （レビュー指摘対応）`Code.gs`が`appendRow()`を一切呼び出さないことを確認。`findNextResponseRow_`が、居住地4分類補助列のARRAYFORMULAスピルで`getMaxRows()`が1000でも、実データ（`timestamp`列）が無ければ2行目、2〜5行目に4件あれば6行目、2〜3行目に2件だけでも（`getMaxRows()`が1000のままでも）4行目を返すことを確認。`appendResponseRow_`が`setValues()`で正しい行・列数へ書き込むことを確認
 
 以下はApps Scriptの実行環境・実ブラウザでの動作が前提のため、この開発環境では自動テストできず、
 **デプロイ後に手動での確認が必要**（本PRの報告にも記載する）。
@@ -286,6 +287,23 @@ Node.js + jsdomによる検証スクリプトを置いている（README冒頭�
 - [ ] 実ブラウザ（特にSafari/iOS）でのCookie永続性（既知の制約は本PR報告・`Code.gs`末尾コメント参照）
 - [ ] iPhone/Android実機・375px幅程度での横スクロール有無・タップ操作性（特にQ4の3ブロック表示・スーツ選択時のSTEP2B表示）
 - [ ] 生UUID・IPアドレス・User-Agent・メールアドレス・Googleアカウントがスプレッドシートに保存されていないことの目視確認
+- [ ] （レビュー指摘対応）居住地4分類補助列のARRAYFORMULAが下の方までスピルしている状態のスプレッドシートで、テスト回答を複数件送信し、`responses`シートの実データ直後の行（例：既存回答が2〜3行目までなら4行目）に保存されること、離れた行（1001行目等）にジャンプしないことの確認
+
+## 回答の保存位置（ARRAYFORMULAスピル対策・レビュー指摘対応）
+
+`submitSurvey()`は`Sheet.appendRow()`を使わず、`appendResponseRow_()`が
+`findNextResponseRow_()`で決めた行へ`setValues()`で直接書き込む。
+
+理由：`ensureResidenceHelperColumn_()`が居住地4分類補助列に書き込むARRAYFORMULA
+（`prefecture2:prefecture`のような開いた列参照）は、実データの無い行にも空文字列という
+「計算結果」をスピルさせる。この結果、見た目は空白でもシート全体としては「内容がある行」と
+みなされ、`Sheet.getLastRow()`（＝`appendRow()`が次の行を決めるために使う値）がスピル範囲の
+末尾（新規シート既定の1000行目等）まで伸びてしまい、実際の回答が2〜3行目までしか無いのに
+次の回答が1001行目に保存される、という事故が起きていた。
+
+`findNextResponseRow_()`は`timestamp`列（COLUMNSの1列目。回答保存時にのみ値が入り、
+ARRAYFORMULA等の数式は一切書き込まれない列）だけを見て次の保存行を決めるため、
+補助列のスピル範囲がどれだけ伸びていても保存位置には影響しない。
 
 ## 既知の限界
 

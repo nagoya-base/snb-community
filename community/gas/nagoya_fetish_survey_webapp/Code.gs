@@ -507,7 +507,7 @@ function submitSurvey(uuid, answers) {
       if (isDuplicateHash_(sheet, hash)) {
         return { status: 'DUPLICATE' };
       }
-      sheet.appendRow(buildRowValues_(hash, answers));
+      appendResponseRow_(sheet, hash, answers);
       // 新規回答が保存されたら、公開結果キャッシュは必ず削除する（任意ではなく必須）。
       // これを怠ると、キャッシュ有効期限（PUBLIC_RESULTS_CACHE_TTL_SECONDS）が切れるまで
       // 公開結果ページに今回の回答が反映されない。
@@ -1100,6 +1100,54 @@ function buildRowValues_(hash, a) {
     a.surveyPath,
     a.completionStage
   ];
+}
+
+/**
+ * 【レビュー指摘対応（PR #299）】以前は`Sheet.appendRow`メソッドで保存していたが、
+ * `ensureResidenceHelperColumn_()`が居住地4分類補助列に書き込むARRAYFORMULA
+ * （`prefecture2:prefecture`のような開いた列参照）は、実データが無い行にも
+ * 空文字列("")という「計算結果」をスピルさせる。この結果、見た目は空白でも
+ * シート全体としては「内容がある行」とみなされ、`Sheet.getLastRow()`（＝`appendRow()`が
+ * 次の行を決めるために使う値）がARRAYFORMULAのスピル範囲の末尾（例：新規シート既定の
+ * 1000行目）まで伸びてしまい、実際の回答が2〜3行目までしか無いのに次の回答が
+ * 1001行目に保存される、という事故が起きていた。
+ *
+ * この関数は`appendRow()`を使わず、実データ専用の列（`timestamp`。ARRAYFORMULA等の
+ * 数式を一切書き込まない列で、回答保存時にのみ値が入る）だけを見て次の保存行を決め、
+ * その行へ`setValues()`で直接書き込む。補助列のスピル範囲がどれだけ伸びていても、
+ * この判定には影響しない。
+ */
+function appendResponseRow_(sheet, hash, answers) {
+  var rowValues = buildRowValues_(hash, answers);
+  var targetRow = findNextResponseRow_(sheet);
+  sheet.getRange(targetRow, 1, 1, rowValues.length).setValues([rowValues]);
+}
+
+/**
+ * responsesシートの`timestamp`列（COLUMNSの1列目。回答保存時にのみ値が入り、
+ * ARRAYFORMULA等の数式は一切書き込まれない）を先頭から走査し、実データが入っている
+ * 最後の行の直後（＝次の回答を書き込むべき行）を返す。データが1件も無ければ2行目
+ * （ヘッダーの次の行）を返す。
+ *
+ * `Sheet.getMaxRows()`（シートの物理的な行数）を上限にすることで、居住地4分類補助列の
+ * ARRAYFORMULAスピル範囲がどこまで伸びていても、この判定は`timestamp`列の実データだけを
+ * 見るため引っ張られない。
+ */
+function findNextResponseRow_(sheet) {
+  var maxRows = sheet.getMaxRows();
+  if (maxRows < 2) return 2;
+
+  var timestampColumnIndex = COLUMNS.indexOf('timestamp') + 1;
+  var values = sheet.getRange(2, timestampColumnIndex, maxRows - 1, 1).getValues();
+
+  var lastFilledOffset = -1; // 0始まり。values[0]が実際のシート2行目に対応する。
+  for (var i = 0; i < values.length; i++) {
+    var cell = values[i][0];
+    if (cell !== '' && cell !== null && typeof cell !== 'undefined') {
+      lastFilledOffset = i;
+    }
+  }
+  return 2 + lastFilledOffset + 1;
 }
 
 /* ══════════════════════════════════════════════════════════════

@@ -722,6 +722,99 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
   assert(json.indexOf('テスト') === -1, 'payload does not leak the raw free-text content itself (count only)');
 }
 
+/* ══════════════════════════════════════════════════════════════
+ * レビュー指摘（PR #299 再レビュー）対応：submitSurvey()が`sheet.appendRow()`を使わないこと、
+ * 居住地4分類補助列のARRAYFORMULAスピルによる「1001行目ジャンプ」を起こさないこと
+ * ══════════════════════════════════════════════════════════════ */
+
+const findNextResponseRow_ = sandbox.findNextResponseRow_;
+const appendResponseRow_ = sandbox.appendResponseRow_;
+
+assert(typeof findNextResponseRow_ === 'function', 'findNextResponseRow_ exists');
+assert(typeof appendResponseRow_ === 'function', 'appendResponseRow_ exists');
+assert(code.indexOf('.appendRow(') === -1,
+  'Code.gs does not call appendRow() anywhere (replaced by appendResponseRow_ + setValues, which is immune to the ARRAYFORMULA-spill row-jump bug)');
+
+/**
+ * timestamp列（COLUMNSの1列目。回答保存時にのみ値が入り、ARRAYFORMULA等の数式は
+ * 一切書き込まれない列）だけを読めるシートのフェイク。getMaxRows()を実データの有無とは
+ * 独立に指定できるようにして、「居住地4分類補助列のARRAYFORMULAが物理的な行数を
+ * 押し上げている」状況（実データは数行だけなのにgetMaxRows()は1000、等）を再現する。
+ */
+function makeTimestampColumnSheet(timestampCellsByRow, maxRows) {
+  const timestampColumnIndex = sandbox.COLUMNS.indexOf('timestamp') + 1;
+  return {
+    getMaxRows: () => maxRows,
+    getRange: (row, col, numRows, numCols) => {
+      if (col !== timestampColumnIndex || numCols !== 1) {
+        throw new Error('test mock only supports reading a single timestamp-column range, got col=' + col + ' numCols=' + numCols);
+      }
+      const values = [];
+      for (let r = 0; r < numRows; r++) {
+        const cell = timestampCellsByRow[row + r];
+        values.push([cell === undefined ? '' : cell]);
+      }
+      return { getValues: () => values };
+    }
+  };
+}
+
+/* ① 居住地4分類補助列が1000行までARRAYFORMULAでスピルしていても、最初の回答は2行目に保存される */
+{
+  const sheet = makeTimestampColumnSheet({}, 1000);
+  assert(findNextResponseRow_(sheet) === 2,
+    '補助列のARRAYFORMULAスピルでgetMaxRows()が1000でも、実データが無ければ最初の保存行は2行目（1001行目ではない）');
+}
+
+/* ② 2〜5行目に実際の回答（timestamp）があるとき、次の保存行は6行目 */
+{
+  const sheet = makeTimestampColumnSheet({
+    2: new Date('2026-01-01T00:00:00Z'),
+    3: new Date('2026-01-01T00:01:00Z'),
+    4: new Date('2026-01-01T00:02:00Z'),
+    5: new Date('2026-01-01T00:03:00Z')
+  }, 1000);
+  assert(findNextResponseRow_(sheet) === 6, '2〜5行目に回答が4件あるとき、次の保存行は6行目');
+}
+
+/* ③ 実データは2〜3行目だけでも、補助列のスピルでgetMaxRows()がずっと下（1000）まで伸びていた場合、
+   保存位置はそのスピル範囲の末尾側へは飛ばず、実データのすぐ次の行になる */
+{
+  const sheet = makeTimestampColumnSheet({
+    2: new Date('2026-01-01T00:00:00Z'),
+    3: new Date('2026-01-01T00:01:00Z')
+  }, 1000);
+  const nextRow = findNextResponseRow_(sheet);
+  assert(nextRow === 4,
+    '実データが2〜3行目だけなら、補助列のスピルでgetMaxRows()=1000でも保存位置は4行目のまま（1001行目等へ飛ばない）, got ' + nextRow);
+}
+
+/* appendResponseRow_：見つけた行にsetValues()で直接書き込み、appendRow()は一切使わない */
+{
+  let capturedWrite = null;
+  const sheet = {
+    getMaxRows: () => 1000,
+    getRange: (row, col, numRows, numCols) => {
+      if (numCols === 1) {
+        // findNextResponseRow_内部からのtimestamp列読み取り呼び出し（実データ無し＝空）。
+        const values = [];
+        for (let r = 0; r < numRows; r++) values.push(['']);
+        return { getValues: () => values };
+      }
+      // 回答行全体の書き込み呼び出し。
+      capturedWrite = { row, col, numRows, numCols };
+      return { setValues: (v) => { capturedWrite.values = v; } };
+    }
+  };
+
+  appendResponseRow_(sheet, 'dummyhash', baseNoGateAnswers());
+
+  assert(!!capturedWrite && capturedWrite.row === 2 && capturedWrite.col === 1 && capturedWrite.numRows === 1,
+    'appendResponseRow_ writes the response to row 2 (first response) starting at column 1, via setValues (not appendRow)');
+  assert(Array.isArray(capturedWrite.values) && capturedWrite.values[0].length === sandbox.COLUMNS.length,
+    'appendResponseRow_ writes a full COLUMNS.length-wide row');
+}
+
 if (failures > 0) {
   console.error('\n' + failures + ' failure(s) in test_backend.js');
   process.exitCode = 1;
