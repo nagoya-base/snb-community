@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow">
+  <title>衣装・ユニフォーム嗜好アンケート | SNB Community</title>
+  <meta name="description" content="SNBコミュニティ（SNBC）が実施する、衣装・ユニフォーム・スーツ・コスプレなどへの興味や関わり方を伺うアンケートです。氏名・メール不要、匿名で3〜5分。今後のSNBC企画や情報発信の参考にします。回答だけでイベント参加申込にはなりません。">
+  <link rel="canonical" href="https://nagoya-base.github.io/snb-community/community/fetish-survey.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="衣装・ユニフォーム嗜好アンケート | SNB Community">
+  <meta property="og:description" content="衣装・ユニフォーム・スーツ・コスプレなどへの興味や関わり方を伺うアンケートです。匿名・3〜5分、氏名・メール不要。回答だけでイベント参加申込にはなりません。">
+  <meta property="og:url" content="https://nagoya-base.github.io/snb-community/community/fetish-survey.html">
+  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/community/fetish-survey/meta-ogp-main.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="衣装・ユニフォーム嗜好アンケート | SNB Community">
+  <meta name="twitter:description" content="衣装・ユニフォーム・スーツ・コスプレなどへの興味や関わり方を伺うアンケートです。匿名・3〜5分、氏名・メール不要。回答だけでイベント参加申込にはなりません。">
+  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/fetish-survey/meta-ogp-main.jpg">
+
+  <!-- Google tag (gtag.js) -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', 'G-H9BD3KFZCR');
+    var snbGtagScript = document.createElement('script');
+    snbGtagScript.async = true;
+    snbGtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR';
+    document.head.appendChild(snbGtagScript);
+  </script>
+  <script src="../analytics.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:         #F5F2EC;
+      --bg-card:    #FFFFFF;
+      --bg-tint:    #EDEAE3;
+      --text:       #1C1A17;
+      --text-muted: #6A6258;
+      --border:     #DDD8CF;
+      --divider:    #E5E1D8;
+      --accent:     #C62828;
+      --accent-lt:  #E53935;
+      --accent-pale:#FBEAEA;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
+      font-size: 15px;
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+      min-width: 320px;
+      overflow-x: hidden;
+    }
+    a { color: var(--accent); }
+    [hidden] { display: none !important; }
+    :focus-visible { outline: 3px solid #1c72c5; outline-offset: 2px; }
+
+    .container { max-width: 720px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ── Header ── */
+    .site-header {
+      background: #1C1A17;
+      color: #fff;
+    }
+    .site-header__inner {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand { font-size: 0.85rem; font-weight: 800; letter-spacing: 0.07em; white-space: nowrap; }
+    .back-link {
+      color: #fff;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 999px;
+      padding: 0.32rem 0.85rem;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .back-link:hover { border-color: #fff; }
+
+    /* ── Hero ── */
+    .hero__media {
+      width: 100%;
+      aspect-ratio: 1200 / 630;
+      overflow: hidden;
+      background: #111;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero__media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .hero__body {
+      background: var(--bg-tint);
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 0 2.25rem;
+      text-align: center;
+    }
+    .hero__eyebrow {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent-lt);
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: clamp(1.5rem, 6vw, 2.1rem);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      line-height: 1.4;
+      margin-bottom: 0.9rem;
+    }
+    .hero__lead {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.9;
+      max-width: 480px;
+      margin: 0 auto 1.25rem;
+    }
+    .hero__meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .hero__cta,
+    .bottom-cta__actions {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.65rem;
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      border-radius: 999px;
+      padding: 0.85rem 1.4rem;
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      border: 2px solid transparent;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s, opacity 0.15s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .btn-primary:hover { background: var(--accent-lt); border-color: var(--accent-lt); color: #fff; }
+    .btn-outline {
+      background: var(--bg-card);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-outline.is-disabled {
+      cursor: default;
+      color: var(--text-muted);
+      border-color: var(--border);
+      background: var(--bg-tint);
+    }
+    .btn-outline.is-disabled:hover { transform: none; border-color: var(--border); color: var(--text-muted); }
+
+    /* ── Sections ── */
+    section { padding: 2.75rem 0; }
+    .section-label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    h2 {
+      font-size: clamp(1.2rem, 4vw, 1.5rem);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      margin-bottom: 1.25rem;
+    }
+    .lede { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; }
+
+    .about-list, .privacy-list {
+      display: grid;
+      gap: 0.65rem;
+      list-style: none;
+    }
+    .about-list li, .privacy-list li {
+      position: relative;
+      padding-left: 1.35rem;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.8;
+    }
+    .about-list li::before, .privacy-list li::before {
+      content: '›';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .about-list strong, .privacy-list strong { color: var(--text); font-weight: 700; }
+
+    .topic-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+    }
+    .topic-item { display: flex; gap: 0.85rem; }
+    .topic-item + .topic-item { margin-top: 1.1rem; padding-top: 1.1rem; border-top: 1px solid var(--divider); }
+    .topic-number {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--accent-pale);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+    .topic-item h3 { font-size: 0.94rem; font-weight: 800; margin-bottom: 0.3rem; }
+    .topic-item p { font-size: 0.83rem; color: var(--text-muted); line-height: 1.75; }
+
+    .bottom-cta {
+      background: var(--bg-tint);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+    .bottom-cta h2 { margin-bottom: 0.6rem; }
+    .bottom-cta .lede { margin-bottom: 1.5rem; }
+
+    .privacy-note {
+      margin-top: 1.25rem;
+      padding: 0.9rem 1rem;
+      border-radius: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.8;
+    }
+
+    footer.site-footer {
+      border-top: 1px solid var(--border);
+      background: var(--bg-tint);
+      padding: 2rem 1.5rem 2.5rem;
+      text-align: center;
+    }
+    footer.site-footer p { margin: 0.3rem 0; font-size: 0.78rem; color: var(--text-muted); }
+    footer.site-footer a { color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; }
+    footer.site-footer a:hover { color: var(--accent); }
+
+    @media (min-width: 480px) {
+      .hero__cta, .bottom-cta__actions { flex-direction: row; justify-content: center; max-width: none; }
+      .btn { flex: 0 0 auto; }
+    }
+  </style>
+</head>
+<body data-site-section="community" data-page-type="survey_landing" data-event-slug="fetish_survey" data-event-title="衣装・ユニフォーム嗜好アンケート">
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <span class="brand">SNB COMMUNITY</span>
+      <a class="back-link" href="../community/" data-cta-name="community_top" data-cta-location="survey_header">← コミュニティに戻る</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero__media">
+        <picture>
+          <source srcset="../images/community/fetish-survey/hero-photo-main.webp" type="image/webp">
+          <img src="../images/community/fetish-survey/hero-photo-main.jpg"
+               alt="野球・サッカー・ラグビー・陸上・水泳・スーツなど様々な衣装姿の男性たちと「衣装・ユニフォーム嗜好アンケート 匿名・3〜5分 イベント申込ではありません」の文字"
+               width="1200" height="630" loading="eager" fetchpriority="high">
+        </picture>
+      </div>
+      <div class="hero__body">
+        <div class="container">
+          <p class="hero__eyebrow">SNBC SURVEY</p>
+          <h1 id="page-title">衣装・ユニフォーム嗜好アンケート</h1>
+          <p class="hero__lead">野球ユニ・サッカー・ラグビー・スーツ・コスプレなど、衣装への興味や関わり方を教えてください。今後のSNBC企画や情報発信の参考にします。</p>
+          <div class="hero__meta">
+            <span class="meta-chip">匿名・3〜5分</span>
+            <span class="meta-chip">イベント申込ではありません</span>
+          </div>
+          <div class="hero__cta">
+            <a class="btn btn-primary" href="https://script.google.com/macros/s/AKfycbzeEdZXzsNQ00i1s-ijt1jO-F-uXfZtmadcLIFIox47YxygVsaNKuUSsTi2hJh0WAIIKA/exec" target="_blank" rel="noopener" data-cta-name="fetish_survey_answer" data-cta-location="hero">アンケートに回答する</a>
+            <a class="btn btn-outline js-results-cta is-disabled" href="#" aria-disabled="true" tabindex="-1" data-results-url="https://script.google.com/macros/s/AKfycbzeEdZXzsNQ00i1s-ijt1jO-F-uXfZtmadcLIFIox47YxygVsaNKuUSsTi2hJh0WAIIKA/exec?view=results" data-cta-name="fetish_survey_results" data-cta-location="hero">
+              <span class="js-results-label">集計結果は準備中です</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" aria-labelledby="about-title">
+      <div class="container">
+        <p class="section-label">About</p>
+        <h2 id="about-title">このアンケートについて</h2>
+        <ul class="about-list">
+          <li>衣装・ユニフォーム・スーツ・コスプレなどへの興味や関わり方について伺う、SNBコミュニティ（SNBC）のアンケートです。</li>
+          <li>いただいた回答は、<strong>今後のSNBC企画や情報発信の参考</strong>にします。</li>
+          <li><strong>回答しただけでは、イベントへの参加申込みにはなりません。</strong></li>
+          <li>氏名・メールアドレス・Googleログインは<strong>不要</strong>です。</li>
+          <li>回答時間の目安は<strong>3〜5分</strong>です。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="topics" aria-labelledby="topics-title">
+      <div class="container">
+        <p class="section-label">Topics</p>
+        <h2 id="topics-title">どんなことを聞くか</h2>
+        <p class="lede">設問の全文はここには載せていません。回答前にイメージしやすいよう、聞く内容の範囲だけ簡単にご紹介します。</p>
+        <div class="topic-card">
+          <div class="topic-item">
+            <span class="topic-number" aria-hidden="true">1</span>
+            <div>
+              <h3>興味のある衣装・ユニフォーム</h3>
+              <p>野球・サッカー・ラグビー・陸上・水泳・制服・スーツ・コスプレなど、興味のあるものを教えてください。</p>
+            </div>
+          </div>
+          <div class="topic-item">
+            <span class="topic-number" aria-hidden="true">2</span>
+            <div>
+              <h3>その衣装とどう関わりたいか</h3>
+              <p>自分で着たい、写真や映像で見たい、撮影に関わりたいなど、関わり方の傾向を伺います。</p>
+            </div>
+          </div>
+          <div class="topic-item">
+            <span class="topic-number" aria-hidden="true">3</span>
+            <div>
+              <h3>居住地域・年代</h3>
+              <p>大まかな地域と年代のみお答えいただきます。詳細な住所の入力は求めません。</p>
+            </div>
+          </div>
+          <div class="topic-item">
+            <span class="topic-number" aria-hidden="true">4</span>
+            <div>
+              <h3>該当する方への追加の質問</h3>
+              <p>SNBCやスーツ企画に関心がある方にのみ、追加の質問を表示する場合があります。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bottom-cta" id="respond" aria-labelledby="respond-title">
+      <div class="container">
+        <p class="section-label">Answer &amp; Results</p>
+        <h2 id="respond-title">回答・結果を見る</h2>
+        <p class="lede">最後まで読んでいただき、ありがとうございます。ご協力いただける方は、下のボタンからご回答ください。</p>
+        <div class="bottom-cta__actions">
+          <a class="btn btn-primary" href="https://script.google.com/macros/s/AKfycbzeEdZXzsNQ00i1s-ijt1jO-F-uXfZtmadcLIFIox47YxygVsaNKuUSsTi2hJh0WAIIKA/exec" target="_blank" rel="noopener" data-cta-name="fetish_survey_answer" data-cta-location="bottom">アンケートに回答する</a>
+          <a class="btn btn-outline js-results-cta is-disabled" href="#" aria-disabled="true" tabindex="-1" data-results-url="https://script.google.com/macros/s/AKfycbzeEdZXzsNQ00i1s-ijt1jO-F-uXfZtmadcLIFIox47YxygVsaNKuUSsTi2hJh0WAIIKA/exec?view=results" data-cta-name="fetish_survey_results" data-cta-location="bottom">
+            <span class="js-results-label">集計結果は準備中です</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="privacy" aria-labelledby="privacy-title">
+      <div class="container">
+        <p class="section-label">Privacy</p>
+        <h2 id="privacy-title">プライバシー補足</h2>
+        <ul class="privacy-list">
+          <li>氏名・メールアドレス・Googleログインは必要ありません。</li>
+          <li>同一ブラウザからの重複回答を防ぐため、ブラウザ内に保存したランダムなIDを利用します。</li>
+          <li>公開する結果は<strong>集計値のみ</strong>です。</li>
+          <li>自由記述・個別の回答内容・識別用のハッシュ値などは公開しません。</li>
+        </ul>
+        <p class="privacy-note">アンケートは匿名でご回答いただけます。集計結果の公開範囲・扱いは、回答フォームの案内もあわせてご確認ください。</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>SNB Community｜名古屋・上前津</p>
+    <p><a href="../community/">SNBコミュニティ</a>／<a href="../legal/">規約・参加ルール</a></p>
+    <p>© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
+  </footer>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* 結果CTAの有効化フラグ。
+         PR #299の本番GAS再デプロイ後、/exec?view=results が正常表示されることを
+         手動確認してから true に切り替える（別の小さな追記コミットで対応）。
+         ランタイムでの到達性チェック（fetch等）は行わない。 */
+      var RESULTS_CTA_ENABLED = false;
+
+      var resultsCtas = document.querySelectorAll('.js-results-cta');
+      resultsCtas.forEach(function (el) {
+        if (RESULTS_CTA_ENABLED) {
+          el.href = el.getAttribute('data-results-url');
+          el.target = '_blank';
+          el.rel = 'noopener';
+          el.removeAttribute('aria-disabled');
+          el.removeAttribute('tabindex');
+          el.classList.remove('is-disabled');
+          var label = el.querySelector('.js-results-label');
+          if (label) label.textContent = '現在の集計結果を見る';
+        } else {
+          /* HTML側で初期状態から is-disabled / tabindex="-1" を付与済み。
+             JS無効環境でも href="#" のまま押せてしまわないよう、ここではクリックのみ無効化する。 */
+          el.addEventListener('click', function (e) { e.preventDefault(); });
+        }
+      });
+    })();
+  </script>
+
+</body>
+</html>
