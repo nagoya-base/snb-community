@@ -101,6 +101,27 @@ function findByName(items, name) {
     'tallyMulti_ buckets all free-text その他 entries under one label instead of per-content');
 }
 
+/* ── ENGAGEMENT_OPTIONS / SUIT_ENGAGEMENT_OPTIONS：「両方」は複数回答設問のため冗長として
+   選択肢から削除されている（公開プロジェクトと同期。レビュー指摘、PR #299）。旧回答に
+   この値が残っていても、tallyMulti_は未知の値として静かに無視する
+   （過去データは書き換えないため、集計上は反映されない参考値として扱われる）。 ── */
+assert(sandbox.ENGAGEMENT_OPTIONS.indexOf('両方') === -1, 'ENGAGEMENT_OPTIONS does not offer 両方, in sync with the public project');
+assert(sandbox.ENGAGEMENT_OPTIONS.length === 5, 'ENGAGEMENT_OPTIONS has 5 options, in sync with the public project');
+assert(sandbox.SUIT_ENGAGEMENT_OPTIONS.indexOf('両方') === -1, 'SUIT_ENGAGEMENT_OPTIONS does not offer 両方, in sync with the public project');
+assert(sandbox.SUIT_ENGAGEMENT_OPTIONS.length === 4, 'SUIT_ENGAGEMENT_OPTIONS has 4 options, in sync with the public project');
+{
+  // 旧回答に残っている可能性のある「両方」は、書き換えず参考値として保持しつつ、
+  // 集計上は未知の値として静かに無視される（新カテゴリのどれにも加算されない）ことを確認する。
+  const rows = [
+    { engagement_preferences: '両方' },
+    { engagement_preferences: '自分で着たい' }
+  ];
+  const result = tallyMulti_(rows, 'engagement_preferences', sandbox.ENGAGEMENT_OPTIONS);
+  assert(findByName(result, '自分で着たい').count === 1, 'a legacy 両方 value does not prevent tallying other rows correctly');
+  const total = result.reduce((sum, item) => sum + item.count, 0);
+  assert(total === 1, 'a legacy 両方 value (no longer a valid option) is silently excluded from the tally, not miscounted into another bucket');
+}
+
 /* ══════════════════════════════════════════════════════════════
  * crosstabSingleVsSingle_ / crosstabMultiVsSingle_
  * ══════════════════════════════════════════════════════════════ */

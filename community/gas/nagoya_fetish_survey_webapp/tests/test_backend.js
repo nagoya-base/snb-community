@@ -140,6 +140,10 @@ assert(
   validateAnswers_(baseNoGateAnswers({ engagementPreferences: ['撮られる側として関わりたい'] })) === null,
   'engagementPreferences accepts 撮られる側として関わりたい (見る/撮るを区別できる)'
 );
+assert(
+  validateAnswers_(baseNoGateAnswers({ engagementPreferences: ['両方'] })) === 'engagement_preferences_invalid_item',
+  '「両方」は複数回答設問のため冗長として削除済みで、新規回答では拒否される（PR #299）'
+);
 
 /* ── ヒーロー／悪役／特撮／ケモノ系だけでも正常回答として保存できる ── */
 ['ヒーロー系', '悪役・ヴィラン系', '特撮系', 'ケモノ・着ぐるみ・獣人系'].forEach((category) => {
@@ -242,9 +246,20 @@ assert(
 );
 
 /* ── スーツ選択者にS1〜S4が表示される（サーバー側は必須化で担保） ── */
-assert(sandbox.SUIT_ENGAGEMENT_OPTIONS.length === 5, 'SUIT_ENGAGEMENT_OPTIONS has 5 options');
+assert(sandbox.SUIT_ENGAGEMENT_OPTIONS.length === 4, 'SUIT_ENGAGEMENT_OPTIONS has 4 options (「両方」removed as redundant for a multi-select question, PR #299)');
+assert(sandbox.SUIT_ENGAGEMENT_OPTIONS.indexOf('両方') === -1, 'SUIT_ENGAGEMENT_OPTIONS does not offer 両方 (redundant with checking both individual options)');
+assert(sandbox.ENGAGEMENT_OPTIONS.length === 5, 'ENGAGEMENT_OPTIONS has 5 options (「両方」removed as redundant for a multi-select question, PR #299)');
+assert(sandbox.ENGAGEMENT_OPTIONS.indexOf('両方') === -1, 'ENGAGEMENT_OPTIONS does not offer 両方 (redundant with checking both individual options)');
 assert(sandbox.SUIT_TYPES_OPTIONS.length === 8, 'SUIT_TYPES_OPTIONS has 8 options');
 assert(sandbox.SUIT_STATES_OPTIONS.length === 6, 'SUIT_STATES_OPTIONS has 6 options');
+assert(
+  validateAnswers_(baseNoGateAnswers({
+    interestCategories: ['スーツ'], suitEngagementPreferences: ['両方'],
+    suitTypes: ['ビジネススーツ'], suitStates: ['ジャケットを着たまま'], suitEventInterest: 'いいえ',
+    surveyPath: 'suit_only', completionStage: 'suit_interest'
+  })) === 'suit_engagement_preferences_invalid_item',
+  '「両方」は削除済みで、suitEngagementPreferencesでも新規回答では拒否される（PR #299）'
+);
 assert(
   validateAnswers_(baseNoGateAnswers({ interestCategories: ['スーツ'] })) === 'suit_engagement_preferences_required',
   'suitEngagementPreferences required once suit gate is reached'
@@ -547,9 +562,9 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
 
 /* ── readMultiTallyBlock_ / readQueryPairsBlock_：集計_*シートの固定レイアウトを読み取れる ── */
 {
-  const tallyRows = buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, { '自分で着たい': 15, '両方': 9 });
+  const tallyRows = buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, { '自分で着たい': 15, '人が着ているのを見たい': 9 });
   const map = readMultiTallyBlock_(fakeSheetFromRows(tallyRows), 0, sandbox.ENGAGEMENT_OPTIONS);
-  assert(map['自分で着たい'] === 15 && map['両方'] === 9 && map['交流のきっかけとして楽しみたい'] === 0,
+  assert(map['自分で着たい'] === 15 && map['人が着ているのを見たい'] === 9 && map['交流のきっかけとして楽しみたい'] === 0,
     'readMultiTallyBlock_ reads the writeMultiTally_ layout correctly');
 }
 {

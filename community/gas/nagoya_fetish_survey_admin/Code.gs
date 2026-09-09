@@ -108,8 +108,11 @@ var INTEREST_CATEGORY_OPTIONS = INTEREST_SPORTS_OPTIONS
 var UNIFORM_GATE_CATEGORIES = INTEREST_SPORTS_OPTIONS.concat(['学校制服', '作業着', '職業制服']);
 var SUIT_GATE_CATEGORY = 'スーツ';
 
+/* 「両方」は複数回答設問のため冗長として選択肢から削除している（公開プロジェクトと同期。
+   レビュー指摘、PR #299）。旧回答にこの値が残っていても、tallyMulti_は未知の値として
+   静かに無視する（過去データを書き換えないため、集計上は反映されない参考値になる）。 */
 var ENGAGEMENT_OPTIONS = [
-  '自分で着たい', '人が着ているのを見たい', '両方',
+  '自分で着たい', '人が着ているのを見たい',
   '撮る側として関わりたい', '撮られる側として関わりたい', '交流のきっかけとして楽しみたい'
 ];
 
@@ -120,8 +123,9 @@ var SNBC_UNCERTAIN_REASON_OPTIONS = [
   '料金や内容が分からない', '自分向けか分からない'
 ];
 
+/* ENGAGEMENT_OPTIONSと同様、「両方」を削除している（公開プロジェクトと同期。PR #299）。 */
 var SUIT_ENGAGEMENT_OPTIONS = [
-  '自分で着たい', '人が着ているのを見たい', '両方',
+  '自分で着たい', '人が着ているのを見たい',
   '撮る側として関わりたい', '撮られる側として関わりたい'
 ];
 var SUIT_TYPES_OPTIONS = [
