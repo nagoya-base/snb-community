@@ -434,7 +434,7 @@
          PR #299の本番GAS再デプロイ後、/exec?view=results が正常表示されることを
          手動確認してから true に切り替える（別の小さな追記コミットで対応）。
          ランタイムでの到達性チェック（fetch等）は行わない。 */
-      var RESULTS_CTA_ENABLED = false;
+      var RESULTS_CTA_ENABLED = true;
 
       var resultsCtas = document.querySelectorAll('.js-results-cta');
       resultsCtas.forEach(function (el) {
