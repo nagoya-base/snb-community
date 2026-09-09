@@ -227,4 +227,111 @@
   }
 
   [hidden] { display: none !important; }
+
+  /* ── Issue #298：公開結果ページ（?view=results）専用のスタイル ── */
+
+  .results-summary {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .results-count {
+    margin: 0 0 0.3rem;
+    font-size: 0.98rem;
+  }
+
+  .results-count strong {
+    color: var(--accent);
+    font-size: 1.15rem;
+  }
+
+  .results-updated {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  .result-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+    margin: 0 0 1rem;
+  }
+
+  .result-block h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 0.4rem;
+  }
+
+  .result-block__note {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    margin: 0 0 0.7rem;
+  }
+
+  .result-block__empty {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin: 0;
+  }
+
+  .bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    width: 100%;
+  }
+
+  .bar-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .bar-row__label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .bar-row__name {
+    overflow-wrap: anywhere;
+  }
+
+  .bar-row__value {
+    flex: none;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .bar-row__track {
+    width: 100%;
+    background: var(--bg);
+    border-radius: 6px;
+    height: 10px;
+    overflow: hidden;
+  }
+
+  .bar-row__fill {
+    height: 100%;
+    border-radius: 6px;
+    background: var(--accent);
+  }
+
+  .results-cta {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    margin-top: 0.5rem;
+  }
 </style>

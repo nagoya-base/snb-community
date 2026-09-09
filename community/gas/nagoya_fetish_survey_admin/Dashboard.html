@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <?!= include('DashboardStyles'); ?>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>アンケート管理ダッシュボード（読み取り専用）</h1>
+      <p class="lead">
+        名古屋のフェチ・衣装交流に関するアンケートの詳細分析用ダッシュボードです。
+        このプロジェクトは回答スプレッドシートを読み取るだけで、回答の削除・編集・書き込みは一切行いません。
+      </p>
+    </header>
+
+    <div class="notice-box">
+      このページはWeb Appのアクセス権を「自分のみ」に設定して運用することを前提としています。
+      公開アンケート・公開結果ページ（別プロジェクト）とは異なり、詳細クロス集計や自由記述を含みます。
+      取り扱いに注意してください。
+    </div>
+
+    <div id="dashboard-loading" class="state-panel">読み込み中です…</div>
+    <div id="dashboard-error" class="state-panel state-panel--error" hidden>
+      読み込みに失敗しました。SPREADSHEET_IDの設定・responsesシートの有無を確認してください。
+    </div>
+
+    <div id="dashboard-content" hidden>
+      <section class="section">
+        <h2>基本</h2>
+        <div class="kpi-row">
+          <div class="kpi"><div class="kpi__value" id="kpi-total">-</div><div class="kpi__label">総回答数</div></div>
+          <div class="kpi"><div class="kpi__value" id="kpi-last-response">-</div><div class="kpi__label">最終回答日時</div></div>
+        </div>
+        <h3>日別回答数</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-daily"></table></div>
+      </section>
+
+      <section class="section">
+        <h2>上部の主要可視化</h2>
+        <div class="highlights-grid" id="highlights"></div>
+      </section>
+
+      <section class="section">
+        <h2>地域</h2>
+        <h3>都道府県</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-prefecture"></table></div>
+        <h3>愛知県内地域</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-aichi-area"></table></div>
+        <h3>全国7地域ブロック</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-national-blocks"></table></div>
+      </section>
+
+      <section class="section">
+        <h2>年代</h2>
+        <h3>元年代</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-age-original"></table></div>
+        <h3>公開用簡略年代</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-age-simplified"></table></div>
+      </section>
+
+      <section class="section">
+        <h2>衣装</h2>
+        <h3>興味のある衣装・服装・キャラクター表現（interest_categories・22カテゴリ）</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-interest-categories"></table></div>
+        <h3>第一嗜好（primary_interest_category）</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-primary-interest"></table></div>
+        <h3>関わり方（engagement_preferences）</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-engagement"></table></div>
+      </section>
+
+      <section class="section">
+        <h2>SNBC</h2>
+        <div class="kpi-row">
+          <div class="kpi"><div class="kpi__value" id="kpi-uniform-gate">-</div><div class="kpi__label">ユニフォーム系ゲート到達数</div></div>
+          <div class="kpi"><div class="kpi__value" id="kpi-deep-dive">-</div><div class="kpi__label">深掘り到達数</div></div>
+          <div class="kpi"><div class="kpi__value" id="kpi-awareness-rate">-</div><div class="kpi__label">認知→興味あり率</div></div>
+        </div>
+        <h3>SNBC認知</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-snbc-awareness"></table></div>
+        <h3>SNBC興味</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-snbc-interest"></table></div>
+        <h3>興味がどちらともいえない理由</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-snbc-uncertain"></table></div>
+      </section>
+
+      <section class="section">
+        <h2>スーツ</h2>
+        <h3>関わり方</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-suit-engagement"></table></div>
+        <h3>スーツタイプ</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-suit-types"></table></div>
+        <h3>スーツの状態</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-suit-states"></table></div>
+        <h3>スーツ企画への興味</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-suit-event-interest"></table></div>
+      </section>
+
+      <section class="section">
+        <h2>深掘り</h2>
+        <h3>参加しやすい頻度</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-frequency"></table></div>
+        <h3>参加しやすい料金</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-price"></table></div>
+        <h3>参加しやすい人数</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-group-size"></table></div>
+        <h3>参加形式</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-format"></table></div>
+        <h3>イベント告知の認知</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-event-awareness"></table></div>
+        <h3>参加障壁</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-barriers"></table></div>
+        <h3>あると助かる情報</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-helpful-info"></table></div>
+        <h3>場の温度感</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-atmosphere"></table></div>
+        <h3>仮定企画への参加意向</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-hypothetical-intent"></table></div>
+        <h3>アンケート〜申込ギャップ</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-gap"></table></div>
+        <h3>ギャップの理由</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-gap-reasons"></table></div>
+      </section>
+
+      <section class="section">
+        <h2>分岐</h2>
+        <h3>survey_path</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-survey-path"></table></div>
+        <h3>completion_stage</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-completion-stage"></table></div>
+      </section>
+
+      <section class="section">
+        <h2>クロス集計</h2>
+        <h3>地域7ブロック × SNBC興味</h3>
+        <div class="overflow-x"><table class="tally-table" id="table-region-snbc-interest"></table></div>
+      </section>
+
+      <section class="section">
+        <details class="free-comments">
+          <summary>自由記述一覧（<span id="free-comments-count">0</span>件・クリックで展開）</summary>
+          <div id="free-comments-list"></div>
+        </details>
+      </section>
+    </div>
+  </div>
+
+  <?!= include('DashboardScript'); ?>
+</body>
+</html>

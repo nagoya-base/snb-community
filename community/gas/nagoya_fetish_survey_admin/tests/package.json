@@ -1,0 +1,8 @@
+{
+  "name": "nagoya-fetish-survey-admin-tests",
+  "private": true,
+  "description": "community/gas/nagoya_fetish_survey_admin のCode.gsに対する検証用スクリプト。実際のGAS実行環境は使わず、Node.jsで代替検証する。",
+  "scripts": {
+    "test": "node test_backend.js && node test_read_only_and_isolation.js"
+  }
+}
