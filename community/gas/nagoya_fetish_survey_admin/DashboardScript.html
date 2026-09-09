@@ -1,0 +1,212 @@
+<script>
+  (function () {
+    'use strict';
+
+    var loadingEl = document.getElementById('dashboard-loading');
+    var errorEl = document.getElementById('dashboard-error');
+    var contentEl = document.getElementById('dashboard-content');
+
+    function clearChildren(el) {
+      while (el.firstChild) el.removeChild(el.firstChild);
+    }
+
+    function el(tag, className, text) {
+      var node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined && text !== null) node.textContent = text;
+      return node;
+    }
+
+    function totalOf(items) {
+      return items.reduce(function (sum, item) { return sum + item.count; }, 0);
+    }
+
+    /**
+     * items: [{name, count}, ...]。件数0の行も表示する（選択肢の全体像を把握するため）。
+     */
+    function renderTallyTable(table, items) {
+      clearChildren(table);
+      var total = totalOf(items);
+
+      var thead = el('thead');
+      var headRow = el('tr');
+      headRow.appendChild(el('th', null, '選択肢'));
+      headRow.appendChild(el('th', 'num', '件数'));
+      headRow.appendChild(el('th', 'num', '割合'));
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      var tbody = el('tbody');
+      items.forEach(function (item) {
+        var row = el('tr');
+        row.appendChild(el('td', null, item.name));
+        row.appendChild(el('td', 'num', String(item.count)));
+        var percent = total > 0 ? Math.round((item.count / total) * 1000) / 10 : 0;
+        row.appendChild(el('td', 'num', percent + '%'));
+        tbody.appendChild(row);
+      });
+      table.appendChild(tbody);
+    }
+
+    function renderCrosstabTable(table, crosstab) {
+      clearChildren(table);
+      var thead = el('thead');
+      var headRow = el('tr');
+      headRow.appendChild(el('th', null, ''));
+      crosstab.colLabels.forEach(function (label) { headRow.appendChild(el('th', 'num', label)); });
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      var tbody = el('tbody');
+      crosstab.rowLabels.forEach(function (rowLabel, r) {
+        var row = el('tr');
+        row.appendChild(el('td', null, rowLabel));
+        crosstab.matrix[r].forEach(function (value) { row.appendChild(el('td', 'num', String(value))); });
+        tbody.appendChild(row);
+      });
+      table.appendChild(tbody);
+    }
+
+    /**
+     * 上部の主要可視化用の簡易棒グラフ（上位limit件のみ）。
+     */
+    function renderHighlightBars(container, title, items, limit) {
+      var card = el('div', 'section');
+      card.appendChild(el('h3', null, title));
+
+      var top = items.slice().sort(function (a, b) { return b.count - a.count; }).slice(0, limit || 6);
+      var max = top.reduce(function (m, item) { return Math.max(m, item.count); }, 0);
+
+      if (top.length === 0 || max === 0) {
+        card.appendChild(el('p', 'section__note', 'まだデータがありません。'));
+      } else {
+        top.forEach(function (item) {
+          var row = el('div', 'bar-row');
+          var label = el('div', 'bar-row__label');
+          label.appendChild(el('span', null, item.name));
+          label.appendChild(el('span', null, String(item.count)));
+          var track = el('div', 'bar-row__track');
+          var fill = el('div', 'bar-row__fill');
+          fill.style.width = Math.max(0, Math.min(100, (item.count / max) * 100)) + '%';
+          track.appendChild(fill);
+          row.appendChild(label);
+          row.appendChild(track);
+          card.appendChild(row);
+        });
+      }
+      container.appendChild(card);
+    }
+
+    function renderHighlightFunnel(container, funnel) {
+      var card = el('div', 'section');
+      card.appendChild(el('h3', null, 'SNBC 認知 → 興味あり → 深掘り完走'));
+      var row = el('div', 'kpi-row');
+      var addKpi = function (value, label) {
+        var kpi = el('div', 'kpi');
+        kpi.appendChild(el('div', 'kpi__value', String(value)));
+        kpi.appendChild(el('div', 'kpi__label', label));
+        row.appendChild(kpi);
+      };
+      addKpi(funnel.awarenessAnswered, 'SNBC認知に回答');
+      addKpi(funnel.interestYes, '興味あり');
+      addKpi(funnel.deepDiveCompleted, '深掘り完走');
+      card.appendChild(row);
+      container.appendChild(card);
+    }
+
+    function formatDateTime(iso) {
+      if (!iso) return '-';
+      var date = new Date(iso);
+      if (isNaN(date.getTime())) return '-';
+      var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+      return date.getFullYear() + '/' + pad(date.getMonth() + 1) + '/' + pad(date.getDate()) + ' ' +
+        pad(date.getHours()) + ':' + pad(date.getMinutes());
+    }
+
+    function render(data) {
+      loadingEl.hidden = true;
+      errorEl.hidden = true;
+      contentEl.hidden = false;
+
+      document.getElementById('kpi-total').textContent = data.basic.total;
+      document.getElementById('kpi-last-response').textContent = formatDateTime(data.basic.lastResponseAt);
+      renderTallyTable(document.getElementById('table-daily'),
+        data.basic.dailyCounts.map(function (d) { return { name: d.date, count: d.count }; }));
+
+      var highlights = document.getElementById('highlights');
+      clearChildren(highlights);
+      renderHighlightFunnel(highlights, data.highlights.snbcFunnel);
+      renderHighlightBars(highlights, '地域別SNBC興味（はい）', regionInterestYes(data.highlights.regionSnbcInterest), 8);
+      renderHighlightBars(highlights, 'interest_categories ランキング', data.highlights.interestCategoriesRanking, 8);
+      renderHighlightBars(highlights, '衣装・服装との関わり方', data.highlights.engagementPreferences, 8);
+      renderHighlightBars(highlights, '参加しやすい料金', data.highlights.preferredPrice, 8);
+      renderHighlightBars(highlights, '参加しやすい人数', data.highlights.preferredGroupSize, 8);
+      renderHighlightBars(highlights, '参加障壁', data.highlights.barriers, 8);
+      renderHighlightBars(highlights, '場の温度感', data.highlights.preferredAtmosphere, 8);
+      renderHighlightBars(highlights, 'アンケート〜申込ギャップ', data.highlights.surveyToSignupGap, 8);
+      renderHighlightBars(highlights, 'スーツ企画への興味', data.highlights.suitEventInterest, 8);
+
+      renderTallyTable(document.getElementById('table-prefecture'), data.region.prefecture);
+      renderTallyTable(document.getElementById('table-aichi-area'), data.region.aichiArea);
+      renderTallyTable(document.getElementById('table-national-blocks'), data.region.nationalBlocks);
+
+      renderTallyTable(document.getElementById('table-age-original'), data.age.original);
+      renderTallyTable(document.getElementById('table-age-simplified'), data.age.simplified);
+
+      renderTallyTable(document.getElementById('table-interest-categories'), data.costume.interestCategories);
+      renderTallyTable(document.getElementById('table-primary-interest'), data.costume.primaryInterestCategory);
+      renderTallyTable(document.getElementById('table-engagement'), data.costume.engagementPreferences);
+
+      document.getElementById('kpi-uniform-gate').textContent = data.snbc.uniformGateReachedCount;
+      document.getElementById('kpi-deep-dive').textContent = data.snbc.deepDiveCompletedCount;
+      document.getElementById('kpi-awareness-rate').textContent =
+        data.snbc.awarenessToInterestRate === null ? '-' : Math.round(data.snbc.awarenessToInterestRate * 1000) / 10 + '%';
+      renderTallyTable(document.getElementById('table-snbc-awareness'), data.snbc.awareness);
+      renderTallyTable(document.getElementById('table-snbc-interest'), data.snbc.interest);
+      renderTallyTable(document.getElementById('table-snbc-uncertain'), data.snbc.interestUncertainReasons);
+
+      renderTallyTable(document.getElementById('table-suit-engagement'), data.suit.engagementPreferences);
+      renderTallyTable(document.getElementById('table-suit-types'), data.suit.types);
+      renderTallyTable(document.getElementById('table-suit-states'), data.suit.states);
+      renderTallyTable(document.getElementById('table-suit-event-interest'), data.suit.eventInterest);
+
+      renderTallyTable(document.getElementById('table-frequency'), data.deepDive.frequency);
+      renderTallyTable(document.getElementById('table-price'), data.deepDive.price);
+      renderTallyTable(document.getElementById('table-group-size'), data.deepDive.groupSize);
+      renderTallyTable(document.getElementById('table-format'), data.deepDive.format);
+      renderTallyTable(document.getElementById('table-event-awareness'), data.deepDive.eventAwareness);
+      renderTallyTable(document.getElementById('table-barriers'), data.deepDive.barriers);
+      renderTallyTable(document.getElementById('table-helpful-info'), data.deepDive.helpfulInformation);
+      renderTallyTable(document.getElementById('table-atmosphere'), data.deepDive.atmosphere);
+      renderTallyTable(document.getElementById('table-hypothetical-intent'), data.deepDive.hypotheticalIntent);
+      renderTallyTable(document.getElementById('table-gap'), data.deepDive.gap);
+      renderTallyTable(document.getElementById('table-gap-reasons'), data.deepDive.gapReasons);
+
+      renderTallyTable(document.getElementById('table-survey-path'), data.branching.surveyPath);
+      renderTallyTable(document.getElementById('table-completion-stage'), data.branching.completionStage);
+
+      renderCrosstabTable(document.getElementById('table-region-snbc-interest'), data.highlights.regionSnbcInterest);
+
+      document.getElementById('free-comments-count').textContent = data.freeComments.length;
+      var list = document.getElementById('free-comments-list');
+      clearChildren(list);
+      data.freeComments.forEach(function (text) {
+        list.appendChild(el('div', 'free-comment-item', text));
+      });
+    }
+
+    function regionInterestYes(crosstab) {
+      var yesIndex = crosstab.colLabels.indexOf('はい');
+      return crosstab.rowLabels.map(function (label, i) {
+        return { name: label, count: yesIndex === -1 ? 0 : crosstab.matrix[i][yesIndex] };
+      });
+    }
+
+    function showError() {
+      loadingEl.hidden = true;
+      errorEl.hidden = false;
+    }
+
+    google.script.run.withSuccessHandler(render).withFailureHandler(showError).getAdminDashboardData();
+  })();
+</script>

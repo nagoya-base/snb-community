@@ -1,0 +1,129 @@
+<script>
+  (function () {
+    'use strict';
+
+    // 30〜60秒の範囲でポーリングする（サーバー側CacheServiceのTTLと同程度）。
+    var POLL_INTERVAL_MS = 45000;
+
+    var loadingEl = document.getElementById('results-loading');
+    var errorEl = document.getElementById('results-error');
+    var contentEl = document.getElementById('results-content');
+    var totalEl = document.getElementById('results-total');
+    var updatedAtEl = document.getElementById('results-updated-at');
+    var pendingEl = document.getElementById('results-pending');
+    var blocksEl = document.getElementById('results-blocks');
+    var backLinkEl = document.getElementById('back-to-survey');
+
+    var charts = {
+      categories: document.getElementById('chart-categories'),
+      engagement: document.getElementById('chart-engagement'),
+      region: document.getElementById('chart-region'),
+      age: document.getElementById('chart-age')
+    };
+
+    var hasRenderedOnce = false;
+
+    // ?view=results を外した現在ページのURL（=アンケートフォームのURL）へ戻るリンク。
+    backLinkEl.href = window.location.pathname;
+
+    function formatTime(isoString) {
+      var date = new Date(isoString);
+      if (isNaN(date.getTime())) return '--:--';
+      var hours = ('0' + date.getHours()).slice(-2);
+      var minutes = ('0' + date.getMinutes()).slice(-2);
+      return hours + ':' + minutes;
+    }
+
+    function clearChildren(el) {
+      while (el.firstChild) el.removeChild(el.firstChild);
+    }
+
+    /**
+     * items: [{ name, count, percent }, ...]（buildPublicSimpleBreakdown_と同じ形。件数昇順は既にサーバー側で降順ソート済み）。
+     */
+    function renderBarChart(container, items) {
+      clearChildren(container);
+
+      if (!items || items.length === 0) {
+        var empty = document.createElement('p');
+        empty.className = 'result-block__empty';
+        empty.textContent = '表示できるデータがまだありません。';
+        container.appendChild(empty);
+        return;
+      }
+
+      items.forEach(function (item) {
+        var row = document.createElement('div');
+        row.className = 'bar-row';
+
+        var label = document.createElement('div');
+        label.className = 'bar-row__label';
+
+        var name = document.createElement('span');
+        name.className = 'bar-row__name';
+        name.textContent = item.name;
+
+        var value = document.createElement('span');
+        value.className = 'bar-row__value';
+        value.textContent = item.count + '件（' + item.percent + '%）';
+
+        label.appendChild(name);
+        label.appendChild(value);
+
+        var track = document.createElement('div');
+        track.className = 'bar-row__track';
+
+        var fill = document.createElement('div');
+        fill.className = 'bar-row__fill';
+        fill.style.width = Math.max(0, Math.min(100, item.percent)) + '%';
+
+        track.appendChild(fill);
+        row.appendChild(label);
+        row.appendChild(track);
+        container.appendChild(row);
+      });
+    }
+
+    function render(data) {
+      loadingEl.hidden = true;
+      errorEl.hidden = true;
+      contentEl.hidden = false;
+
+      totalEl.textContent = data.total;
+      updatedAtEl.textContent = formatTime(data.generatedAt);
+
+      if (!data.ready) {
+        pendingEl.hidden = false;
+        blocksEl.hidden = true;
+      } else {
+        pendingEl.hidden = true;
+        blocksEl.hidden = false;
+        renderBarChart(charts.categories, data.categories);
+        renderBarChart(charts.engagement, data.engagement);
+        renderBarChart(charts.region, data.region);
+        renderBarChart(charts.age, data.age);
+      }
+
+      hasRenderedOnce = true;
+    }
+
+    function showError() {
+      // 初回読み込み前に失敗した場合のみエラー表示にする。ポーリング中の一時的な失敗では
+      // 既に表示済みの結果をそのまま残し、次回のポーリングで自然に復帰させる。
+      if (!hasRenderedOnce) {
+        loadingEl.hidden = true;
+        errorEl.hidden = false;
+      }
+    }
+
+    function fetchResults() {
+      google.script.run
+        .withSuccessHandler(render)
+        .withFailureHandler(showError)
+        .getPublicResults();
+    }
+
+    fetchResults();
+    setInterval(fetchResults, POLL_INTERVAL_MS);
+  })();
+</script>

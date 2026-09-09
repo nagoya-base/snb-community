@@ -355,10 +355,78 @@ var GAP_REASON_OPTIONS = [
 ];
 
 /* ══════════════════════════════════════════════════════════════
+ * Issue #298：公開リアルタイム結果ページ関連の定数
+ * ══════════════════════════════════════════════════════════════
+ * 【重要】管理画面（詳細クロス集計・自由記述閲覧等）はこのプロジェクトには一切実装しない。
+ * 別GASプロジェクト（community/gas/nagoya_fetish_survey_admin/）を参照。
+ * ここに view=admin 相当のルート・秘密トークン認証・管理API等を追加しないこと
+ * （同一プロジェクト内では「公開デプロイからも実行できてしまう」事故を構造的に防げないため）。 */
+
+/* 都道府県 → 全国7地域ブロック（＋海外）。PREFECTURESの全47都道府県＋「海外」を
+   過不足なくちょうど1ブロックに割り当てる（テストで網羅性を検証する）。
+   ※三重県は近畿ブロックに分類する（中部ではない）。 */
+var REGION_BLOCKS = [
+  { name: '北海道', prefectures: ['北海道'] },
+  { name: '東北', prefectures: ['青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県'] },
+  { name: '関東', prefectures: ['茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県'] },
+  { name: '中部', prefectures: ['新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県', '静岡県', '愛知県'] },
+  { name: '近畿', prefectures: ['三重県', '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県'] },
+  { name: '中国・四国', prefectures: ['鳥取県', '島根県', '岡山県', '広島県', '山口県', '徳島県', '香川県', '愛媛県', '高知県'] },
+  { name: '九州・沖縄', prefectures: ['福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'] },
+  { name: '海外', prefectures: ['海外'] }
+];
+
+/* 年代（AGE_OPTIONS）→ 公開用の簡略年代5区分。 */
+var AGE_SIMPLE_GROUPS = [
+  { name: '20代以下', ages: ['18〜24歳', '25〜29歳'] },
+  { name: '30代', ages: ['30〜39歳'] },
+  { name: '40代', ages: ['40〜49歳'] },
+  { name: '50代以上', ages: ['50〜59歳', '60歳以上'] },
+  { name: '回答しない', ages: ['回答しない'] }
+];
+
+/* interest_categories（22択＋その他自由記述）→ 公開用の11カテゴリ。
+   単独表示する6カテゴリ以外は、既存Issue #293のカテゴリ定義を基準にまとめる。
+   「その他」バケットのみ、INTEREST_CATEGORY_OPTIONSに含まれないOTHER_PREFIX付き
+   自由記述の件数をcountOtherFreeTextEntries_()で別途数える（categoriesは空配列）。 */
+var PUBLIC_INTEREST_GROUPS = [
+  { name: '野球ユニフォーム', categories: ['野球ユニフォーム'] },
+  { name: 'サッカーユニフォーム', categories: ['サッカーユニフォーム'] },
+  { name: 'ラグビー・アメリカンフットボール', categories: ['ラグビー・アメリカンフットボール'] },
+  { name: '陸上競技ウェア', categories: ['陸上競技ウェア'] },
+  { name: '競パン', categories: ['競パン'] },
+  { name: 'レスリング・シングレット', categories: ['レスリング・シングレット'] },
+  { name: 'その他スポーツ・ユニフォーム', categories: ['バスケットボールユニフォーム', '水泳・競泳ウェア（競パン以外）', 'ジャージ・トレーニングウェア', '体操服'] },
+  { name: '制服・職業服', categories: ['学校制服', '作業着', '職業制服'] },
+  { name: 'スーツ', categories: ['スーツ'] },
+  { name: 'コスプレ・キャラクター', categories: INTEREST_COSPLAY_OPTIONS.slice() },
+  { name: 'その他', categories: [] }
+];
+
+var PUBLIC_RESULTS_CACHE_KEY = 'publicResultsV1';
+var PUBLIC_RESULTS_CACHE_TTL_SECONDS = 45; // CacheServiceの最大は6時間だが、要件どおり30〜60秒に収める
+var PUBLIC_MIN_TOTAL_FOR_CHARTS = 10; // 総回答数がこれ未満の場合は全グラフ非表示
+var PUBLIC_MIN_CATEGORY_COUNT = 5; // カテゴリ件数がこれ未満の場合はそのカテゴリをグラフから非表示
+
+/* ══════════════════════════════════════════════════════════════
  * Webアプリのエントリーポイント
  * ══════════════════════════════════════════════════════════════ */
 
+/**
+ * `/exec` は従来どおりアンケートフォーム、`?view=results` のときだけ公開結果ページを返す。
+ * 管理画面へのルート（`?view=admin`等）はこのプロジェクトには存在しない（上記コメント参照）。
+ */
 function doGet(e) {
+  var view = e && e.parameter ? e.parameter.view : undefined;
+
+  if (view === 'results') {
+    var resultsTemplate = HtmlService.createTemplateFromFile('Results');
+    return resultsTemplate.evaluate()
+      .setTitle(FORM_TITLE + '｜アンケート集計結果')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
+  }
+
   var template = HtmlService.createTemplateFromFile('Index');
   return template.evaluate()
     .setTitle(FORM_TITLE)
@@ -434,6 +502,10 @@ function submitSurvey(uuid, answers) {
         return { status: 'DUPLICATE' };
       }
       sheet.appendRow(buildRowValues_(hash, answers));
+      // 新規回答が保存されたら、公開結果キャッシュは必ず削除する（任意ではなく必須）。
+      // これを怠ると、キャッシュ有効期限（PUBLIC_RESULTS_CACHE_TTL_SECONDS）が切れるまで
+      // 公開結果ページに今回の回答が反映されない。
+      invalidatePublicResultsCache_();
       return { status: 'SUCCESS' };
     } finally {
       lock.releaseLock();
@@ -441,6 +513,204 @@ function submitSurvey(uuid, answers) {
   } catch (err) {
     return { status: 'ERROR', message: 'server_error' };
   }
+}
+
+/**
+ * `?view=results` の初期表示・ポーリングから呼び出す。公開結果を返す。
+ *
+ * 【集計元の方針（Issue #298）】ここではresponses全行を元にした集計処理を
+ * 全面的に二重実装しない。原則として既存buildAggregationSheets()が作る集計_*シート
+ * （集計_衣装カテゴリ・集計_関わり方・集計_地域）を正本として読み取り、公開用カテゴリへ
+ * 束ね直すだけにする。例外は「その他（自由記述）」の件数のみで、これはINTEREST_CATEGORY_OPTIONS
+ * に含まれないため既存集計_*シートには現れず、countOtherFreeTextEntries_()でresponsesシートを
+ * ヘッダ名ベース（列番号固定禁止）で直接数える（理由はREADME参照）。
+ *
+ * 【プライバシー】ここで返す値は集計結果（件数・割合・地域7ブロック・簡略年代）のみ。
+ * 生回答・自由記述・respondent_hash・UUID関連・個別の回答日時・クロス集計は一切含めない。
+ */
+function getPublicResults() {
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get(PUBLIC_RESULTS_CACHE_KEY);
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (parseError) {
+      // 壊れたキャッシュ値は無視して作り直す。
+    }
+  }
+
+  var responsesSheet = getResponsesSheet_();
+  var spreadsheetId = PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID);
+  var aggregationSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  var payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+
+  cache.put(PUBLIC_RESULTS_CACHE_KEY, JSON.stringify(payload), PUBLIC_RESULTS_CACHE_TTL_SECONDS);
+  return payload;
+}
+
+/**
+ * submitSurvey()が新規回答を保存した直後に必ず呼び出す（必須。任意ではない）。
+ * キャッシュ削除に失敗しても回答保存自体は成功しているため、例外は握りつぶす
+ * （最悪でもキャッシュ有効期限切れ時に自然に最新化される）。
+ */
+function invalidatePublicResultsCache_() {
+  try {
+    CacheService.getScriptCache().remove(PUBLIC_RESULTS_CACHE_KEY);
+  } catch (removeError) {
+    // 無視する（上記コメント参照）。
+  }
+}
+
+/**
+ * getPublicResults()の中身。GAS APIへの依存をresponsesSheet/aggregationSpreadsheetの
+ * 2引数に閉じ込めることで、Node.jsのテストからもフェイクオブジェクトを渡して検証できるようにしている。
+ */
+function buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet) {
+  var total = Math.max(responsesSheet.getLastRow() - 1, 0);
+  var generatedAt = new Date().toISOString();
+
+  // 総回答数が一定数未満の場合は、件数以外の集計値を一切返さない（全グラフ非表示）。
+  if (total < PUBLIC_MIN_TOTAL_FOR_CHARTS) {
+    return { total: total, generatedAt: generatedAt, ready: false };
+  }
+
+  var categorySheet = aggregationSpreadsheet.getSheetByName(SHEET_CLOTHING);
+  var engagementSheet = aggregationSpreadsheet.getSheetByName(SHEET_ENGAGEMENT);
+  var regionSheet = aggregationSpreadsheet.getSheetByName(SHEET_REGION);
+  if (!categorySheet || !engagementSheet || !regionSheet) {
+    throw new Error('集計_*シートが見つかりません。先にbuildAggregationSheets()を実行してください。');
+  }
+
+  var categoryTally = readMultiTallyBlock_(categorySheet, 0, INTEREST_CATEGORY_OPTIONS);
+  var otherFreeTextCount = countOtherFreeTextEntries_(responsesSheet);
+  var engagementTally = readMultiTallyBlock_(engagementSheet, 0, ENGAGEMENT_OPTIONS);
+  var prefectureCounts = readQueryPairsBlock_(regionSheet, 0, PREFECTURES.length + 5);
+  var ageCounts = readQueryPairsBlock_(regionSheet, PUBLIC_AGE_TALLY_BLOCK_INDEX, AGE_OPTIONS.length + 5);
+
+  return {
+    total: total,
+    generatedAt: generatedAt,
+    ready: true,
+    categories: buildPublicCategoryBreakdown_(categoryTally, otherFreeTextCount, total),
+    engagement: buildPublicSimpleBreakdown_(
+      ENGAGEMENT_OPTIONS.map(function (option) { return { name: option, count: engagementTally[option] || 0 }; }),
+      total
+    ),
+    region: buildPublicRegionBreakdown_(prefectureCounts, total),
+    age: buildPublicAgeBreakdown_(ageCounts, total)
+  };
+}
+
+/**
+ * interest_categoriesの22カテゴリ集計値（+その他自由記述件数）を、
+ * PUBLIC_INTEREST_GROUPSの11カテゴリへ束ね、n<5のカテゴリを除外して返す。
+ */
+function buildPublicCategoryBreakdown_(categoryTally, otherFreeTextCount, total) {
+  var items = PUBLIC_INTEREST_GROUPS.map(function (group) {
+    var count = group.name === 'その他'
+      ? otherFreeTextCount
+      : group.categories.reduce(function (sum, category) { return sum + (categoryTally[category] || 0); }, 0);
+    return { name: group.name, count: count };
+  });
+  return buildPublicSimpleBreakdown_(items, total);
+}
+
+/**
+ * 都道府県別回答数を全国7地域ブロック（＋海外）へ束ね、n<5のブロックを除外して返す。
+ */
+function buildPublicRegionBreakdown_(prefectureCounts, total) {
+  var items = REGION_BLOCKS.map(function (block) {
+    var count = block.prefectures.reduce(function (sum, prefecture) { return sum + (prefectureCounts[prefecture] || 0); }, 0);
+    return { name: block.name, count: count };
+  });
+  return buildPublicSimpleBreakdown_(items, total);
+}
+
+/**
+ * 年代別回答数を公開用の簡略年代5区分へ束ね、n<5の区分を除外して返す。
+ */
+function buildPublicAgeBreakdown_(ageCounts, total) {
+  var items = AGE_SIMPLE_GROUPS.map(function (group) {
+    var count = group.ages.reduce(function (sum, age) { return sum + (ageCounts[age] || 0); }, 0);
+    return { name: group.name, count: count };
+  });
+  return buildPublicSimpleBreakdown_(items, total);
+}
+
+/**
+ * { name, count } の配列から、件数5件未満の項目を除外し、割合（小数点1桁）を付与して
+ * 件数の多い順に並べ替える。Q4（interest_categories）等の複数回答は割合合計が100%にならなくてよい
+ * （分母は常にtotal＝総回答数であり、複数回答の延べ件数合計ではないため）。
+ */
+function buildPublicSimpleBreakdown_(items, total) {
+  return items
+    .filter(function (item) { return item.count >= PUBLIC_MIN_CATEGORY_COUNT; })
+    .map(function (item) {
+      return {
+        name: item.name,
+        count: item.count,
+        percent: total > 0 ? Math.round((item.count / total) * 1000) / 10 : 0
+      };
+    })
+    .sort(function (a, b) { return b.count - a.count; });
+}
+
+/**
+ * responsesシートのinterest_categories列から、OTHER_PREFIX付きの自由記述項目の延べ件数を数える。
+ * 列番号は固定せずCOLUMNSからヘッダ名で解決する。
+ *
+ * 【集計_*シートで代替できない理由】集計_衣装カテゴリのwriteMultiTally_はINTEREST_CATEGORY_OPTIONS
+ * （固定22択）だけを対象にしており、OTHER_PREFIXによる自由記述は数えていない
+ * （自由記述の内容ごとに列を作るわけにはいかないため）。公開結果の「その他」バケットの件数だけは
+ * この関数でresponsesシートから直接集計する。自由記述の内容そのものはここでは一切読み取って
+ * 返さない（件数のみ）。
+ */
+function countOtherFreeTextEntries_(responsesSheet) {
+  var lastRow = responsesSheet.getLastRow();
+  if (lastRow < 2) return 0;
+
+  var columnIndex = COLUMNS.indexOf('interest_categories') + 1;
+  var values = responsesSheet.getRange(2, columnIndex, lastRow - 1, 1).getValues();
+  var count = 0;
+  values.forEach(function (row) {
+    var cell = row[0];
+    if (typeof cell !== 'string' || cell === '') return;
+    cell.split('、').forEach(function (item) {
+      if (item.indexOf(OTHER_PREFIX) === 0) count++;
+    });
+  });
+  return count;
+}
+
+/**
+ * writeMultiTally_()が生成したブロック（見出し行の次から「選択肢」「件数」の2列がcategories.length行
+ * 続く固定レイアウト）を読み取り、{ 選択肢: 件数 } のマップを返す。
+ */
+function readMultiTallyBlock_(sheet, blockIndex, categories) {
+  var headerRow = 1 + blockIndex * BLOCK_ROW_STEP + 1;
+  var values = sheet.getRange(headerRow + 1, 1, categories.length, 2).getValues();
+  var map = {};
+  values.forEach(function (row) { map[row[0]] = Number(row[1]) || 0; });
+  return map;
+}
+
+/**
+ * writeTitledFormula_()で書いたQUERY(...)（headers=1）が生成する [ラベル, 件数] のペアを、
+ * 出現する行数分だけ読み取る（QUERYの出力行数は登場する値の種類数に依存し可変なため、
+ * 十分広いmaxRowsを渡し、ラベルが空のセルを無視することで可変長に対応する）。
+ * 見出し行（タイトル行の次）はQUERY自体が出力するヘッダー行のためデータではなく、
+ * その次の行からデータ開始とみなす。
+ */
+function readQueryPairsBlock_(sheet, blockIndex, maxRows) {
+  var dataStartRow = 1 + blockIndex * BLOCK_ROW_STEP + 2;
+  var values = sheet.getRange(dataStartRow, 1, maxRows, 2).getValues();
+  var map = {};
+  values.forEach(function (row) {
+    var label = row[0];
+    if (label === '' || label === null || typeof label === 'undefined') return;
+    map[label] = Number(row[1]) || 0;
+  });
+  return map;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -940,6 +1210,11 @@ var REGION_BUCKETS = ['名古屋市', '愛知県その他', '岐阜県', '三重
 
 var BLOCK_ROW_STEP = 60;
 
+/* Issue #298：公開結果の年代簡略化はresponsesの直接集計ではなく、集計_地域シートに
+   追加したこのブロック（都道府県別回答数と同じQUERYパターン）を正本として読み取る。
+   ブロック0（都道府県別回答数）・ブロック1（地域5区分）の次のブロック2に配置する。 */
+var PUBLIC_AGE_TALLY_BLOCK_INDEX = 2;
+
 /**
  * 既存の集計_*シートを作り直す（中身は数式のみで生データを含まないため、
  * 削除して再生成しても安全＝壊れにくい）。何度実行しても複製されない。
@@ -981,6 +1256,12 @@ function buildAggregationSheets() {
       s.getRange(headerRow + 1 + i, 1).setValue(REGION_BUCKETS[i]);
       s.getRange(headerRow + 1 + i, 2).setFormula(formula);
     });
+
+    // Issue #298：公開結果（年代簡略化）の元データ。PUBLIC_AGE_TALLY_BLOCK_INDEXと
+    // ブロック番号を必ず一致させること（readQueryPairsBlock_がこの位置を前提に読む）。
+    writeTitledFormula_(s, PUBLIC_AGE_TALLY_BLOCK_INDEX, '年代別回答数（公開結果の簡略年代の元データ）',
+      queryFormula_(range, "select " + col.age + ", count(" + col.timestamp + ") where " +
+        col.age + " is not null group by " + col.age + " label count(" + col.timestamp + ") '回答数'"));
   });
 
   /* ── 集計_衣装カテゴリ（分析の主：interest_categoriesの複数回答） ── */

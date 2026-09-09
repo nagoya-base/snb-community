@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <div id="app">
+    <header class="page-header">
+      <h1>アンケート集計結果</h1>
+      <p class="lead">
+        名古屋のフェチ・衣装交流に関するアンケートの集計結果です。個別の回答内容は公開せず、
+        件数・割合のみを集計して表示しています。回答は自動的に一定間隔で更新されます。
+      </p>
+    </header>
+
+    <div id="results-loading" class="state-panel">読み込み中です…</div>
+
+    <div id="results-error" class="state-panel state-panel--error" hidden>
+      <p>読み込み中にエラーが発生しました。時間をおいて再度開き直してください。</p>
+    </div>
+
+    <div id="results-content" hidden>
+      <div class="results-summary">
+        <p class="results-count">現在 <strong id="results-total">0</strong> 件の回答が集まっています</p>
+        <p class="results-updated">最終更新 <span id="results-updated-at">--:--</span></p>
+      </div>
+
+      <div id="results-pending" class="state-panel" hidden>
+        <p>現在データを集計中です。回答が一定数集まり次第、結果を公開します。</p>
+      </div>
+
+      <div id="results-blocks" hidden>
+        <section class="result-block">
+          <h2>興味のある衣装・服装</h2>
+          <p class="result-block__note">複数回答のため、割合の合計は100%になりません。件数5件未満のカテゴリは表示していません。</p>
+          <div id="chart-categories" class="bar-chart"></div>
+        </section>
+
+        <section class="result-block">
+          <h2>衣装・服装との関わり方</h2>
+          <p class="result-block__note">複数回答のため、割合の合計は100%になりません。件数5件未満の項目は表示していません。</p>
+          <div id="chart-engagement" class="bar-chart"></div>
+        </section>
+
+        <section class="result-block">
+          <h2>回答者のお住まい</h2>
+          <p class="result-block__note">都道府県は全国7地域ブロックにまとめて表示しています。件数5件未満の地域は表示していません。</p>
+          <div id="chart-region" class="bar-chart"></div>
+        </section>
+
+        <section class="result-block">
+          <h2>年代分布</h2>
+          <p class="result-block__note">件数5件未満の区分は表示していません。</p>
+          <div id="chart-age" class="bar-chart"></div>
+        </section>
+      </div>
+    </div>
+
+    <a id="back-to-survey" class="submit-button results-cta" href="#">アンケートに回答する →</a>
+  </div>
+
+  <?!= include('ResultsScript'); ?>
+</body>
+</html>
