@@ -12,9 +12,9 @@
       id: "baseball-next-activity",
       title: "9〜10月キャッチボール会",
       date: null,
-      /* 9/13・10/1・10/31の3日開催のため、単一date運用（自動finished判定）は使わない。
+      /* 9/13・10/3・10/31の3日開催のため、単一date運用（自動finished判定）は使わない。
          最後の10/31開催終了後、statusを手動で"finished"へ切り替えること（Issue #247）。 */
-      dateLabel: "9/13（日）・10/1（木）・10/31（土）",
+      dateLabel: "9/13（日）・10/3（土）・10/31（土）",
       timeLabel: "13:00〜15:00",
       venue: "名古屋市内（公園・グラウンド）",
       fee: "基本無料",
