@@ -125,7 +125,7 @@ STEP1A（全回答者・分析の主）
 詳細分析は別プロジェクト`community/gas/nagoya_fetish_survey_admin/`（Web Appアクセス「自分のみ」）
 に分離している。詳細は同ディレクトリの`README.md`を参照。
 
-### 表示内容（5ブロック）
+### 表示内容
 
 1. **回答状況**：総回答数・最終更新時刻・「現在○件の回答が集まっています」。
 2. **興味のある衣装・服装**：`interest_categories`を公開用11カテゴリ（野球ユニフォーム／
@@ -137,13 +137,77 @@ STEP1A（全回答者・分析の主）
    例：1人が「学校制服」＋「職業制服」を両方選んでも「制服・職業服」は1件）。複数回答のため
    割合合計は100%にならない。管理画面のみが持つ22カテゴリの個別ランキングはここでは出さない。
 3. **衣装・服装との関わり方**：`engagement_preferences`の単純集計。
-4. **回答者のお住まい**：都道府県を全国7地域ブロック（北海道／東北／関東／中部／近畿／
+4. **SNBCへの認知・関心**（Issue #315）：`snbc_awareness`・`snbc_interest`・
+   `snbc_interest_uncertain_reasons`。
+5. **参加条件**／**参加障壁・必要情報**（Issue #315）：`preferred_frequency`〜
+   `survey_to_signup_gap`・`gap_reasons`（STEP3深掘り一式）。
+6. **スーツ関連**（Issue #315）：`suit_engagement_preferences`・`suit_types`・`suit_states`・
+   `suit_event_interest`。
+7. **回答者のお住まい**：都道府県を全国7地域ブロック（北海道／東北／関東／中部／近畿／
    中国・四国／九州・沖縄、海外回答があれば海外も追加）へ変換して表示。**三重県は近畿に分類する**
    （中部ではない）。区分の定義は`Code.gs`の`REGION_BLOCKS`を正本とする。
-5. **年代分布**：`age`を公開用の簡略年代5区分（20代以下／30代／40代／50代以上／回答しない）へ
+8. **年代分布**：`age`を公開用の簡略年代5区分（20代以下／30代／40代／50代以上／回答しない）へ
    変換して表示。
 
 年代×地域、年代×嗜好、地域×嗜好などのクロス集計は一切公開しない（管理画面のみで許可）。
+
+### 分岐設問のブロック単位マスキング（Issue #315）
+
+上記4〜6は分岐設問（一部の回答者だけが到達する設問）のため、`PUBLIC_MIN_TOTAL_FOR_CHARTS`
+（総回答数ゲート）とは別に、**そのブロックへ実際に到達した回答者数（対象者数）**に応じて
+ブロックごと非表示にする閾値をサーバー側（`buildPublicResultsPayload_`）で判定する。
+
+- **ティア1（対象者10人以上で公開、`PUBLIC_TIER1_MIN_TARGET`）**：単問・少数問の限定ブロック。
+  - `snbc_interest_uncertain_reasons`（`payload.snbcUncertainReasons`）
+  - スーツ系4設問（`payload.suit`）
+- **ティア2（対象者20人以上で公開、`PUBLIC_TIER2_MIN_TARGET`）**：同一母集団から多数の設問を
+  まとめて公開するブロック。
+  - STEP3深掘り一式（`payload.step3`）
+  - `gap_reasons`（`payload.gapReasons`。STEP3本体より対象母数が小さくなりうるが同じ20人閾値を適用する）
+
+対象者数が閾値未満の場合、そのブロックのキー自体を`getPublicResults()`のレスポンスから省略する
+（詳細集計をpayloadに含めない）。閾値以上の場合は`{ targetCount, ... }`の形で対象者数を含めて返し、
+`ResultsScript.html`側がその有無で該当セクション（`<details>`）の表示・非表示を切り替える。
+
+**`snbc_awareness`／`snbc_interest`自体は対象者数によるブロック非表示の対象外**（Issue #315本文の
+ティア1/ティア2一覧に含まれていないため）。ユニフォーム系ゲート該当者のみが回答する分岐設問だが、
+`PUBLIC_MIN_TOTAL_FOR_CHARTS`（総回答数ゲート）のみに従い、常に`payload.snbcAwareness`・
+`payload.snbcInterest`として返す。ただし**割合の分母は対象者数**（ユニフォーム系ゲート該当者数）で
+あり、総回答数ではない。
+
+#### 対象者数の判定方法（既存の分岐ロジックとの対応）
+
+`countBranchTargetCounts_()`が`responses`シートを1回走査し、各ブロックの対象者数を
+`validateAnswers_`の必須化条件・`Script.html`側の`deepDiveTriggered`/設問`condition`関数と
+同じ判定基準で数える（新たに選択肢配列やゲート条件を再定義しない）。
+
+| ブロック | 対象者数の判定 | 対応する既存ロジック |
+|---|---|---|
+| `snbc_awareness`/`snbc_interest` | `completion_stage<>''`かつ`snbc_awareness<>''` | `hasUniformGate_`（STEP2必須化条件） |
+| `snbc_interest_uncertain_reasons` | 上記のうち`snbc_interest='どちらともいえない'` | Script.html `snbcInterestUncertainReasons`のcondition |
+| スーツ系4設問 | `completion_stage<>''`かつ`suit_event_interest<>''` | `hasSuitGate_`（STEP2B必須化条件） |
+| STEP3深掘り一式 | `completion_stage<>''`かつ`preferred_frequency<>''` | `deepDiveTriggered`（ユニフォーム系orスーツ経由どちらでも成立、STEP3必須化条件） |
+| `gap_reasons` | 上記STEP3対象のうち`survey_to_signup_gap`が「よくある」「ときどきある」 | Script.html `gapReasons`のcondition関数 |
+
+`snbc_awareness`・`suit_event_interest`はIssue #293で新設された列で旧`#292`回答には存在しない
+ため非空判定だけで新アンケート回答に絞り込める。一方`preferred_frequency`・`survey_to_signup_gap`は
+`PR #292`時点から存在する列（旧回答にも値が入っている）ため、`completion_stage<>''`との組み合わせが
+必須（さもないと旧回答がSTEP3対象者数に混入する）。
+
+#### 集計元（新設ブロック）
+
+`buildAggregationSheets()`が生成する既存`集計_*`シートに、公開結果専用の単純集計ブロックを追加した。
+
+- `集計_SNBC興味`：ブロック5に`snbc_interest_uncertain_reasons`の単純集計
+  （`snbc_interest='どちらともいえない'`で絞り込み）を追加。
+- `深掘り集計`：既存ブロック0〜8は`snbc_interest='はい'`のみを対象にしたクロス集計で、スーツ経由で
+  STEP3へ到達した回答者（`suit_event_interest='はい'`）を含まないため公開結果には使えない。
+  ブロック9〜19へ、STEP3の正しい対象者（`deepDiveFilterExpr_`：`completion_stage<>''`かつ
+  `preferred_frequency<>''`）で絞り込んだSTEP3各設問の単純集計と、`gap_reasons`
+  （STEP3対象のうちさらに`survey_to_signup_gap`条件で絞り込み）を新設した。
+
+既存スプレッドシートで新しいブロックを反映するには、**`buildAggregationSheets()`の再実行が必要**
+（詳細は本PRの報告を参照）。
 
 ### 公開結果の母集団（重要）
 
@@ -292,6 +356,12 @@ Node.js + jsdomによる検証スクリプトを置いている（README冒頭�
   `{ name: '関東', count: 10 }`として表示されることをエンドツーエンドで確認（`集計_地域`の
   公開専用都道府県ブロックのレイアウトを模したフェイクシートを使用）
 - [x] （レビュー指摘対応）`Code.gs`が`appendRow()`を一切呼び出さないことを確認。`findNextResponseRow_`が、居住地4分類補助列のARRAYFORMULAスピルで`getMaxRows()`が1000でも、実データ（`timestamp`列）が無ければ2行目、2〜5行目に4件あれば6行目、2〜3行目に2件だけでも（`getMaxRows()`が1000のままでも）4行目を返すことを確認。`appendResponseRow_`が`setValues()`で正しい行・列数へ書き込むことを確認
+- [x] （Issue #315）`countBranchTargetCounts_`：SNBC（`uniformGate`）・スーツ（`suitGate`）・STEP3（`step3`、ユニフォーム系orスーツ経由どちらでも計上）・`snbc_interest_uncertain_reasons`（`uncertainReasons`）・`gap_reasons`（`gapReasons`）の各対象者数が、既存の分岐ロジック（`hasUniformGate_`/`hasSuitGate_`/`deepDiveTriggered`相当）と一致し、旧#292回答（`completion_stage`なし）が新設列に値が紛れ込んでいても混入しないことを確認
+- [x] （Issue #315）ティア1（`snbc_interest_uncertain_reasons`・スーツ系4設問）：対象者9人では該当ブロックのキーごとpayloadから省略され、10人で`{ targetCount, ... }`として含まれることを確認
+- [x] （Issue #315）ティア2（STEP3深掘り一式・`gap_reasons`）：対象者19人では省略、20人で含まれることを確認。`gap_reasons`はSTEP3本体が20人以上で表示されていても、`gap_reasons`自身の対象者が20人未満なら独立してそのブロックだけ省略されることを確認
+- [x] （Issue #315）分岐ブロックの割合分母が総回答数ではなく対象者数（`targetCount`）であることを、STEP3（対象20人・総回答数25人で10件→50.0%、25.0%ではない）・スーツ（対象10人で6件→60.0%）・`gap_reasons`（対象20人で9件→45.0%）・`snbc_awareness`/`snbc_interest`（対象3人・総回答数12人で3件→100.0%、25.0%ではない）の各ケースで確認
+- [x] （Issue #315）`snbc_awareness`/`snbc_interest`は対象者数がティア1閾値(10)未満でも省略されず、常にpayloadへ含まれることを確認（Issue #315本文がこの2設問をティア1/ティア2一覧に含めていないため）
+- [x] （Issue #315）公開payloadに`survey_path`/`surveyPath`・`completion_stage`/`completionStage`・`free_comment`/`freeComment`・`respondent_hash`が一切含まれないこと、および各分岐ブロック（`snbcAwareness`/`snbcInterest`/`step3`/`gapReasons`）に`targetCount`が含まれることを確認
 
 以下はApps Scriptの実行環境・実ブラウザでの動作が前提のため、この開発環境では自動テストできず、
 **デプロイ後に手動での確認が必要**（本PRの報告にも記載する）。
@@ -318,6 +388,12 @@ Node.js + jsdomによる検証スクリプトを置いている（README冒頭�
 - [ ] iPhone/Android実機・375px幅程度での横スクロール有無・タップ操作性（特にQ4の3ブロック表示・スーツ選択時のSTEP2B表示）
 - [ ] 生UUID・IPアドレス・User-Agent・メールアドレス・Googleアカウントがスプレッドシートに保存されていないことの目視確認
 - [ ] （レビュー指摘対応）居住地4分類補助列のARRAYFORMULAが下の方までスピルしている状態のスプレッドシートで、テスト回答を複数件送信し、`responses`シートの実データ直後の行（例：既存回答が2〜3行目までなら4行目）に保存されること、離れた行（1001行目等）にジャンプしないことの確認
+- [ ] （Issue #315）既存スプレッドシートで`buildAggregationSheets()`を再実行し、`集計_SNBC興味`のブロック5・`深掘り集計`のブロック9〜19がエラーなく生成されることの確認
+- [ ] （Issue #315）`/exec?view=results`を開き、「SNBCへの認知・関心」「参加条件」「参加障壁・必要情報」「スーツ関連」の各セクションが表示され、それぞれの対象者数（`対象者数：N人`）が実データと一致することの確認
+- [ ] （Issue #315）対象者数がティア1（10人）・ティア2（20人）の閾値付近のスプレッドシートで、閾値未満のブロック（例：スーツ系ゲート該当者が9人）が`<details>`ごと非表示になり、閾値以上（10人）になった時点で表示に切り替わることの確認
+- [ ] （Issue #315）`gap_reasons`が、STEP3本体は表示されているのにその対象者数だけ閾値未満で非表示になるケース（`survey_to_signup_gap`が「よくある」「ときどきある」の回答者が20人未満）を実データまたはテスト用回答で再現し、`gap_reasons`ブロックだけが非表示になることの確認
+- [ ] （Issue #315）分岐ブロックの割合表示が総回答数ではなく対象者数を分母にしていることを、実データの数値と手計算で突き合わせて確認する
+- [ ] （Issue #315）`/exec?view=results`を375px幅・デスクトップ幅の両方で開き、新設した`<details>`セクション（開閉含む）で横スクロールが発生しないこと、折りたたみの開閉操作がタップ・クリック双方で問題なく行えることの確認
 
 ## 回答の保存位置（ARRAYFORMULAスピル対策・レビュー指摘対応）
 

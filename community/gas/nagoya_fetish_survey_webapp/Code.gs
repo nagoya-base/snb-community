@@ -420,6 +420,28 @@ var PUBLIC_MIN_TOTAL_FOR_CHARTS = 10; // 総回答数がこれ未満の場合は
 var PUBLIC_MIN_CATEGORY_COUNT = 1; // カテゴリ件数がこれ未満（＝0件）の場合のみそのカテゴリをグラフから非表示
 
 /* ══════════════════════════════════════════════════════════════
+ * Issue #315：分岐設問のブロック単位マスキング
+ * ══════════════════════════════════════════════════════════════
+ * 「対象者数（そのブロックに到達した回答者数）」に応じてブロックごと非表示にする閾値。
+ * PUBLIC_MIN_TOTAL_FOR_CHARTS（総回答数ゲート）とは別に、分岐設問のうち同一の限定母集団から
+ * 複数設問をまとめて公開するブロックに対して適用する。
+ * ・ティア1（対象者10人以上で公開）：単問・少数問の限定ブロック
+ *   - snbc_interest_uncertain_reasons（対象：snbc_interest='どちらともいえない'）
+ *   - スーツ系4設問（対象：スーツ系ゲート該当者）
+ * ・ティア2（対象者20人以上で公開）：同一母集団から多数の設問をまとめて公開するブロック
+ *   - STEP3深掘り一式（対象：現行のSTEP3到達条件を満たした回答者）
+ *   - gap_reasons（対象：STEP3到達者のうちsurvey_to_signup_gapの表示条件を満たした回答者。
+ *     母数がSTEP3本体より小さくても同じ閾値を適用する）
+ * 20は数学的な安全閾値ではなく、同一母集団から多数の単純集計を同時公開することを踏まえた
+ * 運用上の保守的な閾値（Issue #315本文参照）。
+ * 【注意】snbc_awareness・snbc_interest自体（ユニフォーム系ゲート該当者のみ回答する分岐設問）は
+ * Issue #315本文のティア1/ティア2いずれの一覧にも含まれていない。そのためこの2設問には
+ * 対象者数によるブロック非表示は適用せず、PUBLIC_MIN_TOTAL_FOR_CHARTSによる総回答数ゲートのみに従う
+ * （分母のみ対象者数を使う。詳細はREADME.mdの実装メモを参照）。 */
+var PUBLIC_TIER1_MIN_TARGET = 10;
+var PUBLIC_TIER2_MIN_TARGET = 20;
+
+/* ══════════════════════════════════════════════════════════════
  * Webアプリのエントリーポイント
  * ══════════════════════════════════════════════════════════════ */
 
@@ -598,7 +620,17 @@ function buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet) {
 
   var engagementSheet = aggregationSpreadsheet.getSheetByName(SHEET_ENGAGEMENT);
   var regionSheet = aggregationSpreadsheet.getSheetByName(SHEET_REGION);
-  if (!engagementSheet || !regionSheet) {
+  // Issue #315：SNBC認知・興味／スーツ／STEP3深掘り一式・gap_reasonsの公開集計元。
+  var snbcAwarenessSheet = aggregationSpreadsheet.getSheetByName(SHEET_SNBC_AWARENESS);
+  var snbcInterestSheet = aggregationSpreadsheet.getSheetByName(SHEET_SNBC_INTEREST);
+  var suitSheet = aggregationSpreadsheet.getSheetByName(SHEET_SUIT);
+  var deepDiveSheet = aggregationSpreadsheet.getSheetByName(SHEET_DEEP_DIVE);
+  // Issue #315（追加対応）：第一嗜好（primary_interest_category）の公開集計元。
+  var clothingSheet = aggregationSpreadsheet.getSheetByName(SHEET_CLOTHING);
+  if (
+    !engagementSheet || !regionSheet || !snbcAwarenessSheet || !snbcInterestSheet ||
+    !suitSheet || !deepDiveSheet || !clothingSheet
+  ) {
     throw new Error('集計_*シートが見つかりません。先にbuildAggregationSheets()を実行してください。');
   }
 
@@ -616,19 +648,101 @@ function buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet) {
   // 別途用意し（buildAggregationSheets参照）、そちらを読む。
   var prefectureCounts = readQueryPairsBlock_(regionSheet, PUBLIC_PREFECTURE_TALLY_BLOCK_INDEX, PREFECTURES.length + 5);
   var ageCounts = readQueryPairsBlock_(regionSheet, PUBLIC_AGE_TALLY_BLOCK_INDEX, AGE_OPTIONS.length + 5);
+  // Issue #315（追加対応）：第一嗜好は分岐設問ではなく全回答者が対象（任意項目）のため、
+  // 対象者数によるティア1/ティア2マスキングは適用せず、分母は新アンケート回答総数（total）を使う。
+  // INTEREST_CATEGORY_OPTIONS（interest_categoriesと共通の正本配列）をそのまま選択肢として使う。
+  var primaryInterestCategoryCounts = readQueryPairsBlock_(
+    clothingSheet, PUBLIC_PRIMARY_INTEREST_CATEGORY_BLOCK_INDEX, INTEREST_CATEGORY_OPTIONS.length + 5
+  );
 
-  return {
+  // Issue #315：分岐設問ブロックの対象者数（責任分界点はvalidateAnswers_の必須化条件と一致させる）。
+  var targetCounts = countBranchTargetCounts_(responsesSheet);
+
+  var payload = {
     total: total,
     generatedAt: generatedAt,
     ready: true,
     categories: buildPublicCategoryBreakdown_(groupCounts, total),
+    primaryInterestCategory: buildPublicSimpleBreakdown_(
+      INTEREST_CATEGORY_OPTIONS.map(function (option) { return { name: option, count: primaryInterestCategoryCounts[option] || 0 }; }),
+      total
+    ),
     engagement: buildPublicSimpleBreakdown_(
       ENGAGEMENT_OPTIONS.map(function (option) { return { name: option, count: engagementTally[option] || 0 }; }),
       total
     ),
     region: buildPublicRegionBreakdown_(prefectureCounts, total),
-    age: buildPublicAgeBreakdown_(ageCounts, total)
+    age: buildPublicAgeBreakdown_(ageCounts, total),
+    snbcAwareness: buildPublicBranchBlock_(
+      snbcAwarenessSheet, 0, SNBC_AWARENESS_OPTIONS, targetCounts.uniformGate
+    ),
+    snbcInterest: buildPublicBranchBlock_(
+      snbcInterestSheet, 0, SNBC_INTEREST_OPTIONS, targetCounts.uniformGate
+    )
   };
+
+  // ── ティア1：対象者10人以上で公開 ──
+  if (targetCounts.uncertainReasons >= PUBLIC_TIER1_MIN_TARGET) {
+    payload.snbcUncertainReasons = buildPublicBranchBlock_(
+      snbcInterestSheet, PUBLIC_SNBC_UNCERTAIN_REASONS_BLOCK_INDEX, SNBC_UNCERTAIN_REASON_OPTIONS,
+      targetCounts.uncertainReasons, true
+    );
+  }
+
+  if (targetCounts.suitGate >= PUBLIC_TIER1_MIN_TARGET) {
+    payload.suit = {
+      targetCount: targetCounts.suitGate,
+      engagement: buildPublicBranchBlock_(suitSheet, 1, SUIT_ENGAGEMENT_OPTIONS, targetCounts.suitGate, true).items,
+      types: buildPublicBranchBlock_(suitSheet, 2, SUIT_TYPES_OPTIONS, targetCounts.suitGate, true).items,
+      states: buildPublicBranchBlock_(suitSheet, 3, SUIT_STATES_OPTIONS, targetCounts.suitGate, true).items,
+      eventInterest: buildPublicBranchBlock_(suitSheet, 4, SUIT_EVENT_INTEREST_OPTIONS, targetCounts.suitGate, false).items
+    };
+  }
+
+  // ── ティア2：対象者20人以上で公開 ──
+  if (targetCounts.step3 >= PUBLIC_TIER2_MIN_TARGET) {
+    var step3Target = targetCounts.step3;
+    payload.step3 = {
+      targetCount: step3Target,
+      frequency: buildPublicBranchBlock_(deepDiveSheet, PUBLIC_STEP3_FREQUENCY_BLOCK_INDEX, FREQUENCY_OPTIONS, step3Target, false).items,
+      price: buildPublicBranchBlock_(deepDiveSheet, PUBLIC_STEP3_PRICE_BLOCK_INDEX, PRICE_OPTIONS, step3Target, false).items,
+      groupSize: buildPublicBranchBlock_(deepDiveSheet, PUBLIC_STEP3_GROUP_SIZE_BLOCK_INDEX, GROUP_SIZE_OPTIONS, step3Target, false).items,
+      format: buildPublicBranchBlock_(deepDiveSheet, PUBLIC_STEP3_FORMAT_BLOCK_INDEX, FORMAT_OPTIONS, step3Target, true).items,
+      eventAwareness: buildPublicBranchBlock_(deepDiveSheet, PUBLIC_STEP3_EVENT_AWARENESS_BLOCK_INDEX, EVENT_AWARENESS_OPTIONS, step3Target, false).items,
+      barriers: buildPublicBranchBlock_(deepDiveSheet, PUBLIC_STEP3_BARRIERS_BLOCK_INDEX, BARRIER_OPTIONS, step3Target, true).items,
+      helpfulInformation: buildPublicBranchBlock_(deepDiveSheet, PUBLIC_STEP3_HELPFUL_INFO_BLOCK_INDEX, HELPFUL_INFO_OPTIONS, step3Target, true).items,
+      atmosphere: buildPublicBranchBlock_(deepDiveSheet, PUBLIC_STEP3_ATMOSPHERE_BLOCK_INDEX, ATMOSPHERE_OPTIONS, step3Target, false).items,
+      hypotheticalIntent: buildPublicBranchBlock_(deepDiveSheet, PUBLIC_STEP3_HYPOTHETICAL_INTENT_BLOCK_INDEX, HYPOTHETICAL_INTENT_OPTIONS, step3Target, false).items,
+      gap: buildPublicBranchBlock_(deepDiveSheet, PUBLIC_STEP3_GAP_BLOCK_INDEX, GAP_OPTIONS, step3Target, false).items
+    };
+  }
+
+  if (targetCounts.gapReasons >= PUBLIC_TIER2_MIN_TARGET) {
+    payload.gapReasons = buildPublicBranchBlock_(
+      deepDiveSheet, PUBLIC_GAP_REASONS_BLOCK_INDEX, GAP_REASON_OPTIONS, targetCounts.gapReasons, true
+    );
+  }
+
+  return payload;
+}
+
+/**
+ * 分岐設問1ブロック分（{ targetCount, items }）を組み立てる共通ヘルパー。
+ * isMulti=trueならreadMultiTallyBlock_（writeMultiTally_の出力・複数選択設問）、
+ * false/省略ならreadQueryPairsBlock_（writeTitledFormula_のQUERY出力・単一選択設問）で読む
+ * （両関数は第3引数の意味が異なる＝配列 vs 行数のため、ここで吸収する）。
+ * 割合の分母は必ずtargetCount（そのブロックの対象者数）であり、総回答数ではない
+ * （Issue #315：分岐設問の割合分母は対象者数を使う）。
+ */
+function buildPublicBranchBlock_(sheet, blockIndex, options, targetCount, isMulti) {
+  var counts = isMulti
+    ? readMultiTallyBlock_(sheet, blockIndex, options)
+    : readQueryPairsBlock_(sheet, blockIndex, options.length + 5);
+  var items = buildPublicSimpleBreakdown_(
+    options.map(function (option) { return { name: option, count: counts[option] || 0 }; }),
+    targetCount
+  );
+  return { targetCount: targetCount, items: items };
 }
 
 /**
@@ -710,6 +824,54 @@ function countNewSurveyResponses_(responsesSheet) {
   var count = 0;
   values.forEach(function (row) { if (isNewSurveyCompletionStage_(row[0])) count++; });
   return count;
+}
+
+/**
+ * Issue #315：分岐設問ブロック（SNBC・スーツ・STEP3・gap_reasons）の対象者数を、responsesシートの
+ * 生回答を1回走査して数える。「対象者数」の判定は、それぞれの設問がvalidateAnswers_で必須化される
+ * 条件（＝現行アンケートの分岐ロジックそのもの）と一致させる。
+ * ・uniformGate：snbc_awareness/snbc_interestの対象（ユニフォーム系ゲート該当者）。
+ *   snbc_awarenessはIssue #293で新設された列で旧#292回答には存在しないため、非空判定だけで
+ *   新アンケート回答に自然に絞り込まれる（集計_関わり方と同じ理由。詳細はREADME参照）。
+ * ・uncertainReasons：snbc_interest_uncertain_reasonsの対象（snbc_interest='どちらともいえない'）。
+ * ・suitGate：スーツ系4設問の対象（suit_event_interestが空でない＝スーツ系ゲート該当者。
+ *   suit_event_interestも新設列のため同様に非空判定だけで絞り込める）。
+ * ・step3：STEP3深掘り一式の対象（validateAnswers_のdeepDiveTriggered条件と同じ集合）。
+ *   preferred_frequencyはPR #292時点から存在する列で旧回答にも値が入っているため、
+ *   completion_stageが空でない行に限定したうえで非空判定する必要がある
+ *   （そうしないと旧回答が混入する。集計_地域の年代・都道府県ブロックと同じ理由）。
+ * ・gapReasons：gap_reasonsの対象（STEP3到達者のうちsurvey_to_signup_gapが
+ *   'よくある'/'ときどきある'。Script.html側のgapReasons設問のcondition関数と同じ判定）。
+ */
+function countBranchTargetCounts_(responsesSheet) {
+  var counts = { uniformGate: 0, uncertainReasons: 0, suitGate: 0, step3: 0, gapReasons: 0 };
+
+  var lastRow = responsesSheet.getLastRow();
+  if (lastRow < 2) return counts;
+  var numRows = lastRow - 1;
+
+  var stageValues = responsesSheet.getRange(2, COLUMNS.indexOf('completion_stage') + 1, numRows, 1).getValues();
+  var snbcAwarenessValues = responsesSheet.getRange(2, COLUMNS.indexOf('snbc_awareness') + 1, numRows, 1).getValues();
+  var snbcInterestValues = responsesSheet.getRange(2, COLUMNS.indexOf('snbc_interest') + 1, numRows, 1).getValues();
+  var suitEventInterestValues = responsesSheet.getRange(2, COLUMNS.indexOf('suit_event_interest') + 1, numRows, 1).getValues();
+  var preferredFrequencyValues = responsesSheet.getRange(2, COLUMNS.indexOf('preferred_frequency') + 1, numRows, 1).getValues();
+  var surveyToSignupGapValues = responsesSheet.getRange(2, COLUMNS.indexOf('survey_to_signup_gap') + 1, numRows, 1).getValues();
+
+  for (var i = 0; i < numRows; i++) {
+    if (!isNewSurveyCompletionStage_(stageValues[i][0])) continue;
+
+    if (snbcAwarenessValues[i][0] !== '') counts.uniformGate++;
+    if (snbcInterestValues[i][0] === 'どちらともいえない') counts.uncertainReasons++;
+    if (suitEventInterestValues[i][0] !== '') counts.suitGate++;
+
+    if (preferredFrequencyValues[i][0] !== '') {
+      counts.step3++;
+      var gapValue = surveyToSignupGapValues[i][0];
+      if (gapValue === 'よくある' || gapValue === 'ときどきある') counts.gapReasons++;
+    }
+  }
+
+  return counts;
 }
 
 /**
@@ -1355,6 +1517,32 @@ var BLOCK_ROW_STEP = 60;
 var PUBLIC_AGE_TALLY_BLOCK_INDEX = 2;
 var PUBLIC_PREFECTURE_TALLY_BLOCK_INDEX = 3;
 
+/* Issue #315：公開結果（分岐設問のブロック単位マスキング）専用の追加ブロック。
+   集計_SNBC興味は既存ブロック0〜4を使用中のため5番目に追加する。
+   深掘り集計は既存のクロス集計ブロック0〜8（snbc_interest='はい'のみ対象で、スーツ経由の
+   STEP3到達者が含まれず公開用の対象者数と一致しないため公開結果からは使わない）とは別に、
+   9番目以降へSTEP3の正しい対象者（deepDiveTriggered、Code.gs側のvalidateAnswers_と同じ判定）で
+   絞り込んだ単純集計ブロックを新設する。 */
+var PUBLIC_SNBC_UNCERTAIN_REASONS_BLOCK_INDEX = 5;
+var PUBLIC_STEP3_FREQUENCY_BLOCK_INDEX = 9;
+var PUBLIC_STEP3_PRICE_BLOCK_INDEX = 10;
+var PUBLIC_STEP3_GROUP_SIZE_BLOCK_INDEX = 11;
+var PUBLIC_STEP3_FORMAT_BLOCK_INDEX = 12;
+var PUBLIC_STEP3_EVENT_AWARENESS_BLOCK_INDEX = 13;
+var PUBLIC_STEP3_BARRIERS_BLOCK_INDEX = 14;
+var PUBLIC_STEP3_HELPFUL_INFO_BLOCK_INDEX = 15;
+var PUBLIC_STEP3_ATMOSPHERE_BLOCK_INDEX = 16;
+var PUBLIC_STEP3_HYPOTHETICAL_INTENT_BLOCK_INDEX = 17;
+var PUBLIC_STEP3_GAP_BLOCK_INDEX = 18;
+var PUBLIC_GAP_REASONS_BLOCK_INDEX = 19;
+
+/* Issue #315（追加対応）：第一嗜好（primary_interest_category）の公開単純集計。
+   集計_衣装カテゴリは既存ブロック0〜6（延べ件数の単純集計・都道府県/年代/愛知県内地域との
+   クロス集計）を使用中のため7番目に追加する。primary_interest_categoryは分岐設問ではなく
+   全回答者が対象（未回答＝空文字列も許容される任意項目）のため、ティア1/ティア2の対象者数
+   マスキングは適用せず、分母は新アンケート回答総数（total）を使う。 */
+var PUBLIC_PRIMARY_INTEREST_CATEGORY_BLOCK_INDEX = 7;
+
 /**
  * 既存の集計_*シートを作り直す（中身は数式のみで生データを含まないため、
  * 削除して再生成しても安全＝壊れにくい）。何度実行しても複製されない。
@@ -1371,7 +1559,8 @@ function buildAggregationSheets() {
     'event_awareness', 'barriers', 'helpful_information', 'preferred_atmosphere',
     'hypothetical_intent', 'survey_to_signup_gap', 'gap_reasons',
     'interest_categories', 'primary_interest_category', 'engagement_preferences',
-    'snbc_awareness', 'snbc_interest', 'suit_engagement_preferences', 'suit_types',
+    'snbc_awareness', 'snbc_interest', 'snbc_interest_uncertain_reasons',
+    'suit_engagement_preferences', 'suit_types',
     'suit_states', 'suit_event_interest', 'completion_stage'].forEach(function (name) {
     col[name] = columnLetterForHeader_(name);
   });
@@ -1379,6 +1568,13 @@ function buildAggregationSheets() {
   var prefRange = respColRange_(col.prefecture);
   var aichiRange = respColRange_(col.aichi_area);
   var snbcInterestRange = respColRange_(col.snbc_interest);
+  // Issue #315：STEP3公開ブロックの対象者絞り込み（completion_stage<>'' かつ
+  // preferred_frequency<>'' ＝ validateAnswers_のdeepDiveTriggeredと同じ集合）に使う。
+  var stageRange = respColRange_(col.completion_stage);
+  var preferredFrequencyRange = respColRange_(col.preferred_frequency);
+  var surveyToSignupGapRange = respColRange_(col.survey_to_signup_gap);
+  var step3FilterExpr = deepDiveFilterExpr_(stageRange, preferredFrequencyRange);
+  var step3WhereClause = col.completion_stage + " <> '' and " + col.preferred_frequency + " <> ''";
 
   /* ── 集計_地域 ── */
   recreateSheet_(ss, SHEET_REGION, function (s) {
@@ -1441,6 +1637,13 @@ function buildAggregationSheets() {
       queryFormula_(range, "select " + col.aichi_area + ", count(" + col.timestamp + ") where " +
         col.primary_interest_category + " is not null and " + col.primary_interest_category + " <> '' group by " +
         col.aichi_area + " pivot " + col.primary_interest_category + " label count(" + col.timestamp + ") '回答数'"));
+
+    // Issue #315（追加対応）：第一嗜好の公開単純集計（単一選択、分母は新アンケート回答総数）。
+    writeTitledFormula_(s, PUBLIC_PRIMARY_INTEREST_CATEGORY_BLOCK_INDEX,
+      '第一嗜好 単純集計（単一回答・公開結果用）',
+      queryFormula_(range, "select " + col.primary_interest_category + ", count(" + col.timestamp + ") where " +
+        col.primary_interest_category + " is not null and " + col.primary_interest_category + " <> '' group by " +
+        col.primary_interest_category + " label count(" + col.timestamp + ") '回答数'"));
   });
 
   /* ── 集計_関わり方 ── */
@@ -1506,6 +1709,13 @@ function buildAggregationSheets() {
     // 「見る専門」と「自分で着たい」を混同しないよう、関わり方はカテゴリではなく個別選択肢のまま行に取る。
     writeMultiVsSingleGrid_(s, 4, '関わり方（着たい／見たい等） × SNBC興味　※列=SNBC興味、行=関わり方、延べ件数',
       respColRange_(col.engagement_preferences), ENGAGEMENT_OPTIONS, respColRange_(col.snbc_interest), SNBC_INTEREST_OPTIONS);
+
+    // Issue #315：SNBC興味「どちらともいえない」理由の公開単純集計。対象はsnbc_interest='どちらともいえない'の
+    // 回答者のみ（ティア1：対象者10人以上で公開）。
+    writeMultiTally_(s, PUBLIC_SNBC_UNCERTAIN_REASONS_BLOCK_INDEX,
+      'SNBC興味「どちらともいえない」理由 単純集計（複数回答、延べ件数・公開結果用）　※snbc_interest=どちらともいえないの回答者のみ対象',
+      respColRange_(col.snbc_interest_uncertain_reasons), SNBC_UNCERTAIN_REASON_OPTIONS,
+      respColRange_(col.snbc_interest), 'どちらともいえない');
   });
 
   /* ── 集計_スーツ ── */
@@ -1557,6 +1767,60 @@ function buildAggregationSheets() {
       respColRange_(col.barriers), BARRIER_OPTIONS, respColRange_(col.hypothetical_intent), HYPOTHETICAL_INTENT_OPTIONS, snbcInterestRange, 'はい');
     writeMultiVsSingleGrid_(s, 8, 'survey_to_signup_gap × gap_reasons　※列=gap、行=理由、延べ件数、snbc_interest=はいのみ対象',
       respColRange_(col.gap_reasons), GAP_REASON_OPTIONS, respColRange_(col.survey_to_signup_gap), GAP_OPTIONS, snbcInterestRange, 'はい');
+
+    /* ── Issue #315：STEP3深掘り一式の公開単純集計（ブロック9〜18） ──
+       上記ブロック0〜8はsnbc_interest='はい'のみを対象にしたクロス集計で、スーツ経由で
+       STEP3に到達した回答者（suit_event_interest='はい'）を含まない。公開結果の対象者数は
+       validateAnswers_のdeepDiveTriggered（ユニフォーム系orスーツ経由どちらでも発火）と
+       一致させる必要があるため、ここではstep3FilterExpr（completion_stage<>''かつ
+       preferred_frequency<>''）で絞り込んだ単純集計を別途用意する（ティア2：対象者20人以上で公開）。 */
+    writeTitledFormula_(s, PUBLIC_STEP3_FREQUENCY_BLOCK_INDEX,
+      '参加しやすい頻度 単純集計（公開結果用）　※STEP3到達者のみ対象',
+      queryFormula_(range, "select " + col.preferred_frequency + ", count(" + col.timestamp + ") where " +
+        step3WhereClause + " group by " + col.preferred_frequency + " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, PUBLIC_STEP3_PRICE_BLOCK_INDEX,
+      '参加しやすい料金 単純集計（公開結果用）　※STEP3到達者のみ対象',
+      queryFormula_(range, "select " + col.preferred_price + ", count(" + col.timestamp + ") where " +
+        step3WhereClause + " group by " + col.preferred_price + " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, PUBLIC_STEP3_GROUP_SIZE_BLOCK_INDEX,
+      '参加しやすい人数 単純集計（公開結果用）　※STEP3到達者のみ対象',
+      queryFormula_(range, "select " + col.preferred_group_size + ", count(" + col.timestamp + ") where " +
+        step3WhereClause + " group by " + col.preferred_group_size + " label count(" + col.timestamp + ") '回答数'"));
+    writeMultiTally_(s, PUBLIC_STEP3_FORMAT_BLOCK_INDEX,
+      '参加形式 単純集計（複数回答、延べ件数・公開結果用）　※STEP3到達者のみ対象',
+      respColRange_(col.preferred_format), FORMAT_OPTIONS, null, null, step3FilterExpr);
+    writeTitledFormula_(s, PUBLIC_STEP3_EVENT_AWARENESS_BLOCK_INDEX,
+      'イベント告知の認知 単純集計（公開結果用）　※STEP3到達者のみ対象',
+      queryFormula_(range, "select " + col.event_awareness + ", count(" + col.timestamp + ") where " +
+        step3WhereClause + " group by " + col.event_awareness + " label count(" + col.timestamp + ") '回答数'"));
+    writeMultiTally_(s, PUBLIC_STEP3_BARRIERS_BLOCK_INDEX,
+      '参加障壁 単純集計（複数回答、延べ件数・公開結果用）　※STEP3到達者のみ対象',
+      respColRange_(col.barriers), BARRIER_OPTIONS, null, null, step3FilterExpr);
+    writeMultiTally_(s, PUBLIC_STEP3_HELPFUL_INFO_BLOCK_INDEX,
+      'あると助かる情報 単純集計（複数回答、延べ件数・公開結果用）　※STEP3到達者のみ対象',
+      respColRange_(col.helpful_information), HELPFUL_INFO_OPTIONS, null, null, step3FilterExpr);
+    writeTitledFormula_(s, PUBLIC_STEP3_ATMOSPHERE_BLOCK_INDEX,
+      '場の温度感 単純集計（公開結果用）　※STEP3到達者のみ対象',
+      queryFormula_(range, "select " + col.preferred_atmosphere + ", count(" + col.timestamp + ") where " +
+        step3WhereClause + " group by " + col.preferred_atmosphere + " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, PUBLIC_STEP3_HYPOTHETICAL_INTENT_BLOCK_INDEX,
+      '仮定企画への参加意向 単純集計（公開結果用）　※STEP3到達者のみ対象',
+      queryFormula_(range, "select " + col.hypothetical_intent + ", count(" + col.timestamp + ") where " +
+        step3WhereClause + " group by " + col.hypothetical_intent + " label count(" + col.timestamp + ") '回答数'"));
+    writeTitledFormula_(s, PUBLIC_STEP3_GAP_BLOCK_INDEX,
+      'アンケート〜申込ギャップ 単純集計（公開結果用）　※STEP3到達者のみ対象',
+      queryFormula_(range, "select " + col.survey_to_signup_gap + ", count(" + col.timestamp + ") where " +
+        step3WhereClause + " group by " + col.survey_to_signup_gap + " label count(" + col.timestamp + ") '回答数'"));
+
+    /* ── Issue #315：gap_reasonsの公開単純集計（ブロック19） ──
+       対象はSTEP3到達者のうち、survey_to_signup_gapがgap_reasons設問の実際の表示条件
+       （Script.html側のcondition関数：'よくある'または'ときどきある'）を満たした回答者のみ。
+       STEP3本体（20人閾値）とは別の、より小さくなりうる母数に同じ20人閾値を適用する。 */
+    writeMultiTally_(s, PUBLIC_GAP_REASONS_BLOCK_INDEX,
+      'アンケート〜申込ギャップの理由 単純集計（複数回答、延べ件数・公開結果用）　' +
+        '※STEP3到達者のうちsurvey_to_signup_gapが「よくある」「ときどきある」の回答者のみ対象',
+      respColRange_(col.gap_reasons), GAP_REASON_OPTIONS, null, null,
+      step3FilterExpr + '*((' + surveyToSignupGapRange + '="よくある")+(' + surveyToSignupGapRange + '="ときどきある"))');
   });
 
   /* ── 集計_服装（旧12択・参考値） ── 遡及マッピングはしない。旧データの参考値としてのみ残す。 */
@@ -1651,7 +1915,12 @@ function writeTitledFormula_(sheet, blockIndex, title, formula) {
  * filterRangeA1・filterValueを指定すると、その列が指定値と一致する行のみを対象にする
  * （例：深掘り集計をsnbc_interest='はい'の回答者だけに絞る）。
  */
-function writeMultiTally_(sheet, blockIndex, title, multiRangeA1, categories, filterRangeA1, filterValue) {
+/**
+ * extraFilterExpr：filterRangeA1/filterValue（単一列の完全一致1条件）では表現できない
+ * 絞り込み（複数列のAND条件・非空判定等）を、完成済みの"*(...)"形式の式断片としてそのまま
+ * 追加するためのIssue #315用の拡張引数。省略時は従来どおりfilterTerm_のみを使う。
+ */
+function writeMultiTally_(sheet, blockIndex, title, multiRangeA1, categories, filterRangeA1, filterValue, extraFilterExpr) {
   var row = 1 + blockIndex * BLOCK_ROW_STEP;
   var titleCell = sheet.getRange(row, 1);
   titleCell.setValue(title);
@@ -1666,9 +1935,18 @@ function writeMultiTally_(sheet, blockIndex, title, multiRangeA1, categories, fi
     var dataRow = headerRow + 1 + i;
     sheet.getRange(dataRow, 1).setValue(category);
     var formula = '=SUMPRODUCT(ISNUMBER(SEARCH("' + escapeForFormula_(category) + '",' + multiRangeA1 + '))' +
-      filterTerm_(filterRangeA1, filterValue) + ')';
+      filterTerm_(filterRangeA1, filterValue) + (extraFilterExpr || '') + ')';
     sheet.getRange(dataRow, 2).setFormula(formula);
   });
+}
+
+/**
+ * Issue #315：STEP3深掘り一式・gap_reasonsの公開単純集計を絞り込むための共通条件式。
+ * completion_stage<>''（旧#292回答の除外）かつpreferred_frequency<>''
+ * （STEP3必須項目の非空＝validateAnswers_のdeepDiveTriggeredと同じ集合）をANDで返す。
+ */
+function deepDiveFilterExpr_(stageRangeA1, preferredFrequencyRangeA1) {
+  return '*(' + stageRangeA1 + '<>"")*(' + preferredFrequencyRangeA1 + '<>"")';
 }
 
 /**

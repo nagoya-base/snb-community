@@ -16,10 +16,54 @@
 
     var charts = {
       categories: document.getElementById('chart-categories'),
+      primaryInterestCategory: document.getElementById('chart-primary-interest-category'),
       engagement: document.getElementById('chart-engagement'),
       region: document.getElementById('chart-region'),
-      age: document.getElementById('chart-age')
+      age: document.getElementById('chart-age'),
+      snbcAwareness: document.getElementById('chart-snbc-awareness'),
+      snbcInterest: document.getElementById('chart-snbc-interest'),
+      snbcUncertainReasons: document.getElementById('chart-snbc-uncertain-reasons'),
+      step3Frequency: document.getElementById('chart-step3-frequency'),
+      step3Price: document.getElementById('chart-step3-price'),
+      step3GroupSize: document.getElementById('chart-step3-group-size'),
+      step3Format: document.getElementById('chart-step3-format'),
+      step3EventAwareness: document.getElementById('chart-step3-event-awareness'),
+      step3Barriers: document.getElementById('chart-step3-barriers'),
+      step3HelpfulInfo: document.getElementById('chart-step3-helpful-info'),
+      step3Atmosphere: document.getElementById('chart-step3-atmosphere'),
+      step3HypotheticalIntent: document.getElementById('chart-step3-hypothetical-intent'),
+      step3Gap: document.getElementById('chart-step3-gap'),
+      gapReasons: document.getElementById('chart-gap-reasons'),
+      suitEngagement: document.getElementById('chart-suit-engagement'),
+      suitTypes: document.getElementById('chart-suit-types'),
+      suitStates: document.getElementById('chart-suit-states'),
+      suitEventInterest: document.getElementById('chart-suit-event-interest')
     };
+
+    // Issue #315：分岐設問ブロック（ティア1/2でサーバー側が対象者数未満のとき丸ごと省略する）の
+    // 表示・非表示・対象者数表示をまとめて扱うヘルパー群。
+    var blockSnbcUncertainReasons = document.getElementById('block-snbc-uncertain-reasons');
+    var sectionStep3Conditions = document.getElementById('section-step3-conditions');
+    var sectionStep3Barriers = document.getElementById('section-step3-barriers');
+    var blockGapReasons = document.getElementById('block-gap-reasons');
+    var sectionSuit = document.getElementById('section-suit');
+
+    /**
+     * data[key]が存在するときだけtoggleEl（<section>や<details>）を表示し、
+     * targetElIds（対象者数を表示する<span>のidの配列）へtargetCountを書き込む。
+     * data[key]が無い（サーバー側でティア閾値未満のため省略された）場合は非表示のまま。
+     */
+    function showBranchBlock(toggleEl, data, targetElIds) {
+      var present = !!data;
+      toggleEl.hidden = !present;
+      if (present) {
+        toggleEl.open = true;
+        (targetElIds || []).forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.textContent = data.targetCount;
+        });
+      }
+    }
 
     var hasRenderedOnce = false;
 
@@ -99,9 +143,50 @@
         pendingEl.hidden = true;
         blocksEl.hidden = false;
         renderBarChart(charts.categories, data.categories);
+        // Issue #315（追加対応）：第一嗜好は分岐設問ではなく常に表示する（分母は総回答数）。
+        renderBarChart(charts.primaryInterestCategory, data.primaryInterestCategory);
         renderBarChart(charts.engagement, data.engagement);
         renderBarChart(charts.region, data.region);
         renderBarChart(charts.age, data.age);
+
+        // Issue #315：SNBC認知・興味はサーバー側で対象者数によるブロック非表示を行わない
+        // （総回答数ゲートのみに従う）ため、常に描画する。分母は対象者数（targetCount）。
+        renderBarChart(charts.snbcAwareness, data.snbcAwareness.items);
+        document.getElementById('target-snbc-awareness').textContent = data.snbcAwareness.targetCount;
+        renderBarChart(charts.snbcInterest, data.snbcInterest.items);
+        document.getElementById('target-snbc-interest').textContent = data.snbcInterest.targetCount;
+
+        // ── ここから、対象者数がティア閾値未満のときサーバー側でpayloadから丸ごと省略される
+        //    分岐ブロック（Issue #315）。showBranchBlockがdata[key]の有無で表示・非表示を切り替える。
+        showBranchBlock(blockSnbcUncertainReasons, data.snbcUncertainReasons, ['target-snbc-uncertain-reasons']);
+        if (data.snbcUncertainReasons) renderBarChart(charts.snbcUncertainReasons, data.snbcUncertainReasons.items);
+
+        var hasStep3 = !!data.step3;
+        showBranchBlock(sectionStep3Conditions, data.step3, ['target-step3-conditions']);
+        showBranchBlock(sectionStep3Barriers, data.step3, ['target-step3-barriers']);
+        if (hasStep3) {
+          renderBarChart(charts.step3Frequency, data.step3.frequency);
+          renderBarChart(charts.step3Price, data.step3.price);
+          renderBarChart(charts.step3GroupSize, data.step3.groupSize);
+          renderBarChart(charts.step3Format, data.step3.format);
+          renderBarChart(charts.step3EventAwareness, data.step3.eventAwareness);
+          renderBarChart(charts.step3Barriers, data.step3.barriers);
+          renderBarChart(charts.step3HelpfulInfo, data.step3.helpfulInformation);
+          renderBarChart(charts.step3Atmosphere, data.step3.atmosphere);
+          renderBarChart(charts.step3HypotheticalIntent, data.step3.hypotheticalIntent);
+          renderBarChart(charts.step3Gap, data.step3.gap);
+        }
+
+        showBranchBlock(blockGapReasons, data.gapReasons, ['target-gap-reasons']);
+        if (data.gapReasons) renderBarChart(charts.gapReasons, data.gapReasons.items);
+
+        showBranchBlock(sectionSuit, data.suit, ['target-suit']);
+        if (data.suit) {
+          renderBarChart(charts.suitEngagement, data.suit.engagement);
+          renderBarChart(charts.suitTypes, data.suit.types);
+          renderBarChart(charts.suitStates, data.suit.states);
+          renderBarChart(charts.suitEventInterest, data.suit.eventInterest);
+        }
       }
 
       hasRenderedOnce = true;
