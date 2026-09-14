@@ -334,4 +334,64 @@
     text-decoration: none;
     margin-top: 0.5rem;
   }
+
+  /* ── Issue #315：分岐ブロックが増えたため<details>でセクションをまとめ、長大化を防ぐ ── */
+  .result-section {
+    margin: 0 0 1rem;
+  }
+
+  .result-section > summary {
+    cursor: pointer;
+    font-size: 1.05rem;
+    font-weight: 800;
+    padding: 0.9rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    list-style: none;
+  }
+
+  .result-section > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .result-section > summary::before {
+    content: '▶';
+    display: inline-block;
+    margin-right: 0.5rem;
+    font-size: 0.7em;
+    color: var(--accent);
+    transition: transform 0.15s ease;
+  }
+
+  .result-section[open] > summary::before {
+    transform: rotate(90deg);
+  }
+
+  .result-section[open] > summary {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-bottom: 0;
+  }
+
+  /* summary直後の対象者数の注記（結合ブロック共通の対象者数）。 */
+  .result-section > .result-block__note {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 0 1.1rem 0.7rem;
+    margin: 0;
+  }
+
+  .result-section .result-block {
+    border-top: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    margin-top: -1px;
+  }
+
+  .result-section .result-block:last-of-type {
+    border-bottom-left-radius: var(--radius);
+    border-bottom-right-radius: var(--radius);
+  }
 </style>

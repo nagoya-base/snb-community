@@ -44,6 +44,130 @@
           <div id="chart-engagement" class="bar-chart"></div>
         </section>
 
+        <details class="result-section" open>
+          <summary>SNBCへの認知・関心</summary>
+          <section class="result-block">
+            <h2>SNBC認知</h2>
+            <p class="result-block__note">
+              対象者数：<span id="target-snbc-awareness">0</span>人（興味のある衣装・服装でスポーツ・ユニフォーム系や
+              学校制服・作業着・職業制服のいずれかを選んだ方のみ回答）。回答が0件の項目は表示していません。
+            </p>
+            <div id="chart-snbc-awareness" class="bar-chart"></div>
+          </section>
+          <section class="result-block">
+            <h2>SNBCユニ会企画への興味</h2>
+            <p class="result-block__note">対象者数：<span id="target-snbc-interest">0</span>人（SNBC認知と同じ対象者）。回答が0件の項目は表示していません。</p>
+            <div id="chart-snbc-interest" class="bar-chart"></div>
+          </section>
+          <section id="block-snbc-uncertain-reasons" class="result-block" hidden>
+            <h2>興味が「どちらともいえない」理由</h2>
+            <p class="result-block__note">
+              複数回答のため、割合の合計は100%になりません。対象者数：<span id="target-snbc-uncertain-reasons">0</span>人
+              （SNBCユニ会企画への興味で「どちらともいえない」と回答した方のみ）。回答が0件の項目は表示していません。
+            </p>
+            <div id="chart-snbc-uncertain-reasons" class="bar-chart"></div>
+          </section>
+        </details>
+
+        <details id="section-step3-conditions" class="result-section" hidden>
+          <summary>参加条件</summary>
+          <p class="result-block__note">
+            対象者数：<span id="target-step3-conditions">0</span>人（SNBCユニ会企画・スーツ企画のいずれかに
+            「興味がある」と回答し、参加条件について詳しく聞いたSTEP3到達者のみ）。
+          </p>
+          <section class="result-block">
+            <h2>参加しやすい頻度</h2>
+            <p class="result-block__note">回答が0件の項目は表示していません。</p>
+            <div id="chart-step3-frequency" class="bar-chart"></div>
+          </section>
+          <section class="result-block">
+            <h2>参加しやすい料金</h2>
+            <p class="result-block__note">回答が0件の項目は表示していません。</p>
+            <div id="chart-step3-price" class="bar-chart"></div>
+          </section>
+          <section class="result-block">
+            <h2>参加しやすい人数</h2>
+            <p class="result-block__note">回答が0件の項目は表示していません。</p>
+            <div id="chart-step3-group-size" class="bar-chart"></div>
+          </section>
+          <section class="result-block">
+            <h2>参加形式</h2>
+            <p class="result-block__note">複数回答のため、割合の合計は100%になりません。回答が0件の項目は表示していません。</p>
+            <div id="chart-step3-format" class="bar-chart"></div>
+          </section>
+        </details>
+
+        <details id="section-step3-barriers" class="result-section" hidden>
+          <summary>参加障壁・必要情報</summary>
+          <p class="result-block__note">対象者数：<span id="target-step3-barriers">0</span>人（参加条件と同じSTEP3到達者）。</p>
+          <section class="result-block">
+            <h2>イベント告知の認知</h2>
+            <p class="result-block__note">回答が0件の項目は表示していません。</p>
+            <div id="chart-step3-event-awareness" class="bar-chart"></div>
+          </section>
+          <section class="result-block">
+            <h2>参加障壁</h2>
+            <p class="result-block__note">複数回答のため、割合の合計は100%になりません。回答が0件の項目は表示していません。</p>
+            <div id="chart-step3-barriers" class="bar-chart"></div>
+          </section>
+          <section class="result-block">
+            <h2>あると助かる情報</h2>
+            <p class="result-block__note">複数回答のため、割合の合計は100%になりません。回答が0件の項目は表示していません。</p>
+            <div id="chart-step3-helpful-info" class="bar-chart"></div>
+          </section>
+          <section class="result-block">
+            <h2>場の温度感</h2>
+            <p class="result-block__note">回答が0件の項目は表示していません。</p>
+            <div id="chart-step3-atmosphere" class="bar-chart"></div>
+          </section>
+          <section class="result-block">
+            <h2>仮定企画への参加意向</h2>
+            <p class="result-block__note">回答が0件の項目は表示していません。</p>
+            <div id="chart-step3-hypothetical-intent" class="bar-chart"></div>
+          </section>
+          <section class="result-block">
+            <h2>アンケート〜申込ギャップ</h2>
+            <p class="result-block__note">回答が0件の項目は表示していません。</p>
+            <div id="chart-step3-gap" class="bar-chart"></div>
+          </section>
+          <section id="block-gap-reasons" class="result-block" hidden>
+            <h2>ギャップの理由</h2>
+            <p class="result-block__note">
+              複数回答のため、割合の合計は100%になりません。対象者数：<span id="target-gap-reasons">0</span>人
+              （STEP3到達者のうち、アンケート〜申込ギャップで「よくある」「ときどきある」と回答した方のみ）。
+              回答が0件の項目は表示していません。
+            </p>
+            <div id="chart-gap-reasons" class="bar-chart"></div>
+          </section>
+        </details>
+
+        <details id="section-suit" class="result-section" hidden>
+          <summary>スーツ関連</summary>
+          <p class="result-block__note">
+            対象者数：<span id="target-suit">0</span>人（興味のある衣装・服装で「スーツ」を選んだ方のみ回答）。
+          </p>
+          <section class="result-block">
+            <h2>スーツとの関わり方</h2>
+            <p class="result-block__note">複数回答のため、割合の合計は100%になりません。回答が0件の項目は表示していません。</p>
+            <div id="chart-suit-engagement" class="bar-chart"></div>
+          </section>
+          <section class="result-block">
+            <h2>スーツタイプ</h2>
+            <p class="result-block__note">複数回答のため、割合の合計は100%になりません。回答が0件の項目は表示していません。</p>
+            <div id="chart-suit-types" class="bar-chart"></div>
+          </section>
+          <section class="result-block">
+            <h2>スーツの状態</h2>
+            <p class="result-block__note">複数回答のため、割合の合計は100%になりません。回答が0件の項目は表示していません。</p>
+            <div id="chart-suit-states" class="bar-chart"></div>
+          </section>
+          <section class="result-block">
+            <h2>スーツ企画への興味</h2>
+            <p class="result-block__note">回答が0件の項目は表示していません。</p>
+            <div id="chart-suit-event-interest" class="bar-chart"></div>
+          </section>
+        </details>
+
         <section class="result-block">
           <h2>回答者のお住まい</h2>
           <p class="result-block__note">都道府県は全国7地域ブロックにまとめて表示しています。回答が0件の地域は表示していません。</p>

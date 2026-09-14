@@ -412,6 +412,72 @@ function buildRegionSheetRows({ allTimePrefecturePairs, publicPrefecturePairs, a
 }
 
 /**
+ * Issue #315：buildPublicResultsPayload_はsnbcAwareness/snbcInterestを常に読み、
+ * suit/step3/gapReasonsも対象者数がしきい値未満なら中身を使わないだけでシート自体は
+ * 必ず存在確認する（見つからなければ例外）。既存テストの多くはSNBC・スーツ・STEP3の
+ * 対象者数を作らない（＝これらのブロックは非表示のまま）ため、シートの存在だけ満たす
+ * 空のフェイクをデフォルトとして補う。個別にSNBC/スーツ/STEP3の値を検証するテストは
+ * sheetsByNameへ明示的に上書きを置く。
+ */
+function fakeEmptySheet() {
+  return fakeSheetFromRows([]);
+}
+const ALL_AGGREGATION_SHEET_NAMES = [
+  sandbox.SHEET_ENGAGEMENT, sandbox.SHEET_REGION, sandbox.SHEET_SNBC_AWARENESS,
+  sandbox.SHEET_SNBC_INTEREST, sandbox.SHEET_SUIT, sandbox.SHEET_DEEP_DIVE
+];
+function defaultBranchAggregationSheet_(name) {
+  return ALL_AGGREGATION_SHEET_NAMES.indexOf(name) !== -1 ? fakeEmptySheet() : undefined;
+}
+
+/* writeMultiTally_()と同じレイアウトを、任意のblockIndex（BLOCK_ROW_STEP間隔）位置に置く
+   （buildMultiTallyRowsはblockIndex=0固定のため、Issue #315のブロック5・9〜19向けに汎用化）。 */
+function placeMultiTallyBlock(rows, blockIndex, categories, countsMap) {
+  const step = sandbox.BLOCK_ROW_STEP;
+  const titleRow0 = blockIndex * step;
+  rows[titleRow0] = 'タイトル行';
+  rows[titleRow0 + 1] = ['選択肢', '件数'];
+  categories.forEach((category, i) => { rows[titleRow0 + 2 + i] = [category, (countsMap && countsMap[category]) || 0]; });
+  return rows;
+}
+
+function buildSnbcAwarenessSheetRows(pairs) {
+  return placeQueryPairsBlock([], 0, 'snbc_awareness', pairs || []);
+}
+
+function buildSnbcInterestSheetRows({ interestPairs, uncertainReasonsCounts } = {}) {
+  let rows = placeQueryPairsBlock([], 0, 'snbc_interest', interestPairs || []);
+  rows = placeMultiTallyBlock(rows, sandbox.PUBLIC_SNBC_UNCERTAIN_REASONS_BLOCK_INDEX, sandbox.SNBC_UNCERTAIN_REASON_OPTIONS, uncertainReasonsCounts);
+  return rows;
+}
+
+function buildSuitSheetRows({ engagementCounts, typesCounts, statesCounts, eventInterestPairs } = {}) {
+  let rows = placeMultiTallyBlock([], 1, sandbox.SUIT_ENGAGEMENT_OPTIONS, engagementCounts);
+  rows = placeMultiTallyBlock(rows, 2, sandbox.SUIT_TYPES_OPTIONS, typesCounts);
+  rows = placeMultiTallyBlock(rows, 3, sandbox.SUIT_STATES_OPTIONS, statesCounts);
+  rows = placeQueryPairsBlock(rows, 4, 'suit_event_interest', eventInterestPairs || []);
+  return rows;
+}
+
+function buildDeepDiveSheetRows({
+  frequencyPairs, pricePairs, groupSizePairs, formatCounts, eventAwarenessPairs,
+  barriersCounts, helpfulInfoCounts, atmospherePairs, hypotheticalIntentPairs, gapPairs, gapReasonsCounts
+} = {}) {
+  let rows = placeQueryPairsBlock([], sandbox.PUBLIC_STEP3_FREQUENCY_BLOCK_INDEX, 'preferred_frequency', frequencyPairs || []);
+  rows = placeQueryPairsBlock(rows, sandbox.PUBLIC_STEP3_PRICE_BLOCK_INDEX, 'preferred_price', pricePairs || []);
+  rows = placeQueryPairsBlock(rows, sandbox.PUBLIC_STEP3_GROUP_SIZE_BLOCK_INDEX, 'preferred_group_size', groupSizePairs || []);
+  rows = placeMultiTallyBlock(rows, sandbox.PUBLIC_STEP3_FORMAT_BLOCK_INDEX, sandbox.FORMAT_OPTIONS, formatCounts);
+  rows = placeQueryPairsBlock(rows, sandbox.PUBLIC_STEP3_EVENT_AWARENESS_BLOCK_INDEX, 'event_awareness', eventAwarenessPairs || []);
+  rows = placeMultiTallyBlock(rows, sandbox.PUBLIC_STEP3_BARRIERS_BLOCK_INDEX, sandbox.BARRIER_OPTIONS, barriersCounts);
+  rows = placeMultiTallyBlock(rows, sandbox.PUBLIC_STEP3_HELPFUL_INFO_BLOCK_INDEX, sandbox.HELPFUL_INFO_OPTIONS, helpfulInfoCounts);
+  rows = placeQueryPairsBlock(rows, sandbox.PUBLIC_STEP3_ATMOSPHERE_BLOCK_INDEX, 'preferred_atmosphere', atmospherePairs || []);
+  rows = placeQueryPairsBlock(rows, sandbox.PUBLIC_STEP3_HYPOTHETICAL_INTENT_BLOCK_INDEX, 'hypothetical_intent', hypotheticalIntentPairs || []);
+  rows = placeQueryPairsBlock(rows, sandbox.PUBLIC_STEP3_GAP_BLOCK_INDEX, 'survey_to_signup_gap', gapPairs || []);
+  rows = placeMultiTallyBlock(rows, sandbox.PUBLIC_GAP_REASONS_BLOCK_INDEX, sandbox.GAP_REASON_OPTIONS, gapReasonsCounts);
+  return rows;
+}
+
+/**
  * COLUMNSの並びに従った1回答分の行（配列）を、ヘッダ名指定のoverridesから作る
  * （列番号を書き手が意識しなくてよいようにするテスト用ヘルパー）。
  */
@@ -738,7 +804,7 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
   const sheetsByName = {};
   sheetsByName[sandbox.SHEET_ENGAGEMENT] = fakeSheetFromRows(buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, {}));
   sheetsByName[sandbox.SHEET_REGION] = fakeSheetFromRows(buildRegionSheetRows({ publicPrefecturePairs: [['東京都', 10]], agePairs: [['18〜24歳', 10]] }));
-  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
 
   const payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
   assert(payload.total === 10, '旧回答20件+新回答10件 のとき total は新回答数の10件のみ, got ' + payload.total);
@@ -763,7 +829,7 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
     publicPrefecturePairs: [['東京都', 10]],
     agePairs: [['18〜24歳', 10]]
   }));
-  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
 
   const payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
   assert(!payload.region.find((r) => r.name === '中部'), '公開結果の地域に、旧回答混入込みの全期間ブロック（愛知県30件→中部）の値が出ない');
@@ -789,7 +855,7 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
   const sheetsByName = {};
   sheetsByName[sandbox.SHEET_ENGAGEMENT] = fakeSheetFromRows(buildMultiTallyRows(sandbox.ENGAGEMENT_OPTIONS, {}));
   sheetsByName[sandbox.SHEET_REGION] = fakeSheetFromRows(buildRegionSheetRows({ publicPrefecturePairs: [], agePairs: [] }));
-  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
 
   const payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
   assert(payload.total === 10, 'total is the new-survey count (10), not 30 (20 legacy + 10 new)');
@@ -817,7 +883,7 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
   const sheetsByName = {};
   sheetsByName[sandbox.SHEET_ENGAGEMENT] = fakeSheetFromRows(engagementTallyRows);
   sheetsByName[sandbox.SHEET_REGION] = fakeSheetFromRows(regionRows);
-  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
 
   const payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
   assert(payload.ready === true, 'ready=true when total >= 10');
@@ -854,7 +920,7 @@ assert(buildPublicSimpleBreakdown_([{ name: 'A', count: 0 }], 40).length === 0, 
     publicPrefecturePairs: [['茨城県', 1], ['栃木県', 1], ['埼玉県', 2], ['千葉県', 2], ['東京都', 3], ['神奈川県', 1]],
     agePairs: [['30〜39歳', 10]]
   }));
-  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
 
   const payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
   const kanto = payload.region.find((r) => r.name === '関東');
@@ -954,6 +1020,245 @@ function makeTimestampColumnSheet(timestampCellsByRow, maxRows) {
     'appendResponseRow_ writes the response to row 2 (first response) starting at column 1, via setValues (not appendRow)');
   assert(Array.isArray(capturedWrite.values) && capturedWrite.values[0].length === sandbox.COLUMNS.length,
     'appendResponseRow_ writes a full COLUMNS.length-wide row');
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * Issue #315：公開結果の拡張（SNBC・参加条件・障壁・スーツ関連の単純集計、
+ * 分岐設問ブロック単位のティア1/ティア2マスキング）
+ * ══════════════════════════════════════════════════════════════ */
+
+const countBranchTargetCounts_ = sandbox.countBranchTargetCounts_;
+const buildPublicBranchBlock_ = sandbox.buildPublicBranchBlock_;
+
+/* ── countBranchTargetCounts_：各分岐ブロックの対象者数が、既存の分岐ロジック
+   （validateAnswers_の必須化条件・deepDiveTriggered）と一致することを確認する ── */
+{
+  const legacyRows = [
+    // 旧#292回答（completion_stageなし）。新設列に値が紛れ込んでいても対象者数に混入しないことの確認。
+    { snbc_awareness: '知っている', suit_event_interest: 'はい', preferred_frequency: '月2回程度', survey_to_signup_gap: 'よくある' }
+  ];
+  const newRows = [];
+  for (let i = 0; i < 3; i++) {
+    newRows.push({ completion_stage: 'snbc_not_interested', snbc_awareness: '知っている', snbc_interest: 'いいえ' });
+  }
+  for (let i = 0; i < 2; i++) {
+    newRows.push({ completion_stage: 'snbc_uncertain', snbc_awareness: '知っている', snbc_interest: 'どちらともいえない' });
+  }
+  for (let i = 0; i < 4; i++) {
+    newRows.push({
+      completion_stage: 'snbc_deep_dive', snbc_awareness: '知っている', snbc_interest: 'はい',
+      preferred_frequency: '月2回程度', survey_to_signup_gap: 'よくある'
+    });
+  }
+  newRows.push({
+    completion_stage: 'snbc_deep_dive', snbc_awareness: '知っている', snbc_interest: 'はい',
+    preferred_frequency: '月1回程度', survey_to_signup_gap: 'ない'
+  });
+  for (let i = 0; i < 3; i++) {
+    newRows.push({ completion_stage: 'suit_interest', suit_event_interest: 'いいえ' });
+  }
+  for (let i = 0; i < 2; i++) {
+    newRows.push({
+      completion_stage: 'suit_interest', suit_event_interest: 'はい',
+      preferred_frequency: '2〜3か月に1回程度', survey_to_signup_gap: 'ときどきある'
+    });
+  }
+  newRows.push({ completion_stage: 'no_gate_reached' });
+
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows(legacyRows, newRows));
+  const counts = countBranchTargetCounts_(responsesSheet);
+
+  assert(counts.uniformGate === 10, 'uniformGate target counts every completion_stage<>\'\' row with snbc_awareness answered (3+2+4+1=10), got ' + counts.uniformGate);
+  assert(counts.uncertainReasons === 2, 'uncertainReasons target counts snbc_interest=どちらともいえない rows only, got ' + counts.uncertainReasons);
+  assert(counts.suitGate === 5, 'suitGate target counts every completion_stage<>\'\' row with suit_event_interest answered (3+2=5), got ' + counts.suitGate);
+  assert(counts.step3 === 7, 'step3 target counts deepDiveTriggered rows regardless of uniform/suit path (4+1+2=7), got ' + counts.step3);
+  assert(counts.gapReasons === 6, 'gapReasons target counts STEP3 rows whose survey_to_signup_gap is よくある/ときどきある (4+2=6, excludes the ない row), got ' + counts.gapReasons);
+}
+
+/* ── ティア1：snbc_interest_uncertain_reasons（対象者10人未満は非表示、10人以上で表示） ── */
+{
+  const newRows = [];
+  for (let i = 0; i < 9; i++) newRows.push({ completion_stage: 'snbc_uncertain', snbc_awareness: '知っている', snbc_interest: 'どちらともいえない' });
+  newRows.push({ completion_stage: 'no_gate_reached' }); // total>=10を満たすための埋め合わせ
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const sheetsByName = { [sandbox.SHEET_SNBC_INTEREST]: fakeSheetFromRows(buildSnbcInterestSheetRows({})) };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+  assert(payload.snbcUncertainReasons === undefined, 'snbcUncertainReasons target=9 (<10) is omitted from payload entirely');
+}
+{
+  const newRows = [];
+  for (let i = 0; i < 10; i++) newRows.push({ completion_stage: 'snbc_uncertain', snbc_awareness: '知っている', snbc_interest: 'どちらともいえない' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const sheetsByName = {
+    [sandbox.SHEET_SNBC_INTEREST]: fakeSheetFromRows(buildSnbcInterestSheetRows({
+      uncertainReasonsCounts: { '名古屋まで遠い': 4 }
+    }))
+  };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+  assert(!!payload.snbcUncertainReasons, 'snbcUncertainReasons target=10 (tier1 threshold) is included in payload');
+  assert(payload.snbcUncertainReasons.targetCount === 10, 'snbcUncertainReasons.targetCount === 10');
+  const item = payload.snbcUncertainReasons.items.find((it) => it.name === '名古屋まで遠い');
+  assert(!!item && item.count === 4 && item.percent === 40, '名古屋まで遠い percent is 4/10=40.0% (target-count denominator, not total), got ' + JSON.stringify(item));
+}
+
+/* ── ティア1：スーツ系4設問（対象者10人未満は非表示、10人以上で表示、分母は対象者数） ── */
+{
+  const newRows = [];
+  for (let i = 0; i < 9; i++) newRows.push({ completion_stage: 'suit_interest', suit_event_interest: 'いいえ' });
+  newRows.push({ completion_stage: 'no_gate_reached' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, { getSheetByName: (name) => defaultBranchAggregationSheet_(name) });
+  assert(payload.suit === undefined, 'suit block target=9 (<10) is omitted from payload entirely');
+}
+{
+  const newRows = [];
+  for (let i = 0; i < 10; i++) newRows.push({ completion_stage: 'suit_interest', suit_event_interest: 'いいえ' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const sheetsByName = {
+    [sandbox.SHEET_SUIT]: fakeSheetFromRows(buildSuitSheetRows({
+      engagementCounts: { '自分で着たい': 6 },
+      typesCounts: { 'ビジネススーツ': 3 },
+      statesCounts: { 'ジャケットを着たまま': 2 },
+      eventInterestPairs: [['いいえ', 10]]
+    }))
+  };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+  assert(!!payload.suit, 'suit block target=10 (tier1 threshold) is included in payload');
+  assert(payload.suit.targetCount === 10, 'suit.targetCount === 10');
+  const engagementItem = payload.suit.engagement.find((it) => it.name === '自分で着たい');
+  assert(!!engagementItem && engagementItem.count === 6 && engagementItem.percent === 60,
+    'suit.engagement percent is 6/10=60.0% (suit target-count denominator), got ' + JSON.stringify(engagementItem));
+  const eventInterestItem = payload.suit.eventInterest.find((it) => it.name === 'いいえ');
+  assert(!!eventInterestItem && eventInterestItem.percent === 100, 'suit.eventInterest percent uses the same target-count denominator');
+}
+
+/* ── ティア2：STEP3深掘り一式（対象者20人未満は非表示、20人以上で表示、分母は対象者数） ── */
+{
+  const newRows = [];
+  for (let i = 0; i < 19; i++) newRows.push({ completion_stage: 'snbc_deep_dive', preferred_frequency: '月2回程度' });
+  newRows.push({ completion_stage: 'no_gate_reached' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, { getSheetByName: (name) => defaultBranchAggregationSheet_(name) });
+  assert(payload.step3 === undefined, 'step3 block target=19 (<20) is omitted from payload entirely');
+}
+{
+  const newRows = [];
+  for (let i = 0; i < 20; i++) newRows.push({ completion_stage: 'snbc_deep_dive', preferred_frequency: '月2回程度' });
+  // totalは25（STEP3対象20＋その他5）にして、percentが総回答数ではなくSTEP3対象者数(20)基準であることを確認する。
+  for (let i = 0; i < 5; i++) newRows.push({ completion_stage: 'no_gate_reached' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const sheetsByName = {
+    [sandbox.SHEET_DEEP_DIVE]: fakeSheetFromRows(buildDeepDiveSheetRows({
+      frequencyPairs: [['月2回程度', 10]],
+      formatCounts: { 'わからない': 8 },
+      gapPairs: [['よくある', 12]]
+    }))
+  };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+  assert(payload.total === 25, 'total is 25 (20 STEP3-target + 5 no_gate_reached)');
+  assert(!!payload.step3, 'step3 block target=20 (tier2 threshold) is included in payload');
+  assert(payload.step3.targetCount === 20, 'step3.targetCount === 20 (not total=25)');
+  const freqItem = payload.step3.frequency.find((it) => it.name === '月2回程度');
+  assert(!!freqItem && freqItem.count === 10 && freqItem.percent === 50,
+    'step3.frequency percent is 10/20=50.0% (STEP3 target-count denominator, NOT 10/25=40.0%), got ' + JSON.stringify(freqItem));
+  const formatItem = payload.step3.format.find((it) => it.name === 'わからない');
+  assert(!!formatItem && formatItem.percent === 40, 'step3.format (multi-select) also uses the STEP3 target-count denominator (8/20=40.0%)');
+  const gapItem = payload.step3.gap.find((it) => it.name === 'よくある');
+  assert(!!gapItem && gapItem.percent === 60, 'step3.gap percent is 12/20=60.0%');
+}
+
+/* ── ティア2：gap_reasons（STEP3本体とは独立の、より小さい母数に同じ20人閾値を適用） ── */
+{
+  // STEP3対象25人（>=20で表示）だが、そのうちgap_reasons表示条件（よくある/ときどきある）を
+  // 満たすのは19人（<20）のため、gap_reasonsブロックだけ非表示になることを確認する。
+  const newRows = [];
+  for (let i = 0; i < 19; i++) {
+    newRows.push({ completion_stage: 'snbc_deep_dive', preferred_frequency: '月2回程度', survey_to_signup_gap: 'よくある' });
+  }
+  for (let i = 0; i < 6; i++) {
+    newRows.push({ completion_stage: 'snbc_deep_dive', preferred_frequency: '月2回程度', survey_to_signup_gap: 'ない' });
+  }
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, { getSheetByName: (name) => defaultBranchAggregationSheet_(name) });
+  assert(payload.step3 !== undefined, 'step3 (target=25>=20) is still shown');
+  assert(payload.gapReasons === undefined,
+    'gapReasons (target=19<20) is omitted even though step3 itself is shown (independent thresholds), got ' + JSON.stringify(payload.gapReasons));
+}
+{
+  const newRows = [];
+  for (let i = 0; i < 20; i++) {
+    newRows.push({ completion_stage: 'snbc_deep_dive', preferred_frequency: '月2回程度', survey_to_signup_gap: 'よくある' });
+  }
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const sheetsByName = {
+    [sandbox.SHEET_DEEP_DIVE]: fakeSheetFromRows(buildDeepDiveSheetRows({
+      gapReasonsCounts: { '実際の日程になると都合が合わない': 9 }
+    }))
+  };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+  assert(!!payload.gapReasons, 'gapReasons (target=20) is included once its own target reaches the tier2 threshold');
+  assert(payload.gapReasons.targetCount === 20, 'gapReasons.targetCount === 20');
+  const item = payload.gapReasons.items.find((it) => it.name === '実際の日程になると都合が合わない');
+  assert(!!item && item.percent === 45, '実際の日程になると都合が合わない percent is 9/20=45.0% (gapReasons target-count denominator)');
+}
+
+/* ── snbc_awareness / snbc_interest：Issue #315本文はこの2設問をティア1/2一覧に含めていないため、
+   対象者数による非表示は行わず、総回答数ゲート（PUBLIC_MIN_TOTAL_FOR_CHARTS）のみに従う。
+   ただし割合の分母は対象者数（ユニフォーム系ゲート該当者数）であり、総回答数ではない。 ── */
+{
+  const newRows = [];
+  // ユニフォーム系ゲート該当者はわずか3人だが、総回答数は12人（>=10）とする。
+  for (let i = 0; i < 3; i++) newRows.push({ completion_stage: 'snbc_not_interested', snbc_awareness: '知っている', snbc_interest: 'いいえ' });
+  for (let i = 0; i < 9; i++) newRows.push({ completion_stage: 'no_gate_reached' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const sheetsByName = {
+    [sandbox.SHEET_SNBC_AWARENESS]: fakeSheetFromRows(buildSnbcAwarenessSheetRows([['知っている', 3]])),
+    [sandbox.SHEET_SNBC_INTEREST]: fakeSheetFromRows(buildSnbcInterestSheetRows({ interestPairs: [['いいえ', 3]] }))
+  };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+  assert(payload.total === 12, 'total is 12 (3 uniform-gate + 9 no_gate_reached)');
+  assert(!!payload.snbcAwareness, 'snbcAwareness block is present even though its target (3) is below the tier1 threshold (10) — Issue #315 does not gate this question');
+  assert(payload.snbcAwareness.targetCount === 3, 'snbcAwareness.targetCount === 3 (uniform-gate reached respondents only, not total=12)');
+  const awarenessItem = payload.snbcAwareness.items.find((it) => it.name === '知っている');
+  assert(!!awarenessItem && awarenessItem.percent === 100,
+    'snbcAwareness percent is 3/3=100.0% (target-count denominator, NOT 3/12=25.0%), got ' + JSON.stringify(awarenessItem));
+  const interestItem = payload.snbcInterest.items.find((it) => it.name === 'いいえ');
+  assert(!!interestItem && interestItem.percent === 100, 'snbcInterest percent likewise uses the uniform-gate target-count denominator');
+}
+
+/* ── 非公開項目・クロス集計が公開payloadに含まれないこと（Issue #315受入条件） ── */
+{
+  const newRows = [];
+  for (let i = 0; i < 20; i++) {
+    newRows.push({
+      completion_stage: 'snbc_deep_dive', snbc_awareness: '知っている', snbc_interest: 'はい',
+      preferred_frequency: '月2回程度', survey_to_signup_gap: 'よくある',
+      interest_categories: '野球ユニフォーム'
+    });
+  }
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const sheetsByName = {
+    [sandbox.SHEET_DEEP_DIVE]: fakeSheetFromRows(buildDeepDiveSheetRows({ gapReasonsCounts: { 'その場で嫌なことを断れる自信がなかった': 5 } }))
+  };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+
+  const json = JSON.stringify(payload);
+  assert(json.indexOf('survey_path') === -1 && json.indexOf('surveyPath') === -1, 'payload does not leak survey_path/surveyPath');
+  assert(json.indexOf('completion_stage') === -1 && json.indexOf('completionStage') === -1, 'payload does not leak completion_stage/completionStage');
+  assert(json.indexOf('free_comment') === -1 && json.indexOf('freeComment') === -1, 'payload does not leak free_comment/freeComment');
+  assert(json.indexOf('respondent_hash') === -1, 'payload does not leak respondent_hash');
+
+  // 各分岐ブロックに対象者数（targetCount）が含まれる（Issue #315のUI要件：対象者数：N人の表示）。
+  ['snbcAwareness', 'snbcInterest', 'step3', 'gapReasons'].forEach((key) => {
+    assert(typeof payload[key].targetCount === 'number', key + '.targetCount is present as a number');
+  });
 }
 
 if (failures > 0) {
