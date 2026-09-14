@@ -424,7 +424,7 @@ function fakeEmptySheet() {
 }
 const ALL_AGGREGATION_SHEET_NAMES = [
   sandbox.SHEET_ENGAGEMENT, sandbox.SHEET_REGION, sandbox.SHEET_SNBC_AWARENESS,
-  sandbox.SHEET_SNBC_INTEREST, sandbox.SHEET_SUIT, sandbox.SHEET_DEEP_DIVE
+  sandbox.SHEET_SNBC_INTEREST, sandbox.SHEET_SUIT, sandbox.SHEET_DEEP_DIVE, sandbox.SHEET_CLOTHING
 ];
 function defaultBranchAggregationSheet_(name) {
   return ALL_AGGREGATION_SHEET_NAMES.indexOf(name) !== -1 ? fakeEmptySheet() : undefined;
@@ -475,6 +475,12 @@ function buildDeepDiveSheetRows({
   rows = placeQueryPairsBlock(rows, sandbox.PUBLIC_STEP3_GAP_BLOCK_INDEX, 'survey_to_signup_gap', gapPairs || []);
   rows = placeMultiTallyBlock(rows, sandbox.PUBLIC_GAP_REASONS_BLOCK_INDEX, sandbox.GAP_REASON_OPTIONS, gapReasonsCounts);
   return rows;
+}
+
+/* Issue #315（追加対応）：集計_衣装カテゴリのブロック7（第一嗜好の単純集計）を模したフェイク行。
+   primaryInterestCategoryPairsは[選択肢, 件数]の配列（INTEREST_CATEGORY_OPTIONSの値を使う）。 */
+function buildClothingSheetRows({ primaryInterestCategoryPairs } = {}) {
+  return placeQueryPairsBlock([], sandbox.PUBLIC_PRIMARY_INTEREST_CATEGORY_BLOCK_INDEX, 'primary_interest_category', primaryInterestCategoryPairs || []);
 }
 
 /**
@@ -1259,6 +1265,71 @@ const buildPublicBranchBlock_ = sandbox.buildPublicBranchBlock_;
   ['snbcAwareness', 'snbcInterest', 'step3', 'gapReasons'].forEach((key) => {
     assert(typeof payload[key].targetCount === 'number', key + '.targetCount is present as a number');
   });
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * Issue #315（追加対応）：primary_interest_category（第一嗜好）の公開単純集計
+ * ・INTEREST_CATEGORY_OPTIONSを正本として使う（新配列を再定義しない）
+ * ・単一回答として件数・割合を表示、分母は新アンケート回答総数
+ * ・0件は非表示
+ * ・分岐設問ではないため、ティア1/ティア2の対象者数マスキングは適用しない
+ * ══════════════════════════════════════════════════════════════ */
+{
+  const newRows = [];
+  for (let i = 0; i < 20; i++) newRows.push({ completion_stage: 'no_gate_reached' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const sheetsByName = {
+    [sandbox.SHEET_CLOTHING]: fakeSheetFromRows(buildClothingSheetRows({
+      primaryInterestCategoryPairs: [['野球ユニフォーム', 12], ['スーツ', 8]]
+    }))
+  };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+
+  assert(Array.isArray(payload.primaryInterestCategory), 'primaryInterestCategory is present in the public payload as an array');
+  const baseball = payload.primaryInterestCategory.find((it) => it.name === '野球ユニフォーム');
+  assert(!!baseball && baseball.count === 12 && baseball.percent === 60,
+    'primaryInterestCategory percent is 12/20=60.0% (denominator is total new-survey responses), got ' + JSON.stringify(baseball));
+  const suit = payload.primaryInterestCategory.find((it) => it.name === 'スーツ');
+  assert(!!suit && suit.count === 8 && suit.percent === 40, 'primaryInterestCategory 2nd item percent is 8/20=40.0%');
+  assert(payload.primaryInterestCategory.length === 2,
+    '0件の選択肢は表示されない（buildClothingSheetRowsで指定した2件以外はすべて0件のため）, got length ' + payload.primaryInterestCategory.length);
+  assert(payload.primaryInterestCategory[0].name === '野球ユニフォーム', 'items are sorted by count desc');
+}
+
+{
+  const newRows = [];
+  for (let i = 0; i < 10; i++) newRows.push({ completion_stage: 'no_gate_reached' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  // 集計元シートに万一INTEREST_CATEGORY_OPTIONSに存在しない値が入っていても、payloadの構築は
+  // INTEREST_CATEGORY_OPTIONS.map(...)で選択肢配列を正本として回すため、そのような値は出てこない
+  // （＝選択肢配列を公開用に重複定義せず、既存のinterest_categoriesと共通の配列をそのまま使っている確認）。
+  const sheetsByName = {
+    [sandbox.SHEET_CLOTHING]: fakeSheetFromRows(buildClothingSheetRows({
+      primaryInterestCategoryPairs: [['野球ユニフォーム', 5], ['未知のカテゴリ', 99]]
+    }))
+  };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+  assert(!payload.primaryInterestCategory.find((it) => it.name === '未知のカテゴリ'),
+    'primaryInterestCategory only ever contains names from INTEREST_CATEGORY_OPTIONS (正本), unexpected sheet values are ignored');
+  assert(sandbox.INTEREST_CATEGORY_OPTIONS.length === 22, 'INTEREST_CATEGORY_OPTIONS still has 22 options (reused as-is, not redefined)');
+}
+
+{
+  // 全員no_gate_reached（ユニフォーム系・スーツいずれのゲートにも非該当）でも第一嗜好は分岐設問では
+  // ないため表示され、分母は対象者数の部分集合ではなく総回答数(=30)そのものになることを確認する。
+  const newRows = [];
+  for (let i = 0; i < 30; i++) newRows.push({ completion_stage: 'no_gate_reached' });
+  const responsesSheet = fakeSheetFromRows(buildResponsesRows([], newRows));
+  const sheetsByName = {
+    [sandbox.SHEET_CLOTHING]: fakeSheetFromRows(buildClothingSheetRows({ primaryInterestCategoryPairs: [['ヒーロー系', 3]] }))
+  };
+  const aggregationSpreadsheet = { getSheetByName: (name) => sheetsByName[name] || defaultBranchAggregationSheet_(name) };
+  const payload = sandbox.buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+  const hero = payload.primaryInterestCategory.find((it) => it.name === 'ヒーロー系');
+  assert(!!hero && hero.percent === 10,
+    'primaryInterestCategory percent uses total(=30) as the denominator (3/30=10.0%), not a target-count subset (not gated like tier1/tier2 blocks), got ' + JSON.stringify(hero));
 }
 
 if (failures > 0) {

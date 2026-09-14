@@ -16,6 +16,7 @@
 
     var charts = {
       categories: document.getElementById('chart-categories'),
+      primaryInterestCategory: document.getElementById('chart-primary-interest-category'),
       engagement: document.getElementById('chart-engagement'),
       region: document.getElementById('chart-region'),
       age: document.getElementById('chart-age'),
@@ -142,6 +143,8 @@
         pendingEl.hidden = true;
         blocksEl.hidden = false;
         renderBarChart(charts.categories, data.categories);
+        // Issue #315（追加対応）：第一嗜好は分岐設問ではなく常に表示する（分母は総回答数）。
+        renderBarChart(charts.primaryInterestCategory, data.primaryInterestCategory);
         renderBarChart(charts.engagement, data.engagement);
         renderBarChart(charts.region, data.region);
         renderBarChart(charts.age, data.age);

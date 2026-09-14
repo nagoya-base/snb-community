@@ -625,7 +625,12 @@ function buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet) {
   var snbcInterestSheet = aggregationSpreadsheet.getSheetByName(SHEET_SNBC_INTEREST);
   var suitSheet = aggregationSpreadsheet.getSheetByName(SHEET_SUIT);
   var deepDiveSheet = aggregationSpreadsheet.getSheetByName(SHEET_DEEP_DIVE);
-  if (!engagementSheet || !regionSheet || !snbcAwarenessSheet || !snbcInterestSheet || !suitSheet || !deepDiveSheet) {
+  // Issue #315（追加対応）：第一嗜好（primary_interest_category）の公開集計元。
+  var clothingSheet = aggregationSpreadsheet.getSheetByName(SHEET_CLOTHING);
+  if (
+    !engagementSheet || !regionSheet || !snbcAwarenessSheet || !snbcInterestSheet ||
+    !suitSheet || !deepDiveSheet || !clothingSheet
+  ) {
     throw new Error('集計_*シートが見つかりません。先にbuildAggregationSheets()を実行してください。');
   }
 
@@ -643,6 +648,12 @@ function buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet) {
   // 別途用意し（buildAggregationSheets参照）、そちらを読む。
   var prefectureCounts = readQueryPairsBlock_(regionSheet, PUBLIC_PREFECTURE_TALLY_BLOCK_INDEX, PREFECTURES.length + 5);
   var ageCounts = readQueryPairsBlock_(regionSheet, PUBLIC_AGE_TALLY_BLOCK_INDEX, AGE_OPTIONS.length + 5);
+  // Issue #315（追加対応）：第一嗜好は分岐設問ではなく全回答者が対象（任意項目）のため、
+  // 対象者数によるティア1/ティア2マスキングは適用せず、分母は新アンケート回答総数（total）を使う。
+  // INTEREST_CATEGORY_OPTIONS（interest_categoriesと共通の正本配列）をそのまま選択肢として使う。
+  var primaryInterestCategoryCounts = readQueryPairsBlock_(
+    clothingSheet, PUBLIC_PRIMARY_INTEREST_CATEGORY_BLOCK_INDEX, INTEREST_CATEGORY_OPTIONS.length + 5
+  );
 
   // Issue #315：分岐設問ブロックの対象者数（責任分界点はvalidateAnswers_の必須化条件と一致させる）。
   var targetCounts = countBranchTargetCounts_(responsesSheet);
@@ -652,6 +663,10 @@ function buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet) {
     generatedAt: generatedAt,
     ready: true,
     categories: buildPublicCategoryBreakdown_(groupCounts, total),
+    primaryInterestCategory: buildPublicSimpleBreakdown_(
+      INTEREST_CATEGORY_OPTIONS.map(function (option) { return { name: option, count: primaryInterestCategoryCounts[option] || 0 }; }),
+      total
+    ),
     engagement: buildPublicSimpleBreakdown_(
       ENGAGEMENT_OPTIONS.map(function (option) { return { name: option, count: engagementTally[option] || 0 }; }),
       total
@@ -1521,6 +1536,13 @@ var PUBLIC_STEP3_HYPOTHETICAL_INTENT_BLOCK_INDEX = 17;
 var PUBLIC_STEP3_GAP_BLOCK_INDEX = 18;
 var PUBLIC_GAP_REASONS_BLOCK_INDEX = 19;
 
+/* Issue #315（追加対応）：第一嗜好（primary_interest_category）の公開単純集計。
+   集計_衣装カテゴリは既存ブロック0〜6（延べ件数の単純集計・都道府県/年代/愛知県内地域との
+   クロス集計）を使用中のため7番目に追加する。primary_interest_categoryは分岐設問ではなく
+   全回答者が対象（未回答＝空文字列も許容される任意項目）のため、ティア1/ティア2の対象者数
+   マスキングは適用せず、分母は新アンケート回答総数（total）を使う。 */
+var PUBLIC_PRIMARY_INTEREST_CATEGORY_BLOCK_INDEX = 7;
+
 /**
  * 既存の集計_*シートを作り直す（中身は数式のみで生データを含まないため、
  * 削除して再生成しても安全＝壊れにくい）。何度実行しても複製されない。
@@ -1615,6 +1637,13 @@ function buildAggregationSheets() {
       queryFormula_(range, "select " + col.aichi_area + ", count(" + col.timestamp + ") where " +
         col.primary_interest_category + " is not null and " + col.primary_interest_category + " <> '' group by " +
         col.aichi_area + " pivot " + col.primary_interest_category + " label count(" + col.timestamp + ") '回答数'"));
+
+    // Issue #315（追加対応）：第一嗜好の公開単純集計（単一選択、分母は新アンケート回答総数）。
+    writeTitledFormula_(s, PUBLIC_PRIMARY_INTEREST_CATEGORY_BLOCK_INDEX,
+      '第一嗜好 単純集計（単一回答・公開結果用）',
+      queryFormula_(range, "select " + col.primary_interest_category + ", count(" + col.timestamp + ") where " +
+        col.primary_interest_category + " is not null and " + col.primary_interest_category + " <> '' group by " +
+        col.primary_interest_category + " label count(" + col.timestamp + ") '回答数'"));
   });
 
   /* ── 集計_関わり方 ── */
