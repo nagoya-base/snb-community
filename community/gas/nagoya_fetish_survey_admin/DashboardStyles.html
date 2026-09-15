@@ -160,6 +160,37 @@
     padding: 0.4rem 0;
   }
 
+  details.crosstab-question {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.6rem;
+  }
+
+  details.crosstab-question summary {
+    cursor: pointer;
+    font-weight: 700;
+    padding: 0.3rem 0;
+  }
+
+  .crosstab-question__body h4 {
+    font-size: 0.8rem;
+    margin: 0.8rem 0 0.3rem;
+    color: var(--text-muted);
+  }
+
+  /* 選択肢ラベル列（1列目）は長文の選択肢があるため、横スクロール時も見切れないよう
+     スマホ幅でも列を追従させる（Issue #317）。min-widthを与えないと日本語の折り返しにより
+     1列目が極端に狭くなり1文字ずつ改行されてしまうため、読める幅を確保する。 */
+  table.crosstab-table th:first-child,
+  table.crosstab-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--bg-card);
+    min-width: 9em;
+    max-width: 13em;
+  }
+
   .free-comment-item {
     border-bottom: 1px solid var(--border);
     padding: 0.5rem 0;

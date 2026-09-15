@@ -46,6 +46,9 @@ const buildHighlightsSection_ = sandbox.buildHighlightsSection_;
 const buildAdminDashboardPayload_ = sandbox.buildAdminDashboardPayload_;
 const readResponseRows_ = sandbox.readResponseRows_;
 const regionBlockForPrefecture_ = sandbox.regionBlockForPrefecture_;
+const regionHighlightForPrefecture_ = sandbox.regionHighlightForPrefecture_;
+const isNewSurveyCompletionStage_ = sandbox.isNewSurveyCompletionStage_;
+const buildCrosstabSection_ = sandbox.buildCrosstabSection_;
 
 function findByName(items, name) {
   return items.find((item) => item.name === name);
@@ -148,6 +151,18 @@ assert(sandbox.SUIT_ENGAGEMENT_OPTIONS.length === 4, 'SUIT_ENGAGEMENT_OPTIONS ha
   const scheduleRow = crosstab.rowLabels.indexOf('日程が合わなかった');
   assert(crosstab.matrix[scheduleRow][0] === 1 && crosstab.matrix[scheduleRow][1] === 1,
     'crosstabMultiVsSingle_ counts each row once per matching multi-select item');
+}
+{
+  // Issue #317レビュー指摘：1回答者が同じ選択肢に対して1件として数えること（重複カウント防止）を
+  // crosstabMultiVsSingle_自体で直接検証する。同一セル内に同じ値が2回入っている（本来想定しない
+  // 入力だが、防御的に）ケースでも、1回答者につき1回までしかカウントしないことを確認する。
+  const rows = [
+    { barriers: '日程が合わなかった、日程が合わなかった', hypothetical_intent: '参加しない' }
+  ];
+  const crosstab = crosstabMultiVsSingle_(rows, 'barriers', ['日程が合わなかった', '料金が高いと感じた'], 'hypothetical_intent', ['参加しない', 'わからない']);
+  const scheduleRow = crosstab.rowLabels.indexOf('日程が合わなかった');
+  assert(crosstab.matrix[scheduleRow][0] === 1,
+    'crosstabMultiVsSingle_ counts a duplicated value within the same cell only once per respondent, got ' + crosstab.matrix[scheduleRow][0]);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -273,6 +288,156 @@ assert(regionBlockForPrefecture_('存在しない県') === null, 'regionBlockFor
   assert(payload.highlights && !('freeComments' in payload.highlights),
     'freeComments is not part of the highlights section (not shown large/top in the dashboard)');
   assert(typeof payload.generatedAt === 'string', 'buildAdminDashboardPayload_ includes generatedAt');
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * Issue #317: isNewSurveyCompletionStage_ / regionHighlightForPrefecture_ / CROSSTAB_QUESTIONS
+ * ══════════════════════════════════════════════════════════════ */
+assert(isNewSurveyCompletionStage_('snbc_deep_dive') === true, 'isNewSurveyCompletionStage_ is true for a non-blank completion_stage');
+assert(isNewSurveyCompletionStage_('') === false, 'isNewSurveyCompletionStage_ is false for a blank completion_stage (legacy #292 response)');
+assert(isNewSurveyCompletionStage_(undefined) === false, 'isNewSurveyCompletionStage_ is false for undefined');
+
+assert(regionHighlightForPrefecture_('東京都') === '東京都', 'regionHighlightForPrefecture_ keeps 東京都 as its own bucket');
+assert(regionHighlightForPrefecture_('愛知県') === '愛知県', 'regionHighlightForPrefecture_ keeps 愛知県 as its own bucket');
+assert(regionHighlightForPrefecture_('大阪府') === '大阪府', 'regionHighlightForPrefecture_ keeps 大阪府 as its own bucket');
+assert(regionHighlightForPrefecture_('福岡県') === 'その他', 'regionHighlightForPrefecture_ buckets other prefectures into その他');
+assert(regionHighlightForPrefecture_('海外') === 'その他', 'regionHighlightForPrefecture_ buckets 海外 into その他 too');
+assert(sandbox.REGION_HIGHLIGHT_LABELS.join(',') === ['東京都', '愛知県', '大阪府', 'その他'].join(','),
+  'REGION_HIGHLIGHT_LABELS is the fixed 4-category axis');
+
+{
+  const questions = sandbox.CROSSTAB_QUESTIONS;
+  assert(questions.length === 21, 'CROSSTAB_QUESTIONS has exactly 21 target questions, got ' + questions.length);
+  const fields = questions.map((q) => q.field);
+  assert(new Set(fields).size === fields.length, 'CROSSTAB_QUESTIONS has no duplicate fields');
+  assert(fields.indexOf('age') === -1 && fields.indexOf('prefecture') === -1,
+    'CROSSTAB_QUESTIONS excludes age/prefecture themselves (they are the crosstab axes)');
+  assert(fields.indexOf('free_comment') === -1, 'CROSSTAB_QUESTIONS excludes free_comment (free text is out of scope)');
+  assert(fields.indexOf('primary_interest_category') !== -1,
+    'CROSSTAB_QUESTIONS includes primary_interest_category (a selectable question in the current survey, per Issue #317 scope)');
+  questions.forEach((q) => {
+    assert(q.type === 'single' || q.type === 'multi', 'CROSSTAB_QUESTIONS[' + q.field + '].type is single or multi');
+    assert(Array.isArray(q.options) && q.options.length > 0, 'CROSSTAB_QUESTIONS[' + q.field + '].options is a non-empty array');
+    assert(typeof q.label === 'string' && q.label !== '', 'CROSSTAB_QUESTIONS[' + q.field + '].label is a non-empty string');
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * Issue #317: buildCrosstabSection_
+ * ══════════════════════════════════════════════════════════════ */
+{
+  // 旧アンケート回答（completion_stageが空）はサンプルサイズにも各クロス表にも含めない。
+  const rows = [
+    makeRow({ completion_stage: 'snbc_deep_dive', age: '18〜24歳', prefecture: '愛知県', preferred_price: '2,000円以下' }),
+    makeRow({ completion_stage: '', age: '30〜39歳', prefecture: '愛知県', preferred_price: '2,000円以下' }) // 旧アンケート回答
+  ];
+  const crosstab = buildCrosstabSection_(rows);
+  assert(crosstab.sampleSize === 1, 'buildCrosstabSection_ excludes legacy (blank completion_stage) rows from sampleSize, got ' + crosstab.sampleSize);
+  const priceQ = crosstab.questions.find((q) => q.field === 'preferred_price');
+  const total = priceQ.byAge.matrix.reduce((sum, row) => sum + row.reduce((s, v) => s + v, 0), 0);
+  assert(total === 1, 'buildCrosstabSection_ crosstabs only count new-survey rows, got total ' + total);
+}
+
+{
+  // 単一選択 × 年代・地域。三重県は近畿ブロック、大阪府は地域詳細で単独バケット。
+  const rows = [
+    makeRow({ completion_stage: 'snbc_deep_dive', age: '18〜24歳', prefecture: '三重県', preferred_price: '2,000円以下' }),
+    makeRow({ completion_stage: 'snbc_deep_dive', age: '18〜24歳', prefecture: '大阪府', preferred_price: '2,000円以下' }),
+    makeRow({ completion_stage: 'snbc_deep_dive', age: '30〜39歳', prefecture: '海外', preferred_price: '2,500円程度' })
+  ];
+  const crosstab = buildCrosstabSection_(rows);
+  const priceQ = crosstab.questions.find((q) => q.field === 'preferred_price');
+  assert(priceQ.type === 'single', 'preferred_price crosstab question is type single');
+
+  const ageIdx = priceQ.byAge.rowLabels.indexOf('2,000円以下');
+  const ageColIdx = priceQ.byAge.colLabels.indexOf('18〜24歳');
+  assert(priceQ.byAge.matrix[ageIdx][ageColIdx] === 2, 'single-select × age crosstab counts match raw data (2,000円以下 × 18〜24歳 = 2)');
+
+  const regionRowIdx = priceQ.byRegionBlock.rowLabels.indexOf('2,000円以下');
+  const kinkiColIdx = priceQ.byRegionBlock.colLabels.indexOf('近畿');
+  assert(priceQ.byRegionBlock.matrix[regionRowIdx][kinkiColIdx] === 2,
+    'single-select × region-block crosstab sums 三重県+大阪府 under 近畿 (region block reuses regionBlockForPrefecture_)');
+
+  const highlightRowIdx = priceQ.byRegionHighlight.rowLabels.indexOf('2,000円以下');
+  const osakaColIdx = priceQ.byRegionHighlight.colLabels.indexOf('大阪府');
+  const otherColIdx = priceQ.byRegionHighlight.colLabels.indexOf('その他');
+  assert(priceQ.byRegionHighlight.matrix[highlightRowIdx][osakaColIdx] === 1,
+    'single-select × region-highlight crosstab keeps 大阪府 as its own column');
+  assert(priceQ.byRegionHighlight.matrix[highlightRowIdx][otherColIdx] === 1,
+    'single-select × region-highlight crosstab buckets 三重県 (not 東京/愛知/大阪) into その他');
+
+  const gaikokuRowIdx = priceQ.byRegionHighlight.rowLabels.indexOf('2,500円程度');
+  assert(priceQ.byRegionHighlight.matrix[gaikokuRowIdx][otherColIdx] === 1,
+    'single-select × region-highlight crosstab buckets 海外 into その他 too');
+}
+
+{
+  // 複数選択 × 年代。同じ回答者が同じ選択肢に対して1回しかカウントされないこと（重複カウント防止）。
+  // 2人目は同一セル内に同じ選択肢が2回入っている（本来想定しない入力だが、防御的に確認する）ケース。
+  const rows = [
+    makeRow({ completion_stage: 'snbc_deep_dive', age: '18〜24歳', prefecture: '愛知県', barriers: '日程が合わなかった、料金が高いと感じた' }),
+    makeRow({ completion_stage: 'snbc_deep_dive', age: '18〜24歳', prefecture: '愛知県', barriers: '日程が合わなかった、日程が合わなかった' })
+  ];
+  const crosstab = buildCrosstabSection_(rows);
+  const barriersQ = crosstab.questions.find((q) => q.field === 'barriers');
+  assert(barriersQ.type === 'multi', 'barriers crosstab question is type multi');
+  const rowIdx = barriersQ.byAge.rowLabels.indexOf('日程が合わなかった');
+  const colIdx = barriersQ.byAge.colLabels.indexOf('18〜24歳');
+  assert(barriersQ.byAge.matrix[rowIdx][colIdx] === 2,
+    'multi-select × age crosstab counts one per respondent per option, even with a duplicated value within one cell, got ' + barriersQ.byAge.matrix[rowIdx][colIdx]);
+}
+
+{
+  // 分岐設問：STEP3に到達していない回答者（barriersが空欄）は母数に含まれない。
+  const rows = [
+    makeRow({ completion_stage: 'snbc_deep_dive', age: '18〜24歳', prefecture: '愛知県', barriers: '日程が合わなかった' }),
+    makeRow({ completion_stage: 'snbc_not_interested', age: '18〜24歳', prefecture: '愛知県', barriers: '' }) // STEP3非到達
+  ];
+  const crosstab = buildCrosstabSection_(rows);
+  const barriersQ = crosstab.questions.find((q) => q.field === 'barriers');
+  const total = barriersQ.byAge.matrix.reduce((sum, row) => sum + row.reduce((s, v) => s + v, 0), 0);
+  assert(total === 1, 'a branching question excludes rows that never reached it (blank value) from the denominator, got ' + total);
+}
+
+{
+  // primary_interest_category（第一嗜好）もクロス集計対象（レビュー指摘対応）。任意項目のため
+  // 未回答（空欄）行は母数に含まれないことも確認する。
+  const rows = [
+    makeRow({ completion_stage: 'snbc_deep_dive', age: '18〜24歳', prefecture: '愛知県', primary_interest_category: '野球ユニフォーム' }),
+    makeRow({ completion_stage: 'snbc_deep_dive', age: '18〜24歳', prefecture: '愛知県', primary_interest_category: '' }) // 第一嗜好は任意項目、未回答
+  ];
+  const crosstab = buildCrosstabSection_(rows);
+  const primaryQ = crosstab.questions.find((q) => q.field === 'primary_interest_category');
+  assert(!!primaryQ, 'buildCrosstabSection_ includes a primary_interest_category question');
+  assert(primaryQ.type === 'single', 'primary_interest_category crosstab question is type single');
+  const rowIdx = primaryQ.byAge.rowLabels.indexOf('野球ユニフォーム');
+  const colIdx = primaryQ.byAge.colLabels.indexOf('18〜24歳');
+  assert(primaryQ.byAge.matrix[rowIdx][colIdx] === 1, 'primary_interest_category × age crosstab counts the answered row');
+  const total = primaryQ.byAge.matrix.reduce((sum, row) => sum + row.reduce((s, v) => s + v, 0), 0);
+  assert(total === 1, 'primary_interest_category crosstab excludes the blank (unanswered) row from the denominator, got ' + total);
+}
+
+{
+  // 年代の「回答しない」を含むケース。
+  const rows = [
+    makeRow({ completion_stage: 'snbc_deep_dive', age: '回答しない', prefecture: '愛知県', suit_event_interest: 'はい' })
+  ];
+  const crosstab = buildCrosstabSection_(rows);
+  const suitQ = crosstab.questions.find((q) => q.field === 'suit_event_interest');
+  const rowIdx = suitQ.byAge.rowLabels.indexOf('はい');
+  const colIdx = suitQ.byAge.colLabels.indexOf('回答しない');
+  assert(suitQ.byAge.matrix[rowIdx][colIdx] === 1, 'crosstab correctly counts age=回答しない rows');
+}
+
+{
+  // 既存の単純集計（新旧混在）には一切影響がないことの回帰確認。
+  const rows = [
+    makeRow({ completion_stage: 'snbc_deep_dive', preferred_price: '2,000円以下' }),
+    makeRow({ completion_stage: '', preferred_price: '2,000円以下' }) // 旧アンケート回答
+  ];
+  const deepDive = buildDeepDiveSection_(rows);
+  assert(findByName(deepDive.price, '2,000円以下').count === 2,
+    'buildDeepDiveSection_ (existing simple tally) still includes legacy rows, unaffected by the new crosstab filter');
 }
 
 if (failures > 0) {

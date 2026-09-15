@@ -48,7 +48,13 @@
       table.appendChild(tbody);
     }
 
-    function renderCrosstabTable(table, crosstab) {
+    /**
+     * crosstab: {rowLabels, colLabels, matrix}。opts.showPercentを渡すと、各セルに
+     * 行（選択肢）の合計に対する構成比を「件数（○○%）」の形で併記する
+     * （Issue #317。既存呼び出し元・table-region-snbc-interestはopts省略で従来通り件数のみ）。
+     */
+    function renderCrosstabTable(table, crosstab, opts) {
+      var showPercent = !!(opts && opts.showPercent);
       clearChildren(table);
       var thead = el('thead');
       var headRow = el('tr');
@@ -61,10 +67,57 @@
       crosstab.rowLabels.forEach(function (rowLabel, r) {
         var row = el('tr');
         row.appendChild(el('td', null, rowLabel));
-        crosstab.matrix[r].forEach(function (value) { row.appendChild(el('td', 'num', String(value))); });
+        var rowTotal = showPercent ? crosstab.matrix[r].reduce(function (sum, v) { return sum + v; }, 0) : 0;
+        crosstab.matrix[r].forEach(function (value) {
+          var text = String(value);
+          if (showPercent) {
+            var percent = rowTotal > 0 ? Math.round((value / rowTotal) * 1000) / 10 : 0;
+            text += '（' + percent + '%）';
+          }
+          row.appendChild(el('td', 'num', text));
+        });
         tbody.appendChild(row);
       });
       table.appendChild(tbody);
+    }
+
+    /**
+     * data.crosstab（{sampleSize, questions: [{field, label, type, byAge, byRegionBlock,
+     * byRegionHighlight}, ...]}）をループし、設問ごとにアコーディオン（<details>）＋
+     * 年代・地域（7地域＋海外）・地域詳細（東京・愛知・大阪）の3クロス表を動的生成する（Issue #317）。
+     * 設問の追加・削除はサーバー側のCROSSTAB_QUESTIONSだけで完結し、ここに手書きの
+     * テーブルID・render呼び出しを個別追加する必要はない。
+     */
+    function renderCrosstabQuestions(container, section) {
+      clearChildren(container);
+
+      var note = el('p', 'section__note',
+        '各設問の「選択肢 × 年代」「選択肢 × 地域」を確認できます。現行アンケート（Issue #293以降）の' +
+        '回答のみが対象のため（対象' + section.sampleSize + '件）、上部の単純集計（新旧アンケート混在）とは' +
+        '分母が異なります。割合はいずれも行（選択肢）の合計に対する構成比です。');
+      container.appendChild(note);
+
+      var addCrosstabBlock = function (body, heading, crosstab) {
+        body.appendChild(el('h4', null, heading));
+        var wrap = el('div', 'overflow-x');
+        var table = el('table', 'tally-table crosstab-table');
+        renderCrosstabTable(table, crosstab, { showPercent: true });
+        wrap.appendChild(table);
+        body.appendChild(wrap);
+      };
+
+      section.questions.forEach(function (q) {
+        var details = el('details', 'crosstab-question');
+        details.appendChild(el('summary', null, q.label));
+
+        var body = el('div', 'crosstab-question__body');
+        addCrosstabBlock(body, '年代クロス', q.byAge);
+        addCrosstabBlock(body, '地域クロス（7地域＋海外）', q.byRegionBlock);
+        addCrosstabBlock(body, '地域詳細（東京・愛知・大阪）', q.byRegionHighlight);
+        details.appendChild(body);
+
+        container.appendChild(details);
+      });
     }
 
     /**
@@ -186,6 +239,7 @@
       renderTallyTable(document.getElementById('table-completion-stage'), data.branching.completionStage);
 
       renderCrosstabTable(document.getElementById('table-region-snbc-interest'), data.highlights.regionSnbcInterest);
+      renderCrosstabQuestions(document.getElementById('crosstab-questions'), data.crosstab);
 
       document.getElementById('free-comments-count').textContent = data.freeComments.length;
       var list = document.getElementById('free-comments-list');
