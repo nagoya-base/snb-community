@@ -252,10 +252,15 @@ function isNewSurveyCompletionStage_(value) {
 /**
  * 選択式設問 × 年代・地域のクロス集計対象一覧（Issue #317）。
  * 対象は「preferred_frequency〜gap_reasons」（旧アンケートから継続、単一/複数選択11問）＋
- * 「interest_categories〜suit_event_interest」（Issue #293以降の新設問のうちprimary_interest_category
- * を除く単一/複数選択9問。第一嗜好は補助指標であり、回答者を1ジャンルに固定する軸としては
- * 扱わないため対象外）で計20問。age・prefecture自体（クロス集計の軸として使う側）と
- * 自由記述（free_comment）は対象外。
+ * 「interest_categories〜suit_event_interest」（Issue #293以降の新設問、単一/複数選択10問。
+ * primary_interest_categoryも含む）で計21問。age・prefecture自体（クロス集計の軸として
+ * 使う側）と自由記述（free_comment）は対象外。
+ *
+ * primary_interest_category（第一嗜好）は既存の単純集計（buildCostumeSection_）でも
+ * 衣装集計の正式項目として扱っており、Issueの「現行アンケートの選択式設問を原則対象とする」に
+ * 従いクロス集計の対象にも含める。「回答者を1ジャンルに固定して解釈しない」補助指標という
+ * 位置づけ自体は変わらないため、解釈時はinterest_categories（複数回答・分析の主軸）と
+ * 合わせて見ること。
  *
  * Dashboard側はこの配列をループしてアコーディオン＋クロス表を動的生成するため、設問を
  * 追加・削除・変更する場合はこの配列だけを編集すればよい（HTML・render呼び出しの個別追加は不要）。
@@ -273,6 +278,7 @@ var CROSSTAB_QUESTIONS = [
   { field: 'survey_to_signup_gap', label: 'アンケート〜申込ギャップ', type: 'single', options: GAP_OPTIONS },
   { field: 'gap_reasons', label: 'ギャップの理由', type: 'multi', options: GAP_REASON_OPTIONS },
   { field: 'interest_categories', label: '興味のある衣装・服装・キャラクター表現', type: 'multi', options: INTEREST_CATEGORY_OPTIONS },
+  { field: 'primary_interest_category', label: '第一嗜好', type: 'single', options: INTEREST_CATEGORY_OPTIONS },
   { field: 'engagement_preferences', label: '関わり方', type: 'multi', options: ENGAGEMENT_OPTIONS },
   { field: 'snbc_awareness', label: 'SNBC認知', type: 'single', options: SNBC_AWARENESS_OPTIONS },
   { field: 'snbc_interest', label: 'SNBC興味', type: 'single', options: SNBC_INTEREST_OPTIONS },
@@ -456,13 +462,20 @@ function crosstabSingleVsSingle_(rows, rowField, rowOptions, colField, colOption
 
 /**
  * 複数選択 × 単一選択のクロス集計グリッド（行＝複数選択側の延べ件数）。
+ * 1行（1回答者）につき同じ選択肢は1回までしかカウントしない（seenで一意化してから加算）。
+ * splitMultiValue_はセル内の生の区切り文字列をそのまま分解するだけで重複を除去しないため、
+ * この一意化をしないと、同一セルに同じ値が複数回入っていた場合（本来想定しない入力だが、
+ * 防御的に）1人の回答が2件以上としてカウントされてしまう。
  */
 function crosstabMultiVsSingle_(rows, multiField, multiOptions, singleField, singleOptions) {
   var matrix = multiOptions.map(function () { return singleOptions.map(function () { return 0; }); });
   rows.forEach(function (row) {
     var ci = singleOptions.indexOf(row[singleField]);
     if (ci === -1) return;
+    var seen = {};
     splitMultiValue_(row[multiField]).forEach(function (item) {
+      if (Object.prototype.hasOwnProperty.call(seen, item)) return;
+      seen[item] = true;
       var ri = multiOptions.indexOf(item);
       if (ri !== -1) matrix[ri][ci]++;
     });
@@ -638,7 +651,8 @@ function buildHighlightsSection_(rows, region, costume, deepDive, suit) {
 
 /**
  * 選択式設問 × 年代・地域のクロス集計セクション（Issue #317）。CROSSTAB_QUESTIONSをループし、
- * 設問ごとに「年代」「地域7ブロック」「地域詳細（東京・愛知・大阪）」の3クロス表を計算する。
+ * 設問ごとに「年代」「地域（7地域＋海外。REGION_BLOCKSをそのまま再利用）」「地域詳細（東京・
+ * 愛知・大阪）」の3クロス表を計算する。
  *
  * 旧アンケート回答（completion_stageが空の行）は、isNewSurveyCompletionStage_で除外してから
  * crosstabSingleVsSingle_ / crosstabMultiVsSingle_に渡す。そのため、このセクションの合計件数は

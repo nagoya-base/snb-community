@@ -84,7 +84,7 @@
     /**
      * data.crosstab（{sampleSize, questions: [{field, label, type, byAge, byRegionBlock,
      * byRegionHighlight}, ...]}）をループし、設問ごとにアコーディオン（<details>）＋
-     * 年代・地域7ブロック・地域詳細（東京・愛知・大阪）の3クロス表を動的生成する（Issue #317）。
+     * 年代・地域（7地域＋海外）・地域詳細（東京・愛知・大阪）の3クロス表を動的生成する（Issue #317）。
      * 設問の追加・削除はサーバー側のCROSSTAB_QUESTIONSだけで完結し、ここに手書きの
      * テーブルID・render呼び出しを個別追加する必要はない。
      */
@@ -112,7 +112,7 @@
 
         var body = el('div', 'crosstab-question__body');
         addCrosstabBlock(body, '年代クロス', q.byAge);
-        addCrosstabBlock(body, '地域クロス（7ブロック）', q.byRegionBlock);
+        addCrosstabBlock(body, '地域クロス（7地域＋海外）', q.byRegionBlock);
         addCrosstabBlock(body, '地域詳細（東京・愛知・大阪）', q.byRegionHighlight);
         details.appendChild(body);
 
