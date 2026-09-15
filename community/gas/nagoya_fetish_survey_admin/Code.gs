@@ -230,6 +230,59 @@ var AGE_SIMPLE_GROUPS = [
   { name: '回答しない', ages: ['回答しない'] }
 ];
 
+/* 地域クロス集計の都道府県詳細（Issue #317）。47都道府県フルではなく、東京・愛知・大阪の
+   3都府県のみを個別軸にし、それ以外（海外含む）は「その他」にまとめる。 */
+var REGION_HIGHLIGHT_PREFECTURES = ['東京都', '愛知県', '大阪府'];
+var REGION_HIGHLIGHT_OTHER_LABEL = 'その他';
+var REGION_HIGHLIGHT_LABELS = REGION_HIGHLIGHT_PREFECTURES.concat([REGION_HIGHLIGHT_OTHER_LABEL]);
+
+/**
+ * 公開プロジェクト（`nagoya_fetish_survey_webapp/Code.gs`）の同名関数のコピー（Issue #317）。
+ * Apps Scriptはプロジェクトをまたいだモジュール共有ができないため、他の定数群と同様コピーで
+ * 対応する。公開プロジェクト側でこの判定ロジックを変更した場合は、このコピーも同時に更新すること。
+ *
+ * completion_stageが空でないかどうかで「Issue #293以降の新アンケート回答」か「#292以前の
+ * 旧回答」かを判定する。新規回答はvalidateAnswers_内のcomputeExpectedCompletionStage_で
+ * 必ず非空の値を算出・保存するため、この列を世代判定キーとして使える。
+ */
+function isNewSurveyCompletionStage_(value) {
+  return typeof value === 'string' && value !== '';
+}
+
+/**
+ * 選択式設問 × 年代・地域のクロス集計対象一覧（Issue #317）。
+ * 対象は「preferred_frequency〜gap_reasons」（旧アンケートから継続、単一/複数選択11問）＋
+ * 「interest_categories〜suit_event_interest」（Issue #293以降の新設問のうちprimary_interest_category
+ * を除く単一/複数選択9問。第一嗜好は補助指標であり、回答者を1ジャンルに固定する軸としては
+ * 扱わないため対象外）で計20問。age・prefecture自体（クロス集計の軸として使う側）と
+ * 自由記述（free_comment）は対象外。
+ *
+ * Dashboard側はこの配列をループしてアコーディオン＋クロス表を動的生成するため、設問を
+ * 追加・削除・変更する場合はこの配列だけを編集すればよい（HTML・render呼び出しの個別追加は不要）。
+ */
+var CROSSTAB_QUESTIONS = [
+  { field: 'preferred_frequency', label: '参加しやすい頻度', type: 'single', options: FREQUENCY_OPTIONS },
+  { field: 'preferred_price', label: '参加しやすい料金', type: 'single', options: PRICE_OPTIONS },
+  { field: 'preferred_group_size', label: '参加しやすい人数', type: 'single', options: GROUP_SIZE_OPTIONS },
+  { field: 'preferred_format', label: '参加形式', type: 'multi', options: FORMAT_OPTIONS },
+  { field: 'event_awareness', label: 'イベント告知の認知', type: 'single', options: EVENT_AWARENESS_OPTIONS },
+  { field: 'barriers', label: '参加障壁', type: 'multi', options: BARRIER_OPTIONS },
+  { field: 'helpful_information', label: 'あると助かる情報', type: 'multi', options: HELPFUL_INFO_OPTIONS },
+  { field: 'preferred_atmosphere', label: '場の温度感', type: 'single', options: ATMOSPHERE_OPTIONS },
+  { field: 'hypothetical_intent', label: '仮定企画への参加意向', type: 'single', options: HYPOTHETICAL_INTENT_OPTIONS },
+  { field: 'survey_to_signup_gap', label: 'アンケート〜申込ギャップ', type: 'single', options: GAP_OPTIONS },
+  { field: 'gap_reasons', label: 'ギャップの理由', type: 'multi', options: GAP_REASON_OPTIONS },
+  { field: 'interest_categories', label: '興味のある衣装・服装・キャラクター表現', type: 'multi', options: INTEREST_CATEGORY_OPTIONS },
+  { field: 'engagement_preferences', label: '関わり方', type: 'multi', options: ENGAGEMENT_OPTIONS },
+  { field: 'snbc_awareness', label: 'SNBC認知', type: 'single', options: SNBC_AWARENESS_OPTIONS },
+  { field: 'snbc_interest', label: 'SNBC興味', type: 'single', options: SNBC_INTEREST_OPTIONS },
+  { field: 'snbc_interest_uncertain_reasons', label: '興味がどちらともいえない理由', type: 'multi', options: SNBC_UNCERTAIN_REASON_OPTIONS },
+  { field: 'suit_engagement_preferences', label: 'スーツ関わり方', type: 'multi', options: SUIT_ENGAGEMENT_OPTIONS },
+  { field: 'suit_types', label: 'スーツタイプ', type: 'multi', options: SUIT_TYPES_OPTIONS },
+  { field: 'suit_states', label: 'スーツの状態', type: 'multi', options: SUIT_STATES_OPTIONS },
+  { field: 'suit_event_interest', label: 'スーツ企画への興味', type: 'single', options: SUIT_EVENT_INTEREST_OPTIONS }
+];
+
 /* ══════════════════════════════════════════════════════════════
  * Webアプリのエントリーポイント
  * ══════════════════════════════════════════════════════════════ */
@@ -324,6 +377,7 @@ function buildAdminDashboardPayload_(rows) {
     deepDive: deepDive,
     branching: branching,
     highlights: buildHighlightsSection_(rows, region, costume, deepDive, suit),
+    crosstab: buildCrosstabSection_(rows),
     // 自由記述はダッシュボード下部の折りたたみ表示専用（トップの主要可視化には出さない）。
     freeComments: rows
       .map(function (r) { return r.free_comment; })
@@ -421,6 +475,14 @@ function regionBlockForPrefecture_(prefecture) {
     if (REGION_BLOCKS[i].prefectures.indexOf(prefecture) !== -1) return REGION_BLOCKS[i].name;
   }
   return null;
+}
+
+/**
+ * 地域クロス集計の都道府県詳細用バケット関数（Issue #317）。東京都・愛知県・大阪府はそのまま
+ * 都府県名を返し、それ以外の全都道府県（海外を含む）は「その他」にまとめる。
+ */
+function regionHighlightForPrefecture_(prefecture) {
+  return REGION_HIGHLIGHT_PREFECTURES.indexOf(prefecture) !== -1 ? prefecture : REGION_HIGHLIGHT_OTHER_LABEL;
 }
 
 /* ── 基本 ── */
@@ -572,4 +634,47 @@ function buildHighlightsSection_(rows, region, costume, deepDive, suit) {
     surveyToSignupGap: deepDive.gap,
     suitEventInterest: suit.eventInterest
   };
+}
+
+/**
+ * 選択式設問 × 年代・地域のクロス集計セクション（Issue #317）。CROSSTAB_QUESTIONSをループし、
+ * 設問ごとに「年代」「地域7ブロック」「地域詳細（東京・愛知・大阪）」の3クロス表を計算する。
+ *
+ * 旧アンケート回答（completion_stageが空の行）は、isNewSurveyCompletionStage_で除外してから
+ * crosstabSingleVsSingle_ / crosstabMultiVsSingle_に渡す。そのため、このセクションの合計件数は
+ * 同じ設問の単純集計（buildDeepDiveSection_・buildCostumeSection_等、新旧アンケート混在）より
+ * 少なくなる。意図した挙動（README参照）。既存の単純集計側の集計対象行は一切変更しない。
+ *
+ * 構成比の分母は「行＝選択肢の合計」（その選択肢を選んだ人のうち何%がその年代/地域か）。
+ * 分母を年代・地域側にする選択率（例：30代のうち何%がこの選択肢を選んだか）は対象外
+ * （必要であれば別Issueで扱う）。
+ */
+function buildCrosstabSection_(rows) {
+  var newSurveyRows = rows.filter(function (row) { return isNewSurveyCompletionStage_(row.completion_stage); });
+
+  // buildHighlightsSection_のrowsWithRegionBlockと同じコピー処理に相乗りし、__region_block__に
+  // 加えて__region_highlight__も同じループ内で付与する（行走査を増やさない）。
+  var rowsWithRegionFields = newSurveyRows.map(function (row) {
+    var copy = {};
+    Object.keys(row).forEach(function (key) { copy[key] = row[key]; });
+    copy.__region_block__ = regionBlockForPrefecture_(row.prefecture);
+    copy.__region_highlight__ = regionHighlightForPrefecture_(row.prefecture);
+    return copy;
+  });
+
+  var regionBlockNames = REGION_BLOCKS.map(function (b) { return b.name; });
+
+  var questions = CROSSTAB_QUESTIONS.map(function (q) {
+    var crosstabFn = q.type === 'multi' ? crosstabMultiVsSingle_ : crosstabSingleVsSingle_;
+    return {
+      field: q.field,
+      label: q.label,
+      type: q.type,
+      byAge: crosstabFn(rowsWithRegionFields, q.field, q.options, 'age', AGE_OPTIONS),
+      byRegionBlock: crosstabFn(rowsWithRegionFields, q.field, q.options, '__region_block__', regionBlockNames),
+      byRegionHighlight: crosstabFn(rowsWithRegionFields, q.field, q.options, '__region_highlight__', REGION_HIGHLIGHT_LABELS)
+    };
+  });
+
+  return { sampleSize: newSurveyRows.length, questions: questions };
 }
