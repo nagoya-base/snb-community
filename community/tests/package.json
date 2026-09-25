@@ -1,0 +1,11 @@
+{
+  "name": "snb-community-community-pages-tests",
+  "private": true,
+  "description": "community/ 配下の静的ページ（community/gas/*配下のGAS Webアプリを除く）に対する検証用スクリプト。実際のブラウザは使わず、Node.js + jsdomで代替検証する。",
+  "scripts": {
+    "test": "node test_fetish_survey_results_page.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}

@@ -451,6 +451,18 @@ var PUBLIC_TIER2_MIN_TARGET = 20;
  */
 function doGet(e) {
   var view = e && e.parameter ? e.parameter.view : undefined;
+  var format = e && e.parameter ? e.parameter.format : undefined;
+
+  if (view === 'results' && format === 'json') {
+    // Issue #319：9/30締切後、静的集計ページ用データをエクスポートするための専用出力。
+    // getPublicResults()（＝Results.html/ResultsScript.htmlが使うのと同じ集計処理）をそのまま
+    // 再利用するため、独自の再計算は一切行わない（数値の食い違いを防ぐ）。
+    // ブラウザから直接叩かれる想定のエンドポイントではなく、締切後にメンテナが手動で取得し、
+    // tools/build-static-results-data.jsでの検証・整形を経てから静的JSONとしてリポジトリへ
+    // コミットする運用（詳細はREADME.mdを参照）。
+    return ContentService.createTextOutput(JSON.stringify(getPublicResults()))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 
   if (view === 'results') {
     var resultsTemplate = HtmlService.createTemplateFromFile('Results');

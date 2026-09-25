@@ -112,6 +112,8 @@ STEP1A（全回答者・分析の主）
 | `Script.html` | クライアント側ロジック。設問定義（Code.gsと同じ内容を保持。両方を同時に更新すること）、UUID/Cookie処理、フォーム描画・検証・送信。 |
 | `Results.html` | 公開結果ページの骨組み。`/exec?view=results`で表示される。 |
 | `ResultsScript.html` | 公開結果ページのクライアント側ロジック。`getPublicResults()`のポーリング・棒グラフ描画。 |
+| `tools/validate-public-results-payload.js` | Issue #319：`getPublicResults()`の戻り値がallowlist通りの形か検証する（静的公開データへの個人識別情報混入を防ぐ）。 |
+| `tools/build-static-results-data.js` | Issue #319：締切後、`?view=results&format=json`の出力を検証した上で`community/fetish-survey-results.data.json`へ書き出すCLI。詳細は「締切後の静的集計ページ公開」を参照。 |
 
 ## 公開リアルタイム結果ページ（Issue #298）
 
@@ -282,6 +284,44 @@ responses全行に対する集計処理を独自に二重実装しない。
 `invalidatePublicResultsCache_()`で公開結果キャッシュを必ず削除する（任意ではなく必須）。**
 これにより、新規回答後の公開結果がキャッシュ有効期限を待たずに速やかに更新される。
 
+### 締切後の静的集計ページ公開（Issue #319）
+
+2026-09-30 23:59 JSTの回答受付終了後、`community/fetish-survey-results.html`
+（GitHub Pages上の静的ページ、ブラウザからGAS・Spreadsheetを一切呼ばない）で最終結果を公開する。
+このページは同一オリジンの静的JSON `community/fetish-survey-results.data.json` を
+`fetch()`して描画するだけで、`?view=results`のようなポーリングは行わない。
+
+静的JSONの作り方（メンテナが締切後に手動で1回だけ実行する）：
+
+1. 本番の公開GASデプロイへ、`?view=results&format=json`を付けてアクセスする。これは
+   `getPublicResults()`（`?view=results`のHTML版が使うのと同じ集計処理）の戻り値を
+   そのままJSONで返すだけの専用エンドポイントで、独自の再計算は一切行わない
+   （`doGet(e)`内、`e.parameter.format === 'json'`のとき）。
+   ```sh
+   curl "https://script.google.com/macros/s/<DEPLOY_ID>/exec?view=results&format=json" -o /tmp/public-results.json
+   ```
+2. `tools/build-static-results-data.js`で検証・整形し、静的JSONへ書き出す。
+   ```sh
+   cd community/gas/nagoya_fetish_survey_webapp/tools
+   node build-static-results-data.js \
+     --input /tmp/public-results.json \
+     --status final \
+     --survey-start 2026-08-xxTxx:xx:xx+09:00
+   ```
+   検証（`validate-public-results-payload.js`）は「`getPublicResults()`が実際に返しうる
+   キーだけを許可する」allowlist方式。未知のキー（個人識別情報混入の疑いを含む）が
+   1つでもあれば、ファイルを書き出さずエラー終了する。また`--status final`は
+   `payload.ready === true`（総回答数が公開基準に達している）のときしか使えない
+   （未確定値を最終結果として書き出せないようにするガード）。
+3. `community/fetish-survey-results.data.json`の差分をレビューし、PRに含める
+   （このコマンド自体は本番のGASデプロイやスプレッドシートには一切書き込まない。
+   リポジトリ内のファイルを書き換えるだけ）。
+
+なお、締切前の現在の状態（`total`のみで`ready: false`）を表す仮の静的JSONも
+`--status pending`で生成できる。プレースホルダー表示時（`status !== 'final'`）は、
+`fetish-survey-results.html`側も内訳を一切描画しない（`results.ready`の値に関わらず
+`status`を先に見る、二重ガード）。
+
 ## デプロイ手順
 
 1. **Apps Scriptプロジェクト作成**：[script.google.com](https://script.google.com) で新規スタンドアロンプロジェクトを作成し、上記6ファイル（`Code.gs`・`Index.html`・`Styles.html`・`Script.html`・`Results.html`・`ResultsScript.html`）を同じファイル名で貼り付ける（`.html`拡張子のファイルとして追加すること）。
@@ -362,6 +402,10 @@ Node.js + jsdomによる検証スクリプトを置いている（README冒頭�
 - [x] （Issue #315）分岐ブロックの割合分母が総回答数ではなく対象者数（`targetCount`）であることを、STEP3（対象20人・総回答数25人で10件→50.0%、25.0%ではない）・スーツ（対象10人で6件→60.0%）・`gap_reasons`（対象20人で9件→45.0%）・`snbc_awareness`/`snbc_interest`（対象3人・総回答数12人で3件→100.0%、25.0%ではない）の各ケースで確認
 - [x] （Issue #315）`snbc_awareness`/`snbc_interest`は対象者数がティア1閾値(10)未満でも省略されず、常にpayloadへ含まれることを確認（Issue #315本文がこの2設問をティア1/ティア2一覧に含めていないため）
 - [x] （Issue #315）公開payloadに`survey_path`/`surveyPath`・`completion_stage`/`completionStage`・`free_comment`/`freeComment`・`respondent_hash`が一切含まれないこと、および各分岐ブロック（`snbcAwareness`/`snbcInterest`/`step3`/`gapReasons`）に`targetCount`が含まれることを確認
+- [x] （Issue #319）`doGet(e)`の`view=results&format=json`が`getPublicResults()`の戻り値をそのまま`ContentService`でJSON出力すること、`format=json`を付けない`view=results`・パラメータ無しの従来ルートには一切影響しないことを確認
+- [x] （Issue #319）`tools/validate-public-results-payload.js`：`getPublicResults()`が実際に返しうるキーだけを許可するallowlist検証が、正常なペイロード（任意ブロック含む）を通し、`respondentHash`/`uuid`/`email`/`freeComment`等の想定外キー・items要素への想定外キー混入・値域外（`percent>100`・`count<0`）・`ready:false`なのに集計値が付いている状態・必須ブロック欠落の各ケースを確実に拒否することを確認
+- [x] （Issue #319）`tools/build-static-results-data.js`：妥当な入力から`{status, finalizedAt, surveyPeriod, results}`形式の静的JSONを書き出すこと、`--survey-end`省略時は締切日時（2026-09-30 23:59 JST）がデフォルトになること、allowlist検証に落ちる入力やready:falseに対する`--status final`はファイルを書き出さずエラー終了することを確認
+- [x] （Issue #319）`community/fetish-survey-results.html`：GAS・SpreadsheetではなくGitHub Pages上の同一オリジン静的JSON（`fetish-survey-results.data.json`）のみを`fetch`すること、`status:"final"`かつ`results.ready:true`のときだけ内訳を描画し、`status:"pending"`または（本来あり得ないが防御的に）`status:"final"`でも`results.ready:false`なら「集計中」表示に留めて内訳を一切描画しないこと、静的JSONの取得に失敗した場合はエラー表示になることを確認
 
 以下はApps Scriptの実行環境・実ブラウザでの動作が前提のため、この開発環境では自動テストできず、
 **デプロイ後に手動での確認が必要**（本PRの報告にも記載する）。
@@ -394,6 +438,8 @@ Node.js + jsdomによる検証スクリプトを置いている（README冒頭�
 - [ ] （Issue #315）`gap_reasons`が、STEP3本体は表示されているのにその対象者数だけ閾値未満で非表示になるケース（`survey_to_signup_gap`が「よくある」「ときどきある」の回答者が20人未満）を実データまたはテスト用回答で再現し、`gap_reasons`ブロックだけが非表示になることの確認
 - [ ] （Issue #315）分岐ブロックの割合表示が総回答数ではなく対象者数を分母にしていることを、実データの数値と手計算で突き合わせて確認する
 - [ ] （Issue #315）`/exec?view=results`を375px幅・デスクトップ幅の両方で開き、新設した`<details>`セクション（開閉含む）で横スクロールが発生しないこと、折りたたみの開閉操作がタップ・クリック双方で問題なく行えることの確認
+- [ ] （Issue #319・本番GAS再デプロイ後）`/exec?view=results&format=json`へ`curl`等でアクセスし、`/exec?view=results`（HTML版）と総回答数・各カテゴリの件数が完全一致することの確認
+- [ ] （Issue #319・9/30締切後）「締切後の静的集計ページ公開」の手順で静的JSONを生成し、`community/fetish-survey-results.html`を実ブラウザ（スマホ・デスクトップ）で開き、GAS版`/exec?view=results`と数値が一致すること、外部（GAS・Spreadsheet）への通信が一切発生していないこと（開発者ツールのNetworkタブで確認）、OGP・X（Twitter）カードのプレビューが正しく表示されることの確認。**この確認・本PRが対象とする`community/fetish-survey-results.html`の新規追加自体は、`community/index.html`・`community/fetish-survey.html`からリンクするまでは孤立ページとして扱ってよい（Issue #319のPart Cで導線を追加する別PRの対象）。**
 
 ## 回答の保存位置（ARRAYFORMULAスピル対策・レビュー指摘対応）
 
