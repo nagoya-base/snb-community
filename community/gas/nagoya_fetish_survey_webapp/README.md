@@ -284,6 +284,40 @@ responses全行に対する集計処理を独自に二重実装しない。
 `invalidatePublicResultsCache_()`で公開結果キャッシュを必ず削除する（任意ではなく必須）。**
 これにより、新規回答後の公開結果がキャッシュ有効期限を待たずに速やかに更新される。
 
+### 受付締切と最終回答数の確定（Issue #319）
+
+**サーバー側の締切判定**：`SURVEY_CLOSES_AT_ISO`（`2026-09-30T23:59:59.999+09:00`＝9/30 23:59台の送信までを有効）を
+過ぎた`submitSurvey()`は、入力検証・シート・ロックに触れる前に`{ status: 'CLOSED' }`を返して何も保存しない。
+ロック待機中に締切を跨いだ送信を防ぐためロック取得後にも再判定し、保存するタイムスタンプは判定に使った時刻と
+同一にする（締切内と判定されたのに締切後のタイムスタンプが残ることはない）。`checkSubmissionStatus()`も
+`closed: true`を返し、フォームは「受付終了」表示になる（フロントの表示は補助であり、拒否の本体はサーバー側）。
+判定はサーバー時刻のみを使い、ブラウザからの値は使わない。**既存の/exec URLはそのまま**（再デプロイは同じデプロイの
+「新しいバージョン」を選ぶこと。新規デプロイを作るとURLが変わる）。
+
+**締切内有効回答の確定**：デプロイ反映が締切後になった場合などに備え、`responses`には締切後の行が混在しうる。
+`responses`は読み取り専用のまま、`finalizeSurveyResults()`（エディタから手動実行・締切前は実行不可）が
+
+1. `responses`から**timestampが締切内の行だけ**を`responses_valid`シートへ複製する
+   （`respondent_hash`と`free_comment`は複製しない。timestampが解釈できない行は有効にしない）。
+2. `responses_valid`を参照する`集計_*`シートを再生成する（`respQueryRange_`/`respColRange_`の参照先がこのシート。
+   **集計式そのものは既存のまま**で、`getPublicResults()`も同じシートを読むため、既存ロジックの再利用になる）。
+3. 公開結果キャッシュを破棄し、件数内訳を返す／ログに出す。
+
+**最終回答数の確定方法**：`finalizeSurveyResults()`の戻り値（`Logger.log`にも出力）を根拠にする。
+
+| キー | 意味 |
+| --- | --- |
+| `responseRows` | `responses`の回答行数（空行除く） |
+| `validRows` | 締切内の行数（旧#292回答を含む） |
+| `validNewSurveyRows` | 締切内かつ新アンケート（`completion_stage`あり）＝**最終回答数** |
+| `lateRows` | 締切後に保存されていて公開数値から除外した行数 |
+| `unparseableRows` | timestampが解釈不能で除外した行数（通常0） |
+| `publicTotal` | `getPublicResults().total`。`validNewSurveyRows`と一致すること（不一致なら公開しない） |
+
+その後に`?view=results&format=json`で取得したJSONの`total`が`validNewSurveyRows`と一致することを確認してから、
+下記の手順で静的JSONを生成する。
+旧設問（#292）と新設問は分母が別（`completion_stage`の有無で区別）で、分岐設問は各ブロックの`targetCount`を分母にする。
+
 ### 締切後の静的集計ページ公開（Issue #319）
 
 2026-09-30 23:59 JSTの回答受付終了後、`community/fetish-survey-results.html`

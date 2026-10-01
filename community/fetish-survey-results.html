@@ -313,9 +313,9 @@
 
         <div id="results-pending" class="state-panel" hidden>
           <p>
-            <strong>アンケートは現在実施中、または集計確定作業中です。</strong><br>
-            最終的な集計結果は、2026年9月30日23:59の回答受付終了後、データを確定してから
-            このページで公開します。今しばらくお待ちください。
+            <strong>アンケートの回答受付は2026年9月30日23:59をもって終了しました。現在、集計の確定作業中です。</strong><br>
+            締切までの有効回答を確定したうえで、選択式設問の単純集計をこのページで公開します。
+            確定前の速報値は掲載しません。今しばらくお待ちください。
           </p>
         </div>
 
@@ -615,6 +615,8 @@
 
         var data = file.results;
         totalEl.textContent = data.total;
+        // 未確定（pending）のときは件数も出さない（0件などの未確定値を「最終回答数」と誤読させない）。
+        document.querySelector('.results-count').hidden = file.status !== 'final';
 
         if (file.status === 'final' && file.finalizedAt) {
           updatedAtEl.textContent = '集計確定日時 ' + formatDateTime(file.finalizedAt);

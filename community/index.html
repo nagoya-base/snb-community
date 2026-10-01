@@ -92,7 +92,7 @@
 
     <p class="community-menu__heading">このページ内</p>
     <a href="#schedule" class="community-menu__link">開催情報</a>
-    <a href="#survey" class="community-menu__link">アンケート</a>
+    <a href="#survey" class="community-menu__link">調査結果</a>
     <a href="#about" class="community-menu__link">SNBCについて</a>
     <a href="#format" class="community-menu__link">開催のかたち</a>
     <a href="#access" class="community-menu__link">アクセス</a>
@@ -126,25 +126,27 @@
   </div>
 </div>
 
-<!-- ── Survey（実施中アンケート） ── -->
+<!-- ── Survey（受付終了・調査結果公開導線） ── -->
 <section id="survey" data-section-view="survey" class="survey-highlight">
   <div class="container">
     <p class="section-label">Survey</p>
-    <h2>衣装・ユニフォーム嗜好アンケート実施中</h2>
+    <h2>衣装・ユニフォーム嗜好アンケート 調査結果公開へ</h2>
     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.85;">
-      今後のSNBC企画づくりや情報発信の参考にするため、<br>
-      衣装・ユニフォーム・スーツ・コスプレなどへの興味や関わり方を伺っています。
+      たくさんのご回答、ありがとうございました。<br>
+      回答受付は2026年9月30日23:59をもって終了しました。<br>
+      選択式設問の単純集計を、確定後に結果ページで公開します。
     </p>
     <div class="next-banner" id="fetish-survey-banner">
-      <span class="next-dot active"></span>
+      <span class="next-dot"></span>
       <div class="next-event">
-        <p class="next-event-title">📝 実施中｜<strong>衣装・ユニフォーム嗜好アンケート</strong></p>
+        <p class="next-event-title">📊 受付終了｜<strong>衣装・ユニフォーム嗜好アンケート</strong></p>
         <ul class="next-event-detail">
-          <li>匿名・3〜5分で回答できます</li>
-          <li>回答だけでイベント参加申込にはなりません</li>
+          <li>調査期間：〜2026年9月30日23:59（受付終了）</li>
+          <li id="fetish-survey-total" hidden>総回答数：<strong id="fetish-survey-total-count"></strong> 件</li>
+          <li>公開するのは選択式設問の集計値のみ（自由記述・個別回答は非公開）</li>
         </ul>
         <p class="next-event-note">
-          <a href="fetish-survey.html" data-cta-name="event_detail" data-cta-location="survey_section" data-event-slug="fetish_survey">アンケートの詳細を見る →</a>
+          <a href="fetish-survey-results.html" data-cta-name="fetish_survey_results" data-cta-location="survey_section" data-event-slug="fetish_survey">調査結果を見る →</a>
         </p>
       </div>
     </div>
@@ -213,7 +215,7 @@
     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.85;">
       9月企画アンケートへのご回答ありがとうございました。<br>
       いただいたご意見・参加希望を、今後のSNBC企画づくりに活用します。<br>
-      現在実施中のアンケートは「<a href="#survey" style="color:var(--color-community);text-decoration:underline;text-underline-offset:2px;">衣装・ユニフォーム嗜好アンケート</a>」をご覧ください。
+      「<a href="#survey" style="color:var(--color-community);text-decoration:underline;text-underline-offset:2px;">衣装・ユニフォーム嗜好アンケート</a>」の調査結果もあわせてご覧ください。
     </p>
   </div>
 </section>
@@ -506,5 +508,19 @@
 })();
 </script>
 
+<script>
+  /* 確定済みの静的JSON（同一オリジン）から総回答数だけを読み、確定している場合のみ表示する。
+     JSが無効・読込失敗・未確定（status!=='final'）のときは何も表示しない（未確定値を出さない）。 */
+  (function () {
+    fetch('fetish-survey-results.data.json', { cache: 'no-store' })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (file) {
+        if (!file || file.status !== 'final' || !file.finalizedAt || !file.results || !file.results.ready) return;
+        document.getElementById('fetish-survey-total-count').textContent = file.results.total;
+        document.getElementById('fetish-survey-total').hidden = false;
+      })
+      .catch(function () {});
+  })();
+</script>
 </body>
 </html>
