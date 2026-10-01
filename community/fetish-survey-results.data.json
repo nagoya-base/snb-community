@@ -1,13 +1,992 @@
 {
-  "status": "pending",
-  "finalizedAt": null,
+  "status": "final",
+  "finalizedAt": "2026-10-01T10:48:49.953Z",
   "surveyPeriod": {
     "start": null,
     "end": "2026-09-30T23:59:59+09:00"
   },
   "results": {
-    "total": 0,
-    "generatedAt": "2026-09-24T15:00:00.000Z",
-    "ready": false
+    "total": 121,
+    "generatedAt": "2026-10-01T10:50:05.402Z",
+    "ready": true,
+    "categories": [
+      {
+        "name": "野球ユニフォーム",
+        "count": 93,
+        "percent": 76.9
+      },
+      {
+        "name": "制服・職業服",
+        "count": 77,
+        "percent": 63.6
+      },
+      {
+        "name": "コスプレ・キャラクター",
+        "count": 68,
+        "percent": 56.2
+      },
+      {
+        "name": "ラグビー・アメリカンフットボール",
+        "count": 59,
+        "percent": 48.8
+      },
+      {
+        "name": "競パン",
+        "count": 59,
+        "percent": 48.8
+      },
+      {
+        "name": "レスリング・シングレット",
+        "count": 50,
+        "percent": 41.3
+      },
+      {
+        "name": "サッカーユニフォーム",
+        "count": 48,
+        "percent": 39.7
+      },
+      {
+        "name": "その他スポーツ・ユニフォーム",
+        "count": 48,
+        "percent": 39.7
+      },
+      {
+        "name": "陸上競技ウェア",
+        "count": 35,
+        "percent": 28.9
+      },
+      {
+        "name": "スーツ",
+        "count": 30,
+        "percent": 24.8
+      },
+      {
+        "name": "その他",
+        "count": 9,
+        "percent": 7.4
+      }
+    ],
+    "primaryInterestCategory": [
+      {
+        "name": "野球ユニフォーム",
+        "count": 47,
+        "percent": 38.8
+      },
+      {
+        "name": "職業制服",
+        "count": 11,
+        "percent": 9.1
+      },
+      {
+        "name": "サッカーユニフォーム",
+        "count": 8,
+        "percent": 6.6
+      },
+      {
+        "name": "競パン",
+        "count": 8,
+        "percent": 6.6
+      },
+      {
+        "name": "ラグビー・アメリカンフットボール",
+        "count": 6,
+        "percent": 5
+      },
+      {
+        "name": "陸上競技ウェア",
+        "count": 5,
+        "percent": 4.1
+      },
+      {
+        "name": "レスリング・シングレット",
+        "count": 5,
+        "percent": 4.1
+      },
+      {
+        "name": "スーツ",
+        "count": 5,
+        "percent": 4.1
+      },
+      {
+        "name": "全身タイツ",
+        "count": 4,
+        "percent": 3.3
+      },
+      {
+        "name": "体操服",
+        "count": 3,
+        "percent": 2.5
+      },
+      {
+        "name": "学校制服",
+        "count": 3,
+        "percent": 2.5
+      },
+      {
+        "name": "作業着",
+        "count": 3,
+        "percent": 2.5
+      },
+      {
+        "name": "特撮系",
+        "count": 3,
+        "percent": 2.5
+      },
+      {
+        "name": "ヒーロー系",
+        "count": 2,
+        "percent": 1.7
+      },
+      {
+        "name": "水泳・競泳ウェア（競パン以外）",
+        "count": 1,
+        "percent": 0.8
+      },
+      {
+        "name": "悪役・ヴィラン系",
+        "count": 1,
+        "percent": 0.8
+      },
+      {
+        "name": "ケモノ・着ぐるみ・獣人系",
+        "count": 1,
+        "percent": 0.8
+      },
+      {
+        "name": "マスク・覆面系",
+        "count": 1,
+        "percent": 0.8
+      }
+    ],
+    "engagement": [
+      {
+        "name": "自分で着たい",
+        "count": 105,
+        "percent": 86.8
+      },
+      {
+        "name": "人が着ているのを見たい",
+        "count": 96,
+        "percent": 79.3
+      },
+      {
+        "name": "交流のきっかけとして楽しみたい",
+        "count": 59,
+        "percent": 48.8
+      },
+      {
+        "name": "撮られる側として関わりたい",
+        "count": 37,
+        "percent": 30.6
+      },
+      {
+        "name": "撮る側として関わりたい",
+        "count": 29,
+        "percent": 24
+      }
+    ],
+    "region": [
+      {
+        "name": "関東",
+        "count": 43,
+        "percent": 35.5
+      },
+      {
+        "name": "中部",
+        "count": 33,
+        "percent": 27.3
+      },
+      {
+        "name": "近畿",
+        "count": 18,
+        "percent": 14.9
+      },
+      {
+        "name": "北海道",
+        "count": 8,
+        "percent": 6.6
+      },
+      {
+        "name": "九州・沖縄",
+        "count": 8,
+        "percent": 6.6
+      },
+      {
+        "name": "中国・四国",
+        "count": 5,
+        "percent": 4.1
+      },
+      {
+        "name": "海外",
+        "count": 4,
+        "percent": 3.3
+      },
+      {
+        "name": "東北",
+        "count": 2,
+        "percent": 1.7
+      }
+    ],
+    "age": [
+      {
+        "name": "40代",
+        "count": 41,
+        "percent": 33.9
+      },
+      {
+        "name": "30代",
+        "count": 34,
+        "percent": 28.1
+      },
+      {
+        "name": "50代以上",
+        "count": 25,
+        "percent": 20.7
+      },
+      {
+        "name": "20代以下",
+        "count": 20,
+        "percent": 16.5
+      },
+      {
+        "name": "回答しない",
+        "count": 1,
+        "percent": 0.8
+      }
+    ],
+    "snbcAwareness": {
+      "targetCount": 117,
+      "items": [
+        {
+          "name": "知らなかった",
+          "count": 66,
+          "percent": 56.4
+        },
+        {
+          "name": "名前だけ見たことがある",
+          "count": 32,
+          "percent": 27.4
+        },
+        {
+          "name": "知っている",
+          "count": 19,
+          "percent": 16.2
+        }
+      ]
+    },
+    "snbcInterest": {
+      "targetCount": 117,
+      "items": [
+        {
+          "name": "はい",
+          "count": 84,
+          "percent": 71.8
+        },
+        {
+          "name": "どちらともいえない",
+          "count": 27,
+          "percent": 23.1
+        },
+        {
+          "name": "いいえ",
+          "count": 6,
+          "percent": 5.1
+        }
+      ]
+    },
+    "snbcUncertainReasons": {
+      "targetCount": 27,
+      "items": [
+        {
+          "name": "名古屋まで遠い",
+          "count": 18,
+          "percent": 66.7
+        },
+        {
+          "name": "参加者の雰囲気が分からない",
+          "count": 16,
+          "percent": 59.3
+        },
+        {
+          "name": "料金や内容が分からない",
+          "count": 9,
+          "percent": 33.3
+        },
+        {
+          "name": "どんな企画かまだよく分からない",
+          "count": 8,
+          "percent": 29.6
+        },
+        {
+          "name": "自分向けか分からない",
+          "count": 8,
+          "percent": 29.6
+        }
+      ]
+    },
+    "suit": {
+      "targetCount": 30,
+      "engagement": [
+        {
+          "name": "人が着ているのを見たい",
+          "count": 25,
+          "percent": 83.3
+        },
+        {
+          "name": "自分で着たい",
+          "count": 24,
+          "percent": 80
+        },
+        {
+          "name": "撮られる側として関わりたい",
+          "count": 10,
+          "percent": 33.3
+        },
+        {
+          "name": "撮る側として関わりたい",
+          "count": 5,
+          "percent": 16.7
+        }
+      ],
+      "types": [
+        {
+          "name": "ビジネススーツ",
+          "count": 29,
+          "percent": 96.7
+        },
+        {
+          "name": "ワイシャツ・ネクタイ",
+          "count": 12,
+          "percent": 40
+        },
+        {
+          "name": "教師・営業など職業のスーツ",
+          "count": 11,
+          "percent": 36.7
+        },
+        {
+          "name": "タイト・細身",
+          "count": 9,
+          "percent": 30
+        },
+        {
+          "name": "リクルート・就活系",
+          "count": 8,
+          "percent": 26.7
+        },
+        {
+          "name": "礼服・フォーマル",
+          "count": 2,
+          "percent": 6.7
+        },
+        {
+          "name": "ダブル・セットアップ",
+          "count": 1,
+          "percent": 3.3
+        },
+        {
+          "name": "ホスト・ナイト系",
+          "count": 1,
+          "percent": 3.3
+        }
+      ],
+      "states": [
+        {
+          "name": "ワイシャツ・ネクタイ",
+          "count": 21,
+          "percent": 70
+        },
+        {
+          "name": "ジャケットを着たまま",
+          "count": 18,
+          "percent": 60
+        },
+        {
+          "name": "ベスト / スラックス / 革靴・ベルト",
+          "count": 15,
+          "percent": 50
+        },
+        {
+          "name": "着崩し",
+          "count": 8,
+          "percent": 26.7
+        },
+        {
+          "name": "脱ぐ過程",
+          "count": 8,
+          "percent": 26.7
+        },
+        {
+          "name": "着たままの空気",
+          "count": 6,
+          "percent": 20
+        }
+      ],
+      "eventInterest": [
+        {
+          "name": "はい",
+          "count": 22,
+          "percent": 73.3
+        },
+        {
+          "name": "どちらともいえない",
+          "count": 5,
+          "percent": 16.7
+        },
+        {
+          "name": "いいえ",
+          "count": 3,
+          "percent": 10
+        }
+      ]
+    },
+    "step3": {
+      "targetCount": 88,
+      "frequency": [
+        {
+          "name": "半年に1回程度",
+          "count": 18,
+          "percent": 20.5
+        },
+        {
+          "name": "頻度はあまり関係ない",
+          "count": 16,
+          "percent": 18.2
+        },
+        {
+          "name": "1〜2か月に1回程度",
+          "count": 14,
+          "percent": 15.9
+        },
+        {
+          "name": "2〜3か月に1回程度",
+          "count": 13,
+          "percent": 14.8
+        },
+        {
+          "name": "わからない",
+          "count": 13,
+          "percent": 14.8
+        },
+        {
+          "name": "月1回程度",
+          "count": 11,
+          "percent": 12.5
+        },
+        {
+          "name": "月2回程度",
+          "count": 3,
+          "percent": 3.4
+        }
+      ],
+      "price": [
+        {
+          "name": "3,000円程度",
+          "count": 30,
+          "percent": 34.1
+        },
+        {
+          "name": "2,500円程度",
+          "count": 17,
+          "percent": 19.3
+        },
+        {
+          "name": "3,500円程度",
+          "count": 11,
+          "percent": 12.5
+        },
+        {
+          "name": "2,000円以下",
+          "count": 10,
+          "percent": 11.4
+        },
+        {
+          "name": "5,000円程度",
+          "count": 8,
+          "percent": 9.1
+        },
+        {
+          "name": "内容によっては5,000円以上でもよい",
+          "count": 8,
+          "percent": 9.1
+        },
+        {
+          "name": "4,000円程度",
+          "count": 4,
+          "percent": 4.5
+        }
+      ],
+      "groupSize": [
+        {
+          "name": "人数はあまり気にならない",
+          "count": 31,
+          "percent": 35.2
+        },
+        {
+          "name": "5〜6人",
+          "count": 22,
+          "percent": 25
+        },
+        {
+          "name": "3〜4人",
+          "count": 16,
+          "percent": 18.2
+        },
+        {
+          "name": "7〜8人",
+          "count": 7,
+          "percent": 8
+        },
+        {
+          "name": "9〜10人",
+          "count": 6,
+          "percent": 6.8
+        },
+        {
+          "name": "11人以上",
+          "count": 6,
+          "percent": 6.8
+        }
+      ],
+      "format": [
+        {
+          "name": "人数より、参加者の雰囲気や内容の方が重要",
+          "count": 33,
+          "percent": 37.5
+        },
+        {
+          "name": "5〜6人程度の少人数",
+          "count": 23,
+          "percent": 26.1
+        },
+        {
+          "name": "3〜4人程度のごく少人数",
+          "count": 20,
+          "percent": 22.7
+        },
+        {
+          "name": "7〜10人程度",
+          "count": 14,
+          "percent": 15.9
+        },
+        {
+          "name": "少人数の部屋で2人だけ",
+          "count": 13,
+          "percent": 14.8
+        },
+        {
+          "name": "10人以上の交流会",
+          "count": 13,
+          "percent": 14.8
+        },
+        {
+          "name": "まず2人だけや少人数で知り合ってから、大人数にも参加したい",
+          "count": 10,
+          "percent": 11.4
+        },
+        {
+          "name": "知り合いと一緒なら大人数でも参加しやすい",
+          "count": 8,
+          "percent": 9.1
+        },
+        {
+          "name": "わからない",
+          "count": 4,
+          "percent": 4.5
+        }
+      ],
+      "eventAwareness": [
+        {
+          "name": "告知を見たことがない",
+          "count": 37,
+          "percent": 42
+        },
+        {
+          "name": "見たことはあるが、申し込んだことはない",
+          "count": 27,
+          "percent": 30.7
+        },
+        {
+          "name": "見たことがあり、実際に参加したことがある",
+          "count": 12,
+          "percent": 13.6
+        },
+        {
+          "name": "申し込もうと思ったが見送ったことがある",
+          "count": 6,
+          "percent": 6.8
+        },
+        {
+          "name": "覚えていない",
+          "count": 6,
+          "percent": 6.8
+        }
+      ],
+      "barriers": [
+        {
+          "name": "開催場所が遠かった",
+          "count": 38,
+          "percent": 43.2
+        },
+        {
+          "name": "日程が合わなかった",
+          "count": 36,
+          "percent": 40.9
+        },
+        {
+          "name": "一人参加が不安だった",
+          "count": 31,
+          "percent": 35.2
+        },
+        {
+          "name": "自分の年齢や体型が、その場に合うか不安だった",
+          "count": 29,
+          "percent": 33
+        },
+        {
+          "name": "常連同士ですでに仲良さそうに見えた",
+          "count": 17,
+          "percent": 19.3
+        },
+        {
+          "name": "参加者の年齢層が分からなかった",
+          "count": 16,
+          "percent": 18.2
+        },
+        {
+          "name": "知り合いがいなかった",
+          "count": 15,
+          "percent": 17
+        },
+        {
+          "name": "参加者の雰囲気やタイプが分からなかった",
+          "count": 15,
+          "percent": 17
+        },
+        {
+          "name": "開催時間が合わなかった",
+          "count": 11,
+          "percent": 12.5
+        },
+        {
+          "name": "該当しない",
+          "count": 11,
+          "percent": 12.5
+        },
+        {
+          "name": "何をするイベントなのか分かりにくかった",
+          "count": 5,
+          "percent": 5.7
+        },
+        {
+          "name": "料金が高いと感じた",
+          "count": 4,
+          "percent": 4.5
+        },
+        {
+          "name": "予定を早く決められなかった",
+          "count": 4,
+          "percent": 4.5
+        },
+        {
+          "name": "写真撮影が不安だった",
+          "count": 3,
+          "percent": 3.4
+        },
+        {
+          "name": "SNS掲載が不安だった",
+          "count": 3,
+          "percent": 3.4
+        },
+        {
+          "name": "内容が健全・真面目すぎて、参加するほどの魅力を感じなかった",
+          "count": 2,
+          "percent": 2.3
+        },
+        {
+          "name": "衣装を用意するのが面倒だった",
+          "count": 2,
+          "percent": 2.3
+        },
+        {
+          "name": "嫌なことを断ったときに気まずくなりそうだった",
+          "count": 2,
+          "percent": 2.3
+        },
+        {
+          "name": "逆に、性的な雰囲気や接触に発展しそうで不安だった",
+          "count": 1,
+          "percent": 1.1
+        }
+      ],
+      "helpfulInformation": [
+        {
+          "name": "参加者の年代",
+          "count": 33,
+          "percent": 37.5
+        },
+        {
+          "name": "参加予定人数",
+          "count": 30,
+          "percent": 34.1
+        },
+        {
+          "name": "過去開催の様子",
+          "count": 28,
+          "percent": 31.8
+        },
+        {
+          "name": "参加者の雰囲気や年代の目安",
+          "count": 27,
+          "percent": 30.7
+        },
+        {
+          "name": "初参加者が孤立しない進行方法",
+          "count": 27,
+          "percent": 30.7
+        },
+        {
+          "name": "一人参加者が何人いるか",
+          "count": 26,
+          "percent": 29.5
+        },
+        {
+          "name": "どんな衣装の人が参加するか",
+          "count": 26,
+          "percent": 29.5
+        },
+        {
+          "name": "初参加者が何人いるか",
+          "count": 24,
+          "percent": 27.3
+        },
+        {
+          "name": "常連と初参加者の割合",
+          "count": 23,
+          "percent": 26.1
+        },
+        {
+          "name": "当日の流れ",
+          "count": 22,
+          "percent": 25
+        },
+        {
+          "name": "写真撮影のルール",
+          "count": 22,
+          "percent": 25
+        },
+        {
+          "name": "更衣・撮影スペースの使い方",
+          "count": 18,
+          "percent": 20.5
+        },
+        {
+          "name": "SNS掲載ルール",
+          "count": 16,
+          "percent": 18.2
+        },
+        {
+          "name": "身体的接触の有無についてのルール",
+          "count": 16,
+          "percent": 18.2
+        },
+        {
+          "name": "その回が交流中心か撮影中心か",
+          "count": 15,
+          "percent": 17
+        },
+        {
+          "name": "会場の写真",
+          "count": 12,
+          "percent": 13.6
+        },
+        {
+          "name": "過去参加者の感想",
+          "count": 12,
+          "percent": 13.6
+        },
+        {
+          "name": "嫌なことを断っても問題ないというルール",
+          "count": 11,
+          "percent": 12.5
+        },
+        {
+          "name": "主催者についての情報",
+          "count": 8,
+          "percent": 9.1
+        },
+        {
+          "name": "キャンセル規定",
+          "count": 5,
+          "percent": 5.7
+        },
+        {
+          "name": "特にない",
+          "count": 5,
+          "percent": 5.7
+        }
+      ],
+      "atmosphere": [
+        {
+          "name": "お互いの同意があれば、多少の身体的な接触を伴う交流もあってよい",
+          "count": 59,
+          "percent": 67
+        },
+        {
+          "name": "会話や衣装を楽しむことが中心",
+          "count": 8,
+          "percent": 9.1
+        },
+        {
+          "name": "撮影やポーズなど、少し踏み込んだ表現も楽しめる（接触は求めない）",
+          "count": 6,
+          "percent": 6.8
+        },
+        {
+          "name": "身体的な接触はなくても、雰囲気が少し刺激的な方が参加したくなる",
+          "count": 6,
+          "percent": 6.8
+        },
+        {
+          "name": "事前に雰囲気が明確ならどちらでもよい",
+          "count": 6,
+          "percent": 6.8
+        },
+        {
+          "name": "フェチについて気軽に話せるが、身体的な接触はない",
+          "count": 2,
+          "percent": 2.3
+        },
+        {
+          "name": "わからない",
+          "count": 1,
+          "percent": 1.1
+        }
+      ],
+      "hypotheticalIntent": [
+        {
+          "name": "日程が合えば申し込む可能性が高い",
+          "count": 30,
+          "percent": 34.1
+        },
+        {
+          "name": "内容や参加者を見てから決める",
+          "count": 30,
+          "percent": 34.1
+        },
+        {
+          "name": "興味はあるが、たぶん申し込まない",
+          "count": 21,
+          "percent": 23.9
+        },
+        {
+          "name": "わからない",
+          "count": 6,
+          "percent": 6.8
+        },
+        {
+          "name": "参加しない",
+          "count": 1,
+          "percent": 1.1
+        }
+      ],
+      "gap": [
+        {
+          "name": "ときどきある",
+          "count": 37,
+          "percent": 42
+        },
+        {
+          "name": "よくある",
+          "count": 23,
+          "percent": 26.1
+        },
+        {
+          "name": "あまりない",
+          "count": 15,
+          "percent": 17
+        },
+        {
+          "name": "わからない",
+          "count": 11,
+          "percent": 12.5
+        },
+        {
+          "name": "ない",
+          "count": 2,
+          "percent": 2.3
+        }
+      ]
+    },
+    "gapReasons": {
+      "targetCount": 60,
+      "items": [
+        {
+          "name": "実際の日程になると都合が合わない",
+          "count": 36,
+          "percent": 60
+        },
+        {
+          "name": "知らない人と会うことに不安を感じる",
+          "count": 18,
+          "percent": 30
+        },
+        {
+          "name": "興味を示すことと、実際に参加することは別だと思っている",
+          "count": 9,
+          "percent": 15
+        },
+        {
+          "name": "参加者の顔ぶれや雰囲気が分からず、申し込む決め手がなかった",
+          "count": 8,
+          "percent": 13.3
+        },
+        {
+          "name": "当日まで参加する気分が続くか不安",
+          "count": 7,
+          "percent": 11.7
+        },
+        {
+          "name": "アンケートでは予定を具体的に考えていない",
+          "count": 6,
+          "percent": 10
+        },
+        {
+          "name": "実際にお金を払う段階になると迷う",
+          "count": 6,
+          "percent": 10
+        },
+        {
+          "name": "申し込み後に断りづらくなるのが嫌",
+          "count": 3,
+          "percent": 5
+        },
+        {
+          "name": "告知を詳しく見ると、自分が想像していた雰囲気と違った",
+          "count": 2,
+          "percent": 3.3
+        },
+        {
+          "name": "思ったより性的な方向に進みそうで不安になった",
+          "count": 2,
+          "percent": 3.3
+        },
+        {
+          "name": "大人数より2人だけや少人数の方が自分には合っていると思った",
+          "count": 2,
+          "percent": 3.3
+        },
+        {
+          "name": "その場で嫌なことを断れる自信がなかった",
+          "count": 1,
+          "percent": 1.7
+        },
+        {
+          "name": "該当しない",
+          "count": 1,
+          "percent": 1.7
+        }
+      ]
+    }
   }
 }
