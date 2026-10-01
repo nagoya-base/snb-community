@@ -1130,6 +1130,10 @@ function finalizeSurveyResults() {
     // スナップショットの作り直しは必ず集計シート再生成の「前」に行う必要がある（後だとシート
     // 削除で数式が#REF!になる）。buildAggregationSheets()がその順序を守って件数内訳を返す。
     var stats = buildAggregationSheets();
+    // 集計_*シートへ書き込んだ数式・変更を反映させてから最終公開値を読み取る
+    // （setFormula等の直後に再計算済みの値が読めることを前提にしない）。
+    // computePublicResultsForFinalize_()より前にflushが完了していること。
+    SpreadsheetApp.flush();
     // 4. 公開結果キャッシュを削除。
     invalidatePublicResultsCache_();
     // 5. 公開APIのガード（確定マーカー）を迂回せず、キャッシュも使わない内部用集計で整合性を確認。

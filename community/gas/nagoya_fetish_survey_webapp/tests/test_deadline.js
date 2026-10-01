@@ -233,8 +233,9 @@ function makeEnv(clock, opts) {
     setProperty: (k, v) => { props[k] = v; },
     deleteProperty: (k) => { delete props[k]; }
   }) };
-  sb.SpreadsheetApp = { openById: () => ss };
-  return { sb, C, ss, props, writes, cacheStore, cacheCalls, created, getValid: () => valid };
+  const flushCalls = [];
+  sb.SpreadsheetApp = { openById: () => ss, flush: () => { flushCalls.push(true); } };
+  return { sb, C, ss, props, flushCalls, writes, cacheStore, cacheCalls, created, getValid: () => valid };
 }
 
 function makeGridSheet(C) {
@@ -391,6 +392,28 @@ function expectBlocked(env, label) {
   env.sb.finalizeSurveyResults();
   assert(markerSeenDuringCompute === false, '整合性確認の時点ではマーカー未保存（確認後に保存）');
   assert(MARKER in env.props, '確認後にマーカーが保存される');
+}
+
+
+/* ── finalizeSurveyResults：buildAggregationSheets → SpreadsheetApp.flush → computePublicResultsForFinalize_ の順序 ── */
+{
+  const probe = freshSandbox(AFTER);
+  const env = makeEnv(AFTER, { rows: marker_rows(probe) });
+  const order = [];
+  const origBuild = env.sb.buildAggregationSheets;
+  const origCompute = env.sb.computePublicResultsForFinalize_;
+  env.sb.buildAggregationSheets = function () { order.push('build'); return origBuild.apply(this, arguments); };
+  env.sb.SpreadsheetApp.flush = function () { order.push('flush'); };
+  env.sb.computePublicResultsForFinalize_ = function () { order.push('compute'); return origCompute.apply(this, arguments); };
+  env.sb.finalizeSurveyResults();
+  assert(order.join(',') === 'build,flush,compute', 'finalizeSurveyResults()の順序は build → flush → compute, got ' + order.join(','));
+
+  // 静的チェック：flushはbuildAggregationSheets()呼び出しの後、computePublicResultsForFinalize_()呼び出しの前
+  const fn = code.slice(code.indexOf('function finalizeSurveyResults()'), code.indexOf('function computePublicResultsForFinalize_()'));
+  const iBuild = fn.indexOf('buildAggregationSheets()');
+  const iFlush = fn.indexOf('SpreadsheetApp.flush()');
+  const iCompute = fn.indexOf('computePublicResultsForFinalize_()');
+  assert(iBuild !== -1 && iFlush > iBuild && iCompute > iFlush, '静的チェック：build < flush < compute の順で記述されている');
 }
 
 if (failures > 0) { console.error('\ntest_deadline.js: ' + failures + ' failure(s)'); process.exit(1); }
