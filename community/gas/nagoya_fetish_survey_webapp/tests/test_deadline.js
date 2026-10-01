@@ -141,7 +141,8 @@ function freshSandbox(clock) {
   let sourceWrites = 0;
   const source = {
     getLastRow: () => data.length + 1,
-    getRange: () => ({ getValues: () => data, setValues: () => { sourceWrites++; }, setValue: () => { sourceWrites++; }, clearContent: () => { sourceWrites++; } }),
+    getLastColumn: () => C.length,
+    getRange: (r) => ({ getValues: () => (r === 1 ? [C] : data), setValues: () => { sourceWrites++; }, setValue: () => { sourceWrites++; }, clearContent: () => { sourceWrites++; } }),
     clear: () => { sourceWrites++; }, appendRow: () => { sourceWrites++; }
   };
   const written = { header: null, rows: null, deleted: [] };
@@ -179,6 +180,126 @@ function freshSandbox(clock) {
   let threw = false;
   try { sb.finalizeSurveyResults(); } catch (e) { threw = true; }
   assert(threw, '締切前は finalizeSurveyResults() がエラーになる（未確定値を最終化させない）');
+}
+
+
+/* ── 共通フェイク：スプレッドシート ── */
+// どのメソッド呼び出しも受け付ける（集計_*シート用）。
+const anyThing = () => new Proxy(function () {}, { get: (t, k) => (k === Symbol.toPrimitive ? () => '' : anyThing()), apply: () => anyThing() });
+
+function makeEnv(clock, opts) {
+  opts = opts || {};
+  const sb = freshSandbox(clock);
+  const C = sb.COLUMNS;
+  const writes = []; // responsesへの書き込み試行（空であるべき）
+  const respGrid = [C].concat(opts.rows || []);
+  const guard = (name) => () => { writes.push(name); throw new Error('responses must be read-only: ' + name); };
+  const responses = {
+    getLastRow: () => respGrid.length,
+    getLastColumn: () => C.length,
+    getMaxRows: () => 1000,
+    getRange: (r, c, nr, nc) => ({
+      getValues: () => respGrid.slice(r - 1, r - 1 + (nr || 1)).map((row) => row.slice(c - 1, c - 1 + (nc || 1))),
+      getValue: () => (respGrid[r - 1] || [])[c - 1] || '',
+      setValue: guard('setValue'), setValues: guard('setValues'), setFormula: guard('setFormula'),
+      setFormulas: guard('setFormulas'), clearContent: guard('clearContent'), clear: guard('clear'),
+      setFontWeight: guard('setFontWeight')
+    }),
+    appendRow: guard('appendRow'), clear: guard('clear'), clearContents: guard('clearContents'),
+    setFrozenRows: guard('setFrozenRows'), insertColumnAfter: guard('insertColumnAfter'), deleteRows: guard('deleteRows')
+  };
+  let valid = opts.validSheetExists ? makeGridSheet(C) : null;
+  const created = [];
+  const ss = {
+    getSheetByName: (n) => (n === 'responses' ? responses : n === 'responses_valid' ? valid : null),
+    deleteSheet: (sheet) => { if (sheet === valid) valid = null; },
+    insertSheet: (n) => {
+      if (n === 'responses_valid') { valid = makeGridSheet(C); return valid; }
+      created.push(n); return anyThing();
+    }
+  };
+  const cacheStore = {};
+  const cacheCalls = { get: 0, put: 0, remove: 0 };
+  sb.CacheService = { getScriptCache: () => ({
+    get: (k) => { cacheCalls.get++; return cacheStore[k] || null; },
+    put: (k, v) => { cacheCalls.put++; cacheStore[k] = v; },
+    remove: (k) => { cacheCalls.remove++; delete cacheStore[k]; }
+  }) };
+  sb.PropertiesService = { getScriptProperties: () => ({ getProperty: () => 'SSID' }) };
+  sb.SpreadsheetApp = { openById: () => ss };
+  return { sb, C, ss, writes, cacheStore, cacheCalls, created, getValid: () => valid };
+}
+
+function makeGridSheet(C) {
+  const grid = [];
+  return {
+    _grid: grid,
+    getLastRow: () => grid.length,
+    getLastColumn: () => C.length,
+    setFrozenRows: () => {},
+    getRange: (r, c, nr, nc) => ({
+      setValues: (v) => { v.forEach((row, i) => { grid[r - 1 + i] = row.slice(); }); },
+      getValues: () => grid.slice(r - 1, r - 1 + nr).map((row) => row.slice(c - 1, c - 1 + nc))
+    })
+  };
+}
+
+/* ── キャッシュ防止：古いキャッシュがあっても、responses_validが無ければ返さずエラー ── */
+{
+  const env = makeEnv({ now: JST('2026-10-01T09:00:00') }, { validSheetExists: false });
+  env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 999, ready: true, stale: true });
+  let result = null, error = null;
+  try { result = env.sb.getPublicResults(); } catch (e) { error = e; }
+  assert(result === null, '古いキャッシュ＋responses_validなし：古いキャッシュを返さない');
+  assert(error && /finalizeSurveyResults/.test(error.message), 'エラーでfinalizeSurveyResults()の未実施を案内する, got ' + (error && error.message));
+  assert(env.cacheCalls.get === 0, 'responses_validの存在確認はキャッシュ参照より前（cache.getを呼んでいない）');
+  assert(env.cacheCalls.put === 0, 'エラー時はキャッシュへ書き込まない');
+}
+
+/* ── responses_validがあれば従来どおりキャッシュを使う／無ければ作ってキャッシュする ── */
+{
+  const env = makeEnv({ now: JST('2026-10-01T09:00:00') }, { validSheetExists: true });
+  env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 7, ready: false, fromCache: true });
+  const r = env.sb.getPublicResults();
+  assert(r.fromCache === true, 'responses_validがある場合はキャッシュ値を返す');
+  delete env.cacheStore['publicResultsV1'];
+  const r2 = env.sb.getPublicResults();
+  assert(r2.total === 0 && env.cacheCalls.put === 1, 'キャッシュ無し：スナップショットから集計してキャッシュへ保存する');
+}
+
+/* ── finalizeSurveyResults：responsesへ一切書き込まず、確定件数を返す ── */
+{
+  const clock = { now: JST('2026-10-01T09:00:00') };
+  const probe = freshSandbox(clock);
+  const C = probe.COLUMNS;
+  const mk = (ts, stage) => { const r = new Array(C.length).fill(''); r[0] = ts; r[C.indexOf('respondent_hash')] = 'H'; r[C.indexOf('free_comment')] = '自由記述'; r[C.indexOf('completion_stage')] = stage; return r; };
+  const rows = [
+    mk(JST('2026-09-20T10:00:00'), 'no_gate_reached'),
+    mk(JST('2026-09-30T23:59:59.999'), 'no_gate_reached'),
+    mk(JST('2026-10-01T00:00:00.000'), 'no_gate_reached'),
+    mk(JST('2026-09-10T10:00:00'), '') // 旧回答
+  ];
+  const env = makeEnv(clock, { rows, validSheetExists: false });
+  env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 999, stale: true });
+  const stats = env.sb.finalizeSurveyResults();
+  assert(env.writes.length === 0, 'finalizeSurveyResults()中、responsesへのsetValue/setValues/setFormula/clear/appendRow等の書き込みが0件, got ' + JSON.stringify(env.writes));
+  assert(stats.validRows === 3 && stats.lateRows === 1 && stats.validNewSurveyRows === 2, '件数内訳: valid=3(旧1含む)/late=1/validNew=2, got ' + JSON.stringify(stats));
+  assert(stats.publicTotal === 2, 'publicTotal は validNewSurveyRows と一致, got ' + stats.publicTotal);
+  assert(env.cacheStore['publicResultsV1'] === undefined || JSON.parse(env.cacheStore['publicResultsV1']).stale !== true,
+    '確定時に古い公開結果キャッシュは破棄される');
+  assert(env.created.length > 0, '集計_*シートは再生成される');
+  const v = env.getValid()._grid;
+  assert(v.length === 1 + 3 && v.slice(1).every((r) => r[C.indexOf('respondent_hash')] === '' && r[C.indexOf('free_comment')] === ''),
+    'responses_validには締切内の3行のみ、respondent_hash・free_commentは空');
+}
+
+/* ── buildAggregationSheets が responses を書き換える関数を呼ばない（静的チェック） ── */
+{
+  const fn = code.slice(code.indexOf('function buildAggregationSheets()'), code.indexOf('function regionBucketFormulas_'));
+  assert(!/ensureResidenceHelperColumn_\(/.test(fn) && !/getResponsesSheet_\(/.test(fn),
+    'buildAggregationSheets() は ensureResidenceHelperColumn_ / getResponsesSheet_ を呼ばない');
+  const setup = code.slice(code.indexOf('function setupSpreadsheet()'), code.indexOf('function ensureResidenceHelperColumn_'));
+  assert(/ensureResidenceHelperColumn_\(sheet\)/.test(setup), '補助列の作成は初期化用 setupSpreadsheet() 側に限定される');
 }
 
 if (failures > 0) { console.error('\ntest_deadline.js: ' + failures + ' failure(s)'); process.exit(1); }

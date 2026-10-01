@@ -607,6 +607,13 @@ function submitSurvey(uuid, answers) {
  * 生回答・自由記述・respondent_hash・UUID関連・個別の回答日時・クロス集計は一切含めない。
  */
 function getPublicResults() {
+  // Issue #319：確定前（responses_validが無い）は、古いキャッシュが残っていても返さずエラーにする。
+  // キャッシュ参照より前にスナップショットの存在を確認することで、デプロイ直後・
+  // finalizeSurveyResults()実行前の旧バージョン由来の集計値を、最終値として取得・固定させない。
+  var spreadsheetId = PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID);
+  var aggregationSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  var responsesSheet = getDeadlineValidSheet_(aggregationSpreadsheet);
+
   var cache = CacheService.getScriptCache();
   var cached = cache.get(PUBLIC_RESULTS_CACHE_KEY);
   if (cached) {
@@ -617,11 +624,6 @@ function getPublicResults() {
     }
   }
 
-  // Issue #319：responsesではなく、締切内の有効回答だけの確定スナップショットを読む。
-  // （スナップショットはfinalizeSurveyResults() / buildAggregationSheets()が作る。）
-  var spreadsheetId = PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID);
-  var aggregationSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
-  var responsesSheet = getDeadlineValidSheet_(aggregationSpreadsheet);
   var payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
 
   cache.put(PUBLIC_RESULTS_CACHE_KEY, JSON.stringify(payload), PUBLIC_RESULTS_CACHE_TTL_SECONDS);
@@ -1062,6 +1064,10 @@ function filterDeadlineValidRows_(values) {
 function buildDeadlineValidSnapshot_(spreadsheet, now) {
   var source = spreadsheet.getSheetByName(RESPONSES_SHEET_NAME);
   if (!source) throw new Error('responsesシートが見つかりません。');
+  // ヘッダーがCOLUMNSと一致しない状態で列位置を信用しないための読み取り専用チェック。
+  if (!hasExpectedHeader_(source)) {
+    throw new Error('responsesシートのヘッダーがCOLUMNSと一致しません。');
+  }
   var lastRow = source.getLastRow();
   var values = lastRow >= 2 ? source.getRange(2, 1, lastRow - 1, COLUMNS.length).getValues() : [];
   var filtered = filterDeadlineValidRows_(values);
@@ -1702,8 +1708,9 @@ var PUBLIC_PRIMARY_INTEREST_CATEGORY_BLOCK_INDEX = 7;
  */
 function buildAggregationSheets() {
   var ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID));
-  var sheet = getResponsesSheet_();
-  ensureResidenceHelperColumn_(sheet);
+  // Issue #319：このfunction（finalizeSurveyResults()経由を含む）はresponsesシートに一切書き込まない。
+  // 居住地4分類の補助列（ensureResidenceHelperColumn_）は現行の公開集計から参照されないため、
+  // ここでは作らない（初期化用のsetupSpreadsheet()側でのみ作成する）。
   // Issue #319：集計式の参照先は締切内の有効回答だけを複製したスナップショット（respQueryRange_/
   // respColRange_参照）。集計シートを再生成するたびに、先にスナップショットを作り直す。
   var snapshotStats = buildDeadlineValidSnapshot_(ss, new Date());
