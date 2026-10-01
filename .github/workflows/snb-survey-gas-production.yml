@@ -9,11 +9,12 @@ on:
       - 'community/tests/**'
       - 'scripts/prepare-snb-survey-gas.js'
       - 'scripts/deploy-snb-survey-gas.sh'
+      - 'scripts/verify-snb-survey-source-sha.sh'
       - 'scripts/tests/test_snb_survey_deploy.py'
   workflow_dispatch:
     inputs:
       source_sha:
-        description: Reviewed current head SHA of PR #320 (40 hex characters)
+        description: Current main HEAD SHA reviewed and merged for deployment (40 hex characters)
         required: true
         type: string
 
@@ -27,26 +28,28 @@ concurrency:
 
 jobs:
   verify:
-    name: Validate reviewed PR head and deployment bundle
+    name: Validate reviewed main commit and deployment bundle
     runs-on: ubuntu-latest
     steps:
-      - name: Check the manually selected commit is the current PR head
+      - name: Check out main for source_sha verification
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require source_sha to be the current main HEAD
         if: github.event_name == 'workflow_dispatch'
         env:
-          GH_TOKEN: ${{ github.token }}
           SOURCE_SHA: ${{ inputs.source_sha }}
         run: |
           set -euo pipefail
-          if [[ ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo 'source_sha must be a full commit SHA.' >&2
+          if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
+            echo 'Manual deployment must be dispatched from the main branch.' >&2
             exit 1
           fi
-          pr_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/320" --jq '.head.sha')"
-          if [[ "$SOURCE_SHA" != "$pr_head" ]]; then
-            echo 'Selected SHA is not the current PR #320 head.' >&2
-            exit 1
-          fi
-      - name: Check out PR code
+          bash scripts/verify-snb-survey-source-sha.sh
+      - name: Check out code under test
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_sha || github.event.pull_request.head.sha }}
@@ -103,7 +106,7 @@ jobs:
       SNB_SURVEY_DEPLOYMENT_ID: ${{ secrets.SNB_SURVEY_DEPLOYMENT_ID }}
       SNB_SURVEY_SOURCE_SHA: ${{ inputs.source_sha }}
     steps:
-      - name: Check out the reviewed PR head
+      - name: Check out the reviewed main HEAD
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.source_sha }}

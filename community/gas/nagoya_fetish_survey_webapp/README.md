@@ -413,8 +413,12 @@ finalizeの開始時と失敗時は`getKeys()`で`SURVEY_FINAL_RESULTS_*`を全�
 | `SNB_SURVEY_SCRIPT_ID` | 既存の公開アンケートApps ScriptプロジェクトID |
 | `SNB_SURVEY_DEPLOYMENT_ID` | 更新対象の既存Web AppデプロイID |
 
-手動実行時は`source_sha`にレビュー済みPR #320の**現在の40桁head SHA**を入力する。
-workflowはGitHub上のPR headとの一致を確認してからそのコミットをチェックアウトする。
+手動実行はmainブランチから行い、`source_sha`にレビュー・マージ済みの**現在のmain HEADの40桁SHA**を入力する。
+workflowは`scripts/verify-snb-survey-source-sha.sh`で、40桁SHAであること、リポジトリに存在すること、
+mainに含まれること、現在のmain HEADと一致することを確認してからそのコミットをチェックアウトする（PR番号には依存しない）。
+`clasp pull`後の既存ファイルは、`.js`をGASスクリプトとして`.gs`のallowlist名へ正規化して比較し、
+ファイル名・種別・正規化名・EXPECTED/UNEXPECTEDをログへ出す（内容・ID類は出さない）。
+allowlist外の`.js`/`.html`やその他のファイルが1つでもあればpushせず停止する。
 デプロイ用の`.clasp.json`はランナーの一時領域でのみ生成し、`rootDir`を
 `community/gas/nagoya_fetish_survey_webapp`に設定する。配布対象は`Code.gs`、
 `Results.html`、`ResultsScript.html`、`Styles.html`、`Index.html`、`Script.html`、
@@ -428,10 +432,9 @@ push成功後にのみversionを作り、その番号を指定して`clasp updat
 Script Properties（`SPREADSHEET_ID`、`SERVER_SALT`など）はclaspで変更しない。
 `finalizeSurveyResults()`もworkflowからは実行しない。公開状態・件数・Script Propertiesの本番確認は別途行う。
 
-**初回の起動制約**：GitHubの`workflow_dispatch`はworkflowファイルがdefault branchに存在するまで
-起動できない。PR #320に追加しただけではこのデプロイworkflowを手動実行できない。
-レビュー後、workflowをdefault branchで利用可能にする方法を決めてから実行する。
-PRの`pull_request`検証はこの制約と独立して実行できる。今回のコーディングでは本番更新を行わない。
+`workflow_dispatch`はworkflowファイルがdefault branchに存在する必要があるため、
+レビュー後にmainへマージしてからmain HEADを指定して実行する。
+PRの`pull_request`検証はこの制約と独立して実行できる。
 
 `appsscript.json`には`Asia/Tokyo`、V8、Stackdriver例外ログと
 `SpreadsheetApp.openById()`・集計シート書き込みに必要な`spreadsheets`スコープだけを明示する。
