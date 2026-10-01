@@ -438,7 +438,11 @@ PRの`pull_request`検証はこの制約と独立して実行できる。
 
 `appsscript.json`には`Asia/Tokyo`、V8、Stackdriver例外ログと
 `SpreadsheetApp.openById()`・集計シート書き込みに必要な`spreadsheets`スコープだけを明示する。
-既存manifestにその他の設定があれば上書きせず失敗し、事前レビューを求める。
+GitHubが管理するmanifestキーは`timeZone`・`exceptionLogging`・`runtimeVersion`・`oauthScopes`のみ。
+既存GASの`dependencies`と`webapp`は、`clasp pull`したmanifestからpush用のstaging manifestへ
+値を変更せずコピーして保持する（リポジトリの`appsscript.json`には書かず、値もログへ出さない。
+ログにはキー名と`EXPECTED`/`PRESERVED`/`UNEXPECTED`だけを出す）。
+上記6キー以外が既存manifestにあれば上書きせず失敗し、事前レビューを求める。
 
 ### 手動で更新する場合
 
