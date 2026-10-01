@@ -410,9 +410,11 @@ function expectBlocked(env, label) {
 
   // 静的チェック：flushはbuildAggregationSheets()呼び出しの後、computePublicResultsForFinalize_()呼び出しの前
   const fn = code.slice(code.indexOf('function finalizeSurveyResults()'), code.indexOf('function computePublicResultsForFinalize_()'));
-  const iBuild = fn.indexOf('buildAggregationSheets()');
-  const iFlush = fn.indexOf('SpreadsheetApp.flush()');
-  const iCompute = fn.indexOf('computePublicResultsForFinalize_()');
+  // コメント行は除き、実コードの呼び出し位置だけで比較する。
+  const codeOnly = fn.split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+  const iBuild = codeOnly.indexOf('= buildAggregationSheets()');
+  const iFlush = codeOnly.indexOf('SpreadsheetApp.flush()');
+  const iCompute = codeOnly.indexOf('= computePublicResultsForFinalize_()');
   assert(iBuild !== -1 && iFlush > iBuild && iCompute > iFlush, '静的チェック：build < flush < compute の順で記述されている');
 }
 
