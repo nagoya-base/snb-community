@@ -58,6 +58,20 @@ const { FILES } = require(process.env.GITHUB_WORKSPACE + '/scripts/prepare-snb-s
 const expected = new Set(FILES);
 const existing = fs.readdirSync(process.env.REMOTE_DIR)
   .filter(name => !name.startsWith('.'));
+// TEMPORARY DIAGNOSTIC: print file names only (never contents or identifiers), then stop
+// before any push, version creation or deployment update.
+{
+  const kind = name => /\.(gs|js)$/.test(name) ? 'script' : /\.html$/.test(name) ? 'html'
+    : name === 'appsscript.json' ? 'manifest' : 'other';
+  console.log('DIAG existing GAS files (' + existing.length + '):');
+  for (const name of existing.slice().sort()) {
+    console.log('DIAG  ' + JSON.stringify(name) + ' [' + kind(name) + ']' +
+      (expected.has(name) ? '' : ' UNEXPECTED'));
+  }
+  for (const name of expected) if (!existing.includes(name)) console.log('DIAG  missing from remote: ' + name);
+  console.log('DIAG diagnostic mode: stopping before push/version/deployment.');
+  process.exit(1);
+}
 if (!existing.includes('appsscript.json') ||
     existing.some(name => !expected.has(name) || !fs.statSync(path.join(process.env.REMOTE_DIR, name)).isFile())) {
   throw new Error('Existing GAS project contains unexpected files; refusing to replace them.');
