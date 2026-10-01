@@ -54,7 +54,7 @@ fi
 REMOTE_DIR="$remote_dir" node <<'NODE'
 const fs = require('fs');
 const path = require('path');
-const { classifyRemoteFile } = require(process.env.GITHUB_WORKSPACE + '/scripts/prepare-snb-survey-gas');
+const { classifyRemoteFile, classifyManifestKeys } = require(process.env.GITHUB_WORKSPACE + '/scripts/prepare-snb-survey-gas');
 const existing = fs.readdirSync(process.env.REMOTE_DIR)
   .filter(name => !name.startsWith('.'));
 // Diagnostic output: file names and classification only, never contents or identifiers.
@@ -76,14 +76,13 @@ if (!existing.includes('appsscript.json') ||
   throw new Error('Existing GAS project contains unexpected files; refusing to replace them.');
 }
 const manifest = JSON.parse(fs.readFileSync(path.join(process.env.REMOTE_DIR, 'appsscript.json'), 'utf8'));
-const allowedKeys = new Set(['timeZone', 'exceptionLogging', 'runtimeVersion', 'oauthScopes']);
 // Diagnostic output: top-level key names and classification only, never values.
-const manifestKeys = Object.keys(manifest);
+const manifestKeys = classifyManifestKeys(manifest);
 console.log('Existing GAS manifest keys:');
-for (const key of manifestKeys) {
-  console.log('  ' + JSON.stringify(key) + ' ' + (allowedKeys.has(key) ? 'EXPECTED' : 'UNEXPECTED'));
+for (const { key, status } of manifestKeys) {
+  console.log('  ' + JSON.stringify(key) + ' ' + status);
 }
-if (manifestKeys.some(key => !allowedKeys.has(key))) {
+if (manifestKeys.some(({ status }) => status === 'UNEXPECTED')) {
   throw new Error('Existing GAS manifest has additional settings; review before overwriting.');
 }
 const next = JSON.parse(fs.readFileSync(path.join(process.env.GITHUB_WORKSPACE,
@@ -94,7 +93,9 @@ if (Array.isArray(manifest.oauthScopes) &&
 }
 NODE
 
-node "$GITHUB_WORKSPACE/scripts/prepare-snb-survey-gas.js" "$GITHUB_WORKSPACE" "$project_dir"
+# dependencies/webapp are carried over from the pulled manifest into the staging copy only.
+node "$GITHUB_WORKSPACE/scripts/prepare-snb-survey-gas.js" "$GITHUB_WORKSPACE" "$project_dir" \
+  "$remote_dir/appsscript.json"
 cd "$project_dir"
 if ! clasp --auth "$auth_file" show-file-status >"$deploy_root/status.log" 2>&1; then
   echo 'Cannot determine clasp push file status.' >&2

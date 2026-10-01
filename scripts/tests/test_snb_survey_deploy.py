@@ -44,6 +44,10 @@ elif action == 'pull':
     pathlib.Path('appsscript.json').write_text(os.environ['MOCK_MANIFEST'])
 elif action == 'push' and os.environ.get('MOCK_FAIL_PUSH') == '1':
     sys.exit(1)
+elif action == 'push':
+    root_dir = json.load(open('.clasp.json'))['rootDir']
+    pathlib.Path(os.environ['MOCK_STAGED_FILE']).write_text(
+        pathlib.Path(root_dir, 'appsscript.json').read_text())
 elif action == 'create-version':
     print(json.dumps({'versionNumber': 8}))
 elif action == 'update-deployment':
@@ -64,7 +68,7 @@ elif action == 'update-deployment':
                        SNB_SURVEY_DEPLOYMENT_ID=deployment_id,
                        SNB_SURVEY_SOURCE_SHA='a' * 40,
                        MOCK_CLASP_LOG=str(log), MOCK_DEPLOYMENT=DEPLOYMENT,
-                       MOCK_UPDATED_FILE=str(updated),
+                       MOCK_UPDATED_FILE=str(updated), MOCK_STAGED_FILE=str(root / 'staged.json'),
                        MOCK_PULLED=json.dumps(pulled or PULLED_GS),
                        MOCK_MANIFEST=json.dumps(manifest if manifest is not None else {}),
                        MOCK_FAIL_PUSH='1' if fail_push else '0')
@@ -73,6 +77,8 @@ elif action == 'update-deployment':
                 "os.environ.get('MOCK_UPDATED')", "pathlib.Path(os.environ['MOCK_UPDATED_FILE']).exists()"))
             result = subprocess.run(['bash', str(REPO / 'scripts/deploy-snb-survey-gas.sh')],
                                     env=env, text=True, capture_output=True)
+            staged = root / 'staged.json'
+            self.staged = json.loads(staged.read_text()) if staged.exists() else None
             return result, log.read_text().splitlines() if log.exists() else [], updated.exists()
 
     def test_only_existing_deployment_is_updated_after_push_and_version(self):
@@ -113,21 +119,79 @@ elif action == 'update-deployment':
         self.assertNotIn('" UNEXPECTED', result.stdout.split('manifest keys:')[1])
         self.assertIn('push', commands)
 
-    def test_extra_manifest_key_is_flagged_and_stops_before_push(self):
-        manifest = {'timeZone': 'Asia/Tokyo', 'runtimeVersion': 'V8',
-                    'webapp': {'access': 'SECRET-ACCESS-VALUE', 'executeAs': 'SECRET-EXEC-VALUE'},
-                    'oauthScopes': ['https://example.invalid/SECRET-SCOPE']}
-        result, commands, updated = self.run_deploy(manifest=manifest)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(commands, ['list-deployments', 'pull'])
-        self.assertFalse(updated)
-        self.assertIn('"webapp" UNEXPECTED', result.stdout)
+    def test_extra_manifest_keys_are_flagged_and_stop_before_push(self):
+        for extra in ('foo', 'executionApi'):
+            manifest = {'timeZone': 'Asia/Tokyo', 'runtimeVersion': 'V8',
+                        extra: {'access': 'SECRET-ACCESS-VALUE'},
+                        'oauthScopes': ['https://example.invalid/SECRET-SCOPE']}
+            result, commands, updated = self.run_deploy(manifest=manifest)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(commands, ['list-deployments', 'pull'])
+            self.assertFalse(updated)
+            self.assertIn(f'"{extra}" UNEXPECTED', result.stdout)
+            self.assertIn('"timeZone" EXPECTED', result.stdout)
+            self.assertIn('"oauthScopes" EXPECTED', result.stdout)
+            output = result.stdout + result.stderr
+            for value in ('SECRET-ACCESS-VALUE', 'SECRET-SCOPE',
+                          'Asia/Tokyo', 'test-script', DEPLOYMENT, 'fake'):
+                self.assertNotIn(value, output)
+
+    REMOTE_PRESERVED = {
+        'dependencies': {'libraries': [{'userSymbol': 'SECRET-SYMBOL', 'libraryId': 'SECRET-LIB-ID',
+                                        'version': '3'}],
+                         'enabledAdvancedServices': [{'userSymbol': 'SECRET-ADV', 'serviceId': 'drive',
+                                                      'version': 'v3'}]},
+        'webapp': {'access': 'SECRET-ACCESS-VALUE', 'executeAs': 'SECRET-EXEC-VALUE'},
+    }
+
+    def test_remote_dependencies_and_webapp_are_preserved_in_staging(self):
+        remote = {'timeZone': 'America/New_York', 'exceptionLogging': 'NONE',
+                  'runtimeVersion': 'DEPRECATED_ES5', **self.REMOTE_PRESERVED}
+        result, commands, updated = self.run_deploy(manifest=remote)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(updated)
+        # Deep equality with the original remote values.
+        for key in ('dependencies', 'webapp'):
+            self.assertEqual(self.staged[key], remote[key])
+        # Managed keys come from the repository, not the remote manifest.
+        repo = json.loads((REPO / 'community/gas/nagoya_fetish_survey_webapp/appsscript.json').read_text())
+        for key in ('timeZone', 'exceptionLogging', 'runtimeVersion', 'oauthScopes'):
+            self.assertEqual(self.staged[key], repo[key])
+        self.assertEqual(set(self.staged), set(repo) | {'dependencies', 'webapp'})
+        self.assertIn('"dependencies" PRESERVED', result.stdout)
+        self.assertIn('"webapp" PRESERVED', result.stdout)
         self.assertIn('"timeZone" EXPECTED', result.stdout)
-        self.assertIn('"oauthScopes" EXPECTED', result.stdout)
+
+    def test_preserved_values_never_reach_stdout_or_stderr(self):
+        remote = {'timeZone': 'Asia/Tokyo', **self.REMOTE_PRESERVED}
+        result, _, _ = self.run_deploy(manifest=remote)
+        self.assertEqual(result.returncode, 0, result.stderr)
         output = result.stdout + result.stderr
-        for value in ('SECRET-ACCESS-VALUE', 'SECRET-EXEC-VALUE', 'SECRET-SCOPE',
-                      'Asia/Tokyo', 'test-script', DEPLOYMENT, 'fake'):
+        for value in ('SECRET-SYMBOL', 'SECRET-LIB-ID', 'SECRET-ADV', 'SECRET-ACCESS-VALUE',
+                      'SECRET-EXEC-VALUE', 'drive', 'test-script', DEPLOYMENT, 'fake'):
             self.assertNotIn(value, output)
+
+    def test_remote_without_preserved_keys_adds_none(self):
+        result, _, updated = self.run_deploy(manifest={'timeZone': 'Asia/Tokyo'})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(updated)
+        self.assertNotIn('dependencies', self.staged)
+        self.assertNotIn('webapp', self.staged)
+
+    def test_repository_manifest_is_not_modified(self):
+        path = REPO / 'community/gas/nagoya_fetish_survey_webapp/appsscript.json'
+        before = path.read_bytes()
+        self.run_deploy(manifest=dict(self.REMOTE_PRESERVED))
+        self.assertEqual(path.read_bytes(), before)
+        self.assertNotIn('webapp', json.loads(before))
+        self.assertNotIn('dependencies', json.loads(before))
+
+    def test_repository_manifest_cannot_define_preserved_keys(self):
+        script = (
+            "const {stageManifest}=require('./scripts/prepare-snb-survey-gas');"
+            "for (const bad of [{webapp:{}},{dependencies:{}},{foo:1}]) {"
+            "try{stageManifest(Object.assign({timeZone:'x'},bad),{});process.exit(1)}catch(e){}}")
+        subprocess.run(['node', '-e', script], cwd=REPO, check=True)
 
     def test_clasp_pulled_js_is_normalized_to_allowlisted_gs(self):
         result, commands, updated = self.run_deploy(pulled=PULLED_JS)
