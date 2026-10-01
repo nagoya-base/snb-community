@@ -76,6 +76,20 @@ var PROP_SERVER_SALT = 'SERVER_SALT';
 
 var RESPONSES_SHEET_NAME = 'responses';
 
+/* Issue #319：受付締切。2026-09-30 23:59 JST の分の終わり（23:59:59.999）までを有効回答とする
+   （「23:59まで」という表記を、23:59台に送信された回答を含む意味で解釈している）。
+   この時刻を過ぎた送信は submitSurvey() がサーバー側で拒否する（クライアントの表示は信用しない）。
+   判定には必ずサーバー時刻（new Date()）を使い、ブラウザから渡される値は一切使わない。 */
+var SURVEY_CLOSES_AT_ISO = '2026-09-30T23:59:59.999+09:00';
+
+/* Issue #319：締切内の有効回答だけを複製した確定スナップショットシート。
+   公開結果の集計_*シート（buildAggregationSheets）と getPublicResults() は、responsesではなく
+   このシートを参照する。これにより、集計式・公開用ロジックは既存のものをそのまま再利用しつつ、
+   締切後に（デプロイ反映前などで）保存されてしまった行が公開数値に混入しない。 */
+var RESPONSES_VALID_SHEET_NAME = 'responses_valid';
+/* 確定スナップショットへ複製しない列（集計に不要で、個別回答情報にあたる列）。 */
+var SNAPSHOT_BLANKED_COLUMNS = ['respondent_hash', 'free_comment'];
+
 /* 生回答の列。意味の分かる固定キーをヘッダとして使う。
    ここに列を追加する場合はCOLUMNS配列とbuildRowValues_()、Script.html側のQUESTIONS定義を
    同時に更新すること。集計コード側は列番号ではなくこのCOLUMNSに対する
@@ -496,6 +510,9 @@ function include(filename) {
  * 最終的な二重回答の拒否はsubmitSurvey()側で必ず行う（クライアントを信用しない）。
  */
 function checkSubmissionStatus(uuid) {
+  if (isSurveyClosed_(new Date())) {
+    return { answered: false, closed: true };
+  }
   try {
     if (typeof uuid !== 'string' || !isValidUuid_(uuid)) {
       return { answered: false };
@@ -518,6 +535,11 @@ function checkSubmissionStatus(uuid) {
  */
 function submitSurvey(uuid, answers) {
   try {
+    // Issue #319：サーバー側の締切判定。入力検証より前に行い、締切後は何も保存しない。
+    if (isSurveyClosed_(new Date())) {
+      return { status: 'CLOSED' };
+    }
+
     if (typeof uuid !== 'string' || !isValidUuid_(uuid)) {
       return { status: 'ERROR', message: 'invalid_uuid' };
     }
@@ -541,12 +563,18 @@ function submitSurvey(uuid, answers) {
     }
 
     try {
+      // ロック待機中に締切を跨いだ場合に備え、ロック取得後にもう一度判定する。
+      // 保存するタイムスタンプも、この判定に使った時刻と同一にする（判定と保存値の食い違いを防ぐ）。
+      var acceptedAt = new Date();
+      if (isSurveyClosed_(acceptedAt)) {
+        return { status: 'CLOSED' };
+      }
       var sheet = getResponsesSheet_();
       var hash = hashUuid_(uuid);
       if (isDuplicateHash_(sheet, hash)) {
         return { status: 'DUPLICATE' };
       }
-      appendResponseRow_(sheet, hash, answers);
+      appendResponseRow_(sheet, hash, answers, acceptedAt);
       // 新規回答が保存されたら、公開結果キャッシュは必ず削除する（任意ではなく必須）。
       // これを怠ると、キャッシュ有効期限（PUBLIC_RESULTS_CACHE_TTL_SECONDS）が切れるまで
       // 公開結果ページに今回の回答が反映されない。
@@ -589,9 +617,11 @@ function getPublicResults() {
     }
   }
 
-  var responsesSheet = getResponsesSheet_();
+  // Issue #319：responsesではなく、締切内の有効回答だけの確定スナップショットを読む。
+  // （スナップショットはfinalizeSurveyResults() / buildAggregationSheets()が作る。）
   var spreadsheetId = PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID);
   var aggregationSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  var responsesSheet = getDeadlineValidSheet_(aggregationSpreadsheet);
   var payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
 
   cache.put(PUBLIC_RESULTS_CACHE_KEY, JSON.stringify(payload), PUBLIC_RESULTS_CACHE_TTL_SECONDS);
@@ -973,6 +1003,117 @@ function readQueryPairsBlock_(sheet, blockIndex, maxRows) {
 }
 
 /* ══════════════════════════════════════════════════════════════
+ * Issue #319：受付締切・締切内有効回答の確定
+ * ══════════════════════════════════════════════════════════════ */
+
+/**
+ * 受付が締め切られているか（now が SURVEY_CLOSES_AT_ISO を過ぎているか）。
+ * Date.parse が解釈できない場合は安全側（締切済み）に倒す。
+ */
+function isSurveyClosed_(now) {
+  var closesAt = Date.parse(SURVEY_CLOSES_AT_ISO);
+  if (isNaN(closesAt)) return true;
+  return now.getTime() > closesAt;
+}
+
+/**
+ * timestamp 列の値が締切内か判定する。Dateまたは日時文字列を受け付け、
+ * 解釈できない値は有効としない（'unparseable'として別集計し、公開数値には入れない）。
+ * @return {'valid'|'late'|'unparseable'}
+ */
+function classifyResponseTimestamp_(value) {
+  var time = value instanceof Date ? value.getTime() : Date.parse(String(value));
+  if (isNaN(time)) return 'unparseable';
+  return time > Date.parse(SURVEY_CLOSES_AT_ISO) ? 'late' : 'valid';
+}
+
+/**
+ * responsesの全データ行（ヘッダー除く、COLUMNS.length列分）から、締切内の有効行だけを返す。
+ * timestampが空の行は回答行とみなさない（findNextResponseRow_と同じ前提）。
+ * 有効行は respondent_hash・free_comment を空にして返す（集計に不要な個別回答情報を複製しない）。
+ * @return {{rows: Array, stats: Object}}
+ */
+function filterDeadlineValidRows_(values) {
+  var blanked = SNAPSHOT_BLANKED_COLUMNS.map(function (name) { return COLUMNS.indexOf(name); });
+  var stageIndex = COLUMNS.indexOf('completion_stage');
+  var stats = { responseRows: 0, validRows: 0, lateRows: 0, unparseableRows: 0, validNewSurveyRows: 0 };
+  var rows = [];
+
+  values.forEach(function (row) {
+    if (row[0] === '' || row[0] === null || typeof row[0] === 'undefined') return;
+    stats.responseRows++;
+    var kind = classifyResponseTimestamp_(row[0]);
+    if (kind === 'late') { stats.lateRows++; return; }
+    if (kind === 'unparseable') { stats.unparseableRows++; return; }
+    var copy = row.slice(0, COLUMNS.length);
+    blanked.forEach(function (index) { copy[index] = ''; });
+    rows.push(copy);
+    stats.validRows++;
+    if (isNewSurveyCompletionStage_(copy[stageIndex])) stats.validNewSurveyRows++;
+  });
+
+  return { rows: rows, stats: stats };
+}
+
+/**
+ * responses_validシート（締切内有効回答の確定スナップショット）を作り直し、件数内訳を返す。
+ * responsesシートは読み取るだけで、書き換え・削除は一切しない。
+ */
+function buildDeadlineValidSnapshot_(spreadsheet, now) {
+  var source = spreadsheet.getSheetByName(RESPONSES_SHEET_NAME);
+  if (!source) throw new Error('responsesシートが見つかりません。');
+  var lastRow = source.getLastRow();
+  var values = lastRow >= 2 ? source.getRange(2, 1, lastRow - 1, COLUMNS.length).getValues() : [];
+  var filtered = filterDeadlineValidRows_(values);
+
+  var existing = spreadsheet.getSheetByName(RESPONSES_VALID_SHEET_NAME);
+  if (existing) spreadsheet.deleteSheet(existing);
+  var target = spreadsheet.insertSheet(RESPONSES_VALID_SHEET_NAME);
+  target.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+  if (filtered.rows.length > 0) {
+    target.getRange(2, 1, filtered.rows.length, COLUMNS.length).setValues(filtered.rows);
+  }
+  target.setFrozenRows(1);
+
+  filtered.stats.closed = isSurveyClosed_(now);
+  filtered.stats.closesAt = SURVEY_CLOSES_AT_ISO;
+  return filtered.stats;
+}
+
+function getDeadlineValidSheet_(spreadsheet) {
+  var sheet = spreadsheet.getSheetByName(RESPONSES_VALID_SHEET_NAME);
+  if (!sheet) {
+    throw new Error(RESPONSES_VALID_SHEET_NAME + 'シートがありません。finalizeSurveyResults()を実行してください。');
+  }
+  return sheet;
+}
+
+/**
+ * 【締切後に1回実行する確定処理（Apps Scriptエディタから手動実行）】
+ * 1. 締切前なら何もせずエラーにする（未確定の数値を最終結果として扱わせない）。
+ * 2. responsesから締切内の有効回答だけをresponses_validへ複製（responsesは無変更）。
+ * 3. responses_validを参照する集計_*シートを再生成する（既存の集計式をそのまま再利用）。
+ * 4. 公開結果キャッシュを破棄する。
+ * 戻り値・ログの件数内訳が「最終回答数」の確定根拠になる：
+ *   validNewSurveyRows … 公開結果のtotal（getPublicResults().total）と一致するはずの値
+ *   lateRows           … 締切後に保存されていて、公開数値から除外した行数
+ */
+function finalizeSurveyResults() {
+  var now = new Date();
+  if (!isSurveyClosed_(now)) {
+    throw new Error('締切（' + SURVEY_CLOSES_AT_ISO + '）前のため確定できません。');
+  }
+  // 集計式がresponses_validを参照するため、スナップショットの作り直しは必ず集計シート再生成の
+  // 「前」に行う必要がある（後だとシート削除で数式が#REF!になる）。buildAggregationSheets()が
+  // その順序を守って内部でスナップショットを作り、件数内訳を返す。
+  var stats = buildAggregationSheets();
+  invalidatePublicResultsCache_();
+  stats.publicTotal = getPublicResults().total;
+  Logger.log('finalizeSurveyResults: ' + JSON.stringify(stats));
+  return stats;
+}
+
+/* ══════════════════════════════════════════════════════════════
  * UUID・ハッシュ関連
  * ══════════════════════════════════════════════════════════════ */
 
@@ -1274,9 +1415,9 @@ function sanitizeForSheet_(value) {
  * 回答行の組み立て
  * ══════════════════════════════════════════════════════════════ */
 
-function buildRowValues_(hash, a) {
+function buildRowValues_(hash, a, timestamp) {
   return [
-    new Date(),
+    timestamp || new Date(),
     hash,
     a.prefecture,
     a.aichiArea,
@@ -1324,8 +1465,8 @@ function buildRowValues_(hash, a) {
  * その行へ`setValues()`で直接書き込む。補助列のスピル範囲がどれだけ伸びていても、
  * この判定には影響しない。
  */
-function appendResponseRow_(sheet, hash, answers) {
-  var rowValues = buildRowValues_(hash, answers);
+function appendResponseRow_(sheet, hash, answers, timestamp) {
+  var rowValues = buildRowValues_(hash, answers, timestamp);
   var targetRow = findNextResponseRow_(sheet);
   sheet.getRange(targetRow, 1, 1, rowValues.length).setValues([rowValues]);
 }
@@ -1563,6 +1704,9 @@ function buildAggregationSheets() {
   var ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID));
   var sheet = getResponsesSheet_();
   ensureResidenceHelperColumn_(sheet);
+  // Issue #319：集計式の参照先は締切内の有効回答だけを複製したスナップショット（respQueryRange_/
+  // respColRange_参照）。集計シートを再生成するたびに、先にスナップショットを作り直す。
+  var snapshotStats = buildDeadlineValidSnapshot_(ss, new Date());
 
   var range = respQueryRange_();
   var col = {}; // ヘッダ名 → 列文字
@@ -1847,6 +1991,7 @@ function buildAggregationSheets() {
   });
 
   Logger.log('buildAggregationSheets: 集計シートを再生成しました。');
+  return snapshotStats;
 }
 
 /**
@@ -1896,11 +2041,11 @@ function recreateSheet_(spreadsheet, name, fillFn) {
 
 function respQueryRange_() {
   var lastColLetter = columnToLetter_(COLUMNS.length + 1);
-  return "'" + RESPONSES_SHEET_NAME + "'!A1:" + lastColLetter + '5000';
+  return "'" + RESPONSES_VALID_SHEET_NAME + "'!A1:" + lastColLetter + '5000';
 }
 
 function respColRange_(letter) {
-  return "'" + RESPONSES_SHEET_NAME + "'!" + letter + '2:' + letter + '5000';
+  return "'" + RESPONSES_VALID_SHEET_NAME + "'!" + letter + '2:' + letter + '5000';
 }
 
 function queryFormula_(range, query) {
