@@ -73,6 +73,10 @@ var FORM_TITLE = '名古屋のフェチ・衣装交流に関するアンケー�
 
 var PROP_SPREADSHEET_ID = 'SPREADSHEET_ID';
 var PROP_SERVER_SALT = 'SERVER_SALT';
+/* Issue #319：finalizeSurveyResults()が最後まで正常完了したことを示すマーカー（ISO日時）。
+   getPublicResults()はこのマーカーが無い限り公開しない。responses_validの存在だけでは
+   「確定済み」と判断しない（buildAggregationSheets()単体実行や途中失敗でも作られるため）。 */
+var PROP_RESULTS_FINALIZED_AT = 'SURVEY_RESULTS_FINALIZED_AT';
 
 var RESPONSES_SHEET_NAME = 'responses';
 
@@ -607,10 +611,15 @@ function submitSurvey(uuid, answers) {
  * 生回答・自由記述・respondent_hash・UUID関連・個別の回答日時・クロス集計は一切含めない。
  */
 function getPublicResults() {
-  // Issue #319：確定前（responses_validが無い）は、古いキャッシュが残っていても返さずエラーにする。
-  // キャッシュ参照より前にスナップショットの存在を確認することで、デプロイ直後・
-  // finalizeSurveyResults()実行前の旧バージョン由来の集計値を、最終値として取得・固定させない。
-  var spreadsheetId = PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID);
+  // Issue #319：確定前は、古いキャッシュが残っていても返さずエラーにする。
+  // キャッシュ参照より前に「finalizeSurveyResults()が正常完了した」ことをマーカーで確認し、
+  // そのうえでスナップショットの存在も確認する。これにより、デプロイ直後・確定処理の途中失敗・
+  // buildAggregationSheets()単体実行後の集計値を、最終値として取得・固定させない。
+  var properties = PropertiesService.getScriptProperties();
+  if (!properties.getProperty(PROP_RESULTS_FINALIZED_AT)) {
+    throw new Error('公開結果は未確定です。締切後にfinalizeSurveyResults()を実行してください。');
+  }
+  var spreadsheetId = properties.getProperty(PROP_SPREADSHEET_ID);
   var aggregationSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
   var responsesSheet = getDeadlineValidSheet_(aggregationSpreadsheet);
 
@@ -1100,6 +1109,10 @@ function getDeadlineValidSheet_(spreadsheet) {
  * 2. responsesから締切内の有効回答だけをresponses_validへ複製（responsesは無変更）。
  * 3. responses_validを参照する集計_*シートを再生成する（既存の集計式をそのまま再利用）。
  * 4. 公開結果キャッシュを破棄する。
+ * 5. 内部用集計でvalidNewSurveyRows === publicTotalを確認する（不一致なら失敗）。
+ * 6. 全工程成功後に限り、確定マーカー（Script Properties: SURVEY_RESULTS_FINALIZED_AT）を保存する。
+ *    開始時に既存マーカーを削除し、途中で例外になった場合もマーカーを残さない。
+ *    getPublicResults()はこのマーカーが無い限り（キャッシュがあっても）公開しない。
  * 戻り値・ログの件数内訳が「最終回答数」の確定根拠になる：
  *   validNewSurveyRows … 公開結果のtotal（getPublicResults().total）と一致するはずの値
  *   lateRows           … 締切後に保存されていて、公開数値から除外した行数
@@ -1109,14 +1122,45 @@ function finalizeSurveyResults() {
   if (!isSurveyClosed_(now)) {
     throw new Error('締切（' + SURVEY_CLOSES_AT_ISO + '）前のため確定できません。');
   }
-  // 集計式がresponses_validを参照するため、スナップショットの作り直しは必ず集計シート再生成の
-  // 「前」に行う必要がある（後だとシート削除で数式が#REF!になる）。buildAggregationSheets()が
-  // その順序を守って内部でスナップショットを作り、件数内訳を返す。
-  var stats = buildAggregationSheets();
-  invalidatePublicResultsCache_();
-  stats.publicTotal = getPublicResults().total;
+  var properties = PropertiesService.getScriptProperties();
+  // 1. 開始時に既存の確定マーカーを削除（以降、全工程が成功するまで公開APIは使えない）。
+  properties.deleteProperty(PROP_RESULTS_FINALIZED_AT);
+  try {
+    // 2〜3. スナップショット生成と集計_*シート再生成。集計式がresponses_validを参照するため、
+    // スナップショットの作り直しは必ず集計シート再生成の「前」に行う必要がある（後だとシート
+    // 削除で数式が#REF!になる）。buildAggregationSheets()がその順序を守って件数内訳を返す。
+    var stats = buildAggregationSheets();
+    // 4. 公開結果キャッシュを削除。
+    invalidatePublicResultsCache_();
+    // 5. 公開APIのガード（確定マーカー）を迂回せず、キャッシュも使わない内部用集計で整合性を確認。
+    var payload = computePublicResultsForFinalize_();
+    stats.publicTotal = payload.total;
+    if (stats.validNewSurveyRows !== payload.total) {
+      throw new Error('最終回答数が一致しません: validNewSurveyRows=' + stats.validNewSurveyRows +
+        ', publicTotal=' + payload.total);
+    }
+    // 6. 全工程成功後、最後にだけ確定マーカーを保存する。
+    stats.finalizedAt = now.toISOString();
+    properties.setProperty(PROP_RESULTS_FINALIZED_AT, stats.finalizedAt);
+    invalidatePublicResultsCache_();
+  } catch (err) {
+    // 7. 途中で失敗した場合は確定マーカーを残さない。
+    try { properties.deleteProperty(PROP_RESULTS_FINALIZED_AT); } catch (ignored) { /* 無視 */ }
+    throw err;
+  }
   Logger.log('finalizeSurveyResults: ' + JSON.stringify(stats));
   return stats;
+}
+
+/**
+ * finalizeSurveyResults()専用：確定マーカー・キャッシュに依存せず、responses_validから
+ * 公開用payloadを組み立てる（getPublicResults()と同じbuildPublicResultsPayload_を使う）。
+ * 公開APIではないため、結果は呼び出し元（整合性確認）だけが使い、キャッシュへは保存しない。
+ */
+function computePublicResultsForFinalize_() {
+  var spreadsheetId = PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID);
+  var spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  return buildPublicResultsPayload_(getDeadlineValidSheet_(spreadsheet), spreadsheet);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1708,6 +1752,9 @@ var PUBLIC_PRIMARY_INTEREST_CATEGORY_BLOCK_INDEX = 7;
  */
 function buildAggregationSheets() {
   var ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID));
+  // Issue #319：集計シートを作り直すと確定状態は崩れるため、最初に確定マーカーを外す
+  // （再生成が途中で失敗しても「確定済み」と誤判定されない。再度finalizeSurveyResults()が必要）。
+  PropertiesService.getScriptProperties().deleteProperty(PROP_RESULTS_FINALIZED_AT);
   // Issue #319：このfunction（finalizeSurveyResults()経由を含む）はresponsesシートに一切書き込まない。
   // 居住地4分類の補助列（ensureResidenceHelperColumn_）は現行の公開集計から参照されないため、
   // ここでは作らない（初期化用のsetupSpreadsheet()側でのみ作成する）。

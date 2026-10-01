@@ -301,7 +301,11 @@ responses全行に対する集計処理を独自に二重実装しない。
    （`respondent_hash`と`free_comment`は複製しない。timestampが解釈できない行は有効にしない）。
 2. `responses_valid`を参照する`集計_*`シートを再生成する（`respQueryRange_`/`respColRange_`の参照先がこのシート。
    **集計式そのものは既存のまま**で、`getPublicResults()`も同じシートを読むため、既存ロジックの再利用になる）。
-3. 公開結果キャッシュを破棄し、件数内訳を返す／ログに出す。
+3. 公開結果キャッシュを破棄し、内部用集計で`validNewSurveyRows === publicTotal`を確認する（不一致なら失敗）。
+4. **全工程の成功後に限り**、確定マーカー（Script Properties `SURVEY_RESULTS_FINALIZED_AT`、ISO日時）を保存し、
+   件数内訳を返す／ログに出す。マーカーは`finalizeSurveyResults()`開始時と`buildAggregationSheets()`開始時に削除し、
+   途中で例外になっても残さない。`getPublicResults()`はマーカーが無い限り（キャッシュがあっても、
+   `responses_valid`があっても）公開せずエラーにする。
 
 **最終回答数の確定方法**：`finalizeSurveyResults()`の戻り値（`Logger.log`にも出力）を根拠にする。
 

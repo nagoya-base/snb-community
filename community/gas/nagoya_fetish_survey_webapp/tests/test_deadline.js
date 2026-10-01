@@ -215,6 +215,7 @@ function makeEnv(clock, opts) {
     deleteSheet: (sheet) => { if (sheet === valid) valid = null; },
     insertSheet: (n) => {
       if (n === 'responses_valid') { valid = makeGridSheet(C); return valid; }
+      if (opts.failOnInsert && n === opts.failOnInsert) throw new Error('simulated failure inserting ' + n);
       created.push(n); return anyThing();
     }
   };
@@ -225,9 +226,15 @@ function makeEnv(clock, opts) {
     put: (k, v) => { cacheCalls.put++; cacheStore[k] = v; },
     remove: (k) => { cacheCalls.remove++; delete cacheStore[k]; }
   }) };
-  sb.PropertiesService = { getScriptProperties: () => ({ getProperty: () => 'SSID' }) };
+  const props = { SPREADSHEET_ID: 'SSID' };
+  if (opts.finalizedMarker) props.SURVEY_RESULTS_FINALIZED_AT = '2026-10-01T00:00:00.000Z';
+  sb.PropertiesService = { getScriptProperties: () => ({
+    getProperty: (k) => (k in props ? props[k] : null),
+    setProperty: (k, v) => { props[k] = v; },
+    deleteProperty: (k) => { delete props[k]; }
+  }) };
   sb.SpreadsheetApp = { openById: () => ss };
-  return { sb, C, ss, writes, cacheStore, cacheCalls, created, getValid: () => valid };
+  return { sb, C, ss, props, writes, cacheStore, cacheCalls, created, getValid: () => valid };
 }
 
 function makeGridSheet(C) {
@@ -246,7 +253,7 @@ function makeGridSheet(C) {
 
 /* ── キャッシュ防止：古いキャッシュがあっても、responses_validが無ければ返さずエラー ── */
 {
-  const env = makeEnv({ now: JST('2026-10-01T09:00:00') }, { validSheetExists: false });
+  const env = makeEnv({ now: JST('2026-10-01T09:00:00') }, { validSheetExists: false, finalizedMarker: true });
   env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 999, ready: true, stale: true });
   let result = null, error = null;
   try { result = env.sb.getPublicResults(); } catch (e) { error = e; }
@@ -258,7 +265,7 @@ function makeGridSheet(C) {
 
 /* ── responses_validがあれば従来どおりキャッシュを使う／無ければ作ってキャッシュする ── */
 {
-  const env = makeEnv({ now: JST('2026-10-01T09:00:00') }, { validSheetExists: true });
+  const env = makeEnv({ now: JST('2026-10-01T09:00:00') }, { validSheetExists: true, finalizedMarker: true });
   env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 7, ready: false, fromCache: true });
   const r = env.sb.getPublicResults();
   assert(r.fromCache === true, 'responses_validがある場合はキャッシュ値を返す');
@@ -300,6 +307,90 @@ function makeGridSheet(C) {
     'buildAggregationSheets() は ensureResidenceHelperColumn_ / getResponsesSheet_ を呼ばない');
   const setup = code.slice(code.indexOf('function setupSpreadsheet()'), code.indexOf('function ensureResidenceHelperColumn_'));
   assert(/ensureResidenceHelperColumn_\(sheet\)/.test(setup), '補助列の作成は初期化用 setupSpreadsheet() 側に限定される');
+}
+
+
+/* ── 確定マーカー（SURVEY_RESULTS_FINALIZED_AT） ── */
+const MARKER = 'SURVEY_RESULTS_FINALIZED_AT';
+function marker_rows(sbForCols) {
+  const C = sbForCols.COLUMNS;
+  const mk = (ts, stage) => { const r = new Array(C.length).fill(''); r[0] = ts; r[C.indexOf('completion_stage')] = stage; return r; };
+  return [mk(JST('2026-09-20T10:00:00'), 'no_gate_reached'), mk(JST('2026-10-01T00:00:00.000'), 'no_gate_reached')];
+}
+const AFTER = { now: JST('2026-10-01T09:00:00') };
+function expectBlocked(env, label) {
+  let result = null, error = null;
+  try { result = env.sb.getPublicResults(); } catch (e) { error = e; }
+  assert(result === null && error && /finalizeSurveyResults/.test(error.message), label + '：getPublicResults()は公開せずエラー, got ' + (error && error.message));
+  assert(env.cacheCalls.get === 0, label + '：キャッシュも参照しない');
+}
+
+{ // テスト1：古いキャッシュあり＋responses_validなし（＋マーカーなし）
+  const env = makeEnv(AFTER, { validSheetExists: false });
+  env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 999, stale: true });
+  expectBlocked(env, '古いキャッシュあり+responses_validなし');
+}
+{ // テスト2：responses_validあり＋マーカーなし（古いキャッシュもある）
+  const env = makeEnv(AFTER, { validSheetExists: true, finalizedMarker: false });
+  env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 999, stale: true });
+  expectBlocked(env, 'responses_validあり+マーカーなし');
+}
+{ // テスト3：buildAggregationSheets()だけ実行
+  const probe = freshSandbox(AFTER);
+  const env = makeEnv(AFTER, { rows: marker_rows(probe), validSheetExists: false });
+  env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 999, stale: true });
+  env.sb.buildAggregationSheets();
+  assert(env.getValid() !== null, 'buildAggregationSheets()単体でもresponses_validは作られる');
+  assert(!(MARKER in env.props), 'buildAggregationSheets()単体ではマーカーは保存されない');
+  expectBlocked(env, 'buildAggregationSheets()のみ実行');
+}
+{ // buildAggregationSheets()は既存マーカーを外す（再生成後は再確定が必要）
+  const probe = freshSandbox(AFTER);
+  const env = makeEnv(AFTER, { rows: marker_rows(probe), finalizedMarker: true });
+  env.sb.buildAggregationSheets();
+  assert(!(MARKER in env.props), 'buildAggregationSheets()は開始時に既存マーカーを削除する');
+}
+{ // テスト4：finalize途中で例外 → マーカーは残らない（既存マーカーも消える）
+  const probe = freshSandbox(AFTER);
+  const env = makeEnv(AFTER, { rows: marker_rows(probe), finalizedMarker: true, failOnInsert: '集計_衣装カテゴリ' });
+  let threw = false;
+  try { env.sb.finalizeSurveyResults(); } catch (e) { threw = /simulated failure/.test(e.message); }
+  assert(threw, 'finalize途中の例外はそのまま伝播する');
+  assert(!(MARKER in env.props), '途中で例外 → 確定マーカーは残らない（開始時に削除済みで保存もされない）');
+  expectBlocked(env, 'finalize途中失敗後');
+}
+{ // テスト6：validNewSurveyRows !== publicTotal → 失敗・マーカー保存なし
+  const probe = freshSandbox(AFTER);
+  const env = makeEnv(AFTER, { rows: marker_rows(probe) });
+  env.sb.buildPublicResultsPayload_ = () => ({ total: 99, ready: false });
+  let msg = null;
+  try { env.sb.finalizeSurveyResults(); } catch (e) { msg = e.message; }
+  assert(msg && /最終回答数が一致しません/.test(msg), '件数不一致ならfinalizeが失敗する, got ' + msg);
+  assert(!(MARKER in env.props), '件数不一致 → マーカーを保存しない');
+  expectBlocked(env, '件数不一致後');
+}
+{ // テスト5：正常完了 → マーカー保存、getPublicResults()利用可能
+  const probe = freshSandbox(AFTER);
+  const env = makeEnv(AFTER, { rows: marker_rows(probe) });
+  env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 999, stale: true });
+  expectBlocked(env, 'finalize前');
+  const stats = env.sb.finalizeSurveyResults();
+  assert(typeof stats.finalizedAt === 'string' && env.props[MARKER] === stats.finalizedAt,
+    '正常完了後に確定マーカーが保存される');
+  assert(stats.validNewSurveyRows === 1 && stats.publicTotal === 1, '最終回答数 validNewSurveyRows === publicTotal (=1), got ' + JSON.stringify(stats));
+  assert(env.writes.length === 0, '正常完了までresponsesへ書き込まない');
+  const r = env.sb.getPublicResults();
+  assert(r && r.total === 1 && !r.stale, 'マーカー保存後は getPublicResults() が利用可能（古いキャッシュは破棄済み）');
+}
+{ // マーカーは全工程の最後にだけ保存される（保存直前までは不在）
+  const probe = freshSandbox(AFTER);
+  const env = makeEnv(AFTER, { rows: marker_rows(probe) });
+  let markerSeenDuringCompute = null;
+  const orig = env.sb.computePublicResultsForFinalize_;
+  env.sb.computePublicResultsForFinalize_ = function () { markerSeenDuringCompute = MARKER in env.props; return orig(); };
+  env.sb.finalizeSurveyResults();
+  assert(markerSeenDuringCompute === false, '整合性確認の時点ではマーカー未保存（確認後に保存）');
+  assert(MARKER in env.props, '確認後にマーカーが保存される');
 }
 
 if (failures > 0) { console.error('\ntest_deadline.js: ' + failures + ' failure(s)'); process.exit(1); }
