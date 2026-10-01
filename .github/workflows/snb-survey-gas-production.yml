@@ -1,0 +1,119 @@
+name: Update SNB survey GAS
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/snb-survey-gas-production.yml'
+      - 'community/gas/nagoya_fetish_survey_webapp/**'
+      - 'community/tests/**'
+      - 'scripts/prepare-snb-survey-gas.js'
+      - 'scripts/deploy-snb-survey-gas.sh'
+      - 'scripts/tests/test_snb_survey_deploy.py'
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Reviewed current head SHA of PR #320 (40 hex characters)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: snb-survey-gas-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Validate reviewed PR head and deployment bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the manually selected commit is the current PR head
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'source_sha must be a full commit SHA.' >&2
+            exit 1
+          fi
+          pr_head="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/320" --jq '.head.sha')"
+          if [[ "$SOURCE_SHA" != "$pr_head" ]]; then
+            echo 'Selected SHA is not the current PR #320 head.' >&2
+            exit 1
+          fi
+      - name: Check out PR code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_sha || github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run public GAS tests
+        working-directory: community/gas/nagoya_fetish_survey_webapp/tests
+        run: |
+          npm install --no-save --ignore-scripts --no-audit --no-fund
+          npm test
+      - name: Run static community page tests
+        working-directory: community/tests
+        run: |
+          npm install --no-save --ignore-scripts --no-audit --no-fund
+          npm test
+      - name: Simulate deployment order and failure gates without Google access
+        run: python3 -m unittest scripts.tests.test_snb_survey_deploy -v
+      - name: Validate the allowlisted deployment bundle without GAS access
+        run: |
+          set -euo pipefail
+          bundle="$(mktemp -d "$RUNNER_TEMP/snb-survey-dry-run.XXXXXXXX")"
+          trap 'rm -rf "$bundle"' EXIT
+          SNB_SURVEY_SCRIPT_ID='dry-run-only' node scripts/prepare-snb-survey-gas.js "$GITHUB_WORKSPACE" "$bundle"
+          BUNDLE="$bundle" node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const { ROOT_DIR, FILES } = require('./scripts/prepare-snb-survey-gas');
+          const root = process.env.BUNDLE;
+          const config = JSON.parse(fs.readFileSync(path.join(root, '.clasp.json')));
+          const actual = fs.readdirSync(path.join(root, ROOT_DIR)).sort();
+          if (config.scriptId !== 'dry-run-only' || config.rootDir !== ROOT_DIR ||
+              JSON.stringify(actual) !== JSON.stringify([...FILES].sort())) {
+            throw new Error('Unexpected clasp rootDir or staged files.');
+          }
+          const manifest = JSON.parse(fs.readFileSync(path.join(root, ROOT_DIR, 'appsscript.json')));
+          if (!manifest.oauthScopes.includes('https://www.googleapis.com/auth/spreadsheets')) {
+            throw new Error('Missing Spreadsheet authorization scope.');
+          }
+          console.log('Bundle contains only the seven approved GAS files.');
+          NODE
+
+  deploy:
+    name: Update the existing Web App deployment
+    if: github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: snb-survey-production
+    env:
+      CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+      SNB_SURVEY_SCRIPT_ID: ${{ secrets.SNB_SURVEY_SCRIPT_ID }}
+      SNB_SURVEY_DEPLOYMENT_ID: ${{ secrets.SNB_SURVEY_DEPLOYMENT_ID }}
+      SNB_SURVEY_SOURCE_SHA: ${{ inputs.source_sha }}
+    steps:
+      - name: Check out the reviewed PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned clasp
+        run: npm install --global @google/clasp@3.4.1
+      - name: Push files, create version and update only the existing deployment
+        shell: bash
+        run: bash scripts/deploy-snb-survey-gas.sh

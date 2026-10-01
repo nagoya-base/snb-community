@@ -401,6 +401,44 @@ finalizeの開始時と失敗時は`getKeys()`で`SURVEY_FINAL_RESULTS_*`を全�
 本番へ反映するのは**既存Web Appデプロイ（`AKfycbww3AuMaeoZnbVfUr7evAfvcPtXIpTVJlUd8IL1rOBG6YBhdhwPh1iSsjyMPITGrT5I`）の更新**のみ。
 新規Web Appデプロイは作成しない（`/exec` URLが変わるため）。管理GASは変更しない。`responses`の既存データは削除・書換えしない。
 
+### GitHub Actions / clasp による既存デプロイ更新
+
+`.github/workflows/snb-survey-gas-production.yml`はPR時にはテストと配布物のdry-run検証のみを実行し、
+`workflow_dispatch`時だけ既存GASを更新する。先にGitHub Environment `snb-survey-production`で
+本番実行を管理し、次のSecretsを設定する。値はリポジトリやworkflowへ書かない。
+
+| Secret | 内容 |
+| --- | --- |
+| `CLASPRC_JSON` | 既存GASプロジェクトに権限を持つclasp認証JSON |
+| `SNB_SURVEY_SCRIPT_ID` | 既存の公開アンケートApps ScriptプロジェクトID |
+| `SNB_SURVEY_DEPLOYMENT_ID` | 更新対象の既存Web AppデプロイID |
+
+手動実行時は`source_sha`にレビュー済みPR #320の**現在の40桁head SHA**を入力する。
+workflowはGitHub上のPR headとの一致を確認してからそのコミットをチェックアウトする。
+デプロイ用の`.clasp.json`はランナーの一時領域でのみ生成し、`rootDir`を
+`community/gas/nagoya_fetish_survey_webapp`に設定する。配布対象は`Code.gs`、
+`Results.html`、`ResultsScript.html`、`Styles.html`、`Index.html`、`Script.html`、
+`appsscript.json`の7ファイルだけ。旧HTMLもリモートから不用意に削除しないため残すが、
+公開`doGet()`は`Results.html`だけを使用する。`tools`、`tests`、READMEはGASへ送らない。
+
+更新処理は、認証とScript ID/Deployment IDの有無、既存プロジェクトのデプロイID、
+既存ファイルとmanifestに予期しない要素がないことを確認してから`clasp push --force`を行う。
+push成功後にのみversionを作り、その番号を指定して`clasp update-deployment`で**同じID**を更新する。
+更新後もIDとversion番号を再照合する。新規デプロイ作成コマンドは使わない。
+Script Properties（`SPREADSHEET_ID`、`SERVER_SALT`など）はclaspで変更しない。
+`finalizeSurveyResults()`もworkflowからは実行しない。公開状態・件数・Script Propertiesの本番確認は別途行う。
+
+**初回の起動制約**：GitHubの`workflow_dispatch`はworkflowファイルがdefault branchに存在するまで
+起動できない。PR #320に追加しただけではこのデプロイworkflowを手動実行できない。
+レビュー後、workflowをdefault branchで利用可能にする方法を決めてから実行する。
+PRの`pull_request`検証はこの制約と独立して実行できる。今回のコーディングでは本番更新を行わない。
+
+`appsscript.json`には`Asia/Tokyo`、V8、Stackdriver例外ログと
+`SpreadsheetApp.openById()`・集計シート書き込みに必要な`spreadsheets`スコープだけを明示する。
+既存manifestにその他の設定があれば上書きせず失敗し、事前レビューを求める。
+
+### 手動で更新する場合
+
 1. **コード更新**：既存のApps Scriptプロジェクトへ`Code.gs`・`Results.html`・`ResultsScript.html`・`Styles.html`（および過去コードの`Index.html`・`Script.html`）を反映する。
 2. **既存デプロイを更新**：「デプロイ」→「デプロイを管理」→既存デプロイ→編集→バージョン「新バージョン」→デプロイ（実行ユーザーは「自分」、アクセスは「全員」のまま）。
 3. **確定処理を1回実行**：Apps Scriptエディタで`finalizeSurveyResults()`を実行する（`SPREADSHEET_ID`のScript Propertyが設定済みであること。初回は権限承認が必要）。
