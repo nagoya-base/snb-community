@@ -10,10 +10,19 @@ import unittest
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 DEPLOYMENT = 'test-existing-deployment'
+HTML = ['Index.html', 'Results.html', 'ResultsScript.html', 'Script.html', 'Styles.html']
+PULLED_GS = ['Code.gs'] + HTML
+PULLED_JS = ['Code.js'] + HTML
+VERIFY = REPO / 'scripts/verify-snb-survey-source-sha.sh'
+
+
+def git(cwd, *args):
+    return subprocess.run(['git', *args], cwd=cwd, check=True, text=True,
+                          capture_output=True).stdout.strip()
 
 
 class DeploymentWorkflowTest(unittest.TestCase):
-    def run_deploy(self, fail_push=False, deployment_id=DEPLOYMENT):
+    def run_deploy(self, fail_push=False, deployment_id=DEPLOYMENT, pulled=None):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
             mock = root / 'clasp'
@@ -29,8 +38,7 @@ if action == 'list-deployments':
     print(json.dumps([{'deploymentId': os.environ['MOCK_DEPLOYMENT'],
                        'versionNumber': 8 if os.environ.get('MOCK_UPDATED') else 7}]))
 elif action == 'pull':
-    for name in ('Code.gs', 'Index.html', 'Results.html', 'ResultsScript.html',
-                 'Script.html', 'Styles.html'):
+    for name in json.loads(os.environ['MOCK_PULLED']):
         pathlib.Path(name).write_text('placeholder')
     pathlib.Path('appsscript.json').write_text('{}')
 elif action == 'push' and os.environ.get('MOCK_FAIL_PUSH') == '1':
@@ -56,6 +64,7 @@ elif action == 'update-deployment':
                        SNB_SURVEY_SOURCE_SHA='a' * 40,
                        MOCK_CLASP_LOG=str(log), MOCK_DEPLOYMENT=DEPLOYMENT,
                        MOCK_UPDATED_FILE=str(updated),
+                       MOCK_PULLED=json.dumps(pulled or PULLED_GS),
                        MOCK_FAIL_PUSH='1' if fail_push else '0')
             # The mock process sees whether the preceding update created its marker.
             mock.write_text(mock.read_text().replace(
@@ -83,6 +92,80 @@ elif action == 'update-deployment':
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(commands, ['list-deployments'])
         self.assertFalse(updated)
+
+    def assert_rejected_before_push(self, pulled):
+        result, commands, updated = self.run_deploy(pulled=pulled)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(commands, ['list-deployments', 'pull'])
+        self.assertFalse(updated)
+        return result
+
+    def test_clasp_pulled_js_is_normalized_to_allowlisted_gs(self):
+        result, commands, updated = self.run_deploy(pulled=PULLED_JS)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('"Code.js" kind=script normalized="Code.gs" EXPECTED', result.stdout)
+        self.assertIn('push', commands)
+        self.assertTrue(updated)
+
+    def test_unknown_js_file_is_rejected(self):
+        result = self.assert_rejected_before_push(PULLED_JS + ['Extra.js'])
+        self.assertIn('"Extra.js" kind=script normalized="Extra.gs" UNEXPECTED', result.stdout)
+
+    def test_unknown_html_file_is_rejected(self):
+        result = self.assert_rejected_before_push(PULLED_GS + ['Extra.html'])
+        self.assertIn('"Extra.html" kind=html normalized="Extra.html" UNEXPECTED', result.stdout)
+
+    def test_unknown_config_file_is_rejected(self):
+        self.assert_rejected_before_push(PULLED_GS + ['config.json'])
+
+    def test_js_and_gs_duplicates_are_rejected(self):
+        self.assert_rejected_before_push(PULLED_GS + ['Code.js'])
+
+    def test_diagnostics_do_not_print_identifiers(self):
+        result, _, _ = self.run_deploy(pulled=PULLED_JS)
+        output = result.stdout + result.stderr
+        for secret in ('test-script', DEPLOYMENT, 'fake'):
+            self.assertNotIn(secret, output)
+
+
+class SourceShaVerificationTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.repo = pathlib.Path(self.tmp.name)
+        git(self.repo, 'init', '-q', '-b', 'main')
+        git(self.repo, 'config', 'user.email', 't@example.invalid')
+        git(self.repo, 'config', 'user.name', 'test')
+        for name in ('one', 'two'):
+            (self.repo / name).write_text(name)
+            git(self.repo, 'add', name)
+            git(self.repo, 'commit', '-q', '-m', name)
+        self.head = git(self.repo, 'rev-parse', 'HEAD')
+        self.old = git(self.repo, 'rev-parse', 'HEAD~1')
+        git(self.repo, 'checkout', '-q', '-b', 'topic', self.old)
+        (self.repo / 'side').write_text('side')
+        git(self.repo, 'add', 'side')
+        git(self.repo, 'commit', '-q', '-m', 'side')
+        self.side = git(self.repo, 'rev-parse', 'HEAD')
+        git(self.repo, 'checkout', '-q', 'main')
+
+    def verify(self, sha):
+        return subprocess.run(['bash', str(VERIFY)], cwd=self.repo, text=True, capture_output=True,
+                              env=dict(os.environ, SOURCE_SHA=sha, SNB_SURVEY_MAIN_REF='main'))
+
+    def test_main_head_is_accepted(self):
+        self.assertEqual(self.verify(self.head).returncode, 0)
+
+    def test_older_main_commit_is_rejected(self):
+        self.assertNotEqual(self.verify(self.old).returncode, 0)
+
+    def test_commit_not_on_main_is_rejected(self):
+        self.assertNotEqual(self.verify(self.side).returncode, 0)
+
+    def test_unknown_or_malformed_sha_is_rejected(self):
+        self.assertNotEqual(self.verify('b' * 40).returncode, 0)
+        self.assertNotEqual(self.verify(self.head[:12]).returncode, 0)
+        self.assertNotEqual(self.verify(self.head.upper()).returncode, 0)
 
 
 if __name__ == '__main__':

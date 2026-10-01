@@ -36,6 +36,21 @@ function prepare(repoRoot, outputRoot, scriptId) {
   return FILES;
 }
 
+// clasp pull stores Apps Script files as .js (or .gs depending on configuration).
+// Map each pulled name to its allowlisted repository name; unknown names stay unexpected.
+function classifyRemoteFile(name) {
+  const allowed = new Set(FILES);
+  let kind = 'other';
+  let normalized = name;
+  if (name === 'appsscript.json') kind = 'manifest';
+  else if (/^[^/\\]+\.html$/.test(name)) kind = 'html';
+  else if (/^[^/\\]+\.(js|gs)$/.test(name)) {
+    kind = 'script';
+    normalized = name.replace(/\.js$/, '.gs');
+  }
+  return { name, kind, normalized, expected: kind !== 'other' && allowed.has(normalized) };
+}
+
 if (require.main === module) {
   try {
     const [repoRoot, outputRoot] = process.argv.slice(2);
@@ -48,4 +63,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { prepare, ROOT_DIR, FILES };
+module.exports = { prepare, classifyRemoteFile, ROOT_DIR, FILES };

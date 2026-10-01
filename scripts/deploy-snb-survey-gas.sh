@@ -54,26 +54,25 @@ fi
 REMOTE_DIR="$remote_dir" node <<'NODE'
 const fs = require('fs');
 const path = require('path');
-const { FILES } = require(process.env.GITHUB_WORKSPACE + '/scripts/prepare-snb-survey-gas');
-const expected = new Set(FILES);
+const { classifyRemoteFile } = require(process.env.GITHUB_WORKSPACE + '/scripts/prepare-snb-survey-gas');
 const existing = fs.readdirSync(process.env.REMOTE_DIR)
   .filter(name => !name.startsWith('.'));
-// TEMPORARY DIAGNOSTIC: print file names only (never contents or identifiers), then stop
-// before any push, version creation or deployment update.
-{
-  const kind = name => /\.(gs|js)$/.test(name) ? 'script' : /\.html$/.test(name) ? 'html'
-    : name === 'appsscript.json' ? 'manifest' : 'other';
-  console.log('DIAG existing GAS files (' + existing.length + '):');
-  for (const name of existing.slice().sort()) {
-    console.log('DIAG  ' + JSON.stringify(name) + ' [' + kind(name) + ']' +
-      (expected.has(name) ? '' : ' UNEXPECTED'));
-  }
-  for (const name of expected) if (!existing.includes(name)) console.log('DIAG  missing from remote: ' + name);
-  console.log('DIAG diagnostic mode: stopping before push/version/deployment.');
-  process.exit(1);
+// Diagnostic output: file names and classification only, never contents or identifiers.
+const entries = existing.sort().map(name => {
+  const entry = classifyRemoteFile(name);
+  const isFile = fs.statSync(path.join(process.env.REMOTE_DIR, name)).isFile();
+  return { ...entry, expected: entry.expected && isFile, kind: isFile ? entry.kind : 'directory' };
+});
+console.log('Existing GAS files after clasp pull (' + entries.length + '):');
+for (const entry of entries) {
+  console.log('  ' + JSON.stringify(entry.name) + ' kind=' + entry.kind +
+    ' normalized=' + JSON.stringify(entry.normalized) +
+    ' ' + (entry.expected ? 'EXPECTED' : 'UNEXPECTED'));
 }
+const normalizedNames = entries.map(entry => entry.normalized);
 if (!existing.includes('appsscript.json') ||
-    existing.some(name => !expected.has(name) || !fs.statSync(path.join(process.env.REMOTE_DIR, name)).isFile())) {
+    entries.some(entry => !entry.expected) ||
+    new Set(normalizedNames).size !== normalizedNames.length) {
   throw new Error('Existing GAS project contains unexpected files; refusing to replace them.');
 }
 const manifest = JSON.parse(fs.readFileSync(path.join(process.env.REMOTE_DIR, 'appsscript.json'), 'utf8'));
@@ -101,7 +100,7 @@ if ! clasp --auth "$auth_file" push --force >"$deploy_root/push.log" 2>&1; then
   exit 1
 fi
 
-if ! clasp --auth "$auth_file" --json create-version "PR #320 ${SNB_SURVEY_SOURCE_SHA}" \
+if ! clasp --auth "$auth_file" --json create-version "main ${SNB_SURVEY_SOURCE_SHA}" \
     >"$deploy_root/version.json" 2>"$deploy_root/version.log"; then
   echo 'Creating a GAS version failed. Existing Web App deployment was not updated.' >&2
   exit 1
@@ -115,7 +114,7 @@ NODE
 )"
 
 if ! clasp --auth "$auth_file" --json update-deployment "$SNB_SURVEY_DEPLOYMENT_ID" \
-    --versionNumber "$version_number" --description "PR #320 ${SNB_SURVEY_SOURCE_SHA}" \
+    --versionNumber "$version_number" --description "main ${SNB_SURVEY_SOURCE_SHA}" \
     >"$deploy_root/update.json" 2>"$deploy_root/update.log"; then
   echo 'Updating the existing Web App deployment failed.' >&2
   exit 1
