@@ -78,9 +78,15 @@ var PROP_SERVER_SALT = 'SERVER_SALT';
    「確定済み」と判断しない（buildAggregationSheets()単体実行や途中失敗でも作られるため）。 */
 var PROP_RESULTS_FINALIZED_AT = 'SURVEY_RESULTS_FINALIZED_AT';
 /* Issue #319：finalizeSurveyResults()が固定した公開用payload（JSON文字列）。
-   getPublicResults()・`?view=results&format=json`は、確定後はこの値だけを返す（Spreadsheetを読まない）。
+   Script Propertiesは1値あたり9KBが上限のため、JSON文字列をUTF-8バイト数で分割した複数propertyへ保存する：
+     SURVEY_FINAL_RESULTS_000, _001, ...  … 分割チャンク（1チャンクはUTF-8で最大 FINAL_RESULTS_CHUNK_MAX_BYTES）
+     SURVEY_FINAL_RESULTS_META            … {version, chunks, bytes, length}（全チャンク保存後に保存）
+   getPublicResults()・`?view=results&format=json`は、確定後はこれらを結合して返すだけ（Spreadsheetを読まない）。
    公開可能な単純集計のみを保存し、respondent_hash・UUID・free_comment・個別timestamp等は含めない。 */
-var PROP_FINAL_RESULTS_JSON = 'SURVEY_FINAL_RESULTS_JSON';
+var PROP_FINAL_RESULTS_PREFIX = 'SURVEY_FINAL_RESULTS_';
+var PROP_FINAL_RESULTS_META = 'SURVEY_FINAL_RESULTS_META';
+/* 9KB（9216バイト）上限に対して十分な余裕を持たせる（1チャンクのUTF-8バイト数の上限）。 */
+var FINAL_RESULTS_CHUNK_MAX_BYTES = 6000;
 
 var RESPONSES_SHEET_NAME = 'responses';
 
@@ -469,7 +475,7 @@ var PUBLIC_TIER2_MIN_TARGET = 20;
  * Issue #319：アンケートは受付終了済み。このWebアプリは「確定結果閲覧アプリ」として動作する。
  *   `/exec`                          → 結果ページ（Results.html）
  *   `/exec?view=results`             → 結果ページ（同上）
- *   `/exec?view=results&format=json` → 確定済み公開結果JSON（getPublicResults()＝SURVEY_FINAL_RESULTS_JSON）
+ *   `/exec?view=results&format=json` → 確定済み公開結果JSON（getPublicResults()＝SURVEY_FINAL_RESULTS_*）
  * 回答フォーム（Index.html）は公開経路から外している。管理画面へのルートはこのプロジェクトには存在しない。
  */
 function doGet(e) {
@@ -522,7 +528,7 @@ function submitSurvey(uuid, answers) {
  * `?view=results` の初期表示・`?view=results&format=json` から呼び出す。確定済みの公開結果を返す。
  *
  * 【固定スナップショット（Issue #319）】finalizeSurveyResults()が保存した
- * SURVEY_FINAL_RESULTS_JSON を JSON.parse() して返すだけ。Spreadsheet・集計_*シート・responses・
+ * SURVEY_FINAL_RESULTS_META／_000…のチャンクを結合して JSON.parse() し返すだけ。Spreadsheet・集計_*シート・responses・
  * CacheServiceは一切読まない（確定状態の判断にキャッシュを使わない）。
  * 未確定（JSONまたは確定マーカーが無い）ときは「未確定」と分かるエラーにする。
  *
@@ -533,11 +539,113 @@ function submitSurvey(uuid, answers) {
  */
 function getPublicResults() {
   var properties = PropertiesService.getScriptProperties();
-  var json = properties.getProperty(PROP_FINAL_RESULTS_JSON);
-  if (!json || !properties.getProperty(PROP_RESULTS_FINALIZED_AT)) {
+  if (!properties.getProperty(PROP_RESULTS_FINALIZED_AT)) {
     throw new Error('公開結果は未確定です。finalizeSurveyResults()を実行して結果を確定してください。');
   }
-  return JSON.parse(json);
+  // 確定マーカーがあってもチャンク欠損・不整合なら公開しない（不完全なsnapshotを返さない）。
+  return JSON.parse(readFinalResultsChunks_(properties));
+}
+
+/* ── 確定結果のチャンク保存（Script Properties 9KB/value 制限対応） ── */
+
+/** 文字列のUTF-8バイト数（Apps ScriptのV8にはTextEncoderが無いため自前で数える）。 */
+function utf8ByteLength_(str) {
+  var bytes = 0;
+  for (var i = 0; i < str.length; i++) {
+    var c = str.charCodeAt(i);
+    if (c < 0x80) bytes += 1;
+    else if (c < 0x800) bytes += 2;
+    else if (c >= 0xD800 && c <= 0xDBFF && i + 1 < str.length &&
+             str.charCodeAt(i + 1) >= 0xDC00 && str.charCodeAt(i + 1) <= 0xDFFF) { bytes += 4; i++; }
+    else bytes += 3;
+  }
+  return bytes;
+}
+
+/** 文字列をUTF-8で maxBytes 以下のチャンクへ分割する（サロゲートペア・多バイト文字を途中で切らない）。 */
+function splitByUtf8Bytes_(str, maxBytes) {
+  var chunks = [];
+  var current = '';
+  var currentBytes = 0;
+  for (var i = 0; i < str.length; i++) {
+    var ch = str.charAt(i);
+    var c = str.charCodeAt(i);
+    if (c >= 0xD800 && c <= 0xDBFF && i + 1 < str.length &&
+        str.charCodeAt(i + 1) >= 0xDC00 && str.charCodeAt(i + 1) <= 0xDFFF) {
+      ch += str.charAt(i + 1);
+      i++;
+    }
+    var chBytes = utf8ByteLength_(ch);
+    if (currentBytes + chBytes > maxBytes) {
+      chunks.push(current);
+      current = '';
+      currentBytes = 0;
+    }
+    current += ch;
+    currentBytes += chBytes;
+  }
+  if (current !== '' || chunks.length === 0) chunks.push(current);
+  return chunks;
+}
+
+function finalResultsChunkKey_(index) {
+  var n = String(index);
+  while (n.length < 3) n = '0' + n;
+  return PROP_FINAL_RESULTS_PREFIX + n;
+}
+
+/** 確定マーカー・メタ情報・全チャンク（古い余剰チャンクを含む）を削除する。 */
+function clearFinalResultsSnapshot_(properties) {
+  properties.deleteProperty(PROP_RESULTS_FINALIZED_AT);
+  var keys = properties.getKeys();
+  keys.forEach(function (key) {
+    if (key === PROP_FINAL_RESULTS_META || /^SURVEY_FINAL_RESULTS_\d+$/.test(key)) {
+      properties.deleteProperty(key);
+    }
+  });
+}
+
+/**
+ * payloadをチャンクへ分割して保存する。全チャンクの保存後にメタ情報を保存し、
+ * 保存した内容を読み戻して元のJSON文字列と一致することを確認する（不一致なら例外）。
+ * 確定マーカーはここでは保存しない（呼び出し元が最後に保存する）。
+ */
+function writeFinalResultsSnapshot_(properties, payload) {
+  var json = JSON.stringify(payload);
+  var chunks = splitByUtf8Bytes_(json, FINAL_RESULTS_CHUNK_MAX_BYTES);
+  chunks.forEach(function (chunk, index) {
+    properties.setProperty(finalResultsChunkKey_(index), chunk);
+  });
+  properties.setProperty(PROP_FINAL_RESULTS_META, JSON.stringify({
+    version: 1, chunks: chunks.length, bytes: utf8ByteLength_(json), length: json.length
+  }));
+  if (readFinalResultsChunks_(properties) !== json) {
+    throw new Error('確定結果の保存内容が一致しません（チャンク保存の検証に失敗）。');
+  }
+}
+
+/** メタ情報に従ってチャンクを順に結合して返す。欠損・件数/サイズ不一致は「未確定」エラー。 */
+function readFinalResultsChunks_(properties) {
+  var incomplete = function (reason) {
+    return new Error('公開結果は未確定です（確定結果が不完全: ' + reason + '）。finalizeSurveyResults()を実行し直してください。');
+  };
+  var metaText = properties.getProperty(PROP_FINAL_RESULTS_META);
+  if (!metaText) throw incomplete('メタ情報なし');
+  var meta;
+  try { meta = JSON.parse(metaText); } catch (e) { throw incomplete('メタ情報が壊れています'); }
+  if (!meta || meta.version !== 1 || typeof meta.chunks !== 'number' || meta.chunks < 1 || Math.floor(meta.chunks) !== meta.chunks) {
+    throw incomplete('メタ情報が不正です');
+  }
+  var json = '';
+  for (var i = 0; i < meta.chunks; i++) {
+    var chunk = properties.getProperty(finalResultsChunkKey_(i));
+    if (typeof chunk !== 'string') throw incomplete('チャンク' + i + 'が欠損');
+    json += chunk;
+  }
+  if (json.length !== meta.length || utf8ByteLength_(json) !== meta.bytes) {
+    throw incomplete('サイズ不一致');
+  }
+  return json;
 }
 
 /**
@@ -1001,7 +1109,8 @@ function getDeadlineValidSheet_(spreadsheet) {
  *  6. SpreadsheetApp.flush()。
  *  7. 公開用payloadを生成する。
  *  8. validNewSurveyRows === payload.total を確認する（不一致なら失敗）。
- *  9. payloadをJSON文字列として SURVEY_FINAL_RESULTS_JSON へ保存する。
+ *  9. payloadをJSON文字列にし、UTF-8バイト数で分割して SURVEY_FINAL_RESULTS_000… へ保存し、
+ *     全チャンク保存後に SURVEY_FINAL_RESULTS_META を保存（読み戻して検証）。
  * 10. 最後に SURVEY_RESULTS_FINALIZED_AT を保存する。
  * 途中で例外になった場合は確定JSON・マーカーを残さない（確定扱いにしない）。
  * 戻り値・ログの件数内訳が「最終回答数」の確定根拠になる：
@@ -1015,8 +1124,7 @@ function finalizeSurveyResults() {
   }
   var properties = PropertiesService.getScriptProperties();
   // 1. 既存の確定マーカー・確定JSONを外す。
-  properties.deleteProperty(PROP_RESULTS_FINALIZED_AT);
-  properties.deleteProperty(PROP_FINAL_RESULTS_JSON);
+  clearFinalResultsSnapshot_(properties);
   var stats;
   try {
     // 2〜5. スナップショット生成と集計_*シート再生成。集計式がresponses_validを参照するため、
@@ -1034,14 +1142,14 @@ function finalizeSurveyResults() {
         ', publicTotal=' + payload.total);
     }
     // 9. 公開payloadを固定。
-    properties.setProperty(PROP_FINAL_RESULTS_JSON, JSON.stringify(payload));
+    writeFinalResultsSnapshot_(properties, payload);
     // 10. 全工程成功後、最後にだけ確定マーカーを保存する。
     stats.finalizedAt = now.toISOString();
     properties.setProperty(PROP_RESULTS_FINALIZED_AT, stats.finalizedAt);
   } catch (err) {
     // 途中で失敗した場合は確定JSON・マーカーを残さない。
-    try { properties.deleteProperty(PROP_RESULTS_FINALIZED_AT); } catch (ignored) { /* 無視 */ }
-    try { properties.deleteProperty(PROP_FINAL_RESULTS_JSON); } catch (ignored2) { /* 無視 */ }
+    // 新しく作成した全チャンク・メタ情報・確定マーカーを確実に削除する。
+    try { clearFinalResultsSnapshot_(properties); } catch (ignored) { /* 無視 */ }
     throw err;
   }
   Logger.log('finalizeSurveyResults: ' + JSON.stringify(stats));
@@ -1051,7 +1159,7 @@ function finalizeSurveyResults() {
 /**
  * finalizeSurveyResults()専用：確定マーカー・キャッシュに依存せず、responses_validから
  * 公開用payloadを組み立てる（公開結果の集計はbuildPublicResultsPayload_）。
- * 公開APIではない。結果はfinalizeSurveyResults()が整合性確認のうえSURVEY_FINAL_RESULTS_JSONへ固定する。
+ * 公開APIではない。結果はfinalizeSurveyResults()が整合性確認のうえSURVEY_FINAL_RESULTS_*（チャンク）へ固定する。
  */
 function computePublicResultsForFinalize_() {
   var spreadsheetId = PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID);

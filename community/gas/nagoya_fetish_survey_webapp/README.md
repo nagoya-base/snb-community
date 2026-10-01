@@ -3,6 +3,22 @@
 Google Apps ScriptのHTML Serviceで動く、匿名の市場調査アンケートWebアプリ。
 Googleログイン・メールアドレスを一切要求せず、回答はGoogleスプレッドシートへ保存する。
 
+> ## 🔒 現在の運用：受付終了・確定結果閲覧モード（Issue #319）
+>
+> アンケートは **2026-09-30 23:59 JSTで終了済み・再開しない**。この公開GASは回答受付アプリではなく、
+> **受付終了済みアンケートの確定結果閲覧アプリ**として動作する（既存の`/exec` URLは維持）。
+>
+> | URL / 関数 | 挙動 |
+> |---|---|
+> | `/exec` | 結果ページ（`Results.html`）。回答フォームは公開しない |
+> | `/exec?view=results` | 結果ページ（同上） |
+> | `/exec?view=results&format=json` | 確定済みの公開結果JSON（`finalizeSurveyResults()`が固定したスナップショット） |
+> | `submitSurvey()` | 常に`{ status: 'CLOSED' }`（何にも触れない・保存しない） |
+> | `checkSubmissionStatus()` | 常に`{ answered: false, closed: true }` |
+>
+> 以降のフォーム・回答保存・重複判定・リアルタイム更新に関する記述は**終了前の技術資料（履歴）**であり、
+> 現在の本番運用・動作確認は「デプロイ手順（終了モード）」と「受付終了・最終結果の固定」を正とする。
+
 > ## ⚠️ 設問・選択肢を変更する前に必ず読むこと
 >
 > 設問・選択肢の定義は **`Code.gs`（サーバー側検証・正本）と`Script.html`（クライアント側
@@ -244,7 +260,7 @@ STEP1A（全回答者・分析の主）
 ### プライバシー抑制ルール
 
 - 生回答・自由記述・`respondent_hash`・UUID関連情報・個別の回答日時は一切公開しない
-  （`最終更新時刻`は個々の回答日時ではなく、公開結果キャッシュを生成した時刻）。
+  （`generatedAt`は個々の回答日時ではなく、finalize時に公開payloadを生成した時刻）。
 - IP/User-Agentは従来どおり収集しない。
 - **総回答数が10件未満（`PUBLIC_MIN_TOTAL_FOR_CHARTS`）の場合、件数以外の集計値を一切返さず、
   全グラフを非表示にする**（「現在データを集計中です。回答が一定数集まり次第、結果を公開します。」
@@ -279,15 +295,11 @@ responses全行に対する集計処理を独自に二重実装しない。
 自由記述の内容そのものは一切読み取って返さない（件数のみ）。この関数は`tests/test_backend.js`で
 テストしている。
 
-### リアルタイム更新・キャッシュ
+### リアルタイム更新・キャッシュ（廃止：Issue #298当時の仕様）
 
-`ResultsScript.html`は初回表示時に即座に`getPublicResults()`を呼び、以降45秒間隔
-（30〜60秒の範囲）でポーリングする。WebSocket等は使わない。
-
-サーバー側は`CacheService`（`PUBLIC_RESULTS_CACHE_KEY`、TTL＝`PUBLIC_RESULTS_CACHE_TTL_SECONDS`＝
-45秒）で集計結果をキャッシュする。**`submitSurvey()`が新規回答の保存に成功した直後、
-`invalidatePublicResultsCache_()`で公開結果キャッシュを必ず削除する（任意ではなく必須）。**
-これにより、新規回答後の公開結果がキャッシュ有効期限を待たずに速やかに更新される。
+終了前は45秒間隔のポーリングと`CacheService`による集計キャッシュで準備中の結果を更新していたが、
+Issue #319で**廃止**した。現在は`ResultsScript.html`も`getPublicResults()`も、固定した確定結果を1回読むだけで、
+ポーリング・`CacheService`・`invalidatePublicResultsCache_()`は存在しない。
 
 ### 受付終了・最終結果の固定（Issue #319）
 
@@ -300,23 +312,36 @@ Spreadsheet・ハッシュ計算・append・キャッシュ更新のいずれに
 **最終結果の固定**：`responses`は読み取り専用のまま、`finalizeSurveyResults()`（エディタから手動実行・締切前は実行不可）が
 最終公開結果を固定する唯一の処理。順序：
 
-1. 既存の確定マーカー（`SURVEY_RESULTS_FINALIZED_AT`）・確定JSON（`SURVEY_FINAL_RESULTS_JSON`）を外す。
+1. 既存の確定マーカー（`SURVEY_RESULTS_FINALIZED_AT`）・確定結果のメタ情報/全チャンク（`SURVEY_FINAL_RESULTS_*`、古い余剰チャンク含む）を外す。
 2. `responses`を読み取り、`timestampが締切内の行だけ`を`responses_valid`へ複製
    （`respondent_hash`・`free_comment`は複製しない。timestampが解釈できない行は有効にしない）。
 3. `responses_valid`を参照する`集計_*`シートを再生成する（**集計式・公開用ロジックは既存のまま**）。
 4. `SpreadsheetApp.flush()`。
 5. 公開用payloadを生成し、`validNewSurveyRows === payload.total`を確認する（不一致なら失敗）。
-6. payloadをJSON文字列として`SURVEY_FINAL_RESULTS_JSON`（Script Properties）へ保存する。
+6. payloadを`JSON.stringify`し、UTF-8バイト数で分割して`SURVEY_FINAL_RESULTS_000`・`_001`…へ保存する（下記「確定結果の保存形式」）。全チャンク保存後に`SURVEY_FINAL_RESULTS_META`を保存し、読み戻して元のJSONと一致することを確認する。
 7. **最後に**`SURVEY_RESULTS_FINALIZED_AT`（ISO日時）を保存し、件数内訳を返す／ログに出す。
 
-途中で例外になった場合は確定JSON・マーカーのどちらも残さず、確定扱いにしない（`buildAggregationSheets()`単体実行も
-マーカーを外す）。`SURVEY_FINAL_RESULTS_JSON`には公開可能な単純集計payloadのみを保存し、respondent_hash・UUID・
+途中で例外になった場合は新規チャンク・メタ情報・確定マーカーのいずれも残さず、確定扱いにしない（`buildAggregationSheets()`単体実行も
+マーカーを外す）。確定結果には公開可能な単純集計payloadのみを保存し、respondent_hash・UUID・
 free_comment・email・個別timestamp・個別回答は含めない。
 
-**確定後の公開**：`getPublicResults()`と`?view=results&format=json`は、`SURVEY_FINAL_RESULTS_JSON`を
+**確定後の公開**：`getPublicResults()`と`?view=results&format=json`は、チャンクを順に結合して
 `JSON.parse()`して返すだけで、Spreadsheet・集計シート・`responses`・CacheServiceを一切読まない
-（JSONまたはマーカーが無い場合は「公開結果は未確定です」エラー）。
+（マーカー・メタ情報・チャンクのいずれかが欠損・不整合の場合は「公開結果は未確定です」エラー）。
 `build-static-results-data.js`が受け取るpayload形式は従来どおり。
+
+**確定結果の保存形式（Script Propertiesの9KB/value制限対応）**：Script Propertiesは1値あたり9KB（9216バイト）が
+上限のため、公開payloadは1つのpropertyではなく複数propertyへチャンク分割して保存する。
+
+| キー | 内容 |
+| --- | --- |
+| `SURVEY_FINAL_RESULTS_000`, `_001`, … | `JSON.stringify(payload)`をUTF-8バイト数で分割した断片（**1チャンクは最大6000バイト**、9KBに十分な余裕）。サロゲートペア・多バイト文字は途中で切らない |
+| `SURVEY_FINAL_RESULTS_META` | `{"version":1,"chunks":N,"bytes":総UTF-8バイト数,"length":総文字数}`。**全チャンクの保存後**に保存 |
+| `SURVEY_RESULTS_FINALIZED_AT` | 確定マーカー。**全工程の最後**に保存 |
+
+復元（`getPublicResults()`）はマーカー確認→メタ情報→チャンクを番号順に結合→`length`/`bytes`照合→`JSON.parse`。
+マーカー・メタ・チャンクのいずれかが欠損・不整合なら、不完全なsnapshotは返さず「未確定」エラーにする。
+finalizeの開始時と失敗時は`getKeys()`で`SURVEY_FINAL_RESULTS_*`を全て削除するため、古い余剰チャンクは残らない。
 
 **最終回答数の確定方法**：`finalizeSurveyResults()`の戻り値（`Logger.log`にも出力）を根拠にする。
 
@@ -343,7 +368,7 @@ free_comment・email・個別timestamp・個別回答は含めない。
 静的JSONの作り方（メンテナが締切後に手動で1回だけ実行する）：
 
 1. 本番の公開GASデプロイへ、`?view=results&format=json`を付けてアクセスする。これは
-   `finalizeSurveyResults()`が固定した確定payload（`SURVEY_FINAL_RESULTS_JSON`、`getPublicResults()`の戻り値）を
+   `finalizeSurveyResults()`が固定した確定payload（`SURVEY_FINAL_RESULTS_*`を結合したもの、`getPublicResults()`の戻り値）を
    そのままJSONで返すだけの専用エンドポイントで、再集計は一切行わない
    （`doGet(e)`内、`e.parameter.format === 'json'`のとき）。
    ```sh
@@ -371,18 +396,22 @@ free_comment・email・個別timestamp・個別回答は含めない。
 `fetish-survey-results.html`側も内訳を一切描画しない（`results.ready`の値に関わらず
 `status`を先に見る、二重ガード）。
 
-## デプロイ手順
+## デプロイ手順（終了モード）
 
-1. **Apps Scriptプロジェクト作成**：[script.google.com](https://script.google.com) で新規スタンドアロンプロジェクトを作成し、上記6ファイル（`Code.gs`・`Index.html`・`Styles.html`・`Script.html`・`Results.html`・`ResultsScript.html`）を同じファイル名で貼り付ける（`.html`拡張子のファイルとして追加すること）。
-2. **スプレッドシートID設定方法**：回答保存用のGoogleスプレッドシートを別途1つ新規作成し、URL中の `/d/` と `/edit` の間の文字列（スプレッドシートID）をコピーする。
-3. **Script Properties**：Apps Scriptエディタ左側の「プロジェクトの設定」（歯車アイコン）→「スクリプト プロパティ」で、キー `SPREADSHEET_ID` に手順2のIDを設定する（`SERVER_SALT` は未設定でよい。初回アクセス時に自動生成される）。
-4. 関数選択で `initializeAll` を実行する（初回は権限承認が必要。下記参照）。`responses`シートと集計用の`集計_*`シート群が作成される。
-5. **Web Appとしてデプロイ**：「デプロイ」→「新しいデプロイ」→種類「ウェブアプリ」。
-6. **実行ユーザー・アクセス**：実行ユーザーは「自分」、アクセスできるユーザーは「全員」（リンクを知っている全員相当。Googleアカウントが必要な設定は選ばない）。
-7. **URL取得**：発行された `/exec` で終わるURLがアンケートの回答用URL。SNB/SNBCサイトからはこのURLへリンクを貼るだけでよい（このリポジトリ側の実装は不要）。
-8. **動作確認**：URLを開いてフォームが表示されること、1件テスト回答を送信してスプレッドシートに反映されること、同じブラウザで再訪すると「回答済み」表示になることを確認する。
+本番へ反映するのは**既存Web Appデプロイ（`AKfycbww3AuMaeoZnbVfUr7evAfvcPtXIpTVJlUd8IL1rOBG6YBhdhwPh1iSsjyMPITGrT5I`）の更新**のみ。
+新規Web Appデプロイは作成しない（`/exec` URLが変わるため）。管理GASは変更しない。`responses`の既存データは削除・書換えしない。
 
-設問・選択肢を変更した場合は、`Code.gs`と`Script.html`の両方を更新したうえで再デプロイ（同じデプロイの「新しいバージョン」を選択）しないと本番URLへ反映されない。
+1. **コード更新**：既存のApps Scriptプロジェクトへ`Code.gs`・`Results.html`・`ResultsScript.html`・`Styles.html`（および過去コードの`Index.html`・`Script.html`）を反映する。
+2. **既存デプロイを更新**：「デプロイ」→「デプロイを管理」→既存デプロイ→編集→バージョン「新バージョン」→デプロイ（実行ユーザーは「自分」、アクセスは「全員」のまま）。
+3. **確定処理を1回実行**：Apps Scriptエディタで`finalizeSurveyResults()`を実行する（`SPREADSHEET_ID`のScript Propertyが設定済みであること。初回は権限承認が必要）。
+   戻り値/ログの`validNewSurveyRows`が最終回答数で、`publicTotal`と一致していること、`lateRows`/`unparseableRows`が想定どおりであることを確認する。
+4. **動作確認（回答の送信はしない）**：
+   - `/exec`と`/exec?view=results`が結果ページ（「受付終了済み」表示・回答導線なし）になること。
+   - `/exec?view=results&format=json`が確定JSONを返し、`total`が`validNewSurveyRows`と一致すること（同じ内容が繰り返し返ること）。
+   - `submitSurvey`は常に`CLOSED`を返す（ブラウザの開発者ツールから`google.script.run.submitSurvey(...)`を呼んでも`CLOSED`で、`responses`の行数が増えないこと）。
+5. **静的JSON生成**：下記「締切後の静的集計ページ公開」の手順で`community/fetish-survey-results.data.json`を`--status final`で生成し、差分レビューのうえマージする。
+
+（参考：終了前は、設問・選択肢を変更した場合に`Code.gs`と`Script.html`の両方を更新して再デプロイしていた。受付終了後は設問変更は行わない。）
 
 ## 初回権限承認
 
@@ -459,28 +488,15 @@ Node.js + jsdomによる検証スクリプトを置いている（README冒頭�
 以下はApps Scriptの実行環境・実ブラウザでの動作が前提のため、この開発環境では自動テストできず、
 **デプロイ後に手動での確認が必要**（本PRの報告にも記載する）。
 
-- [ ] 実際のスプレッドシートへの保存、`respondent_hash`重複時に行が追加されないことの確認
-- [ ] 同一UUIDで`submitSurvey`を直接複数回実行した場合にサーバー側で`DUPLICATE`が返ることの確認（`LockService`込み）
-- [ ] STEP1Aで終了（no_gate_reached）・SNBC興味なしで終了・スーツのみ回答、など途中分岐終了のパターンでも`respondent_hash`が保存され、同一ブラウザからの2回答目が拒否されることの確認
 - [ ] `initializeAll()` / `setupSpreadsheet()` の再実行で、既存の`responses`行（PR #292時点の18列分含む）が破壊されないことの確認。新規追加した12列（`interest_categories`〜`completion_stage`）がresponsesシートの末尾に正しく追加されることの確認
 - [ ] 実スプレッドシート上で`集計_地域`・`集計_衣装カテゴリ`・`集計_関わり方`・`集計_SNBC認知`・`集計_SNBC興味`・`集計_スーツ`・`深掘り集計`・`集計_服装（旧12択・参考値）`の各シートがエラーなく生成され、QUERY/SUMPRODUCT数式が想定どおりの値を返すことの確認（`集計_地域`に新規追加した「年代別回答数」ブロックを含む）
-- [ ] `/exec?view=results`を開き、公開結果ページ（5ブロック）が表示されること、`/exec`（パラメータなし）は従来どおりアンケートフォームが表示されることの確認
 - [ ] 総回答数が10件未満のスプレッドシートで`/exec?view=results`を開き、全グラフが非表示で「現在データを集計中です」の案内のみ表示されることの確認
 - [ ] 10件以上の回答があるスプレッドシートで、0件のカテゴリ・地域・年代区分だけがグラフに出ず、
   1件以上の区分（旧仕様なら5件未満で非表示だったもの）は表示されることの確認（Issue #304）
-- [ ] （Issue #304）実データで住まいが「関東」の新回答者が複数いるスプレッドシートで、
-  `/exec?view=results`の地域グラフに実際の人数どおり「関東」が表示されることの確認。表示されない場合は
-  `buildAggregationSheets()`を再実行して`集計_地域`（特に公開結果用の都道府県ブロック）を再生成し、
-  それでも直らない場合はキャッシュ（最大45秒）の影響を切り分けたうえで再確認する
 - [ ] （Issue #304）「制服・職業服」「コスプレ・キャラクター」等、複数カテゴリを束ねた公開グループの
   件数が、同一グループ内で複数カテゴリを選んだ回答者を重複カウントしていない（延べ選択数ではなく
   ユニーク回答者数になっている）ことを、実データと突き合わせて確認する
-- [ ] 1件テスト回答を送信した直後に`/exec?view=results`を再読み込みし、キャッシュ有効期限（45秒）を待たずに総回答数が更新されることの確認（`submitSurvey`成功時のキャッシュ削除の実地確認）
 - [ ] `/exec?view=results`をスマホ実機・375px幅程度で開き、横スクロールが発生しないことの確認
-- [ ] 実ブラウザ（特にSafari/iOS）でのCookie永続性（既知の制約は本PR報告・`Code.gs`末尾コメント参照）
-- [ ] iPhone/Android実機・375px幅程度での横スクロール有無・タップ操作性（特にQ4の3ブロック表示・スーツ選択時のSTEP2B表示）
-- [ ] 生UUID・IPアドレス・User-Agent・メールアドレス・Googleアカウントがスプレッドシートに保存されていないことの目視確認
-- [ ] （レビュー指摘対応）居住地4分類補助列のARRAYFORMULAが下の方までスピルしている状態のスプレッドシートで、テスト回答を複数件送信し、`responses`シートの実データ直後の行（例：既存回答が2〜3行目までなら4行目）に保存されること、離れた行（1001行目等）にジャンプしないことの確認
 - [ ] （Issue #315）既存スプレッドシートで`buildAggregationSheets()`を再実行し、`集計_SNBC興味`のブロック5・`深掘り集計`のブロック9〜19がエラーなく生成されることの確認
 - [ ] （Issue #315）`/exec?view=results`を開き、「SNBCへの認知・関心」「参加条件」「参加障壁・必要情報」「スーツ関連」の各セクションが表示され、それぞれの対象者数（`対象者数：N人`）が実データと一致することの確認
 - [ ] （Issue #315）対象者数がティア1（10人）・ティア2（20人）の閾値付近のスプレッドシートで、閾値未満のブロック（例：スーツ系ゲート該当者が9人）が`<details>`ごと非表示になり、閾値以上（10人）になった時点で表示に切り替わることの確認
@@ -489,8 +505,29 @@ Node.js + jsdomによる検証スクリプトを置いている（README冒頭�
 - [ ] （Issue #315）`/exec?view=results`を375px幅・デスクトップ幅の両方で開き、新設した`<details>`セクション（開閉含む）で横スクロールが発生しないこと、折りたたみの開閉操作がタップ・クリック双方で問題なく行えることの確認
 - [ ] （Issue #319・本番GAS再デプロイ後）`/exec?view=results&format=json`へ`curl`等でアクセスし、`/exec?view=results`（HTML版）と総回答数・各カテゴリの件数が完全一致することの確認
 - [ ] （Issue #319・9/30締切後）「締切後の静的集計ページ公開」の手順で静的JSONを生成し、`community/fetish-survey-results.html`を実ブラウザ（スマホ・デスクトップ）で開き、GAS版`/exec?view=results`と数値が一致すること、外部（GAS・Spreadsheet）への通信が一切発生していないこと（開発者ツールのNetworkタブで確認）、OGP・X（Twitter）カードのプレビューが正しく表示されることの確認。**この確認・本PRが対象とする`community/fetish-survey-results.html`の新規追加自体は、`community/index.html`・`community/fetish-survey.html`からリンクするまでは孤立ページとして扱ってよい（Issue #319のPart Cで導線を追加する別PRの対象）。**
+- [ ] （Issue #319・終了モード）上記「デプロイ手順（終了モード）」の手順4を実施し、`/exec`・`/exec?view=results`が結果ページ、`format=json`が確定JSON、`submitSurvey`が`CLOSED`で`responses`の行数が増えないことを確認する
+- [ ] （Issue #319・終了モード）実GAS上で`finalizeSurveyResults()`が成功し、`SURVEY_FINAL_RESULTS_META`・`SURVEY_FINAL_RESULTS_000…`・`SURVEY_RESULTS_FINALIZED_AT`がScript Propertiesに作成されること（チャンクが9KB上限に当たらないこと）
 
+#### 旧運用（回答受付中）の確認項目（受付終了につき対象外・履歴として残す）
+
+以下は回答フォーム稼働中の確認項目で、受付終了後は実施しない。
+
+- [ ] 実際のスプレッドシートへの保存、`respondent_hash`重複時に行が追加されないことの確認
+- [ ] 同一UUIDで`submitSurvey`を直接複数回実行した場合にサーバー側で`DUPLICATE`が返ることの確認（`LockService`込み）
+- [ ] STEP1Aで終了（no_gate_reached）・SNBC興味なしで終了・スーツのみ回答、など途中分岐終了のパターンでも`respondent_hash`が保存され、同一ブラウザからの2回答目が拒否されることの確認
+- [ ] `/exec?view=results`を開き、公開結果ページ（5ブロック）が表示されること、`/exec`（パラメータなし）は従来どおりアンケートフォームが表示されることの確認
+- [ ] （Issue #304）実データで住まいが「関東」の新回答者が複数いるスプレッドシートで、
+  `/exec?view=results`の地域グラフに実際の人数どおり「関東」が表示されることの確認。表示されない場合は
+  `buildAggregationSheets()`を再実行して`集計_地域`（特に公開結果用の都道府県ブロック）を再生成し、
+  それでも直らない場合はキャッシュ（最大45秒）の影響を切り分けたうえで再確認する
+- [ ] 1件テスト回答を送信した直後に`/exec?view=results`を再読み込みし、キャッシュ有効期限（45秒）を待たずに総回答数が更新されることの確認（`submitSurvey`成功時のキャッシュ削除の実地確認）
+- [ ] 実ブラウザ（特にSafari/iOS）でのCookie永続性（既知の制約は本PR報告・`Code.gs`末尾コメント参照）
+- [ ] iPhone/Android実機・375px幅程度での横スクロール有無・タップ操作性（特にQ4の3ブロック表示・スーツ選択時のSTEP2B表示）
+- [ ] 生UUID・IPアドレス・User-Agent・メールアドレス・Googleアカウントがスプレッドシートに保存されていないことの目視確認
+- [ ] （レビュー指摘対応）居住地4分類補助列のARRAYFORMULAが下の方までスピルしている状態のスプレッドシートで、テスト回答を複数件送信し、`responses`シートの実データ直後の行（例：既存回答が2〜3行目までなら4行目）に保存されること、離れた行（1001行目等）にジャンプしないことの確認
 ## 回答の保存位置（ARRAYFORMULAスピル対策・レビュー指摘対応）
+
+> 受付終了後の`submitSurvey()`は常に`CLOSED`で何も保存しない。以下は終了前に回答を保存していた当時の実装メモ（履歴）。
 
 `submitSurvey()`は`Sheet.appendRow()`を使わず、`appendResponseRow_()`が
 `findNextResponseRow_()`で決めた行へ`setValues()`で直接書き込む。

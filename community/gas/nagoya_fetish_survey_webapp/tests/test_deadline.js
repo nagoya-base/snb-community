@@ -5,7 +5,7 @@ const path = require('path');
 const vm = require('vm');
 
 // Issue #319：受付終了モード（submitSurvey / checkSubmissionStatus は常にCLOSED）と、
-// 締切内有効回答の確定スナップショット（responses_valid）・確定結果の固定（SURVEY_FINAL_RESULTS_JSON）の検証。
+// 締切内有効回答の確定スナップショット（responses_valid）・確定結果の固定（SURVEY_FINAL_RESULTS_META/_000…のチャンク保存）の検証。
 
 const code = fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8');
 
@@ -210,13 +210,25 @@ function makeEnv(clock, opts) {
   }) };
   const props = { SPREADSHEET_ID: 'SSID' };
   if (opts.finalizedMarker) props.SURVEY_RESULTS_FINALIZED_AT = '2026-10-01T00:00:00.000Z';
-  if (opts.finalJson) props.SURVEY_FINAL_RESULTS_JSON = opts.finalJson;
+  let seeding = false;
   const propOps = []; // 書き込み系の操作順 [{op, key}]
   sb.PropertiesService = { getScriptProperties: () => ({
     getProperty: (k) => (k in props ? props[k] : null),
-    setProperty: (k, v) => { propOps.push({ op: 'set', key: k }); props[k] = v; },
-    deleteProperty: (k) => { propOps.push({ op: 'delete', key: k }); delete props[k]; }
+    // 本物のScript Propertiesと同様、1値が9KB（9216バイト）を超えると失敗する。
+    setProperty: (k, v) => {
+      if (Buffer.byteLength(String(v), 'utf8') > 9216) throw new Error('simulated Script Properties limit: value of ' + k + ' exceeds 9KB');
+      if (!seeding && opts.failOnSetKey && opts.failOnSetKey(k, props)) throw new Error('simulated failure setting ' + k);
+      propOps.push({ op: 'set', key: k }); props[k] = String(v);
+    },
+    deleteProperty: (k) => { propOps.push({ op: 'delete', key: k }); delete props[k]; },
+    getKeys: () => Object.keys(props)
   }) };
+  if (opts.finalJson) { // 既存の確定スナップショット（チャンク形式）を用意しておく
+    seeding = true;
+    sb.writeFinalResultsSnapshot_(sb.PropertiesService.getScriptProperties(), JSON.parse(opts.finalJson));
+    propOps.length = 0;
+    seeding = false;
+  }
   const flushCalls = [];
   const access = { openById: 0 };
   sb.SpreadsheetApp = { openById: () => { access.openById++; return ss; }, flush: () => { flushCalls.push(true); } };
@@ -309,7 +321,16 @@ function makeGridSheet(C) {
 
 /* ── 確定マーカー（SURVEY_RESULTS_FINALIZED_AT） ── */
 const MARKER = 'SURVEY_RESULTS_FINALIZED_AT';
-const FINAL_JSON = 'SURVEY_FINAL_RESULTS_JSON';
+const META = 'SURVEY_FINAL_RESULTS_META';
+const snapKeys = (props) => Object.keys(props).filter((k) => k === META || /^SURVEY_FINAL_RESULTS_\d+$/.test(k));
+const hasSnap = (props) => snapKeys(props).length > 0;
+// テスト側の独立した復元（Code.gsの実装に依存しない）：メタ情報どおりにチャンクを番号順に連結する。
+const readSnap = (props) => {
+  const meta = JSON.parse(props[META]);
+  let out = '';
+  for (let i = 0; i < meta.chunks; i++) out += props['SURVEY_FINAL_RESULTS_' + String(i).padStart(3, '0')];
+  return out;
+};
 function marker_rows(sbForCols) {
   const C = sbForCols.COLUMNS;
   const mk = (ts, stage) => { const r = new Array(C.length).fill(''); r[0] = ts; r[C.indexOf('completion_stage')] = stage; return r; };
@@ -354,7 +375,7 @@ function expectBlocked(env, label) {
   let threw = false;
   try { env.sb.finalizeSurveyResults(); } catch (e) { threw = /simulated failure/.test(e.message); }
   assert(threw, 'finalize途中の例外はそのまま伝播する');
-  assert(!(MARKER in env.props) && !(FINAL_JSON in env.props), '途中で例外 → 確定マーカー・確定JSONは残らない（開始時に削除済みで保存もされない）');
+  assert(!(MARKER in env.props) && !hasSnap(env.props), '途中で例外 → 確定マーカー・メタ・全チャンクは残らない（開始時に削除済みで保存もされない）');
   expectBlocked(env, 'finalize途中失敗後');
 }
 { // テスト6：validNewSurveyRows !== publicTotal → 失敗・マーカー保存なし
@@ -364,7 +385,7 @@ function expectBlocked(env, label) {
   let msg = null;
   try { env.sb.finalizeSurveyResults(); } catch (e) { msg = e.message; }
   assert(msg && /最終回答数が一致しません/.test(msg), '件数不一致ならfinalizeが失敗する, got ' + msg);
-  assert(!(MARKER in env.props) && !(FINAL_JSON in env.props), '件数不一致 → 確定JSON・マーカーを保存しない（既存分も残さない）');
+  assert(!(MARKER in env.props) && !hasSnap(env.props), '件数不一致 → 確定チャンク・メタ・マーカーを保存しない（既存分も残さない）');
   expectBlocked(env, '件数不一致後');
 }
 { // テスト5：正常完了 → 確定JSON・マーカー保存、getPublicResults()は確定JSONだけを返す
@@ -375,8 +396,8 @@ function expectBlocked(env, label) {
   const stats = env.sb.finalizeSurveyResults();
   assert(typeof stats.finalizedAt === 'string' && env.props[MARKER] === stats.finalizedAt,
     '正常完了後に確定マーカーが保存される');
-  assert(typeof env.props[FINAL_JSON] === 'string', 'SURVEY_FINAL_RESULTS_JSON がJSON文字列として保存される');
-  const saved = JSON.parse(env.props[FINAL_JSON]);
+  assert(typeof env.props[META] === 'string' && typeof env.props['SURVEY_FINAL_RESULTS_000'] === 'string', 'SURVEY_FINAL_RESULTS_META と _000 チャンクが保存される');
+  const saved = JSON.parse(readSnap(env.props));
   assert(saved.total === 1 && stats.validNewSurveyRows === 1 && stats.publicTotal === 1, '最終回答数 validNewSurveyRows === publicTotal === saved.total (=1), got ' + JSON.stringify(stats));
   assert(env.writes.length === 0, '正常完了までresponsesへ書き込まない');
   assert(env.cacheCalls.get === 0 && env.cacheCalls.put === 0, '確定処理・公開APIはCacheServiceを使わない');
@@ -386,7 +407,7 @@ function expectBlocked(env, label) {
   env.sb.SpreadsheetApp = new Proxy({}, { get: () => { throw new Error('SpreadsheetApp must not be touched after finalize'); } });
   const r1 = env.sb.getPublicResults();
   const r2 = env.sb.getPublicResults();
-  assert(JSON.stringify(r1) === env.props[FINAL_JSON] && JSON.stringify(r2) === env.props[FINAL_JSON], 'getPublicResults() は保存済みJSONと完全一致する固定payloadを返す');
+  assert(JSON.stringify(r1) === readSnap(env.props) && JSON.stringify(r2) === readSnap(env.props), 'getPublicResults() は保存済みJSONと完全一致する固定payloadを返す');
   assert(env.access.openById === opened, 'finalize後のgetPublicResults()はSpreadsheetを開かない');
 }
 { // 公開payloadに個人情報が混入しない（responses行に個人情報を入れて確定し、allowlistバリデータと全文走査で確認）
@@ -400,7 +421,7 @@ function expectBlocked(env, label) {
   row[C.indexOf('completion_stage')] = 'no_gate_reached';
   const env = makeEnv(AFTER, { rows: [row] });
   env.sb.finalizeSurveyResults();
-  const json = env.props[FINAL_JSON];
+  const json = readSnap(env.props);
   assert(!/SECRET|example\.com|respondent_hash|free_comment|uuid|email/i.test(json), '確定JSONに respondent_hash・自由記述・email・UUID関連が含まれない');
   assert(!/2026-09-20/.test(json), '確定JSONに個別回答のtimestampが含まれない');
   const v = validatePublicResultsPayload(JSON.parse(json));
@@ -412,23 +433,135 @@ function expectBlocked(env, label) {
   const stub = { total: 1, ready: false, step3: { targetCount: 20, items: [] } };
   env.sb.buildPublicResultsPayload_ = () => stub;
   env.sb.finalizeSurveyResults();
-  assert(JSON.stringify(JSON.parse(env.props[FINAL_JSON])) === JSON.stringify(stub), '確定JSONは集計payload（分岐設問のtargetCount含む）をそのまま保存する');
+  assert(JSON.stringify(JSON.parse(readSnap(env.props))) === JSON.stringify(stub), '確定JSONは集計payload（分岐設問のtargetCount含む）をそのまま保存する');
 }
 { // マーカーは全工程の最後にだけ保存される（確定JSON保存の後）
   const probe = freshSandbox(AFTER);
   const env = makeEnv(AFTER, { rows: marker_rows(probe), finalizedMarker: true, finalJson: '{"old":true}' });
   let seenDuringCompute = null;
   const orig = env.sb.computePublicResultsForFinalize_;
-  env.sb.computePublicResultsForFinalize_ = function () { seenDuringCompute = { marker: MARKER in env.props, json: FINAL_JSON in env.props }; return orig(); };
+  env.sb.computePublicResultsForFinalize_ = function () { seenDuringCompute = { marker: MARKER in env.props, json: hasSnap(env.props) }; return orig(); };
   env.sb.finalizeSurveyResults();
   assert(seenDuringCompute && seenDuringCompute.marker === false && seenDuringCompute.json === false, '集計・件数確認の時点では既存の確定マーカー・確定JSONは外れている');
   const ops = env.propOps.map((o) => o.op + ':' + o.key);
-  const iSetJson = ops.indexOf('set:' + FINAL_JSON), iSetMarker = ops.indexOf('set:' + MARKER);
-  assert(iSetJson !== -1 && iSetMarker !== -1 && iSetJson < iSetMarker, '確定JSON保存 → 確定マーカー保存の順');
+  const iSetJson = ops.lastIndexOf('set:' + META), iSetMarker = ops.indexOf('set:' + MARKER);
+  const iFirstChunk = ops.indexOf('set:SURVEY_FINAL_RESULTS_000');
+  assert(iFirstChunk !== -1 && iFirstChunk < iSetJson && iSetJson < iSetMarker, '全チャンク保存 → メタ保存 → 確定マーカー保存の順');
   assert(iSetMarker === ops.length - 1 || ops.slice(iSetMarker + 1).every((o) => o.indexOf('delete') !== 0), 'SURVEY_RESULTS_FINALIZED_AT は最後に保存される, got ' + ops.join(' > '));
-  assert(ops.indexOf('delete:' + MARKER) < iSetJson && ops.indexOf('delete:' + FINAL_JSON) < iSetJson, '保存前に既存マーカー・確定JSONが解除されている');
+  assert(ops.indexOf('delete:' + MARKER) < iFirstChunk && ops.indexOf('delete:' + META) < iFirstChunk, '保存前に既存マーカー・メタが解除されている');
 }
 
+
+/* ══ Script Properties 9KB/value 制限対応：確定JSONのチャンク保存・復元 ══ */
+const bigPayload = (n) => {
+  const categories = [];
+  for (let i = 0; i < n; i++) categories.push({ name: '日本語カテゴリ' + i + '・𠮷野家😀', count: i, percent: Math.round(i * 1000 / n) / 10 });
+  return { total: 1, ready: false, generatedAt: '2026-10-01T00:00:00.000Z', categories, step3: { targetCount: 20, items: categories.slice(0, 3) } };
+};
+const chunkKeysOf = (props) => snapKeys(props).filter((k) => k !== META).sort();
+
+{ // 分割関数単体：UTF-8バイト上限・欠損なし・順序維持・サロゲートペアを切らない
+  const sb = freshSandbox(AFTER);
+  const text = Array.from({ length: 3000 }, (_, i) => ['あ', 'a', '𠮷', '😀', 'é', '漢'][i % 6] + (i % 10)).join('');
+  [10, 100, 6000].forEach((max) => {
+    const parts = sb.splitByUtf8Bytes_(text, max);
+    assert(parts.join('') === text, 'splitByUtf8Bytes_(max=' + max + ') は連結すると元の文字列と完全一致（欠損・重複・順序入れ替えなし）');
+    assert(parts.every((c) => Buffer.byteLength(c, 'utf8') <= max), '各チャンクはUTF-8で ' + max + ' バイト以下');
+    assert(parts.every((c) => Buffer.from(c, 'utf8').toString('utf8') === c), '各チャンクは文字（サロゲートペア含む）の途中で切れていない');
+  });
+  assert(sb.utf8ByteLength_(text) === Buffer.byteLength(text, 'utf8'), 'utf8ByteLength_ はUTF-8バイト数と一致（日本語・絵文字含む）');
+  assert(sb.FINAL_RESULTS_CHUNK_MAX_BYTES <= 6000 && sb.FINAL_RESULTS_CHUNK_MAX_BYTES < 9216, '1チャンクの上限は9KB（9216バイト）より十分小さい');
+}
+
+{ // 9KBを超える日本語payloadでもfinalizeで保存でき、getPublicResults()で欠損なく復元できる
+  const probe = freshSandbox(AFTER);
+  const payload = bigPayload(400);
+  const json = JSON.stringify(payload);
+  assert(Buffer.byteLength(json, 'utf8') > 9216 * 3, '模擬payloadは9KBを大きく超える（' + Buffer.byteLength(json, 'utf8') + 'バイト）');
+  const env = makeEnv(AFTER, { rows: marker_rows(probe) });
+  env.sb.buildPublicResultsPayload_ = () => payload;
+  env.sb.finalizeSurveyResults(); // モックは9KB超のsetPropertyで例外を投げる＝チャンク化されていなければここで失敗する
+  const keys = chunkKeysOf(env.props);
+  assert(keys.length >= 2, '複数チャンクに分割されている（' + keys.length + '個）');
+  assert(keys.every((k, i) => k === 'SURVEY_FINAL_RESULTS_' + String(i).padStart(3, '0')), 'チャンクキーは000から連番');
+  assert(keys.every((k) => Buffer.byteLength(env.props[k], 'utf8') <= 6000), '全チャンクがUTF-8で6000バイト以下（9KB上限に十分な余裕）');
+  const meta = JSON.parse(env.props[META]);
+  assert(meta.chunks === keys.length && meta.bytes === Buffer.byteLength(json, 'utf8') && meta.length === json.length, 'メタ情報（chunks/bytes/length）が実データと一致');
+  assert(readSnap(env.props) === json, 'チャンクを順番に結合すると元のJSON文字列と完全一致（順序維持）');
+  // 確定後はSpreadsheet・Cacheに触れず、deep-equalで復元できる。
+  env.sb.SpreadsheetApp = new Proxy({}, { get: () => { throw new Error('SpreadsheetApp must not be touched'); } });
+  env.sb.CacheService = new Proxy({}, { get: () => { throw new Error('CacheService must not be touched'); } });
+  const restored = env.sb.getPublicResults();
+  assert(JSON.stringify(restored) === json && restored.categories.length === 400 && restored.categories[399].name === payload.categories[399].name,
+    'getPublicResults() は日本語・サロゲートペアを含む全payloadを欠損なく復元する（Spreadsheet非依存）');
+  assert(restored.step3.targetCount === 20, '分岐設問のtargetCountも保持される');
+}
+
+{ // チャンク欠損・改ざん・メタ欠損は公開しない
+  const probe = freshSandbox(AFTER);
+  const mkFinalized = () => {
+    const env = makeEnv(AFTER, { rows: marker_rows(probe) });
+    env.sb.buildPublicResultsPayload_ = () => bigPayload(400);
+    env.sb.finalizeSurveyResults();
+    return env;
+  };
+  const expectNotPublished = (env, label) => {
+    let r = null, err = null;
+    try { r = env.sb.getPublicResults(); } catch (e) { err = e; }
+    assert(r === null && err && /未確定/.test(err.message), label + '：公開せず「未確定」エラー, got ' + (err && err.message));
+  };
+  let env = mkFinalized();
+  delete env.props['SURVEY_FINAL_RESULTS_001'];
+  expectNotPublished(env, '途中のチャンク欠損');
+  env = mkFinalized();
+  delete env.props['SURVEY_FINAL_RESULTS_' + String(JSON.parse(env.props[META]).chunks - 1).padStart(3, '0')];
+  expectNotPublished(env, '最終チャンク欠損');
+  env = mkFinalized();
+  delete env.props[META];
+  expectNotPublished(env, 'メタ情報欠損');
+  env = mkFinalized();
+  env.props['SURVEY_FINAL_RESULTS_000'] = env.props['SURVEY_FINAL_RESULTS_000'].slice(0, -5);
+  expectNotPublished(env, 'チャンク内容の切り詰め（サイズ不一致）');
+  env = mkFinalized();
+  env.props[META] = '{broken';
+  expectNotPublished(env, 'メタ情報が壊れている');
+  env = mkFinalized();
+  delete env.props[MARKER];
+  expectNotPublished(env, '確定マーカー欠損（チャンクが揃っていても）');
+}
+
+{ // finalize途中の失敗（チャンク保存中／メタ保存／マーカー保存）では不完全なsnapshotを残さない
+  const probe = freshSandbox(AFTER);
+  const cases = [
+    ['チャンク3の保存で失敗', (k) => k === 'SURVEY_FINAL_RESULTS_003'],
+    ['メタ情報の保存で失敗', (k) => k === META],
+    ['確定マーカーの保存で失敗', (k) => k === MARKER]
+  ];
+  cases.forEach(([label, failOn]) => {
+    const env = makeEnv(AFTER, { rows: marker_rows(probe), finalizedMarker: true, finalJson: JSON.stringify(bigPayload(300)),
+      failOnSetKey: failOn });
+    env.sb.buildPublicResultsPayload_ = () => bigPayload(400);
+    let threw = false;
+    try { env.sb.finalizeSurveyResults(); } catch (e) { threw = /simulated failure/.test(e.message); }
+    assert(threw, label + '：例外が伝播する');
+    assert(!hasSnap(env.props) && !(MARKER in env.props), label + '：新規チャンク・メタ・確定マーカー・旧スナップショットが1つも残らない, keys=' + Object.keys(env.props).join(','));
+    let r = null, err = null;
+    try { r = env.sb.getPublicResults(); } catch (e) { err = e; }
+    assert(r === null && err && /未確定/.test(err.message), label + '：getPublicResults() は何も公開しない');
+  });
+}
+
+{ // 古い余剰チャンク（以前の大きいsnapshot・孤立チャンク）は再finalizeで残らない
+  const probe = freshSandbox(AFTER);
+  const env = makeEnv(AFTER, { rows: marker_rows(probe), finalizedMarker: true, finalJson: JSON.stringify(bigPayload(400)) });
+  env.props['SURVEY_FINAL_RESULTS_099'] = 'orphan'; // メタに載っていない孤立チャンク
+  const before = chunkKeysOf(env.props).length;
+  assert(before > 3, '準備：古いsnapshotは多数のチャンクを持つ（' + before + '個）');
+  env.sb.buildPublicResultsPayload_ = () => ({ total: 1, ready: false, small: true });
+  env.sb.finalizeSurveyResults();
+  assert(chunkKeysOf(env.props).join(',') === 'SURVEY_FINAL_RESULTS_000', '再finalize後のチャンクは新snapshotの1個だけ（余剰・孤立チャンクなし）, got ' + chunkKeysOf(env.props).join(','));
+  assert(JSON.stringify(env.sb.getPublicResults()) === '{"total":1,"ready":false,"small":true}', '新しいsnapshotだけが復元される');
+}
 
 /* ── finalizeSurveyResults：buildAggregationSheets → SpreadsheetApp.flush → computePublicResultsForFinalize_ の順序 ── */
 {
