@@ -22,7 +22,8 @@ def git(cwd, *args):
 
 
 class DeploymentWorkflowTest(unittest.TestCase):
-    def run_deploy(self, fail_push=False, deployment_id=DEPLOYMENT, pulled=None):
+    def run_deploy(self, fail_push=False, deployment_id=DEPLOYMENT, pulled=None,
+                   manifest=None):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
             mock = root / 'clasp'
@@ -40,7 +41,7 @@ if action == 'list-deployments':
 elif action == 'pull':
     for name in json.loads(os.environ['MOCK_PULLED']):
         pathlib.Path(name).write_text('placeholder')
-    pathlib.Path('appsscript.json').write_text('{}')
+    pathlib.Path('appsscript.json').write_text(os.environ['MOCK_MANIFEST'])
 elif action == 'push' and os.environ.get('MOCK_FAIL_PUSH') == '1':
     sys.exit(1)
 elif action == 'create-version':
@@ -65,6 +66,7 @@ elif action == 'update-deployment':
                        MOCK_CLASP_LOG=str(log), MOCK_DEPLOYMENT=DEPLOYMENT,
                        MOCK_UPDATED_FILE=str(updated),
                        MOCK_PULLED=json.dumps(pulled or PULLED_GS),
+                       MOCK_MANIFEST=json.dumps(manifest if manifest is not None else {}),
                        MOCK_FAIL_PUSH='1' if fail_push else '0')
             # The mock process sees whether the preceding update created its marker.
             mock.write_text(mock.read_text().replace(
@@ -99,6 +101,33 @@ elif action == 'update-deployment':
         self.assertEqual(commands, ['list-deployments', 'pull'])
         self.assertFalse(updated)
         return result
+
+    def test_allowed_manifest_keys_pass_and_are_listed(self):
+        manifest = {'timeZone': 'Asia/Tokyo', 'exceptionLogging': 'STACKDRIVER',
+                    'runtimeVersion': 'V8', 'oauthScopes': []}
+        result, commands, updated = self.run_deploy(manifest=manifest)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Existing GAS manifest keys:', result.stdout)
+        for key in manifest:
+            self.assertIn(f'"{key}" EXPECTED', result.stdout)
+        self.assertNotIn('" UNEXPECTED', result.stdout.split('manifest keys:')[1])
+        self.assertIn('push', commands)
+
+    def test_extra_manifest_key_is_flagged_and_stops_before_push(self):
+        manifest = {'timeZone': 'Asia/Tokyo', 'runtimeVersion': 'V8',
+                    'webapp': {'access': 'SECRET-ACCESS-VALUE', 'executeAs': 'SECRET-EXEC-VALUE'},
+                    'oauthScopes': ['https://example.invalid/SECRET-SCOPE']}
+        result, commands, updated = self.run_deploy(manifest=manifest)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(commands, ['list-deployments', 'pull'])
+        self.assertFalse(updated)
+        self.assertIn('"webapp" UNEXPECTED', result.stdout)
+        self.assertIn('"timeZone" EXPECTED', result.stdout)
+        self.assertIn('"oauthScopes" EXPECTED', result.stdout)
+        output = result.stdout + result.stderr
+        for value in ('SECRET-ACCESS-VALUE', 'SECRET-EXEC-VALUE', 'SECRET-SCOPE',
+                      'Asia/Tokyo', 'test-script', DEPLOYMENT, 'fake'):
+            self.assertNotIn(value, output)
 
     def test_clasp_pulled_js_is_normalized_to_allowlisted_gs(self):
         result, commands, updated = self.run_deploy(pulled=PULLED_JS)

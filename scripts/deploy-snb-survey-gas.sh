@@ -77,7 +77,13 @@ if (!existing.includes('appsscript.json') ||
 }
 const manifest = JSON.parse(fs.readFileSync(path.join(process.env.REMOTE_DIR, 'appsscript.json'), 'utf8'));
 const allowedKeys = new Set(['timeZone', 'exceptionLogging', 'runtimeVersion', 'oauthScopes']);
-if (Object.keys(manifest).some(key => !allowedKeys.has(key))) {
+// Diagnostic output: top-level key names and classification only, never values.
+const manifestKeys = Object.keys(manifest);
+console.log('Existing GAS manifest keys:');
+for (const key of manifestKeys) {
+  console.log('  ' + JSON.stringify(key) + ' ' + (allowedKeys.has(key) ? 'EXPECTED' : 'UNEXPECTED'));
+}
+if (manifestKeys.some(key => !allowedKeys.has(key))) {
   throw new Error('Existing GAS manifest has additional settings; review before overwriting.');
 }
 const next = JSON.parse(fs.readFileSync(path.join(process.env.GITHUB_WORKSPACE,
