@@ -90,6 +90,19 @@
     .back-link:hover { border-color: #fff; }
 
     /* ── Hero ── */
+    .hero__media {
+      width: 100%;
+      aspect-ratio: 1200 / 630;
+      overflow: hidden;
+      background: #111;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero__media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
     .hero__body {
       background: var(--bg-tint);
       border-bottom: 1px solid var(--border);
@@ -134,7 +147,7 @@
     }
 
     /* ── Sections ── */
-    main { padding: 2rem 0 1rem; }
+    main { padding: 0 0 1rem; }
     section { padding: 1.5rem 0; }
     .section-label {
       display: block;
@@ -272,6 +285,14 @@
 
   <main>
     <section class="hero" aria-labelledby="page-title">
+      <div class="hero__media">
+        <picture>
+          <source srcset="../images/community/fetish-survey/hero-photo-main.webp" type="image/webp">
+          <img src="../images/community/fetish-survey/hero-photo-main.jpg"
+               alt="野球・サッカー・ラグビー・陸上・水泳・スーツなど様々な衣装姿の男性たちと「衣装・ユニフォーム嗜好アンケート 匿名・3〜5分 イベント申込ではありません」の文字"
+               width="1200" height="630" loading="eager" fetchpriority="high">
+        </picture>
+      </div>
       <div class="hero__body">
         <div class="container">
           <p class="hero__eyebrow">SNBC SURVEY RESULTS</p>
