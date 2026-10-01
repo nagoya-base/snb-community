@@ -107,19 +107,24 @@ STEP1A（全回答者・分析の主）
 | ファイル | 役割 |
 |---|---|
 | `Code.gs` | サーバー側ロジック。UUIDのハッシュ化・重複判定・保存・集計シート生成・公開結果API（`getPublicResults()`）。設問の選択肢定義（正本）もここにある。 |
-| `Index.html` | アンケートフォームの骨組み（読み込み中／回答済み／送信済み／フォーム、の各状態パネル）。`/exec`で表示される。 |
+| `Index.html` | （Issue #319以降は公開経路から外れている）旧アンケートフォームの骨組み。`doGet()`はもう使わない。 |
 | `Styles.html` | `<style>`のみ。SNBCサイトのトーン（赤系アクセント）に合わせた最小限のCSS。アンケートフォーム・公開結果ページ両方で共有する。 |
 | `Script.html` | クライアント側ロジック。設問定義（Code.gsと同じ内容を保持。両方を同時に更新すること）、UUID/Cookie処理、フォーム描画・検証・送信。 |
-| `Results.html` | 公開結果ページの骨組み。`/exec?view=results`で表示される。 |
-| `ResultsScript.html` | 公開結果ページのクライアント側ロジック。`getPublicResults()`のポーリング・棒グラフ描画。 |
+| `Results.html` | 受付終了済みの確定結果ページの骨組み。`/exec`・`/exec?view=results`で表示される。 |
+| `ResultsScript.html` | 公開結果ページのクライアント側ロジック。`getPublicResults()`（確定スナップショット）を1回取得して棒グラフ描画（ポーリングなし）。 |
 | `tools/validate-public-results-payload.js` | Issue #319：`getPublicResults()`の戻り値がallowlist通りの形か検証する（静的公開データへの個人識別情報混入を防ぐ）。 |
 | `tools/build-static-results-data.js` | Issue #319：締切後、`?view=results&format=json`の出力を検証した上で`community/fetish-survey-results.data.json`へ書き出すCLI。詳細は「締切後の静的集計ページ公開」を参照。 |
 
 ## 公開リアルタイム結果ページ（Issue #298）
 
-`/exec?view=results` で、回答の集計結果を匿名の棒グラフとして公開する。`doGet(e)`は
-`e.parameter.view === 'results'`のときだけ`Results.html`を返し、それ以外（通常の`/exec`）は
-従来どおり`Index.html`（アンケートフォーム）を返す。
+**【Issue #319以降：受付終了・確定結果閲覧モード】** このWebアプリは回答受付アプリではなく、受付終了済みアンケートの
+確定結果閲覧アプリとして動作する。`doGet(e)`：`/exec`・`/exec?view=results`は`Results.html`、
+`/exec?view=results&format=json`は確定済み公開結果JSON。`submitSurvey()`は常に`{ status: 'CLOSED' }`、
+`checkSubmissionStatus()`は常に`{ answered: false, closed: true }`を返す（何にも触れない）。
+以下の「リアルタイム」「ポーリング」「キャッシュ」に関する記述は#298当時の仕様で、現在は下記
+「受付終了・最終結果の固定」が優先する。
+
+`/exec?view=results` で、回答の集計結果を匿名の棒グラフとして公開する。
 
 **このプロジェクトには管理画面を実装しない。** `?view=admin`のようなルート・秘密トークン認証・
 詳細クロス集計・自由記述閲覧・回答削除機能等は一切含めない。同一Apps Scriptプロジェクトでは
@@ -284,28 +289,34 @@ responses全行に対する集計処理を独自に二重実装しない。
 `invalidatePublicResultsCache_()`で公開結果キャッシュを必ず削除する（任意ではなく必須）。**
 これにより、新規回答後の公開結果がキャッシュ有効期限を待たずに速やかに更新される。
 
-### 受付締切と最終回答数の確定（Issue #319）
+### 受付終了・最終結果の固定（Issue #319）
 
-**サーバー側の締切判定**：`SURVEY_CLOSES_AT_ISO`（`2026-09-30T23:59:59.999+09:00`＝9/30 23:59台の送信までを有効）を
-過ぎた`submitSurvey()`は、入力検証・シート・ロックに触れる前に`{ status: 'CLOSED' }`を返して何も保存しない。
-ロック待機中に締切を跨いだ送信を防ぐためロック取得後にも再判定し、保存するタイムスタンプは判定に使った時刻と
-同一にする（締切内と判定されたのに締切後のタイムスタンプが残ることはない）。`checkSubmissionStatus()`も
-`closed: true`を返し、フォームは「受付終了」表示になる（フロントの表示は補助であり、拒否の本体はサーバー側）。
-判定はサーバー時刻のみを使い、ブラウザからの値は使わない。**既存の/exec URLはそのまま**（再デプロイは同じデプロイの
-「新しいバージョン」を選ぶこと。新規デプロイを作るとURLが変わる）。
+**受付終了**：アンケートは2026-09-30 23:59 JST（`SURVEY_CLOSES_AT_ISO`）で終了済みで、再開しない。
+`submitSurvey()`は日時・UUID・回答内容に関係なく関数冒頭で`{ status: 'CLOSED' }`を返し、UUID/回答の検証・LockService・
+Spreadsheet・ハッシュ計算・append・キャッシュ更新のいずれにも触れない。`checkSubmissionStatus()`は常に
+`{ answered: false, closed: true }`。**既存の/exec URLはそのまま**（再デプロイは同じデプロイの「新しいバージョン」を選ぶこと。
+新規デプロイを作るとURLが変わる）。
 
-**締切内有効回答の確定**：デプロイ反映が締切後になった場合などに備え、`responses`には締切後の行が混在しうる。
-`responses`は読み取り専用のまま、`finalizeSurveyResults()`（エディタから手動実行・締切前は実行不可）が
+**最終結果の固定**：`responses`は読み取り専用のまま、`finalizeSurveyResults()`（エディタから手動実行・締切前は実行不可）が
+最終公開結果を固定する唯一の処理。順序：
 
-1. `responses`から**timestampが締切内の行だけ**を`responses_valid`シートへ複製する
-   （`respondent_hash`と`free_comment`は複製しない。timestampが解釈できない行は有効にしない）。
-2. `responses_valid`を参照する`集計_*`シートを再生成する（`respQueryRange_`/`respColRange_`の参照先がこのシート。
-   **集計式そのものは既存のまま**で、`getPublicResults()`も同じシートを読むため、既存ロジックの再利用になる）。
-3. 公開結果キャッシュを破棄し、内部用集計で`validNewSurveyRows === publicTotal`を確認する（不一致なら失敗）。
-4. **全工程の成功後に限り**、確定マーカー（Script Properties `SURVEY_RESULTS_FINALIZED_AT`、ISO日時）を保存し、
-   件数内訳を返す／ログに出す。マーカーは`finalizeSurveyResults()`開始時と`buildAggregationSheets()`開始時に削除し、
-   途中で例外になっても残さない。`getPublicResults()`はマーカーが無い限り（キャッシュがあっても、
-   `responses_valid`があっても）公開せずエラーにする。
+1. 既存の確定マーカー（`SURVEY_RESULTS_FINALIZED_AT`）・確定JSON（`SURVEY_FINAL_RESULTS_JSON`）を外す。
+2. `responses`を読み取り、`timestampが締切内の行だけ`を`responses_valid`へ複製
+   （`respondent_hash`・`free_comment`は複製しない。timestampが解釈できない行は有効にしない）。
+3. `responses_valid`を参照する`集計_*`シートを再生成する（**集計式・公開用ロジックは既存のまま**）。
+4. `SpreadsheetApp.flush()`。
+5. 公開用payloadを生成し、`validNewSurveyRows === payload.total`を確認する（不一致なら失敗）。
+6. payloadをJSON文字列として`SURVEY_FINAL_RESULTS_JSON`（Script Properties）へ保存する。
+7. **最後に**`SURVEY_RESULTS_FINALIZED_AT`（ISO日時）を保存し、件数内訳を返す／ログに出す。
+
+途中で例外になった場合は確定JSON・マーカーのどちらも残さず、確定扱いにしない（`buildAggregationSheets()`単体実行も
+マーカーを外す）。`SURVEY_FINAL_RESULTS_JSON`には公開可能な単純集計payloadのみを保存し、respondent_hash・UUID・
+free_comment・email・個別timestamp・個別回答は含めない。
+
+**確定後の公開**：`getPublicResults()`と`?view=results&format=json`は、`SURVEY_FINAL_RESULTS_JSON`を
+`JSON.parse()`して返すだけで、Spreadsheet・集計シート・`responses`・CacheServiceを一切読まない
+（JSONまたはマーカーが無い場合は「公開結果は未確定です」エラー）。
+`build-static-results-data.js`が受け取るpayload形式は従来どおり。
 
 **最終回答数の確定方法**：`finalizeSurveyResults()`の戻り値（`Logger.log`にも出力）を根拠にする。
 
@@ -318,7 +329,7 @@ responses全行に対する集計処理を独自に二重実装しない。
 | `unparseableRows` | timestampが解釈不能で除外した行数（通常0） |
 | `publicTotal` | `getPublicResults().total`。`validNewSurveyRows`と一致すること（不一致なら公開しない） |
 
-その後に`?view=results&format=json`で取得したJSONの`total`が`validNewSurveyRows`と一致することを確認してから、
+その後に`?view=results&format=json`で取得した確定JSONの`total`が`validNewSurveyRows`と一致することを確認してから、
 下記の手順で静的JSONを生成する。
 旧設問（#292）と新設問は分母が別（`completion_stage`の有無で区別）で、分岐設問は各ブロックの`targetCount`を分母にする。
 
@@ -332,8 +343,8 @@ responses全行に対する集計処理を独自に二重実装しない。
 静的JSONの作り方（メンテナが締切後に手動で1回だけ実行する）：
 
 1. 本番の公開GASデプロイへ、`?view=results&format=json`を付けてアクセスする。これは
-   `getPublicResults()`（`?view=results`のHTML版が使うのと同じ集計処理）の戻り値を
-   そのままJSONで返すだけの専用エンドポイントで、独自の再計算は一切行わない
+   `finalizeSurveyResults()`が固定した確定payload（`SURVEY_FINAL_RESULTS_JSON`、`getPublicResults()`の戻り値）を
+   そのままJSONで返すだけの専用エンドポイントで、再集計は一切行わない
    （`doGet(e)`内、`e.parameter.format === 'json'`のとき）。
    ```sh
    curl "https://script.google.com/macros/s/<DEPLOY_ID>/exec?view=results&format=json" -o /tmp/public-results.json

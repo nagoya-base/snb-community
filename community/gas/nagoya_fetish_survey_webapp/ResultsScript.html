@@ -2,9 +2,6 @@
   (function () {
     'use strict';
 
-    // 30〜60秒の範囲でポーリングする（サーバー側CacheServiceのTTLと同程度）。
-    var POLL_INTERVAL_MS = 45000;
-
     var loadingEl = document.getElementById('results-loading');
     var errorEl = document.getElementById('results-error');
     var contentEl = document.getElementById('results-content');
@@ -12,7 +9,6 @@
     var updatedAtEl = document.getElementById('results-updated-at');
     var pendingEl = document.getElementById('results-pending');
     var blocksEl = document.getElementById('results-blocks');
-    var backLinkEl = document.getElementById('back-to-survey');
 
     var charts = {
       categories: document.getElementById('chart-categories'),
@@ -67,15 +63,12 @@
 
     var hasRenderedOnce = false;
 
-    // ?view=results を外した現在ページのURL（=アンケートフォームのURL）へ戻るリンク。
-    backLinkEl.href = window.location.pathname;
-
     function formatTime(isoString) {
       var date = new Date(isoString);
-      if (isNaN(date.getTime())) return '--:--';
+      if (isNaN(date.getTime())) return '--';
       var hours = ('0' + date.getHours()).slice(-2);
       var minutes = ('0' + date.getMinutes()).slice(-2);
-      return hours + ':' + minutes;
+      return (date.getMonth() + 1) + '/' + date.getDate() + ' ' + hours + ':' + minutes;
     }
 
     function clearChildren(el) {
@@ -193,8 +186,7 @@
     }
 
     function showError() {
-      // 初回読み込み前に失敗した場合のみエラー表示にする。ポーリング中の一時的な失敗では
-      // 既に表示済みの結果をそのまま残し、次回のポーリングで自然に復帰させる。
+      // 確定結果は固定スナップショットのため再取得（ポーリング）はしない。未確定・取得失敗時はエラー表示。
       if (!hasRenderedOnce) {
         loadingEl.hidden = true;
         errorEl.hidden = false;
@@ -209,6 +201,5 @@
     }
 
     fetchResults();
-    setInterval(fetchResults, POLL_INTERVAL_MS);
   })();
 </script>

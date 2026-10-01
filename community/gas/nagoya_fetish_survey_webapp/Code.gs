@@ -77,6 +77,10 @@ var PROP_SERVER_SALT = 'SERVER_SALT';
    getPublicResults()はこのマーカーが無い限り公開しない。responses_validの存在だけでは
    「確定済み」と判断しない（buildAggregationSheets()単体実行や途中失敗でも作られるため）。 */
 var PROP_RESULTS_FINALIZED_AT = 'SURVEY_RESULTS_FINALIZED_AT';
+/* Issue #319：finalizeSurveyResults()が固定した公開用payload（JSON文字列）。
+   getPublicResults()・`?view=results&format=json`は、確定後はこの値だけを返す（Spreadsheetを読まない）。
+   公開可能な単純集計のみを保存し、respondent_hash・UUID・free_comment・個別timestamp等は含めない。 */
+var PROP_FINAL_RESULTS_JSON = 'SURVEY_FINAL_RESULTS_JSON';
 
 var RESPONSES_SHEET_NAME = 'responses';
 
@@ -429,8 +433,6 @@ var PUBLIC_INTEREST_GROUPS = [
   { name: 'その他', categories: [] }
 ];
 
-var PUBLIC_RESULTS_CACHE_KEY = 'publicResultsV1';
-var PUBLIC_RESULTS_CACHE_TTL_SECONDS = 45; // CacheServiceの最大は6時間だが、要件どおり30〜60秒に収める
 var PUBLIC_MIN_TOTAL_FOR_CHARTS = 10; // 総回答数がこれ未満の場合は全グラフ非表示
 /* Issue #304：公開粒度は大分類（衣装11区分・関わり方・地域7ブロック・年代5区分）のみで、
    個票が推測されうる詳細クロス集計・自由記述本文はそもそも公開しない設計のため、
@@ -464,35 +466,26 @@ var PUBLIC_TIER2_MIN_TARGET = 20;
  * ══════════════════════════════════════════════════════════════ */
 
 /**
- * `/exec` は従来どおりアンケートフォーム、`?view=results` のときだけ公開結果ページを返す。
- * 管理画面へのルート（`?view=admin`等）はこのプロジェクトには存在しない（上記コメント参照）。
+ * Issue #319：アンケートは受付終了済み。このWebアプリは「確定結果閲覧アプリ」として動作する。
+ *   `/exec`                          → 結果ページ（Results.html）
+ *   `/exec?view=results`             → 結果ページ（同上）
+ *   `/exec?view=results&format=json` → 確定済み公開結果JSON（getPublicResults()＝SURVEY_FINAL_RESULTS_JSON）
+ * 回答フォーム（Index.html）は公開経路から外している。管理画面へのルートはこのプロジェクトには存在しない。
  */
 function doGet(e) {
   var view = e && e.parameter ? e.parameter.view : undefined;
   var format = e && e.parameter ? e.parameter.format : undefined;
 
   if (view === 'results' && format === 'json') {
-    // Issue #319：9/30締切後、静的集計ページ用データをエクスポートするための専用出力。
-    // getPublicResults()（＝Results.html/ResultsScript.htmlが使うのと同じ集計処理）をそのまま
-    // 再利用するため、独自の再計算は一切行わない（数値の食い違いを防ぐ）。
-    // ブラウザから直接叩かれる想定のエンドポイントではなく、締切後にメンテナが手動で取得し、
-    // tools/build-static-results-data.jsでの検証・整形を経てから静的JSONとしてリポジトリへ
-    // コミットする運用（詳細はREADME.mdを参照）。
+    // 確定スナップショットをそのまま返すだけ（その場でresponses・Spreadsheetを再集計しない）。
+    // メンテナがtools/build-static-results-data.jsで検証・整形し、静的JSONとしてコミットする運用。
     return ContentService.createTextOutput(JSON.stringify(getPublicResults()))
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  if (view === 'results') {
-    var resultsTemplate = HtmlService.createTemplateFromFile('Results');
-    return resultsTemplate.evaluate()
-      .setTitle(FORM_TITLE + '｜アンケート集計結果')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
-  }
-
-  var template = HtmlService.createTemplateFromFile('Index');
-  return template.evaluate()
-    .setTitle(FORM_TITLE)
+  var resultsTemplate = HtmlService.createTemplateFromFile('Results');
+  return resultsTemplate.evaluate()
+    .setTitle(FORM_TITLE + '｜アンケート集計結果')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
 }
@@ -509,147 +502,42 @@ function include(filename) {
  * ══════════════════════════════════════════════════════════════ */
 
 /**
- * ページ表示時に呼び出す。渡されたUUIDのハッシュが既に保存済みかどうかだけを返す。
- * ここでの判定はあくまでUXのため（回答済みなら最初からフォームを見せない）であり、
- * 最終的な二重回答の拒否はsubmitSurvey()側で必ず行う（クライアントを信用しない）。
+ * Issue #319：アンケートは受付終了済みで再開しない。入力に関わらず常に closed:true を返す
+ * （UUID・Spreadsheetには触れない）。
  */
 function checkSubmissionStatus(uuid) {
-  if (isSurveyClosed_(new Date())) {
-    return { answered: false, closed: true };
-  }
-  try {
-    if (typeof uuid !== 'string' || !isValidUuid_(uuid)) {
-      return { answered: false };
-    }
-    var sheet = getResponsesSheet_();
-    var hash = hashUuid_(uuid);
-    return { answered: isDuplicateHash_(sheet, hash) };
-  } catch (err) {
-    // ここで例外を投げるとページ初期表示がエラーになってしまうため、
-    // 状態不明時は「未回答」として扱い、フォームを表示する
-    // （最終的な重複防止はsubmitSurvey側のLockService内判定が担保する）。
-    return { answered: false };
-  }
+  return { answered: false, closed: true };
 }
 
 /**
- * 回答を送信する。UUID検証 → 入力検証 → ロック取得 → 重複判定 → 保存、の順で処理する。
- * 戻り値は { status: 'SUCCESS' | 'DUPLICATE' | 'ERROR', message?: string } の形に統一し、
- * GAS側の例外をそのままクライアントへ投げない（クライアントは常にこの形のオブジェクトを扱える）。
+ * Issue #319：アンケートは受付終了済みで再開しない。日時・UUID・回答内容に関係なく、関数冒頭で即
+ * { status: 'CLOSED' } を返す。UUID・回答の検証、LockService、Spreadsheet、ハッシュ計算、
+ * 保存、キャッシュ更新のいずれにも触れない（古いブラウザや直接のgoogle.script.run呼び出しでも保存されない）。
  */
 function submitSurvey(uuid, answers) {
-  try {
-    // Issue #319：サーバー側の締切判定。入力検証より前に行い、締切後は何も保存しない。
-    if (isSurveyClosed_(new Date())) {
-      return { status: 'CLOSED' };
-    }
-
-    if (typeof uuid !== 'string' || !isValidUuid_(uuid)) {
-      return { status: 'ERROR', message: 'invalid_uuid' };
-    }
-
-    var validationError = validateAnswers_(answers);
-    if (validationError) {
-      return { status: 'ERROR', message: validationError };
-    }
-
-    // 同時送信（連打・複数タブ）による競合を防ぐため、
-    // 「重複チェック」と「保存」を同一ロック内で行う。
-    var lock = LockService.getScriptLock();
-    var gotLock = false;
-    try {
-      gotLock = lock.tryLock(10000); // 最大10秒待機
-    } catch (lockAcquireError) {
-      gotLock = false;
-    }
-    if (!gotLock) {
-      return { status: 'ERROR', message: 'busy' };
-    }
-
-    try {
-      // ロック待機中に締切を跨いだ場合に備え、ロック取得後にもう一度判定する。
-      // 保存するタイムスタンプも、この判定に使った時刻と同一にする（判定と保存値の食い違いを防ぐ）。
-      var acceptedAt = new Date();
-      if (isSurveyClosed_(acceptedAt)) {
-        return { status: 'CLOSED' };
-      }
-      var sheet = getResponsesSheet_();
-      var hash = hashUuid_(uuid);
-      if (isDuplicateHash_(sheet, hash)) {
-        return { status: 'DUPLICATE' };
-      }
-      appendResponseRow_(sheet, hash, answers, acceptedAt);
-      // 新規回答が保存されたら、公開結果キャッシュは必ず削除する（任意ではなく必須）。
-      // これを怠ると、キャッシュ有効期限（PUBLIC_RESULTS_CACHE_TTL_SECONDS）が切れるまで
-      // 公開結果ページに今回の回答が反映されない。
-      invalidatePublicResultsCache_();
-      return { status: 'SUCCESS' };
-    } finally {
-      lock.releaseLock();
-    }
-  } catch (err) {
-    return { status: 'ERROR', message: 'server_error' };
-  }
+  return { status: 'CLOSED' };
 }
 
 /**
- * `?view=results` の初期表示・ポーリングから呼び出す。公開結果を返す。
+ * `?view=results` の初期表示・`?view=results&format=json` から呼び出す。確定済みの公開結果を返す。
  *
- * 【集計元の方針（Issue #298／#304）】関わり方（engagement_preferences）・地域・年代は、
- * 既存buildAggregationSheets()が作る集計_*シート（集計_関わり方・集計_地域）を正本として
- * 読み取り、公開用カテゴリへ束ね直すだけにする（responses全行を元にした集計処理を
- * 全面的に二重実装しない）。
- * 衣装・服装の公開大分類（PUBLIC_INTEREST_GROUPS）だけは例外で、集計_衣装カテゴリ
- * （22カテゴリ単位・SEARCHによる延べ選択数）は使わず、countPublicInterestGroupsByRespondent_()が
- * responsesシートの生回答を1行ずつ走査してユニーク回答者数を数え直す（Issue #304）。
- * 22カテゴリ単位の延べ件数を公開グループ単位でそのまま合算すると、同一回答者が同一公開
- * グループ内で複数カテゴリを選んだ場合に二重・三重カウントされてしまう（例：「学校制服」＋
- * 「職業制服」を選んだ1人を「制服・職業服」2件と数えてしまう）ため、集計済みの延べ件数からは
- * 逆算しない。
+ * 【固定スナップショット（Issue #319）】finalizeSurveyResults()が保存した
+ * SURVEY_FINAL_RESULTS_JSON を JSON.parse() して返すだけ。Spreadsheet・集計_*シート・responses・
+ * CacheServiceは一切読まない（確定状態の判断にキャッシュを使わない）。
+ * 未確定（JSONまたは確定マーカーが無い）ときは「未確定」と分かるエラーにする。
  *
- * 【プライバシー】ここで返す値は集計結果（件数・割合・地域7ブロック・簡略年代）のみ。
- * 生回答・自由記述・respondent_hash・UUID関連・個別の回答日時・クロス集計は一切含めない。
+ * 【プライバシー】保存されているのは集計結果（件数・割合・地域7ブロック・簡略年代）のみ。
+ * 生回答・自由記述・respondent_hash・UUID関連・個別の回答日時・クロス集計は含まれない。
+ * 集計方針（新旧のcompletion_stage分離・公開カテゴリ重複排除・分岐設問のtargetCount分母など）は
+ * buildPublicResultsPayload_()側にあり、finalize時に1回だけ適用される。
  */
 function getPublicResults() {
-  // Issue #319：確定前は、古いキャッシュが残っていても返さずエラーにする。
-  // キャッシュ参照より前に「finalizeSurveyResults()が正常完了した」ことをマーカーで確認し、
-  // そのうえでスナップショットの存在も確認する。これにより、デプロイ直後・確定処理の途中失敗・
-  // buildAggregationSheets()単体実行後の集計値を、最終値として取得・固定させない。
   var properties = PropertiesService.getScriptProperties();
-  if (!properties.getProperty(PROP_RESULTS_FINALIZED_AT)) {
-    throw new Error('公開結果は未確定です。締切後にfinalizeSurveyResults()を実行してください。');
+  var json = properties.getProperty(PROP_FINAL_RESULTS_JSON);
+  if (!json || !properties.getProperty(PROP_RESULTS_FINALIZED_AT)) {
+    throw new Error('公開結果は未確定です。finalizeSurveyResults()を実行して結果を確定してください。');
   }
-  var spreadsheetId = properties.getProperty(PROP_SPREADSHEET_ID);
-  var aggregationSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
-  var responsesSheet = getDeadlineValidSheet_(aggregationSpreadsheet);
-
-  var cache = CacheService.getScriptCache();
-  var cached = cache.get(PUBLIC_RESULTS_CACHE_KEY);
-  if (cached) {
-    try {
-      return JSON.parse(cached);
-    } catch (parseError) {
-      // 壊れたキャッシュ値は無視して作り直す。
-    }
-  }
-
-  var payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
-
-  cache.put(PUBLIC_RESULTS_CACHE_KEY, JSON.stringify(payload), PUBLIC_RESULTS_CACHE_TTL_SECONDS);
-  return payload;
-}
-
-/**
- * submitSurvey()が新規回答を保存した直後に必ず呼び出す（必須。任意ではない）。
- * キャッシュ削除に失敗しても回答保存自体は成功しているため、例外は握りつぶす
- * （最悪でもキャッシュ有効期限切れ時に自然に最新化される）。
- */
-function invalidatePublicResultsCache_() {
-  try {
-    CacheService.getScriptCache().remove(PUBLIC_RESULTS_CACHE_KEY);
-  } catch (removeError) {
-    // 無視する（上記コメント参照）。
-  }
+  return JSON.parse(json);
 }
 
 /**
@@ -1104,17 +992,20 @@ function getDeadlineValidSheet_(spreadsheet) {
 }
 
 /**
- * 【締切後に1回実行する確定処理（Apps Scriptエディタから手動実行）】
- * 1. 締切前なら何もせずエラーにする（未確定の数値を最終結果として扱わせない）。
- * 2. responsesから締切内の有効回答だけをresponses_validへ複製（responsesは無変更）。
- * 3. responses_validを参照する集計_*シートを再生成する（既存の集計式をそのまま再利用）。
- * 4. 公開結果キャッシュを破棄する。
- * 5. 内部用集計でvalidNewSurveyRows === publicTotalを確認する（不一致なら失敗）。
- * 6. 全工程成功後に限り、確定マーカー（Script Properties: SURVEY_RESULTS_FINALIZED_AT）を保存する。
- *    開始時に既存マーカーを削除し、途中で例外になった場合もマーカーを残さない。
- *    getPublicResults()はこのマーカーが無い限り（キャッシュがあっても）公開しない。
+ * 【締切後に1回実行する確定処理（Apps Scriptエディタから手動実行）】最終公開結果を固定する唯一の処理。
+ *  0. 締切前なら何もせずエラーにする（未確定の数値を最終結果として扱わせない）。
+ *  1. 既存の確定マーカー・確定JSONを外す（以降、全工程が成功するまで公開APIは使えない）。
+ *  2. responsesを読み取り、3. 締切内の有効回答だけをresponses_validへ複製
+ *     （4. respondent_hash・free_commentは複製しない。responsesは読み取り専用）。
+ *  5. 既存の集計ロジックで集計_*シートを再生成する。
+ *  6. SpreadsheetApp.flush()。
+ *  7. 公開用payloadを生成する。
+ *  8. validNewSurveyRows === payload.total を確認する（不一致なら失敗）。
+ *  9. payloadをJSON文字列として SURVEY_FINAL_RESULTS_JSON へ保存する。
+ * 10. 最後に SURVEY_RESULTS_FINALIZED_AT を保存する。
+ * 途中で例外になった場合は確定JSON・マーカーを残さない（確定扱いにしない）。
  * 戻り値・ログの件数内訳が「最終回答数」の確定根拠になる：
- *   validNewSurveyRows … 公開結果のtotal（getPublicResults().total）と一致するはずの値
+ *   validNewSurveyRows … 公開結果のtotalと一致するはずの値
  *   lateRows           … 締切後に保存されていて、公開数値から除外した行数
  */
 function finalizeSurveyResults() {
@@ -1123,33 +1014,34 @@ function finalizeSurveyResults() {
     throw new Error('締切（' + SURVEY_CLOSES_AT_ISO + '）前のため確定できません。');
   }
   var properties = PropertiesService.getScriptProperties();
-  // 1. 開始時に既存の確定マーカーを削除（以降、全工程が成功するまで公開APIは使えない）。
+  // 1. 既存の確定マーカー・確定JSONを外す。
   properties.deleteProperty(PROP_RESULTS_FINALIZED_AT);
+  properties.deleteProperty(PROP_FINAL_RESULTS_JSON);
+  var stats;
   try {
-    // 2〜3. スナップショット生成と集計_*シート再生成。集計式がresponses_validを参照するため、
+    // 2〜5. スナップショット生成と集計_*シート再生成。集計式がresponses_validを参照するため、
     // スナップショットの作り直しは必ず集計シート再生成の「前」に行う必要がある（後だとシート
     // 削除で数式が#REF!になる）。buildAggregationSheets()がその順序を守って件数内訳を返す。
-    var stats = buildAggregationSheets();
-    // 集計_*シートへ書き込んだ数式・変更を反映させてから最終公開値を読み取る
-    // （setFormula等の直後に再計算済みの値が読めることを前提にしない）。
-    // computePublicResultsForFinalize_()より前にflushが完了していること。
+    stats = buildAggregationSheets();
+    // 6. 集計_*シートへ書き込んだ数式・変更を反映させてから最終公開値を読み取る。
     SpreadsheetApp.flush();
-    // 4. 公開結果キャッシュを削除。
-    invalidatePublicResultsCache_();
-    // 5. 公開APIのガード（確定マーカー）を迂回せず、キャッシュも使わない内部用集計で整合性を確認。
+    // 7. 公開用payloadを生成（確定JSONには依存しない内部用集計）。
     var payload = computePublicResultsForFinalize_();
     stats.publicTotal = payload.total;
+    // 8. 件数の整合性確認。
     if (stats.validNewSurveyRows !== payload.total) {
       throw new Error('最終回答数が一致しません: validNewSurveyRows=' + stats.validNewSurveyRows +
         ', publicTotal=' + payload.total);
     }
-    // 6. 全工程成功後、最後にだけ確定マーカーを保存する。
+    // 9. 公開payloadを固定。
+    properties.setProperty(PROP_FINAL_RESULTS_JSON, JSON.stringify(payload));
+    // 10. 全工程成功後、最後にだけ確定マーカーを保存する。
     stats.finalizedAt = now.toISOString();
     properties.setProperty(PROP_RESULTS_FINALIZED_AT, stats.finalizedAt);
-    invalidatePublicResultsCache_();
   } catch (err) {
-    // 7. 途中で失敗した場合は確定マーカーを残さない。
+    // 途中で失敗した場合は確定JSON・マーカーを残さない。
     try { properties.deleteProperty(PROP_RESULTS_FINALIZED_AT); } catch (ignored) { /* 無視 */ }
+    try { properties.deleteProperty(PROP_FINAL_RESULTS_JSON); } catch (ignored2) { /* 無視 */ }
     throw err;
   }
   Logger.log('finalizeSurveyResults: ' + JSON.stringify(stats));
@@ -1158,8 +1050,8 @@ function finalizeSurveyResults() {
 
 /**
  * finalizeSurveyResults()専用：確定マーカー・キャッシュに依存せず、responses_validから
- * 公開用payloadを組み立てる（getPublicResults()と同じbuildPublicResultsPayload_を使う）。
- * 公開APIではないため、結果は呼び出し元（整合性確認）だけが使い、キャッシュへは保存しない。
+ * 公開用payloadを組み立てる（公開結果の集計はbuildPublicResultsPayload_）。
+ * 公開APIではない。結果はfinalizeSurveyResults()が整合性確認のうえSURVEY_FINAL_RESULTS_JSONへ固定する。
  */
 function computePublicResultsForFinalize_() {
   var spreadsheetId = PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID);

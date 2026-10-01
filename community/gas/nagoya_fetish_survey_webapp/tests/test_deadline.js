@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-// Issue #319：サーバー側の締切判定（submitSurvey / checkSubmissionStatus）と、
-// 締切内有効回答だけの確定スナップショット（responses_valid）の検証。
+// Issue #319：受付終了モード（submitSurvey / checkSubmissionStatus は常にCLOSED）と、
+// 締切内有効回答の確定スナップショット（responses_valid）・確定結果の固定（SURVEY_FINAL_RESULTS_JSON）の検証。
 
 const code = fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8');
 
@@ -44,59 +44,39 @@ function freshSandbox(clock) {
     '判定はUTC換算の15:00:00Zを境にする（実行環境のタイムゾーンに依存しない）');
 }
 
-/* ── submitSurvey：締切後は入力検証・シート・ロックに触れる前に CLOSED ── */
+/* ── submitSurvey / checkSubmissionStatus：常にCLOSED（時刻・UUID・回答内容に関係なく、何にも触れない） ── */
 {
-  const clock = { now: JST('2026-10-01T00:00:01') };
-  const sb = freshSandbox(clock);
-  sb.LockService = { getScriptLock: () => { throw new Error('lock must not be touched after the deadline'); } };
-  let appended = 0;
-  sb.appendResponseRow_ = () => { appended++; };
-  const r1 = sb.submitSurvey('not-a-uuid', {});
-  assert(r1 && r1.status === 'CLOSED', '締切後は不正な入力でも CLOSED を返す（検証より先に拒否）, got ' + JSON.stringify(r1));
-  const r2 = sb.submitSurvey('11111111-1111-4111-8111-111111111111', { prefecture: '愛知県' });
-  assert(r2 && r2.status === 'CLOSED', '締切後は形式上有効なUUID＋回答でも CLOSED');
-  assert(appended === 0, '締切後は1行も保存されない');
-  const st = sb.checkSubmissionStatus('11111111-1111-4111-8111-111111111111');
-  assert(st && st.closed === true && st.answered === false, 'checkSubmissionStatus は締切後 closed:true を返す');
-}
-
-/* ── submitSurvey：締切前は従来どおり（不正UUIDはERROR、有効なら保存） ── */
-{
-  const clock = { now: JST('2026-09-30T23:59:00') };
-  const sb = freshSandbox(clock);
-  assert(sb.submitSurvey('bad', {}).status === 'ERROR', '締切前の不正UUIDは従来どおり ERROR');
-
-  const saved = [];
-  sb.validateAnswers_ = () => null;
-  sb.getResponsesSheet_ = () => ({});
-  sb.hashUuid_ = () => 'h';
-  sb.isDuplicateHash_ = () => false;
-  sb.invalidatePublicResultsCache_ = () => {};
-  sb.appendResponseRow_ = (sheet, hash, answers, ts) => { saved.push(ts); };
-  sb.LockService = { getScriptLock: () => ({ tryLock: () => true, releaseLock: () => {} }) };
-  const ok = sb.submitSurvey('11111111-1111-4111-8111-111111111111', {});
-  assert(ok.status === 'SUCCESS' && saved.length === 1, '締切前(23:59:00)の正当な回答は受理・保存される');
-  assert(saved[0] instanceof Date && saved[0].getTime() === clock.now.getTime(), '保存タイムスタンプは判定に使った時刻と同一');
-}
-
-/* ── ロック待機中に締切を跨いだ回答は保存しない ── */
-{
-  const clock = { now: JST('2026-09-30T23:59:59.000') };
-  const sb = freshSandbox(clock);
-  let appended = 0;
-  sb.validateAnswers_ = () => null;
-  sb.getResponsesSheet_ = () => ({});
-  sb.hashUuid_ = () => 'h';
-  sb.isDuplicateHash_ = () => false;
-  sb.appendResponseRow_ = () => { appended++; };
-  sb.LockService = {
-    getScriptLock: () => ({
-      tryLock: () => { clock.now = JST('2026-10-01T00:00:03.000'); return true; }, // 待機中に締切を過ぎる
-      releaseLock: () => {}
-    })
-  };
-  const r = sb.submitSurvey('11111111-1111-4111-8111-111111111111', {});
-  assert(r.status === 'CLOSED' && appended === 0, 'ロック待機で締切を跨いだ送信は CLOSED となり保存されない');
+  const touched = [];
+  const trap = (name) => new Proxy({}, { get: (t, k) => { touched.push(name + '.' + String(k)); throw new Error(name + ' must not be touched'); } });
+  const inputs = [
+    ['not-a-uuid', {}],
+    ['11111111-1111-4111-8111-111111111111', { prefecture: '愛知県' }],
+    ['11111111-1111-4111-8111-111111111111', null],
+    [undefined, undefined],
+    [12345, 'string-answers']
+  ];
+  // 締切前・締切直前・締切後のいずれの時刻でも同じ（今後アンケートは再開しない）。
+  ['2026-09-15T12:00:00', '2026-09-30T23:59:59.999', '2026-10-01T00:00:01', '2027-01-01T00:00:00'].forEach((t) => {
+    const sb = freshSandbox({ now: JST(t) });
+    sb.SpreadsheetApp = trap('SpreadsheetApp'); sb.LockService = trap('LockService');
+    sb.CacheService = trap('CacheService'); sb.Utilities = trap('Utilities');
+    sb.PropertiesService = trap('PropertiesService');
+    let internalCalls = 0;
+    ['isValidUuid_', 'validateAnswers_', 'hashUuid_', 'getResponsesSheet_', 'isDuplicateHash_', 'appendResponseRow_', 'getServerSalt_']
+      .forEach((fn) => { sb[fn] = () => { internalCalls++; throw new Error(fn + ' must not be called'); }; });
+    inputs.forEach((args) => {
+      const r = sb.submitSurvey(args[0], args[1]);
+      assert(r && Object.keys(r).length === 1 && r.status === 'CLOSED', 'submitSurvey は常に { status: "CLOSED" } のみ (' + t + ', ' + JSON.stringify(args[0]) + '), got ' + JSON.stringify(r));
+      const st = sb.checkSubmissionStatus(args[0]);
+      assert(st && st.answered === false && st.closed === true && Object.keys(st).length === 2,
+        'checkSubmissionStatus は常に { answered:false, closed:true } (' + t + '), got ' + JSON.stringify(st));
+    });
+    assert(touched.length === 0 && internalCalls === 0, 'submitSurvey/checkSubmissionStatus は Spreadsheet・LockService・Cache・Utilities・Properties・検証・ハッシュ・append のいずれにも触れない (' + t + ') touched=' + touched.join(','));
+  });
+  // 静的チェック：関数本体は即returnのみ。
+  const body = (name, next) => code.slice(code.indexOf('function ' + name + '('), code.indexOf(next)).replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  assert(/^function submitSurvey\(uuid, answers\) \{\s*return \{ status: 'CLOSED' \};\s*\}$/.test(body('submitSurvey', '/**\n * `?view=results`')),
+    'submitSurvey() の本体は return { status: "CLOSED" } のみ');
 }
 
 /* ── filterDeadlineValidRows_：締切内のみ残し、個別情報列は複製しない ── */
@@ -169,9 +149,9 @@ function freshSandbox(clock) {
   const sb = freshSandbox({ now: new Date() });
   assert(sb.respQueryRange_().indexOf("'responses_valid'!") === 0, 'respQueryRange_ は responses_valid を参照');
   assert(sb.respColRange_('B').indexOf("'responses_valid'!") === 0, 'respColRange_ は responses_valid を参照');
-  const publicFn = code.slice(code.indexOf('function getPublicResults()'), code.indexOf('function invalidatePublicResultsCache_'));
-  assert(publicFn.indexOf('getResponsesSheet_()') === -1 && publicFn.indexOf('getDeadlineValidSheet_') !== -1,
-    'getPublicResults() は responses ではなくスナップショットを読む');
+  const publicFn = code.slice(code.indexOf('function getPublicResults()'), code.indexOf('function buildPublicResultsPayload_'));
+  assert(!/SpreadsheetApp|getResponsesSheet_|getDeadlineValidSheet_|CacheService|buildPublicResultsPayload_/.test(publicFn.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '')),
+    'getPublicResults() のコードはSpreadsheet・集計・CacheServiceを参照しない（確定JSONを読むだけ）');
 }
 
 /* ── finalizeSurveyResults：締切前は実行できない ── */
@@ -182,6 +162,8 @@ function freshSandbox(clock) {
   assert(threw, '締切前は finalizeSurveyResults() がエラーになる（未確定値を最終化させない）');
 }
 
+
+const AFTER0 = { now: JST('2026-10-01T09:00:00') };
 
 /* ── 共通フェイク：スプレッドシート ── */
 // どのメソッド呼び出しも受け付ける（集計_*シート用）。
@@ -228,14 +210,17 @@ function makeEnv(clock, opts) {
   }) };
   const props = { SPREADSHEET_ID: 'SSID' };
   if (opts.finalizedMarker) props.SURVEY_RESULTS_FINALIZED_AT = '2026-10-01T00:00:00.000Z';
+  if (opts.finalJson) props.SURVEY_FINAL_RESULTS_JSON = opts.finalJson;
+  const propOps = []; // 書き込み系の操作順 [{op, key}]
   sb.PropertiesService = { getScriptProperties: () => ({
     getProperty: (k) => (k in props ? props[k] : null),
-    setProperty: (k, v) => { props[k] = v; },
-    deleteProperty: (k) => { delete props[k]; }
+    setProperty: (k, v) => { propOps.push({ op: 'set', key: k }); props[k] = v; },
+    deleteProperty: (k) => { propOps.push({ op: 'delete', key: k }); delete props[k]; }
   }) };
   const flushCalls = [];
-  sb.SpreadsheetApp = { openById: () => ss, flush: () => { flushCalls.push(true); } };
-  return { sb, C, ss, props, flushCalls, writes, cacheStore, cacheCalls, created, getValid: () => valid };
+  const access = { openById: 0 };
+  sb.SpreadsheetApp = { openById: () => { access.openById++; return ss; }, flush: () => { flushCalls.push(true); } };
+  return { sb, C, ss, props, propOps, access, flushCalls, writes, cacheStore, cacheCalls, created, getValid: () => valid };
 }
 
 function makeGridSheet(C) {
@@ -252,27 +237,41 @@ function makeGridSheet(C) {
   };
 }
 
-/* ── キャッシュ防止：古いキャッシュがあっても、responses_validが無ければ返さずエラー ── */
+/* ── 未確定：確定JSONが無ければ（古いキャッシュ・responses_validがあっても）明示エラー ── */
 {
-  const env = makeEnv({ now: JST('2026-10-01T09:00:00') }, { validSheetExists: false, finalizedMarker: true });
+  const env = makeEnv(AFTER0, { validSheetExists: true });
   env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 999, ready: true, stale: true });
   let result = null, error = null;
   try { result = env.sb.getPublicResults(); } catch (e) { error = e; }
-  assert(result === null, '古いキャッシュ＋responses_validなし：古いキャッシュを返さない');
-  assert(error && /finalizeSurveyResults/.test(error.message), 'エラーでfinalizeSurveyResults()の未実施を案内する, got ' + (error && error.message));
-  assert(env.cacheCalls.get === 0, 'responses_validの存在確認はキャッシュ参照より前（cache.getを呼んでいない）');
-  assert(env.cacheCalls.put === 0, 'エラー時はキャッシュへ書き込まない');
+  assert(result === null, '未確定：古いキャッシュを返さない');
+  assert(error && /未確定/.test(error.message) && /finalizeSurveyResults/.test(error.message), '「未確定」と分かるエラーでfinalizeSurveyResults()を案内する, got ' + (error && error.message));
+  assert(env.cacheCalls.get === 0 && env.cacheCalls.put === 0, 'CacheServiceを参照・更新しない');
+  assert(env.access.openById === 0, '未確定エラーの判定でSpreadsheetを開かない');
 }
 
-/* ── responses_validがあれば従来どおりキャッシュを使う／無ければ作ってキャッシュする ── */
+/* ── getPublicResults()：確定JSONをJSON.parseして返すだけ（Spreadsheet非依存・キャッシュ非依存） ── */
 {
-  const env = makeEnv({ now: JST('2026-10-01T09:00:00') }, { validSheetExists: true, finalizedMarker: true });
-  env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 7, ready: false, fromCache: true });
+  const fixed = { total: 5, ready: false, generatedAt: '2026-10-01T00:00:00.000Z', fixedMarker: 'snapshot' };
+  const env = makeEnv(AFTER0, { finalizedMarker: true, finalJson: JSON.stringify(fixed) });
+  env.sb.SpreadsheetApp = new Proxy({}, { get: (t, k) => { throw new Error('SpreadsheetApp must not be touched: ' + String(k)); } });
+  env.sb.CacheService = new Proxy({}, { get: (t, k) => { throw new Error('CacheService must not be touched: ' + String(k)); } });
   const r = env.sb.getPublicResults();
-  assert(r.fromCache === true, 'responses_validがある場合はキャッシュ値を返す');
-  delete env.cacheStore['publicResultsV1'];
-  const r2 = env.sb.getPublicResults();
-  assert(r2.total === 0 && env.cacheCalls.put === 1, 'キャッシュ無し：スナップショットから集計してキャッシュへ保存する');
+  assert(JSON.stringify(r) === JSON.stringify(fixed), 'getPublicResults() は確定JSONの内容をそのまま返す');
+  // JSONだけがあってマーカーが無い（確定処理が最後まで終わっていない）場合は公開しない。
+  const env2 = makeEnv(AFTER0, { finalJson: JSON.stringify(fixed) });
+  let err2 = null; try { env2.sb.getPublicResults(); } catch (e) { err2 = e; }
+  assert(err2 && /未確定/.test(err2.message), '確定マーカーが無ければJSONがあっても未確定エラー');
+}
+
+/* ── doGet format=json：getPublicResults() と同じ確定payload（Spreadsheetを開かない） ── */
+{
+  const fixed = { total: 3, ready: false, generatedAt: '2026-10-01T00:00:00.000Z' };
+  const env = makeEnv(AFTER0, { finalizedMarker: true, finalJson: JSON.stringify(fixed) });
+  env.sb.ContentService = { MimeType: { JSON: 'JSON' }, createTextOutput: (t) => ({ _text: t, setMimeType: function () { return this; } }) };
+  env.sb.SpreadsheetApp = new Proxy({}, { get: () => { throw new Error('SpreadsheetApp must not be touched'); } });
+  const out = env.sb.doGet({ parameter: { view: 'results', format: 'json' } });
+  assert(out._text === JSON.stringify(fixed), 'format=json は確定payloadを返す');
+  assert(out._text === JSON.stringify(env.sb.getPublicResults()), 'format=json と getPublicResults() は同一payload');
 }
 
 /* ── finalizeSurveyResults：responsesへ一切書き込まず、確定件数を返す ── */
@@ -288,13 +287,10 @@ function makeGridSheet(C) {
     mk(JST('2026-09-10T10:00:00'), '') // 旧回答
   ];
   const env = makeEnv(clock, { rows, validSheetExists: false });
-  env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 999, stale: true });
   const stats = env.sb.finalizeSurveyResults();
   assert(env.writes.length === 0, 'finalizeSurveyResults()中、responsesへのsetValue/setValues/setFormula/clear/appendRow等の書き込みが0件, got ' + JSON.stringify(env.writes));
   assert(stats.validRows === 3 && stats.lateRows === 1 && stats.validNewSurveyRows === 2, '件数内訳: valid=3(旧1含む)/late=1/validNew=2, got ' + JSON.stringify(stats));
   assert(stats.publicTotal === 2, 'publicTotal は validNewSurveyRows と一致, got ' + stats.publicTotal);
-  assert(env.cacheStore['publicResultsV1'] === undefined || JSON.parse(env.cacheStore['publicResultsV1']).stale !== true,
-    '確定時に古い公開結果キャッシュは破棄される');
   assert(env.created.length > 0, '集計_*シートは再生成される');
   const v = env.getValid()._grid;
   assert(v.length === 1 + 3 && v.slice(1).every((r) => r[C.indexOf('respondent_hash')] === '' && r[C.indexOf('free_comment')] === ''),
@@ -313,6 +309,7 @@ function makeGridSheet(C) {
 
 /* ── 確定マーカー（SURVEY_RESULTS_FINALIZED_AT） ── */
 const MARKER = 'SURVEY_RESULTS_FINALIZED_AT';
+const FINAL_JSON = 'SURVEY_FINAL_RESULTS_JSON';
 function marker_rows(sbForCols) {
   const C = sbForCols.COLUMNS;
   const mk = (ts, stage) => { const r = new Array(C.length).fill(''); r[0] = ts; r[C.indexOf('completion_stage')] = stage; return r; };
@@ -353,24 +350,24 @@ function expectBlocked(env, label) {
 }
 { // テスト4：finalize途中で例外 → マーカーは残らない（既存マーカーも消える）
   const probe = freshSandbox(AFTER);
-  const env = makeEnv(AFTER, { rows: marker_rows(probe), finalizedMarker: true, failOnInsert: '集計_衣装カテゴリ' });
+  const env = makeEnv(AFTER, { rows: marker_rows(probe), finalizedMarker: true, finalJson: '{"total":999,"old":true}', failOnInsert: '集計_衣装カテゴリ' });
   let threw = false;
   try { env.sb.finalizeSurveyResults(); } catch (e) { threw = /simulated failure/.test(e.message); }
   assert(threw, 'finalize途中の例外はそのまま伝播する');
-  assert(!(MARKER in env.props), '途中で例外 → 確定マーカーは残らない（開始時に削除済みで保存もされない）');
+  assert(!(MARKER in env.props) && !(FINAL_JSON in env.props), '途中で例外 → 確定マーカー・確定JSONは残らない（開始時に削除済みで保存もされない）');
   expectBlocked(env, 'finalize途中失敗後');
 }
 { // テスト6：validNewSurveyRows !== publicTotal → 失敗・マーカー保存なし
   const probe = freshSandbox(AFTER);
-  const env = makeEnv(AFTER, { rows: marker_rows(probe) });
+  const env = makeEnv(AFTER, { rows: marker_rows(probe), finalizedMarker: true, finalJson: '{"total":999,"old":true}' });
   env.sb.buildPublicResultsPayload_ = () => ({ total: 99, ready: false });
   let msg = null;
   try { env.sb.finalizeSurveyResults(); } catch (e) { msg = e.message; }
   assert(msg && /最終回答数が一致しません/.test(msg), '件数不一致ならfinalizeが失敗する, got ' + msg);
-  assert(!(MARKER in env.props), '件数不一致 → マーカーを保存しない');
+  assert(!(MARKER in env.props) && !(FINAL_JSON in env.props), '件数不一致 → 確定JSON・マーカーを保存しない（既存分も残さない）');
   expectBlocked(env, '件数不一致後');
 }
-{ // テスト5：正常完了 → マーカー保存、getPublicResults()利用可能
+{ // テスト5：正常完了 → 確定JSON・マーカー保存、getPublicResults()は確定JSONだけを返す
   const probe = freshSandbox(AFTER);
   const env = makeEnv(AFTER, { rows: marker_rows(probe) });
   env.cacheStore['publicResultsV1'] = JSON.stringify({ total: 999, stale: true });
@@ -378,20 +375,58 @@ function expectBlocked(env, label) {
   const stats = env.sb.finalizeSurveyResults();
   assert(typeof stats.finalizedAt === 'string' && env.props[MARKER] === stats.finalizedAt,
     '正常完了後に確定マーカーが保存される');
-  assert(stats.validNewSurveyRows === 1 && stats.publicTotal === 1, '最終回答数 validNewSurveyRows === publicTotal (=1), got ' + JSON.stringify(stats));
+  assert(typeof env.props[FINAL_JSON] === 'string', 'SURVEY_FINAL_RESULTS_JSON がJSON文字列として保存される');
+  const saved = JSON.parse(env.props[FINAL_JSON]);
+  assert(saved.total === 1 && stats.validNewSurveyRows === 1 && stats.publicTotal === 1, '最終回答数 validNewSurveyRows === publicTotal === saved.total (=1), got ' + JSON.stringify(stats));
   assert(env.writes.length === 0, '正常完了までresponsesへ書き込まない');
-  const r = env.sb.getPublicResults();
-  assert(r && r.total === 1 && !r.stale, 'マーカー保存後は getPublicResults() が利用可能（古いキャッシュは破棄済み）');
+  assert(env.cacheCalls.get === 0 && env.cacheCalls.put === 0, '確定処理・公開APIはCacheServiceを使わない');
+
+  // 確定後：Spreadsheet・集計シートを一切開かず、同じ固定payloadを返す（シートが変わっても不変）。
+  const opened = env.access.openById;
+  env.sb.SpreadsheetApp = new Proxy({}, { get: () => { throw new Error('SpreadsheetApp must not be touched after finalize'); } });
+  const r1 = env.sb.getPublicResults();
+  const r2 = env.sb.getPublicResults();
+  assert(JSON.stringify(r1) === env.props[FINAL_JSON] && JSON.stringify(r2) === env.props[FINAL_JSON], 'getPublicResults() は保存済みJSONと完全一致する固定payloadを返す');
+  assert(env.access.openById === opened, 'finalize後のgetPublicResults()はSpreadsheetを開かない');
 }
-{ // マーカーは全工程の最後にだけ保存される（保存直前までは不在）
+{ // 公開payloadに個人情報が混入しない（responses行に個人情報を入れて確定し、allowlistバリデータと全文走査で確認）
+  const { validatePublicResultsPayload } = require('../tools/validate-public-results-payload.js');
+  const probe = freshSandbox(AFTER);
+  const C = probe.COLUMNS;
+  const row = new Array(C.length).fill('');
+  row[0] = JST('2026-09-20T10:00:00');
+  row[C.indexOf('respondent_hash')] = 'SECRETHASH0123456789';
+  row[C.indexOf('free_comment')] = 'SECRET自由記述メール@example.com';
+  row[C.indexOf('completion_stage')] = 'no_gate_reached';
+  const env = makeEnv(AFTER, { rows: [row] });
+  env.sb.finalizeSurveyResults();
+  const json = env.props[FINAL_JSON];
+  assert(!/SECRET|example\.com|respondent_hash|free_comment|uuid|email/i.test(json), '確定JSONに respondent_hash・自由記述・email・UUID関連が含まれない');
+  assert(!/2026-09-20/.test(json), '確定JSONに個別回答のtimestampが含まれない');
+  const v = validatePublicResultsPayload(JSON.parse(json));
+  assert(v && (v.ok === true || (Array.isArray(v.errors) && v.errors.length === 0)), '確定JSONはallowlistバリデータを通過する, got ' + JSON.stringify(v));
+}
+{ // 確定JSONは集計済みpayload（targetCount等を含む）をそのまま固定する
   const probe = freshSandbox(AFTER);
   const env = makeEnv(AFTER, { rows: marker_rows(probe) });
-  let markerSeenDuringCompute = null;
-  const orig = env.sb.computePublicResultsForFinalize_;
-  env.sb.computePublicResultsForFinalize_ = function () { markerSeenDuringCompute = MARKER in env.props; return orig(); };
+  const stub = { total: 1, ready: false, step3: { targetCount: 20, items: [] } };
+  env.sb.buildPublicResultsPayload_ = () => stub;
   env.sb.finalizeSurveyResults();
-  assert(markerSeenDuringCompute === false, '整合性確認の時点ではマーカー未保存（確認後に保存）');
-  assert(MARKER in env.props, '確認後にマーカーが保存される');
+  assert(JSON.stringify(JSON.parse(env.props[FINAL_JSON])) === JSON.stringify(stub), '確定JSONは集計payload（分岐設問のtargetCount含む）をそのまま保存する');
+}
+{ // マーカーは全工程の最後にだけ保存される（確定JSON保存の後）
+  const probe = freshSandbox(AFTER);
+  const env = makeEnv(AFTER, { rows: marker_rows(probe), finalizedMarker: true, finalJson: '{"old":true}' });
+  let seenDuringCompute = null;
+  const orig = env.sb.computePublicResultsForFinalize_;
+  env.sb.computePublicResultsForFinalize_ = function () { seenDuringCompute = { marker: MARKER in env.props, json: FINAL_JSON in env.props }; return orig(); };
+  env.sb.finalizeSurveyResults();
+  assert(seenDuringCompute && seenDuringCompute.marker === false && seenDuringCompute.json === false, '集計・件数確認の時点では既存の確定マーカー・確定JSONは外れている');
+  const ops = env.propOps.map((o) => o.op + ':' + o.key);
+  const iSetJson = ops.indexOf('set:' + FINAL_JSON), iSetMarker = ops.indexOf('set:' + MARKER);
+  assert(iSetJson !== -1 && iSetMarker !== -1 && iSetJson < iSetMarker, '確定JSON保存 → 確定マーカー保存の順');
+  assert(iSetMarker === ops.length - 1 || ops.slice(iSetMarker + 1).every((o) => o.indexOf('delete') !== 0), 'SURVEY_RESULTS_FINALIZED_AT は最後に保存される, got ' + ops.join(' > '));
+  assert(ops.indexOf('delete:' + MARKER) < iSetJson && ops.indexOf('delete:' + FINAL_JSON) < iSetJson, '保存前に既存マーカー・確定JSONが解除されている');
 }
 
 

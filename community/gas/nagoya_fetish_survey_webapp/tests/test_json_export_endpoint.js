@@ -102,26 +102,29 @@ const FAKE_PAYLOAD = {
   sandbox.getPublicResults = () => FAKE_PAYLOAD;
 
   sandbox.doGet({ parameter: { view: 'results' } });
-  assert(calledWithFile === 'Results', 'view=results without format=json still renders the Results.html template (unaffected by the new JSON route)');
+  assert(calledWithFile === 'Results', '/exec?view=results renders the Results.html template');
 }
 
-/* ── パラメータ無し（アンケートフォーム）は従来どおりIndexテンプレートを返す ── */
+/* ── Issue #319：パラメータ無しの /exec も、view=results と同じ結果ページ（回答フォームは公開しない） ── */
 {
-  const sandbox = freshSandbox();
-  let calledWithFile = null;
-  sandbox.HtmlService.createTemplateFromFile = (file) => {
-    calledWithFile = file;
-    return {
-      evaluate: () => ({
-        setTitle: function () { return this; },
-        addMetaTag: function () { return this; },
-        setXFrameOptionsMode: function () { return this; }
-      })
+  [undefined, {}, { parameter: {} }, { parameter: { view: 'unknown' } }, { parameter: { format: 'json' } }].forEach((e) => {
+    const sandbox = freshSandbox();
+    const files = [];
+    sandbox.HtmlService.createTemplateFromFile = (file) => {
+      files.push(file);
+      return {
+        evaluate: () => ({
+          setTitle: function () { return this; },
+          addMetaTag: function () { return this; },
+          setXFrameOptionsMode: function () { return this; }
+        })
+      };
     };
-  };
-
-  sandbox.doGet({ parameter: {} });
-  assert(calledWithFile === 'Index', 'no view parameter still renders the survey form (Index.html), unaffected by the new JSON route');
+    sandbox.getPublicResults = () => { throw new Error('HTML route must not read results server-side'); };
+    sandbox.doGet(e);
+    assert(files.length === 1 && files[0] === 'Results', '/exec (' + JSON.stringify(e) + ') は Results ページを返し Index（回答フォーム）を使わない, got ' + files.join(','));
+  });
+  assert(!/createTemplateFromFile\('Index'\)/.test(code), 'Code.gs は公開経路で Index.html を使わない');
 }
 
 if (failures > 0) {
