@@ -145,6 +145,15 @@ function minimalReadyPayload(overrides) {
   assert(chart.children.length === 0, 'primary interest category chart is left empty (not rendered) when ready=false');
 }
 
+/* ── Issue #319：受付終了済みの確定結果ページ（回答導線なし・ポーリングなし） ── */
+{
+  const html = fs.readFileSync(path.join(__dirname, '..', 'Results.html'), 'utf8');
+  const script = fs.readFileSync(path.join(__dirname, '..', 'ResultsScript.html'), 'utf8');
+  assert(/受付終了/.test(html), 'Results.html は「受付終了」を明示する');
+  assert(!/back-to-survey|アンケートに回答する/.test(html + script), '回答フォームへの導線（CTA）がない');
+  assert(!/setInterval/.test(script), '確定済みスナップショットなのでポーリングしない');
+}
+
 if (failures > 0) {
   console.error('\n' + failures + ' failure(s) in test_results_frontend.js');
   process.exitCode = 1;
@@ -152,8 +161,5 @@ if (failures > 0) {
   console.log('\ntest_results_frontend.js: all checks passed');
 }
 
-// ResultsScript.htmlはsetInterval(fetchResults, ...)でポーリングを開始する
-// （アンケートフォーム側と異なりDOMContentLoaded待ちではなく即時実行するため）ため、
-// 各boot()で作られたjsdomウィンドウのタイマーがNodeプロセスを生かし続けてしまう。
-// 全アサーション完了後は明示的に終了する。
+// 全アサーション完了後は明示的に終了する（jsdomウィンドウのタイマー等でプロセスが残らないようにする）。
 process.exit(process.exitCode || 0);

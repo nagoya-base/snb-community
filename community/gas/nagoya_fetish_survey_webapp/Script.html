@@ -1006,7 +1006,7 @@
    * ══════════════════════════════════════════════════════════════ */
 
   function showOnly(id) {
-    ['loading', 'already-answered', 'load-error', 'submitted', 'survey-form'].forEach(function (elementId) {
+    ['loading', 'already-answered', 'closed', 'load-error', 'submitted', 'survey-form'].forEach(function (elementId) {
       document.getElementById(elementId).hidden = elementId !== id;
     });
   }
@@ -1039,7 +1039,9 @@
 
     google.script.run
       .withSuccessHandler(function (result) {
-        if (result && result.answered) {
+        if (result && result.closed) {
+          showOnly('closed');
+        } else if (result && result.answered) {
           showOnly('already-answered');
         } else {
           showOnly('survey-form');
@@ -1072,6 +1074,8 @@
           showOnly('submitted');
         } else if (result && result.status === 'DUPLICATE') {
           showOnly('already-answered');
+        } else if (result && result.status === 'CLOSED') {
+          showOnly('closed');
         } else {
           submitButton.disabled = false;
           submitButton.textContent = '回答を送信する';

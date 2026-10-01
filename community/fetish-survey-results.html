@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow">
+  <title>衣装・ユニフォーム嗜好アンケート 集計結果 | SNB Community</title>
+  <meta name="description" content="SNBコミュニティ（SNBC）が実施した、衣装・ユニフォーム・スーツ・コスプレなどへの興味や関わり方に関するアンケートの集計結果です。選択式設問の単純集計のみを公開しています。">
+  <link rel="canonical" href="https://nagoya-base.github.io/snb-community/community/fetish-survey-results.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="衣装・ユニフォーム嗜好アンケート 集計結果 | SNB Community">
+  <meta property="og:description" content="衣装・ユニフォーム・スーツ・コスプレなどへの興味や関わり方に関するアンケートの集計結果です。選択式設問の単純集計のみを公開しています。">
+  <meta property="og:url" content="https://nagoya-base.github.io/snb-community/community/fetish-survey-results.html">
+  <meta property="og:image" content="https://nagoya-base.github.io/snb-community/images/community/fetish-survey/meta-ogp-main.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="衣装・ユニフォーム嗜好アンケート 集計結果 | SNB Community">
+  <meta name="twitter:description" content="衣装・ユニフォーム・スーツ・コスプレなどへの興味や関わり方に関するアンケートの集計結果です。選択式設問の単純集計のみを公開しています。">
+  <meta name="twitter:image" content="https://nagoya-base.github.io/snb-community/images/community/fetish-survey/meta-ogp-main.jpg">
+
+  <!-- Google tag (gtag.js) -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', 'G-H9BD3KFZCR');
+    var snbGtagScript = document.createElement('script');
+    snbGtagScript.async = true;
+    snbGtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR';
+    document.head.appendChild(snbGtagScript);
+  </script>
+  <script src="../analytics.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:         #F5F2EC;
+      --bg-card:    #FFFFFF;
+      --bg-tint:    #EDEAE3;
+      --text:       #1C1A17;
+      --text-muted: #6A6258;
+      --border:     #DDD8CF;
+      --divider:    #E5E1D8;
+      --accent:     #C62828;
+      --accent-lt:  #E53935;
+      --accent-pale:#FBEAEA;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', sans-serif;
+      font-size: 15px;
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+      min-width: 320px;
+      overflow-x: hidden;
+    }
+    a { color: var(--accent); }
+    [hidden] { display: none !important; }
+    :focus-visible { outline: 3px solid #1c72c5; outline-offset: 2px; }
+
+    .container { max-width: 720px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ── Header ── */
+    .site-header { background: #1C1A17; color: #fff; }
+    .site-header__inner {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand { font-size: 0.85rem; font-weight: 800; letter-spacing: 0.07em; white-space: nowrap; }
+    .back-link {
+      color: #fff;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 999px;
+      padding: 0.32rem 0.85rem;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .back-link:hover { border-color: #fff; }
+
+    /* ── Hero ── */
+    .hero__body {
+      background: var(--bg-tint);
+      border-bottom: 1px solid var(--border);
+      padding: 2.25rem 0;
+      text-align: center;
+    }
+    .hero__eyebrow {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent-lt);
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: clamp(1.4rem, 5.5vw, 2rem);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      line-height: 1.4;
+      margin-bottom: 0.9rem;
+    }
+    .hero__lead {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.9;
+      max-width: 480px;
+      margin: 0 auto 1.25rem;
+    }
+    .hero__meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ── Sections ── */
+    main { padding: 2rem 0 1rem; }
+    section { padding: 1.5rem 0; }
+    .section-label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    h2 { font-size: clamp(1.1rem, 3.5vw, 1.3rem); font-weight: 800; letter-spacing: 0.02em; margin-bottom: 0.9rem; }
+    .lede { color: var(--text-muted); font-size: 0.86rem; margin-bottom: 1rem; }
+
+    /* ── 集計状況サマリー ── */
+    .results-summary {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .results-count { margin: 0 0 0.3rem; font-size: 0.95rem; }
+    .results-count strong { color: var(--accent); font-size: 1.2rem; }
+    .results-updated { margin: 0; color: var(--text-muted); font-size: 0.8rem; }
+
+    /* ── 状態パネル ── */
+    .state-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.85;
+    }
+    .state-panel--error { border-color: var(--accent); color: var(--accent); }
+    .state-panel strong { color: var(--text); }
+
+    /* ── 集計ブロック（GAS公開結果ページ ?view=results と同じ表現に揃える） ── */
+    .result-block {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.1rem 1.25rem;
+      margin: 0 0 1rem;
+    }
+    .result-block h2 { font-size: 1rem; font-weight: 800; margin: 0 0 0.4rem; }
+    .result-block__note { color: var(--text-muted); font-size: 0.78rem; margin: 0 0 0.7rem; line-height: 1.7; }
+    .result-block__empty { color: var(--text-muted); font-size: 0.85rem; margin: 0; }
+
+    .bar-chart { display: flex; flex-direction: column; gap: 0.7rem; width: 100%; }
+    .bar-row { display: flex; flex-direction: column; gap: 0.3rem; width: 100%; min-width: 0; }
+    .bar-row__label { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; font-size: 0.85rem; }
+    .bar-row__name { overflow-wrap: anywhere; }
+    .bar-row__value { flex: none; color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; }
+    .bar-row__track { width: 100%; background: var(--bg); border-radius: 6px; height: 10px; overflow: hidden; }
+    .bar-row__fill { height: 100%; border-radius: 6px; background: var(--accent); }
+
+    .result-section { margin: 0 0 1rem; }
+    .result-section > summary {
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 800;
+      padding: 0.9rem 1.1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      list-style: none;
+    }
+    .result-section > summary::-webkit-details-marker { display: none; }
+    .result-section > summary::before {
+      content: '▶';
+      display: inline-block;
+      margin-right: 0.5rem;
+      font-size: 0.7em;
+      color: var(--accent);
+      transition: transform 0.15s ease;
+    }
+    .result-section[open] > summary::before { transform: rotate(90deg); }
+    .result-section[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0; }
+    .result-section > .result-block__note {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: none;
+      padding: 0 1.25rem 0.7rem;
+      margin: 0;
+      font-size: 0.78rem;
+    }
+    .result-section .result-block { border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px; }
+    .result-section .result-block:last-of-type { border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; }
+
+    .privacy-list { display: grid; gap: 0.65rem; list-style: none; }
+    .privacy-list li { position: relative; padding-left: 1.35rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.8; }
+    .privacy-list li::before { content: '›'; position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+    .privacy-list strong { color: var(--text); font-weight: 700; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      border-radius: 999px;
+      padding: 0.85rem 1.4rem;
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      border: 2px solid transparent;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .btn-outline { background: var(--bg-card); border-color: var(--border); color: var(--text); }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+    .results-cta { display: block; text-align: center; margin: 0.5rem 0 1.5rem; }
+
+    footer.site-footer {
+      border-top: 1px solid var(--border);
+      background: var(--bg-tint);
+      padding: 2rem 1.5rem 2.5rem;
+      text-align: center;
+    }
+    footer.site-footer p { margin: 0.3rem 0; font-size: 0.78rem; color: var(--text-muted); }
+    footer.site-footer a { color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; }
+    footer.site-footer a:hover { color: var(--accent); }
+  </style>
+</head>
+<body data-site-section="community" data-page-type="survey_results" data-event-slug="fetish_survey" data-event-title="衣装・ユニフォーム嗜好アンケート集計結果">
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <span class="brand">SNB COMMUNITY</span>
+      <a class="back-link" href="../community/" data-cta-name="community_top" data-cta-location="survey_results_header">← コミュニティに戻る</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero__body">
+        <div class="container">
+          <p class="hero__eyebrow">SNBC SURVEY RESULTS</p>
+          <h1 id="page-title">衣装・ユニフォーム嗜好アンケート 集計結果</h1>
+          <p class="hero__lead">
+            名古屋のSNBコミュニティ（SNBC）が実施した、衣装・ユニフォーム・スーツ・コスプレなどへの
+            興味や関わり方に関するアンケートの集計結果です。<strong>選択式設問の単純集計のみ</strong>を
+            公開しています。自由記述・個別の回答内容・識別用のハッシュ値などは一切公開しません。
+          </p>
+          <div class="hero__meta">
+            <span class="meta-chip" id="meta-chip-period">回答受付：〜2026年9月30日23:59</span>
+            <span class="meta-chip">選択式設問の単純集計のみ</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="container" aria-labelledby="summary-title">
+      <p class="section-label">Summary</p>
+      <h2 id="summary-title">回答状況</h2>
+
+      <noscript>
+        <div class="state-panel state-panel--error">
+          このページの集計結果表示にはJavaScriptが必要です。ブラウザの設定でJavaScriptを
+          有効にしてから開き直してください。
+        </div>
+      </noscript>
+
+      <div id="results-loading" class="state-panel">読み込み中です…</div>
+      <div id="results-error" class="state-panel state-panel--error" hidden>
+        <p>集計結果データの読み込みに失敗しました。時間をおいて再度開き直してください。</p>
+      </div>
+
+      <div id="results-content" hidden>
+        <div class="results-summary">
+          <p class="results-count">確定回答数 <strong id="results-total">0</strong> 件</p>
+          <p class="results-updated" id="results-updated-at">--</p>
+        </div>
+
+        <div id="results-pending" class="state-panel" hidden>
+          <p>
+            <strong>アンケートの回答受付は2026年9月30日23:59をもって終了しました。現在、集計の確定作業中です。</strong><br>
+            締切までの有効回答を確定したうえで、選択式設問の単純集計をこのページで公開します。
+            確定前の速報値は掲載しません。今しばらくお待ちください。
+          </p>
+        </div>
+
+        <div id="results-blocks" hidden>
+          <section class="result-block">
+            <h2>興味のある衣装・服装</h2>
+            <p class="result-block__note">複数回答のため、割合の合計は100%になりません。回答が0件のカテゴリは表示していません。</p>
+            <div id="chart-categories" class="bar-chart"></div>
+          </section>
+
+          <section class="result-block">
+            <h2>第一嗜好</h2>
+            <p class="result-block__note">興味のある衣装・服装の中から、特に好きなジャンルを1つ選んだ結果です（任意回答）。回答が0件の項目は表示していません。</p>
+            <div id="chart-primary-interest-category" class="bar-chart"></div>
+          </section>
+
+          <section class="result-block">
+            <h2>衣装・服装との関わり方</h2>
+            <p class="result-block__note">複数回答のため、割合の合計は100%になりません。回答が0件の項目は表示していません。</p>
+            <div id="chart-engagement" class="bar-chart"></div>
+          </section>
+
+          <details class="result-section" open>
+            <summary>SNBCへの認知・関心</summary>
+            <section class="result-block">
+              <h2>SNBC認知</h2>
+              <p class="result-block__note">
+                対象者数：<span id="target-snbc-awareness">0</span>人（興味のある衣装・服装でスポーツ・ユニフォーム系や
+                学校制服・作業着・職業制服のいずれかを選んだ方のみ回答）。回答が0件の項目は表示していません。
+              </p>
+              <div id="chart-snbc-awareness" class="bar-chart"></div>
+            </section>
+            <section class="result-block">
+              <h2>SNBCユニ会企画への興味</h2>
+              <p class="result-block__note">対象者数：<span id="target-snbc-interest">0</span>人（SNBC認知と同じ対象者）。回答が0件の項目は表示していません。</p>
+              <div id="chart-snbc-interest" class="bar-chart"></div>
+            </section>
+            <section id="block-snbc-uncertain-reasons" class="result-block" hidden>
+              <h2>興味が「どちらともいえない」理由</h2>
+              <p class="result-block__note">
+                複数回答のため、割合の合計は100%になりません。対象者数：<span id="target-snbc-uncertain-reasons">0</span>人
+                （SNBCユニ会企画への興味で「どちらともいえない」と回答した方のみ）。回答が0件の項目は表示していません。
+              </p>
+              <div id="chart-snbc-uncertain-reasons" class="bar-chart"></div>
+            </section>
+          </details>
+
+          <details id="section-step3-conditions" class="result-section" hidden>
+            <summary>参加条件</summary>
+            <p class="result-block__note">
+              対象者数：<span id="target-step3-conditions">0</span>人（SNBCユニ会企画・スーツ企画のいずれかに
+              「興味がある」と回答し、参加条件について詳しく聞いたSTEP3到達者のみ）。
+            </p>
+            <section class="result-block">
+              <h2>参加しやすい頻度</h2>
+              <div id="chart-step3-frequency" class="bar-chart"></div>
+            </section>
+            <section class="result-block">
+              <h2>参加しやすい料金</h2>
+              <div id="chart-step3-price" class="bar-chart"></div>
+            </section>
+            <section class="result-block">
+              <h2>参加しやすい人数</h2>
+              <div id="chart-step3-group-size" class="bar-chart"></div>
+            </section>
+            <section class="result-block">
+              <h2>参加形式</h2>
+              <p class="result-block__note">複数回答のため、割合の合計は100%になりません。</p>
+              <div id="chart-step3-format" class="bar-chart"></div>
+            </section>
+          </details>
+
+          <details id="section-step3-barriers" class="result-section" hidden>
+            <summary>参加障壁・必要情報</summary>
+            <p class="result-block__note">対象者数：<span id="target-step3-barriers">0</span>人（参加条件と同じSTEP3到達者）。</p>
+            <section class="result-block">
+              <h2>イベント告知の認知</h2>
+              <div id="chart-step3-event-awareness" class="bar-chart"></div>
+            </section>
+            <section class="result-block">
+              <h2>参加障壁</h2>
+              <p class="result-block__note">複数回答のため、割合の合計は100%になりません。</p>
+              <div id="chart-step3-barriers" class="bar-chart"></div>
+            </section>
+            <section class="result-block">
+              <h2>あると助かる情報</h2>
+              <p class="result-block__note">複数回答のため、割合の合計は100%になりません。</p>
+              <div id="chart-step3-helpful-info" class="bar-chart"></div>
+            </section>
+            <section class="result-block">
+              <h2>場の温度感</h2>
+              <div id="chart-step3-atmosphere" class="bar-chart"></div>
+            </section>
+            <section class="result-block">
+              <h2>仮定企画への参加意向</h2>
+              <div id="chart-step3-hypothetical-intent" class="bar-chart"></div>
+            </section>
+            <section class="result-block">
+              <h2>アンケート〜申込ギャップ</h2>
+              <div id="chart-step3-gap" class="bar-chart"></div>
+            </section>
+            <section id="block-gap-reasons" class="result-block" hidden>
+              <h2>ギャップの理由</h2>
+              <p class="result-block__note">
+                複数回答のため、割合の合計は100%になりません。対象者数：<span id="target-gap-reasons">0</span>人
+                （STEP3到達者のうち、アンケート〜申込ギャップで「よくある」「ときどきある」と回答した方のみ）。
+              </p>
+              <div id="chart-gap-reasons" class="bar-chart"></div>
+            </section>
+          </details>
+
+          <details id="section-suit" class="result-section" hidden>
+            <summary>スーツ関連</summary>
+            <p class="result-block__note">
+              対象者数：<span id="target-suit">0</span>人（興味のある衣装・服装で「スーツ」を選んだ方のみ回答）。
+            </p>
+            <section class="result-block">
+              <h2>スーツとの関わり方</h2>
+              <p class="result-block__note">複数回答のため、割合の合計は100%になりません。</p>
+              <div id="chart-suit-engagement" class="bar-chart"></div>
+            </section>
+            <section class="result-block">
+              <h2>スーツタイプ</h2>
+              <p class="result-block__note">複数回答のため、割合の合計は100%になりません。</p>
+              <div id="chart-suit-types" class="bar-chart"></div>
+            </section>
+            <section class="result-block">
+              <h2>スーツの状態</h2>
+              <p class="result-block__note">複数回答のため、割合の合計は100%になりません。</p>
+              <div id="chart-suit-states" class="bar-chart"></div>
+            </section>
+            <section class="result-block">
+              <h2>スーツ企画への興味</h2>
+              <div id="chart-suit-event-interest" class="bar-chart"></div>
+            </section>
+          </details>
+
+          <section class="result-block">
+            <h2>回答者のお住まい</h2>
+            <p class="result-block__note">都道府県は全国7地域ブロックにまとめて表示しています。回答が0件の地域は表示していません。</p>
+            <div id="chart-region" class="bar-chart"></div>
+          </section>
+
+          <section class="result-block">
+            <h2>年代分布</h2>
+            <p class="result-block__note">回答が0件の区分は表示していません。</p>
+            <div id="chart-age" class="bar-chart"></div>
+          </section>
+        </div>
+      </div>
+
+      <a class="btn btn-outline results-cta" href="fetish-survey.html" data-cta-name="fetish_survey_landing" data-cta-location="survey_results_bottom">アンケートについて見る →</a>
+    </section>
+
+    <section class="container" aria-labelledby="privacy-title">
+      <p class="section-label">Privacy</p>
+      <h2 id="privacy-title">公開データについて</h2>
+      <ul class="privacy-list">
+        <li>公開している数値は<strong>選択式設問の単純集計（件数・割合）のみ</strong>です。</li>
+        <li>自由記述・個別の回答内容・識別用のハッシュ値・回答日時などは一切公開しません。</li>
+        <li>このページはビルド時に確定した静的なデータのみを表示しており、閲覧時にサーバーへ問い合わせません。</li>
+        <li>詳細なクロス集計・管理者向け画面は公開していません。</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>SNB Community｜名古屋・上前津</p>
+    <p><a href="../community/">SNBコミュニティ</a>／<a href="../legal/">規約・参加ルール</a></p>
+    <p>© 2022-2026 Studio Nagoya Base Community — 名古屋・上前津</p>
+  </footer>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var DATA_URL = 'fetish-survey-results.data.json';
+
+      var loadingEl = document.getElementById('results-loading');
+      var errorEl = document.getElementById('results-error');
+      var contentEl = document.getElementById('results-content');
+      var totalEl = document.getElementById('results-total');
+      var updatedAtEl = document.getElementById('results-updated-at');
+      var pendingEl = document.getElementById('results-pending');
+      var blocksEl = document.getElementById('results-blocks');
+      var periodChipEl = document.getElementById('meta-chip-period');
+
+      var charts = {
+        categories: document.getElementById('chart-categories'),
+        primaryInterestCategory: document.getElementById('chart-primary-interest-category'),
+        engagement: document.getElementById('chart-engagement'),
+        region: document.getElementById('chart-region'),
+        age: document.getElementById('chart-age'),
+        snbcAwareness: document.getElementById('chart-snbc-awareness'),
+        snbcInterest: document.getElementById('chart-snbc-interest'),
+        snbcUncertainReasons: document.getElementById('chart-snbc-uncertain-reasons'),
+        step3Frequency: document.getElementById('chart-step3-frequency'),
+        step3Price: document.getElementById('chart-step3-price'),
+        step3GroupSize: document.getElementById('chart-step3-group-size'),
+        step3Format: document.getElementById('chart-step3-format'),
+        step3EventAwareness: document.getElementById('chart-step3-event-awareness'),
+        step3Barriers: document.getElementById('chart-step3-barriers'),
+        step3HelpfulInfo: document.getElementById('chart-step3-helpful-info'),
+        step3Atmosphere: document.getElementById('chart-step3-atmosphere'),
+        step3HypotheticalIntent: document.getElementById('chart-step3-hypothetical-intent'),
+        step3Gap: document.getElementById('chart-step3-gap'),
+        gapReasons: document.getElementById('chart-gap-reasons'),
+        suitEngagement: document.getElementById('chart-suit-engagement'),
+        suitTypes: document.getElementById('chart-suit-types'),
+        suitStates: document.getElementById('chart-suit-states'),
+        suitEventInterest: document.getElementById('chart-suit-event-interest')
+      };
+
+      var blockSnbcUncertainReasons = document.getElementById('block-snbc-uncertain-reasons');
+      var sectionStep3Conditions = document.getElementById('section-step3-conditions');
+      var sectionStep3Barriers = document.getElementById('section-step3-barriers');
+      var blockGapReasons = document.getElementById('block-gap-reasons');
+      var sectionSuit = document.getElementById('section-suit');
+
+      function showBranchBlock(toggleEl, data, targetElIds) {
+        var present = !!data;
+        toggleEl.hidden = !present;
+        if (present) {
+          toggleEl.open = true;
+          (targetElIds || []).forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = data.targetCount;
+          });
+        }
+      }
+
+      function formatDateTime(isoString) {
+        var date = new Date(isoString);
+        if (isNaN(date.getTime())) return '';
+        var y = date.getFullYear();
+        var m = ('0' + (date.getMonth() + 1)).slice(-2);
+        var d = ('0' + date.getDate()).slice(-2);
+        var hh = ('0' + date.getHours()).slice(-2);
+        var mm = ('0' + date.getMinutes()).slice(-2);
+        return y + '/' + m + '/' + d + ' ' + hh + ':' + mm;
+      }
+
+      function clearChildren(el) {
+        while (el.firstChild) el.removeChild(el.firstChild);
+      }
+
+      /**
+       * items: [{ name, count, percent }, ...]（GAS公開結果ページと同じ形。降順ソート済み前提）。
+       */
+      function renderBarChart(container, items) {
+        clearChildren(container);
+
+        if (!items || items.length === 0) {
+          var empty = document.createElement('p');
+          empty.className = 'result-block__empty';
+          empty.textContent = '表示できるデータがまだありません。';
+          container.appendChild(empty);
+          return;
+        }
+
+        items.forEach(function (item) {
+          var row = document.createElement('div');
+          row.className = 'bar-row';
+
+          var label = document.createElement('div');
+          label.className = 'bar-row__label';
+
+          var name = document.createElement('span');
+          name.className = 'bar-row__name';
+          name.textContent = item.name;
+
+          var value = document.createElement('span');
+          value.className = 'bar-row__value';
+          value.textContent = item.count + '件（' + item.percent + '%）';
+
+          label.appendChild(name);
+          label.appendChild(value);
+
+          var track = document.createElement('div');
+          track.className = 'bar-row__track';
+
+          var fill = document.createElement('div');
+          fill.className = 'bar-row__fill';
+          fill.style.width = Math.max(0, Math.min(100, item.percent)) + '%';
+
+          track.appendChild(fill);
+          row.appendChild(label);
+          row.appendChild(track);
+          container.appendChild(row);
+        });
+      }
+
+      function render(file) {
+        loadingEl.hidden = true;
+        errorEl.hidden = true;
+        contentEl.hidden = false;
+
+        var data = file.results;
+        totalEl.textContent = data.total;
+        // 未確定（pending）のときは件数も出さない（0件などの未確定値を「最終回答数」と誤読させない）。
+        document.querySelector('.results-count').hidden = file.status !== 'final';
+
+        if (file.status === 'final' && file.finalizedAt) {
+          updatedAtEl.textContent = '集計確定日時 ' + formatDateTime(file.finalizedAt);
+        } else {
+          updatedAtEl.textContent = '（速報値ではなく、受付終了後の確定値のみを公開します）';
+        }
+
+        if (file.surveyPeriod && file.surveyPeriod.end) {
+          var endLabel = formatDateTime(file.surveyPeriod.end).replace(/^(\d{4})\/(\d{2})\/(\d{2})/, '$1年$2月$3日');
+          periodChipEl.textContent = file.status === 'final'
+            ? '回答受付：' + endLabel + ' 終了'
+            : '回答受付：〜' + endLabel;
+        }
+
+        // status==='pending'（まだ最終確定していない）のときは、resultsのready値に関わらず
+        // 「集計中」表示にする。「final」のときのみ、確定済みの内訳を表示する
+        // （tools/build-static-results-data.jsが--status final時にready:trueを必須にしている
+        // ため、ここに来る時点でdataは確定済みの内訳を必ず持っている）。
+        if (file.status !== 'final' || !data.ready) {
+          pendingEl.hidden = false;
+          blocksEl.hidden = true;
+          return;
+        }
+
+        pendingEl.hidden = true;
+        blocksEl.hidden = false;
+
+        renderBarChart(charts.categories, data.categories);
+        renderBarChart(charts.primaryInterestCategory, data.primaryInterestCategory);
+        renderBarChart(charts.engagement, data.engagement);
+        renderBarChart(charts.region, data.region);
+        renderBarChart(charts.age, data.age);
+
+        renderBarChart(charts.snbcAwareness, data.snbcAwareness.items);
+        document.getElementById('target-snbc-awareness').textContent = data.snbcAwareness.targetCount;
+        renderBarChart(charts.snbcInterest, data.snbcInterest.items);
+        document.getElementById('target-snbc-interest').textContent = data.snbcInterest.targetCount;
+
+        showBranchBlock(blockSnbcUncertainReasons, data.snbcUncertainReasons, ['target-snbc-uncertain-reasons']);
+        if (data.snbcUncertainReasons) renderBarChart(charts.snbcUncertainReasons, data.snbcUncertainReasons.items);
+
+        var hasStep3 = !!data.step3;
+        showBranchBlock(sectionStep3Conditions, data.step3, ['target-step3-conditions']);
+        showBranchBlock(sectionStep3Barriers, data.step3, ['target-step3-barriers']);
+        if (hasStep3) {
+          renderBarChart(charts.step3Frequency, data.step3.frequency);
+          renderBarChart(charts.step3Price, data.step3.price);
+          renderBarChart(charts.step3GroupSize, data.step3.groupSize);
+          renderBarChart(charts.step3Format, data.step3.format);
+          renderBarChart(charts.step3EventAwareness, data.step3.eventAwareness);
+          renderBarChart(charts.step3Barriers, data.step3.barriers);
+          renderBarChart(charts.step3HelpfulInfo, data.step3.helpfulInformation);
+          renderBarChart(charts.step3Atmosphere, data.step3.atmosphere);
+          renderBarChart(charts.step3HypotheticalIntent, data.step3.hypotheticalIntent);
+          renderBarChart(charts.step3Gap, data.step3.gap);
+        }
+
+        showBranchBlock(blockGapReasons, data.gapReasons, ['target-gap-reasons']);
+        if (data.gapReasons) renderBarChart(charts.gapReasons, data.gapReasons.items);
+
+        showBranchBlock(sectionSuit, data.suit, ['target-suit']);
+        if (data.suit) {
+          renderBarChart(charts.suitEngagement, data.suit.engagement);
+          renderBarChart(charts.suitTypes, data.suit.types);
+          renderBarChart(charts.suitStates, data.suit.states);
+          renderBarChart(charts.suitEventInterest, data.suit.eventInterest);
+        }
+      }
+
+      function showError() {
+        loadingEl.hidden = true;
+        errorEl.hidden = false;
+      }
+
+      fetch(DATA_URL, { cache: 'no-store' })
+        .then(function (res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(render)
+        .catch(showError);
+    })();
+  </script>
+
+</body>
+</html>

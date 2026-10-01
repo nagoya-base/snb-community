@@ -1,0 +1,13 @@
+{
+  "status": "pending",
+  "finalizedAt": null,
+  "surveyPeriod": {
+    "start": null,
+    "end": "2026-09-30T23:59:59+09:00"
+  },
+  "results": {
+    "total": 0,
+    "generatedAt": "2026-09-24T15:00:00.000Z",
+    "ready": false
+  }
+}

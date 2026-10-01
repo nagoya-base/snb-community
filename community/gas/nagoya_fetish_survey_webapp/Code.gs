@@ -73,8 +73,36 @@ var FORM_TITLE = '名古屋のフェチ・衣装交流に関するアンケー�
 
 var PROP_SPREADSHEET_ID = 'SPREADSHEET_ID';
 var PROP_SERVER_SALT = 'SERVER_SALT';
+/* Issue #319：finalizeSurveyResults()が最後まで正常完了したことを示すマーカー（ISO日時）。
+   getPublicResults()はこのマーカーが無い限り公開しない。responses_validの存在だけでは
+   「確定済み」と判断しない（buildAggregationSheets()単体実行や途中失敗でも作られるため）。 */
+var PROP_RESULTS_FINALIZED_AT = 'SURVEY_RESULTS_FINALIZED_AT';
+/* Issue #319：finalizeSurveyResults()が固定した公開用payload（JSON文字列）。
+   Script Propertiesは1値あたり9KBが上限のため、JSON文字列をUTF-8バイト数で分割した複数propertyへ保存する：
+     SURVEY_FINAL_RESULTS_000, _001, ...  … 分割チャンク（1チャンクはUTF-8で最大 FINAL_RESULTS_CHUNK_MAX_BYTES）
+     SURVEY_FINAL_RESULTS_META            … {version, chunks, bytes, length}（全チャンク保存後に保存）
+   getPublicResults()・`?view=results&format=json`は、確定後はこれらを結合して返すだけ（Spreadsheetを読まない）。
+   公開可能な単純集計のみを保存し、respondent_hash・UUID・free_comment・個別timestamp等は含めない。 */
+var PROP_FINAL_RESULTS_PREFIX = 'SURVEY_FINAL_RESULTS_';
+var PROP_FINAL_RESULTS_META = 'SURVEY_FINAL_RESULTS_META';
+/* 9KB（9216バイト）上限に対して十分な余裕を持たせる（1チャンクのUTF-8バイト数の上限）。 */
+var FINAL_RESULTS_CHUNK_MAX_BYTES = 6000;
 
 var RESPONSES_SHEET_NAME = 'responses';
+
+/* Issue #319：受付締切。2026-09-30 23:59 JST の分の終わり（23:59:59.999）までを有効回答とする
+   （「23:59まで」という表記を、23:59台に送信された回答を含む意味で解釈している）。
+   この時刻を過ぎた送信は submitSurvey() がサーバー側で拒否する（クライアントの表示は信用しない）。
+   判定には必ずサーバー時刻（new Date()）を使い、ブラウザから渡される値は一切使わない。 */
+var SURVEY_CLOSES_AT_ISO = '2026-09-30T23:59:59.999+09:00';
+
+/* Issue #319：締切内の有効回答だけを複製した確定スナップショットシート。
+   公開結果の集計_*シート（buildAggregationSheets）と getPublicResults() は、responsesではなく
+   このシートを参照する。これにより、集計式・公開用ロジックは既存のものをそのまま再利用しつつ、
+   締切後に（デプロイ反映前などで）保存されてしまった行が公開数値に混入しない。 */
+var RESPONSES_VALID_SHEET_NAME = 'responses_valid';
+/* 確定スナップショットへ複製しない列（集計に不要で、個別回答情報にあたる列）。 */
+var SNAPSHOT_BLANKED_COLUMNS = ['respondent_hash', 'free_comment'];
 
 /* 生回答の列。意味の分かる固定キーをヘッダとして使う。
    ここに列を追加する場合はCOLUMNS配列とbuildRowValues_()、Script.html側のQUESTIONS定義を
@@ -411,8 +439,6 @@ var PUBLIC_INTEREST_GROUPS = [
   { name: 'その他', categories: [] }
 ];
 
-var PUBLIC_RESULTS_CACHE_KEY = 'publicResultsV1';
-var PUBLIC_RESULTS_CACHE_TTL_SECONDS = 45; // CacheServiceの最大は6時間だが、要件どおり30〜60秒に収める
 var PUBLIC_MIN_TOTAL_FOR_CHARTS = 10; // 総回答数がこれ未満の場合は全グラフ非表示
 /* Issue #304：公開粒度は大分類（衣装11区分・関わり方・地域7ブロック・年代5区分）のみで、
    個票が推測されうる詳細クロス集計・自由記述本文はそもそも公開しない設計のため、
@@ -446,23 +472,26 @@ var PUBLIC_TIER2_MIN_TARGET = 20;
  * ══════════════════════════════════════════════════════════════ */
 
 /**
- * `/exec` は従来どおりアンケートフォーム、`?view=results` のときだけ公開結果ページを返す。
- * 管理画面へのルート（`?view=admin`等）はこのプロジェクトには存在しない（上記コメント参照）。
+ * Issue #319：アンケートは受付終了済み。このWebアプリは「確定結果閲覧アプリ」として動作する。
+ *   `/exec`                          → 結果ページ（Results.html）
+ *   `/exec?view=results`             → 結果ページ（同上）
+ *   `/exec?view=results&format=json` → 確定済み公開結果JSON（getPublicResults()＝SURVEY_FINAL_RESULTS_*）
+ * 回答フォーム（Index.html）は公開経路から外している。管理画面へのルートはこのプロジェクトには存在しない。
  */
 function doGet(e) {
   var view = e && e.parameter ? e.parameter.view : undefined;
+  var format = e && e.parameter ? e.parameter.format : undefined;
 
-  if (view === 'results') {
-    var resultsTemplate = HtmlService.createTemplateFromFile('Results');
-    return resultsTemplate.evaluate()
-      .setTitle(FORM_TITLE + '｜アンケート集計結果')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
+  if (view === 'results' && format === 'json') {
+    // 確定スナップショットをそのまま返すだけ（その場でresponses・Spreadsheetを再集計しない）。
+    // メンテナがtools/build-static-results-data.jsで検証・整形し、静的JSONとしてコミットする運用。
+    return ContentService.createTextOutput(JSON.stringify(getPublicResults()))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 
-  var template = HtmlService.createTemplateFromFile('Index');
-  return template.evaluate()
-    .setTitle(FORM_TITLE)
+  var resultsTemplate = HtmlService.createTemplateFromFile('Results');
+  return resultsTemplate.evaluate()
+    .setTitle(FORM_TITLE + '｜アンケート集計結果')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
 }
@@ -479,124 +508,144 @@ function include(filename) {
  * ══════════════════════════════════════════════════════════════ */
 
 /**
- * ページ表示時に呼び出す。渡されたUUIDのハッシュが既に保存済みかどうかだけを返す。
- * ここでの判定はあくまでUXのため（回答済みなら最初からフォームを見せない）であり、
- * 最終的な二重回答の拒否はsubmitSurvey()側で必ず行う（クライアントを信用しない）。
+ * Issue #319：アンケートは受付終了済みで再開しない。入力に関わらず常に closed:true を返す
+ * （UUID・Spreadsheetには触れない）。
  */
 function checkSubmissionStatus(uuid) {
-  try {
-    if (typeof uuid !== 'string' || !isValidUuid_(uuid)) {
-      return { answered: false };
-    }
-    var sheet = getResponsesSheet_();
-    var hash = hashUuid_(uuid);
-    return { answered: isDuplicateHash_(sheet, hash) };
-  } catch (err) {
-    // ここで例外を投げるとページ初期表示がエラーになってしまうため、
-    // 状態不明時は「未回答」として扱い、フォームを表示する
-    // （最終的な重複防止はsubmitSurvey側のLockService内判定が担保する）。
-    return { answered: false };
-  }
+  return { answered: false, closed: true };
 }
 
 /**
- * 回答を送信する。UUID検証 → 入力検証 → ロック取得 → 重複判定 → 保存、の順で処理する。
- * 戻り値は { status: 'SUCCESS' | 'DUPLICATE' | 'ERROR', message?: string } の形に統一し、
- * GAS側の例外をそのままクライアントへ投げない（クライアントは常にこの形のオブジェクトを扱える）。
+ * Issue #319：アンケートは受付終了済みで再開しない。日時・UUID・回答内容に関係なく、関数冒頭で即
+ * { status: 'CLOSED' } を返す。UUID・回答の検証、LockService、Spreadsheet、ハッシュ計算、
+ * 保存、キャッシュ更新のいずれにも触れない（古いブラウザや直接のgoogle.script.run呼び出しでも保存されない）。
  */
 function submitSurvey(uuid, answers) {
-  try {
-    if (typeof uuid !== 'string' || !isValidUuid_(uuid)) {
-      return { status: 'ERROR', message: 'invalid_uuid' };
-    }
-
-    var validationError = validateAnswers_(answers);
-    if (validationError) {
-      return { status: 'ERROR', message: validationError };
-    }
-
-    // 同時送信（連打・複数タブ）による競合を防ぐため、
-    // 「重複チェック」と「保存」を同一ロック内で行う。
-    var lock = LockService.getScriptLock();
-    var gotLock = false;
-    try {
-      gotLock = lock.tryLock(10000); // 最大10秒待機
-    } catch (lockAcquireError) {
-      gotLock = false;
-    }
-    if (!gotLock) {
-      return { status: 'ERROR', message: 'busy' };
-    }
-
-    try {
-      var sheet = getResponsesSheet_();
-      var hash = hashUuid_(uuid);
-      if (isDuplicateHash_(sheet, hash)) {
-        return { status: 'DUPLICATE' };
-      }
-      appendResponseRow_(sheet, hash, answers);
-      // 新規回答が保存されたら、公開結果キャッシュは必ず削除する（任意ではなく必須）。
-      // これを怠ると、キャッシュ有効期限（PUBLIC_RESULTS_CACHE_TTL_SECONDS）が切れるまで
-      // 公開結果ページに今回の回答が反映されない。
-      invalidatePublicResultsCache_();
-      return { status: 'SUCCESS' };
-    } finally {
-      lock.releaseLock();
-    }
-  } catch (err) {
-    return { status: 'ERROR', message: 'server_error' };
-  }
+  return { status: 'CLOSED' };
 }
 
 /**
- * `?view=results` の初期表示・ポーリングから呼び出す。公開結果を返す。
+ * `?view=results` の初期表示・`?view=results&format=json` から呼び出す。確定済みの公開結果を返す。
  *
- * 【集計元の方針（Issue #298／#304）】関わり方（engagement_preferences）・地域・年代は、
- * 既存buildAggregationSheets()が作る集計_*シート（集計_関わり方・集計_地域）を正本として
- * 読み取り、公開用カテゴリへ束ね直すだけにする（responses全行を元にした集計処理を
- * 全面的に二重実装しない）。
- * 衣装・服装の公開大分類（PUBLIC_INTEREST_GROUPS）だけは例外で、集計_衣装カテゴリ
- * （22カテゴリ単位・SEARCHによる延べ選択数）は使わず、countPublicInterestGroupsByRespondent_()が
- * responsesシートの生回答を1行ずつ走査してユニーク回答者数を数え直す（Issue #304）。
- * 22カテゴリ単位の延べ件数を公開グループ単位でそのまま合算すると、同一回答者が同一公開
- * グループ内で複数カテゴリを選んだ場合に二重・三重カウントされてしまう（例：「学校制服」＋
- * 「職業制服」を選んだ1人を「制服・職業服」2件と数えてしまう）ため、集計済みの延べ件数からは
- * 逆算しない。
+ * 【固定スナップショット（Issue #319）】finalizeSurveyResults()が保存した
+ * SURVEY_FINAL_RESULTS_META／_000…のチャンクを結合して JSON.parse() し返すだけ。Spreadsheet・集計_*シート・responses・
+ * CacheServiceは一切読まない（確定状態の判断にキャッシュを使わない）。
+ * 未確定（JSONまたは確定マーカーが無い）ときは「未確定」と分かるエラーにする。
  *
- * 【プライバシー】ここで返す値は集計結果（件数・割合・地域7ブロック・簡略年代）のみ。
- * 生回答・自由記述・respondent_hash・UUID関連・個別の回答日時・クロス集計は一切含めない。
+ * 【プライバシー】保存されているのは集計結果（件数・割合・地域7ブロック・簡略年代）のみ。
+ * 生回答・自由記述・respondent_hash・UUID関連・個別の回答日時・クロス集計は含まれない。
+ * 集計方針（新旧のcompletion_stage分離・公開カテゴリ重複排除・分岐設問のtargetCount分母など）は
+ * buildPublicResultsPayload_()側にあり、finalize時に1回だけ適用される。
  */
 function getPublicResults() {
-  var cache = CacheService.getScriptCache();
-  var cached = cache.get(PUBLIC_RESULTS_CACHE_KEY);
-  if (cached) {
-    try {
-      return JSON.parse(cached);
-    } catch (parseError) {
-      // 壊れたキャッシュ値は無視して作り直す。
-    }
+  var properties = PropertiesService.getScriptProperties();
+  if (!properties.getProperty(PROP_RESULTS_FINALIZED_AT)) {
+    throw new Error('公開結果は未確定です。finalizeSurveyResults()を実行して結果を確定してください。');
   }
+  // 確定マーカーがあってもチャンク欠損・不整合なら公開しない（不完全なsnapshotを返さない）。
+  return JSON.parse(readFinalResultsChunks_(properties));
+}
 
-  var responsesSheet = getResponsesSheet_();
-  var spreadsheetId = PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID);
-  var aggregationSpreadsheet = SpreadsheetApp.openById(spreadsheetId);
-  var payload = buildPublicResultsPayload_(responsesSheet, aggregationSpreadsheet);
+/* ── 確定結果のチャンク保存（Script Properties 9KB/value 制限対応） ── */
 
-  cache.put(PUBLIC_RESULTS_CACHE_KEY, JSON.stringify(payload), PUBLIC_RESULTS_CACHE_TTL_SECONDS);
-  return payload;
+/** 文字列のUTF-8バイト数（Apps ScriptのV8にはTextEncoderが無いため自前で数える）。 */
+function utf8ByteLength_(str) {
+  var bytes = 0;
+  for (var i = 0; i < str.length; i++) {
+    var c = str.charCodeAt(i);
+    if (c < 0x80) bytes += 1;
+    else if (c < 0x800) bytes += 2;
+    else if (c >= 0xD800 && c <= 0xDBFF && i + 1 < str.length &&
+             str.charCodeAt(i + 1) >= 0xDC00 && str.charCodeAt(i + 1) <= 0xDFFF) { bytes += 4; i++; }
+    else bytes += 3;
+  }
+  return bytes;
+}
+
+/** 文字列をUTF-8で maxBytes 以下のチャンクへ分割する（サロゲートペア・多バイト文字を途中で切らない）。 */
+function splitByUtf8Bytes_(str, maxBytes) {
+  var chunks = [];
+  var current = '';
+  var currentBytes = 0;
+  for (var i = 0; i < str.length; i++) {
+    var ch = str.charAt(i);
+    var c = str.charCodeAt(i);
+    if (c >= 0xD800 && c <= 0xDBFF && i + 1 < str.length &&
+        str.charCodeAt(i + 1) >= 0xDC00 && str.charCodeAt(i + 1) <= 0xDFFF) {
+      ch += str.charAt(i + 1);
+      i++;
+    }
+    var chBytes = utf8ByteLength_(ch);
+    if (currentBytes + chBytes > maxBytes) {
+      chunks.push(current);
+      current = '';
+      currentBytes = 0;
+    }
+    current += ch;
+    currentBytes += chBytes;
+  }
+  if (current !== '' || chunks.length === 0) chunks.push(current);
+  return chunks;
+}
+
+function finalResultsChunkKey_(index) {
+  var n = String(index);
+  while (n.length < 3) n = '0' + n;
+  return PROP_FINAL_RESULTS_PREFIX + n;
+}
+
+/** 確定マーカー・メタ情報・全チャンク（古い余剰チャンクを含む）を削除する。 */
+function clearFinalResultsSnapshot_(properties) {
+  properties.deleteProperty(PROP_RESULTS_FINALIZED_AT);
+  var keys = properties.getKeys();
+  keys.forEach(function (key) {
+    if (key === PROP_FINAL_RESULTS_META || /^SURVEY_FINAL_RESULTS_\d+$/.test(key)) {
+      properties.deleteProperty(key);
+    }
+  });
 }
 
 /**
- * submitSurvey()が新規回答を保存した直後に必ず呼び出す（必須。任意ではない）。
- * キャッシュ削除に失敗しても回答保存自体は成功しているため、例外は握りつぶす
- * （最悪でもキャッシュ有効期限切れ時に自然に最新化される）。
+ * payloadをチャンクへ分割して保存する。全チャンクの保存後にメタ情報を保存し、
+ * 保存した内容を読み戻して元のJSON文字列と一致することを確認する（不一致なら例外）。
+ * 確定マーカーはここでは保存しない（呼び出し元が最後に保存する）。
  */
-function invalidatePublicResultsCache_() {
-  try {
-    CacheService.getScriptCache().remove(PUBLIC_RESULTS_CACHE_KEY);
-  } catch (removeError) {
-    // 無視する（上記コメント参照）。
+function writeFinalResultsSnapshot_(properties, payload) {
+  var json = JSON.stringify(payload);
+  var chunks = splitByUtf8Bytes_(json, FINAL_RESULTS_CHUNK_MAX_BYTES);
+  chunks.forEach(function (chunk, index) {
+    properties.setProperty(finalResultsChunkKey_(index), chunk);
+  });
+  properties.setProperty(PROP_FINAL_RESULTS_META, JSON.stringify({
+    version: 1, chunks: chunks.length, bytes: utf8ByteLength_(json), length: json.length
+  }));
+  if (readFinalResultsChunks_(properties) !== json) {
+    throw new Error('確定結果の保存内容が一致しません（チャンク保存の検証に失敗）。');
   }
+}
+
+/** メタ情報に従ってチャンクを順に結合して返す。欠損・件数/サイズ不一致は「未確定」エラー。 */
+function readFinalResultsChunks_(properties) {
+  var incomplete = function (reason) {
+    return new Error('公開結果は未確定です（確定結果が不完全: ' + reason + '）。finalizeSurveyResults()を実行し直してください。');
+  };
+  var metaText = properties.getProperty(PROP_FINAL_RESULTS_META);
+  if (!metaText) throw incomplete('メタ情報なし');
+  var meta;
+  try { meta = JSON.parse(metaText); } catch (e) { throw incomplete('メタ情報が壊れています'); }
+  if (!meta || meta.version !== 1 || typeof meta.chunks !== 'number' || meta.chunks < 1 || Math.floor(meta.chunks) !== meta.chunks) {
+    throw incomplete('メタ情報が不正です');
+  }
+  var json = '';
+  for (var i = 0; i < meta.chunks; i++) {
+    var chunk = properties.getProperty(finalResultsChunkKey_(i));
+    if (typeof chunk !== 'string') throw incomplete('チャンク' + i + 'が欠損');
+    json += chunk;
+  }
+  if (json.length !== meta.length || utf8ByteLength_(json) !== meta.bytes) {
+    throw incomplete('サイズ不一致');
+  }
+  return json;
 }
 
 /**
@@ -961,6 +1010,164 @@ function readQueryPairsBlock_(sheet, blockIndex, maxRows) {
 }
 
 /* ══════════════════════════════════════════════════════════════
+ * Issue #319：受付締切・締切内有効回答の確定
+ * ══════════════════════════════════════════════════════════════ */
+
+/**
+ * 受付が締め切られているか（now が SURVEY_CLOSES_AT_ISO を過ぎているか）。
+ * Date.parse が解釈できない場合は安全側（締切済み）に倒す。
+ */
+function isSurveyClosed_(now) {
+  var closesAt = Date.parse(SURVEY_CLOSES_AT_ISO);
+  if (isNaN(closesAt)) return true;
+  return now.getTime() > closesAt;
+}
+
+/**
+ * timestamp 列の値が締切内か判定する。Dateまたは日時文字列を受け付け、
+ * 解釈できない値は有効としない（'unparseable'として別集計し、公開数値には入れない）。
+ * @return {'valid'|'late'|'unparseable'}
+ */
+function classifyResponseTimestamp_(value) {
+  var time = value instanceof Date ? value.getTime() : Date.parse(String(value));
+  if (isNaN(time)) return 'unparseable';
+  return time > Date.parse(SURVEY_CLOSES_AT_ISO) ? 'late' : 'valid';
+}
+
+/**
+ * responsesの全データ行（ヘッダー除く、COLUMNS.length列分）から、締切内の有効行だけを返す。
+ * timestampが空の行は回答行とみなさない（findNextResponseRow_と同じ前提）。
+ * 有効行は respondent_hash・free_comment を空にして返す（集計に不要な個別回答情報を複製しない）。
+ * @return {{rows: Array, stats: Object}}
+ */
+function filterDeadlineValidRows_(values) {
+  var blanked = SNAPSHOT_BLANKED_COLUMNS.map(function (name) { return COLUMNS.indexOf(name); });
+  var stageIndex = COLUMNS.indexOf('completion_stage');
+  var stats = { responseRows: 0, validRows: 0, lateRows: 0, unparseableRows: 0, validNewSurveyRows: 0 };
+  var rows = [];
+
+  values.forEach(function (row) {
+    if (row[0] === '' || row[0] === null || typeof row[0] === 'undefined') return;
+    stats.responseRows++;
+    var kind = classifyResponseTimestamp_(row[0]);
+    if (kind === 'late') { stats.lateRows++; return; }
+    if (kind === 'unparseable') { stats.unparseableRows++; return; }
+    var copy = row.slice(0, COLUMNS.length);
+    blanked.forEach(function (index) { copy[index] = ''; });
+    rows.push(copy);
+    stats.validRows++;
+    if (isNewSurveyCompletionStage_(copy[stageIndex])) stats.validNewSurveyRows++;
+  });
+
+  return { rows: rows, stats: stats };
+}
+
+/**
+ * responses_validシート（締切内有効回答の確定スナップショット）を作り直し、件数内訳を返す。
+ * responsesシートは読み取るだけで、書き換え・削除は一切しない。
+ */
+function buildDeadlineValidSnapshot_(spreadsheet, now) {
+  var source = spreadsheet.getSheetByName(RESPONSES_SHEET_NAME);
+  if (!source) throw new Error('responsesシートが見つかりません。');
+  // ヘッダーがCOLUMNSと一致しない状態で列位置を信用しないための読み取り専用チェック。
+  if (!hasExpectedHeader_(source)) {
+    throw new Error('responsesシートのヘッダーがCOLUMNSと一致しません。');
+  }
+  var lastRow = source.getLastRow();
+  var values = lastRow >= 2 ? source.getRange(2, 1, lastRow - 1, COLUMNS.length).getValues() : [];
+  var filtered = filterDeadlineValidRows_(values);
+
+  var existing = spreadsheet.getSheetByName(RESPONSES_VALID_SHEET_NAME);
+  if (existing) spreadsheet.deleteSheet(existing);
+  var target = spreadsheet.insertSheet(RESPONSES_VALID_SHEET_NAME);
+  target.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+  if (filtered.rows.length > 0) {
+    target.getRange(2, 1, filtered.rows.length, COLUMNS.length).setValues(filtered.rows);
+  }
+  target.setFrozenRows(1);
+
+  filtered.stats.closed = isSurveyClosed_(now);
+  filtered.stats.closesAt = SURVEY_CLOSES_AT_ISO;
+  return filtered.stats;
+}
+
+function getDeadlineValidSheet_(spreadsheet) {
+  var sheet = spreadsheet.getSheetByName(RESPONSES_VALID_SHEET_NAME);
+  if (!sheet) {
+    throw new Error(RESPONSES_VALID_SHEET_NAME + 'シートがありません。finalizeSurveyResults()を実行してください。');
+  }
+  return sheet;
+}
+
+/**
+ * 【締切後に1回実行する確定処理（Apps Scriptエディタから手動実行）】最終公開結果を固定する唯一の処理。
+ *  0. 締切前なら何もせずエラーにする（未確定の数値を最終結果として扱わせない）。
+ *  1. 既存の確定マーカー・確定JSONを外す（以降、全工程が成功するまで公開APIは使えない）。
+ *  2. responsesを読み取り、3. 締切内の有効回答だけをresponses_validへ複製
+ *     （4. respondent_hash・free_commentは複製しない。responsesは読み取り専用）。
+ *  5. 既存の集計ロジックで集計_*シートを再生成する。
+ *  6. SpreadsheetApp.flush()。
+ *  7. 公開用payloadを生成する。
+ *  8. validNewSurveyRows === payload.total を確認する（不一致なら失敗）。
+ *  9. payloadをJSON文字列にし、UTF-8バイト数で分割して SURVEY_FINAL_RESULTS_000… へ保存し、
+ *     全チャンク保存後に SURVEY_FINAL_RESULTS_META を保存（読み戻して検証）。
+ * 10. 最後に SURVEY_RESULTS_FINALIZED_AT を保存する。
+ * 途中で例外になった場合は確定JSON・マーカーを残さない（確定扱いにしない）。
+ * 戻り値・ログの件数内訳が「最終回答数」の確定根拠になる：
+ *   validNewSurveyRows … 公開結果のtotalと一致するはずの値
+ *   lateRows           … 締切後に保存されていて、公開数値から除外した行数
+ */
+function finalizeSurveyResults() {
+  var now = new Date();
+  if (!isSurveyClosed_(now)) {
+    throw new Error('締切（' + SURVEY_CLOSES_AT_ISO + '）前のため確定できません。');
+  }
+  var properties = PropertiesService.getScriptProperties();
+  // 1. 既存の確定マーカー・確定JSONを外す。
+  clearFinalResultsSnapshot_(properties);
+  var stats;
+  try {
+    // 2〜5. スナップショット生成と集計_*シート再生成。集計式がresponses_validを参照するため、
+    // スナップショットの作り直しは必ず集計シート再生成の「前」に行う必要がある（後だとシート
+    // 削除で数式が#REF!になる）。buildAggregationSheets()がその順序を守って件数内訳を返す。
+    stats = buildAggregationSheets();
+    // 6. 集計_*シートへ書き込んだ数式・変更を反映させてから最終公開値を読み取る。
+    SpreadsheetApp.flush();
+    // 7. 公開用payloadを生成（確定JSONには依存しない内部用集計）。
+    var payload = computePublicResultsForFinalize_();
+    stats.publicTotal = payload.total;
+    // 8. 件数の整合性確認。
+    if (stats.validNewSurveyRows !== payload.total) {
+      throw new Error('最終回答数が一致しません: validNewSurveyRows=' + stats.validNewSurveyRows +
+        ', publicTotal=' + payload.total);
+    }
+    // 9. 公開payloadを固定。
+    writeFinalResultsSnapshot_(properties, payload);
+    // 10. 全工程成功後、最後にだけ確定マーカーを保存する。
+    stats.finalizedAt = now.toISOString();
+    properties.setProperty(PROP_RESULTS_FINALIZED_AT, stats.finalizedAt);
+  } catch (err) {
+    // 途中で失敗した場合は確定JSON・マーカーを残さない。
+    // 新しく作成した全チャンク・メタ情報・確定マーカーを確実に削除する。
+    try { clearFinalResultsSnapshot_(properties); } catch (ignored) { /* 無視 */ }
+    throw err;
+  }
+  Logger.log('finalizeSurveyResults: ' + JSON.stringify(stats));
+  return stats;
+}
+
+/**
+ * finalizeSurveyResults()専用：確定マーカー・キャッシュに依存せず、responses_validから
+ * 公開用payloadを組み立てる（公開結果の集計はbuildPublicResultsPayload_）。
+ * 公開APIではない。結果はfinalizeSurveyResults()が整合性確認のうえSURVEY_FINAL_RESULTS_*（チャンク）へ固定する。
+ */
+function computePublicResultsForFinalize_() {
+  var spreadsheetId = PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID);
+  var spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  return buildPublicResultsPayload_(getDeadlineValidSheet_(spreadsheet), spreadsheet);
+}
+
+/* ══════════════════════════════════════════════════════════════
  * UUID・ハッシュ関連
  * ══════════════════════════════════════════════════════════════ */
 
@@ -1262,9 +1469,9 @@ function sanitizeForSheet_(value) {
  * 回答行の組み立て
  * ══════════════════════════════════════════════════════════════ */
 
-function buildRowValues_(hash, a) {
+function buildRowValues_(hash, a, timestamp) {
   return [
-    new Date(),
+    timestamp || new Date(),
     hash,
     a.prefecture,
     a.aichiArea,
@@ -1312,8 +1519,8 @@ function buildRowValues_(hash, a) {
  * その行へ`setValues()`で直接書き込む。補助列のスピル範囲がどれだけ伸びていても、
  * この判定には影響しない。
  */
-function appendResponseRow_(sheet, hash, answers) {
-  var rowValues = buildRowValues_(hash, answers);
+function appendResponseRow_(sheet, hash, answers, timestamp) {
+  var rowValues = buildRowValues_(hash, answers, timestamp);
   var targetRow = findNextResponseRow_(sheet);
   sheet.getRange(targetRow, 1, 1, rowValues.length).setValues([rowValues]);
 }
@@ -1549,8 +1756,15 @@ var PUBLIC_PRIMARY_INTEREST_CATEGORY_BLOCK_INDEX = 7;
  */
 function buildAggregationSheets() {
   var ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID));
-  var sheet = getResponsesSheet_();
-  ensureResidenceHelperColumn_(sheet);
+  // Issue #319：集計シートを作り直すと確定状態は崩れるため、最初に確定マーカーを外す
+  // （再生成が途中で失敗しても「確定済み」と誤判定されない。再度finalizeSurveyResults()が必要）。
+  PropertiesService.getScriptProperties().deleteProperty(PROP_RESULTS_FINALIZED_AT);
+  // Issue #319：このfunction（finalizeSurveyResults()経由を含む）はresponsesシートに一切書き込まない。
+  // 居住地4分類の補助列（ensureResidenceHelperColumn_）は現行の公開集計から参照されないため、
+  // ここでは作らない（初期化用のsetupSpreadsheet()側でのみ作成する）。
+  // Issue #319：集計式の参照先は締切内の有効回答だけを複製したスナップショット（respQueryRange_/
+  // respColRange_参照）。集計シートを再生成するたびに、先にスナップショットを作り直す。
+  var snapshotStats = buildDeadlineValidSnapshot_(ss, new Date());
 
   var range = respQueryRange_();
   var col = {}; // ヘッダ名 → 列文字
@@ -1835,6 +2049,7 @@ function buildAggregationSheets() {
   });
 
   Logger.log('buildAggregationSheets: 集計シートを再生成しました。');
+  return snapshotStats;
 }
 
 /**
@@ -1884,11 +2099,11 @@ function recreateSheet_(spreadsheet, name, fillFn) {
 
 function respQueryRange_() {
   var lastColLetter = columnToLetter_(COLUMNS.length + 1);
-  return "'" + RESPONSES_SHEET_NAME + "'!A1:" + lastColLetter + '5000';
+  return "'" + RESPONSES_VALID_SHEET_NAME + "'!A1:" + lastColLetter + '5000';
 }
 
 function respColRange_(letter) {
-  return "'" + RESPONSES_SHEET_NAME + "'!" + letter + '2:' + letter + '5000';
+  return "'" + RESPONSES_VALID_SHEET_NAME + "'!" + letter + '2:' + letter + '5000';
 }
 
 function queryFormula_(range, query) {
