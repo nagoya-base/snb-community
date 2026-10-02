@@ -18,6 +18,10 @@ ADMIN_DIR = REPO / 'community/gas/nagoya_fetish_survey_admin'
 DEPLOYMENT = 'test-admin-deployment'
 SOURCE = ['Code.gs', 'Dashboard.html', 'DashboardStyles.html', 'DashboardScript.html']
 PULLED_JS = ['Code.js', 'Dashboard.html', 'DashboardStyles.html', 'DashboardScript.html']
+LEGACY_PULLED = ['コード.js', 'Dashboard.html.html', 'DashboardStyles.html.html',
+                 'DashboardScript.html.html']
+LEGACY_STAGED = ['コード.gs', 'Dashboard.html.html', 'DashboardStyles.html.html',
+                 'DashboardScript.html.html']
 PUBLIC_PULLED = ['Code.js', 'Index.html', 'Results.html', 'ResultsScript.html', 'Script.html',
                  'Styles.html']
 MANIFEST = {'timeZone': 'Asia/Tokyo', 'runtimeVersion': 'V8',
@@ -156,6 +160,94 @@ class AdminDeployTest(unittest.TestCase):
         before = {p: p.read_bytes() for p in ADMIN_DIR.iterdir() if p.is_file()}
         self.run_deploy()
         self.assertEqual(before, {p: p.read_bytes() for p in ADMIN_DIR.iterdir() if p.is_file()})
+
+
+def logical_name(name):
+    """Apps Script file name clasp derives from a local file name."""
+    for ext in ('.gs', '.js', '.html'):
+        if name.endswith(ext):
+            return name[:-len(ext)]
+    return name
+
+
+class LegacyNamingTest(AdminDeployTest):
+    def test_legacy_profile_is_recognized_and_deployed(self):
+        result, commands, updated = self.run_deploy(pulled=LEGACY_PULLED)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Remote naming profile: legacy', result.stdout)
+        self.assertTrue(updated)
+        self.assertEqual(commands[-3:], ['create-version', 'update-deployment', 'list-deployments'])
+
+    def test_legacy_staging_names_are_exact(self):
+        result, _, _ = self.run_deploy(pulled=LEGACY_PULLED)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.staged['files'], sorted(LEGACY_STAGED + ['appsscript.json']))
+        self.assertEqual(json.loads(self.staged['manifest']), MANIFEST)
+
+    def test_legacy_staged_contents_match_github_sources(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            remote = pathlib.Path(tmp) / 'remote'
+            remote.mkdir()
+            for name in LEGACY_PULLED:
+                (remote / name).write_text('old')
+            (remote / 'appsscript.json').write_text(json.dumps(MANIFEST))
+            out = pathlib.Path(tmp) / 'out'
+            env = dict(os.environ, SNB_SURVEY_ADMIN_SCRIPT_ID='x')
+            subprocess.run(['node', str(PREPARE), str(REPO), str(out), str(remote / 'appsscript.json')],
+                           env=env, check=True, capture_output=True)
+            for src, staged in zip(SOURCE, LEGACY_STAGED):
+                self.assertEqual((out / staged).read_bytes(), (ADMIN_DIR / src).read_bytes())
+            self.assertEqual(sorted(p.name for p in out.iterdir() if not p.name.startswith('.')),
+                             sorted(LEGACY_STAGED + ['appsscript.json']))
+
+    def test_canonical_profile_still_supported(self):
+        for pulled in (PULLED_JS, ['Code.gs'] + PULLED_JS[1:]):
+            result, _, updated = self.run_deploy(pulled=pulled)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn('Remote naming profile: canonical', result.stdout)
+            self.assertEqual(self.staged['files'], sorted(SOURCE + ['appsscript.json']))
+            self.assertTrue(updated)
+
+    def assert_rejected(self, pulled):
+        result, commands, updated = self.run_deploy(pulled=pulled)
+        self.assertNotEqual(result.returncode, 0, pulled)
+        self.assertEqual(commands, ['list-deployments', 'pull'])
+        self.assertFalse(updated)
+
+    def test_mixed_canonical_and_legacy_is_rejected(self):
+        self.assert_rejected(['Code.js'] + LEGACY_PULLED[1:])
+        self.assert_rejected(['コード.js'] + PULLED_JS[1:])
+        self.assert_rejected(['Code.js', 'Dashboard.html.html', 'DashboardStyles.html',
+                              'DashboardScript.html.html'])
+
+    def test_duplicate_script_canonical_is_rejected(self):
+        self.assert_rejected(PULLED_JS + ['コード.js'])
+        self.assert_rejected(LEGACY_PULLED + ['Code.js'])
+        self.assert_rejected(PULLED_JS + ['Code.gs'])
+
+    def test_duplicate_dashboard_canonical_is_rejected(self):
+        self.assert_rejected(PULLED_JS + ['Dashboard.html.html'])
+        self.assert_rejected(LEGACY_PULLED + ['Dashboard.html'])
+
+    def test_public_gas_files_still_rejected(self):
+        self.assert_rejected(PUBLIC_PULLED)
+
+    def test_extra_files_rejected_in_legacy_profile(self):
+        for extra in ('Extra.js', 'Extra.html', 'Extra.html.html'):
+            self.assert_rejected(LEGACY_PULLED + [extra])
+
+    def test_missing_file_is_rejected(self):
+        self.assert_rejected(LEGACY_PULLED[:-1])
+
+    def test_push_updates_existing_files_without_creating_new_names(self):
+        for pulled in (LEGACY_PULLED, PULLED_JS):
+            result, _, _ = self.run_deploy(pulled=pulled)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            staged = {logical_name(n) for n in self.staged['files'] if n != 'appsscript.json'}
+            self.assertEqual(staged, {logical_name(n) for n in pulled})
+        result, _, _ = self.run_deploy(pulled=LEGACY_PULLED)
+        for new_name in ('Code', 'Dashboard', 'DashboardStyles', 'DashboardScript'):
+            self.assertNotIn(new_name, {logical_name(n) for n in self.staged['files']})
 
 
 class StaticSafetyTest(unittest.TestCase):
