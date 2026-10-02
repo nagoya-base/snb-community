@@ -22,6 +22,8 @@ LEGACY_PULLED = ['コード.js', 'Dashboard.html.html', 'DashboardStyles.html.ht
                  'DashboardScript.html.html']
 LEGACY_STAGED = ['コード.gs', 'Dashboard.html.html', 'DashboardStyles.html.html',
                  'DashboardScript.html.html']
+PROD_PULLED = ['コード.js', 'Dashboard.html', 'DashboardStyles.html', 'DashboardScript.html']
+PROD_STAGED = ['コード.gs', 'Dashboard.html', 'DashboardStyles.html', 'DashboardScript.html']
 PUBLIC_PULLED = ['Code.js', 'Index.html', 'Results.html', 'ResultsScript.html', 'Script.html',
                  'Styles.html']
 MANIFEST = {'timeZone': 'Asia/Tokyo', 'runtimeVersion': 'V8',
@@ -216,7 +218,11 @@ class LegacyNamingTest(AdminDeployTest):
 
     def test_mixed_canonical_and_legacy_is_rejected(self):
         self.assert_rejected(['Code.js'] + LEGACY_PULLED[1:])
-        self.assert_rejected(['コード.js'] + PULLED_JS[1:])
+        self.assert_rejected(['Code.js', 'Dashboard.html.html'] + PULLED_JS[2:])
+        self.assert_rejected(['コード.js', 'Dashboard.html.html'] + PULLED_JS[2:])
+        self.assert_rejected(['コード.js', 'Dashboard.html', 'DashboardStyles.html.html',
+                              'DashboardScript.html.html'])
+        self.assert_rejected(['コード.js'] + LEGACY_PULLED[1:3] + ['DashboardScript.html'])
         self.assert_rejected(['Code.js', 'Dashboard.html.html', 'DashboardStyles.html',
                               'DashboardScript.html.html'])
 
@@ -228,6 +234,54 @@ class LegacyNamingTest(AdminDeployTest):
     def test_duplicate_dashboard_canonical_is_rejected(self):
         self.assert_rejected(PULLED_JS + ['Dashboard.html.html'])
         self.assert_rejected(LEGACY_PULLED + ['Dashboard.html'])
+
+    def test_production_current_is_recognized_and_deployed(self):
+        result, commands, updated = self.run_deploy(pulled=PROD_PULLED)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Remote naming profile: production_current', result.stdout)
+        self.assertTrue(updated)
+        self.assertEqual(commands[-3:], ['create-version', 'update-deployment', 'list-deployments'])
+        self.assertEqual(self.staged['files'], sorted(PROD_STAGED + ['appsscript.json']))
+        self.assertEqual(json.loads(self.staged['manifest']), MANIFEST)
+
+    def test_production_current_gs_alias_is_recognized(self):
+        result, _, _ = self.run_deploy(pulled=['コード.gs'] + PROD_PULLED[1:])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Remote naming profile: production_current', result.stdout)
+
+    def test_production_current_staged_contents_match_github_sources(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            remote = pathlib.Path(tmp) / 'remote'
+            remote.mkdir()
+            for name in PROD_PULLED:
+                (remote / name).write_text('old')
+            (remote / 'appsscript.json').write_text(json.dumps(MANIFEST))
+            out = pathlib.Path(tmp) / 'out'
+            env = dict(os.environ, SNB_SURVEY_ADMIN_SCRIPT_ID='x')
+            subprocess.run(['node', str(PREPARE), str(REPO), str(out), str(remote / 'appsscript.json')],
+                           env=env, check=True, capture_output=True)
+            for src, staged in zip(SOURCE, PROD_STAGED):
+                self.assertEqual((out / staged).read_bytes(), (ADMIN_DIR / src).read_bytes())
+            self.assertEqual(sorted(p.name for p in out.iterdir() if not p.name.startswith('.')),
+                             sorted(PROD_STAGED + ['appsscript.json']))
+
+    def test_production_current_duplicates_missing_and_extras_rejected(self):
+        self.assert_rejected(PROD_PULLED + ['Code.js'])
+        self.assert_rejected(PROD_PULLED + ['コード.gs'])
+        self.assert_rejected(PROD_PULLED + ['Dashboard.html.html'])
+        self.assert_rejected(PROD_PULLED[:-1])
+        self.assert_rejected(PROD_PULLED[1:])
+        for extra in ('Extra.js', 'Extra.html'):
+            self.assert_rejected(PROD_PULLED + [extra])
+        self.assert_rejected(PUBLIC_PULLED)
+
+    def test_production_current_push_creates_no_new_names(self):
+        result, _, _ = self.run_deploy(pulled=PROD_PULLED)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        staged = {logical_name(n) for n in self.staged['files'] if n != 'appsscript.json'}
+        self.assertEqual(staged, {'コード', 'Dashboard', 'DashboardStyles', 'DashboardScript'})
+        for new_name in ('Code', 'Dashboard.html', 'DashboardStyles.html', 'DashboardScript.html'):
+            self.assertNotIn(new_name, staged)
 
     def test_public_gas_files_still_rejected(self):
         self.assert_rejected(PUBLIC_PULLED)

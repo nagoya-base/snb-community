@@ -72,7 +72,7 @@ for (const entry of entries) {
     ' normalized=' + JSON.stringify(entry.normalized) +
     ' ' + (entry.expected ? 'EXPECTED' : 'UNEXPECTED'));
 }
-// The remote must match exactly one naming profile (canonical or current production legacy):
+// The remote must match exactly one naming profile (canonical, legacy or production_current):
 // no mixes, no alias + canonical duplicates, no extra or missing files, no directories.
 let profile = null;
 try { profile = detectRemoteProfile(existing); } catch (_) { /* reported below */ }

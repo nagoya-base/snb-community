@@ -25,6 +25,13 @@ const REMOTE_PROFILES = {
     'DashboardStyles.html': ['DashboardStyles.html.html'],
     'DashboardScript.html': ['DashboardScript.html.html'],
   },
+  // Observed production (clasp pull): コード.js plus plain *.html names.
+  production_current: {
+    'Code.gs': ['コード.js', 'コード.gs'],
+    'Dashboard.html': ['Dashboard.html'],
+    'DashboardStyles.html': ['DashboardStyles.html'],
+    'DashboardScript.html': ['DashboardScript.html'],
+  },
 };
 // Staging (clasp push) name per profile. Apps Script derives the remote file name from it:
 // コード.gs -> "コード", Dashboard.html.html -> "Dashboard.html".
@@ -33,6 +40,8 @@ const STAGING_NAMES = {
     'DashboardStyles.html': 'DashboardStyles.html', 'DashboardScript.html': 'DashboardScript.html' },
   legacy: { 'Code.gs': 'コード.gs', 'Dashboard.html': 'Dashboard.html.html',
     'DashboardStyles.html': 'DashboardStyles.html.html', 'DashboardScript.html': 'DashboardScript.html.html' },
+  production_current: { 'Code.gs': 'コード.gs', 'Dashboard.html': 'Dashboard.html',
+    'DashboardStyles.html': 'DashboardStyles.html', 'DashboardScript.html': 'DashboardScript.html' },
 };
 const PUBLIC_ROOT_DIR = 'community/gas/nagoya_fetish_survey_webapp';
 
