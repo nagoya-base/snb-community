@@ -57,7 +57,7 @@ fi
 REMOTE_DIR="$remote_dir" node <<'NODE'
 const fs = require('fs');
 const path = require('path');
-const { classifyRemoteFile, validateRemoteManifest } =
+const { classifyRemoteFile, detectRemoteProfile, validateRemoteManifest } =
   require(process.env.GITHUB_WORKSPACE + '/scripts/prepare-snb-survey-admin-gas.js');
 const existing = fs.readdirSync(process.env.REMOTE_DIR).filter(name => !name.startsWith('.'));
 // Diagnostic output: file names and classification only, never contents or identifiers.
@@ -72,12 +72,14 @@ for (const entry of entries) {
     ' normalized=' + JSON.stringify(entry.normalized) +
     ' ' + (entry.expected ? 'EXPECTED' : 'UNEXPECTED'));
 }
-const normalizedNames = entries.map(entry => entry.normalized);
-if (!existing.includes('appsscript.json') ||
-    entries.some(entry => !entry.expected) ||
-    new Set(normalizedNames).size !== normalizedNames.length) {
+// The remote must match exactly one naming profile (canonical or current production legacy):
+// no mixes, no alias + canonical duplicates, no extra or missing files, no directories.
+let profile = null;
+try { profile = detectRemoteProfile(existing); } catch (_) { /* reported below */ }
+if (!profile || entries.some(entry => entry.kind === 'directory')) {
   throw new Error('Existing project is not the admin GAS project (unexpected files); refusing to replace them.');
 }
+console.log('Remote naming profile: ' + profile);
 validateRemoteManifest(JSON.parse(fs.readFileSync(path.join(process.env.REMOTE_DIR, 'appsscript.json'), 'utf8')));
 NODE
 
