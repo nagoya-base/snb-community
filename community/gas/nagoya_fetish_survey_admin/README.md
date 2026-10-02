@@ -201,6 +201,31 @@ Issue #317で選択式設問全般×年代・地域のクロス集計を追加�
 5. 上部の各単純集計（地域・年代・衣装・SNBC・スーツ・深掘り・分岐）の数値が、反映前と
    変わっていないことを確認する（既存集計への回帰がないことの最終確認）。
 
+### GitHub Actionsからの更新手順（既存Web Appデプロイの更新）
+
+workflow `.github/workflows/snb-survey-admin-gas-production.yml`（Actions上の名前：
+`Update SNB survey admin GAS`）は、**既存の管理Web Appデプロイだけ**を更新する。
+新規デプロイは作らない。公開アンケートGASのworkflow・Secretとは完全に分離している。
+
+1. 管理GASのScript IDをRepository（または`snb-survey-admin-production` Environment）のSecret
+   `SNB_SURVEY_ADMIN_SCRIPT_ID`に登録する。
+2. 既存管理Web AppのDeployment IDをSecret `SNB_SURVEY_ADMIN_DEPLOYMENT_ID`に登録する。
+   （clasp認証は既存の`CLASPRC_JSON`を再利用する。そのアカウントが管理GASを編集できること。
+   公開GAS用の`SNB_SURVEY_SCRIPT_ID`・`SNB_SURVEY_DEPLOYMENT_ID`は使わない。）
+3. GitHubの Actions → 「Update SNB survey admin GAS」 → 「Run workflow」。
+4. `source_sha`にmain HEADの40文字（小文字）SHAを入力する。mainのHEAD以外
+   （ブランチ・PR head・古いコミット）は拒否される。
+5. 成功後、既存の管理ダッシュボードURLを開いて表示を確認する。
+
+- アクセス権「自分のみ」は既存デプロイ側の設定で維持される。workflowはアクセス権・
+  Script Properties・`SPREADSHEET_ID`を一切変更しない。既存の`appsscript.json`は
+  変更せずそのまま再利用し、`webapp.access`が`MYSELF`以外ならデプロイを中止する。
+- pushされるのは`Code.gs`・`Dashboard.html`・`DashboardStyles.html`・`DashboardScript.html`の
+  4ファイル（＋既存`appsscript.json`の無変更コピー）のみ。README・testsはpushされない。
+- 既存プロジェクトに想定外のファイルがある場合（例：公開GASのScript IDを誤登録した場合）や、
+  Deployment IDがそのScript IDに属さない場合は、pushする前に失敗する。
+- 本番デプロイはこのworkflowを手動実行したときのみ行われる（PRでは実行されない）。
+
 ## テスト
 
 Apps Script自体はこの開発環境では実行できないため、`tests/`配下にNode.jsによる検証スクリプトを
