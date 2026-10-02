@@ -1,0 +1,78 @@
+name: Update SNB survey admin GAS
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Current main HEAD SHA reviewed and merged for deployment (40 lowercase hex characters)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: snb-survey-admin-gas
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Validate reviewed main commit and admin bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main for source_sha verification
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require source_sha to be the current main HEAD
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
+            echo 'Manual deployment must be dispatched from the main branch.' >&2
+            exit 1
+          fi
+          bash scripts/verify-snb-survey-source-sha.sh
+      - name: Check out the reviewed source_sha
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run admin GAS tests
+        working-directory: community/gas/nagoya_fetish_survey_admin/tests
+        run: npm test
+      - name: Simulate admin deployment order and failure gates without Google access
+        run: python3 -m unittest scripts.tests.test_snb_survey_admin_deploy -v
+
+  deploy:
+    name: Update the existing admin Web App deployment
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: snb-survey-admin-production
+    env:
+      CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+      SNB_SURVEY_ADMIN_SCRIPT_ID: ${{ secrets.SNB_SURVEY_ADMIN_SCRIPT_ID }}
+      SNB_SURVEY_ADMIN_DEPLOYMENT_ID: ${{ secrets.SNB_SURVEY_ADMIN_DEPLOYMENT_ID }}
+      SNB_SURVEY_ADMIN_SOURCE_SHA: ${{ inputs.source_sha }}
+    steps:
+      - name: Check out the reviewed main HEAD
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned clasp
+        run: npm install --global @google/clasp@3.4.1
+      - name: Push files, create version and update only the existing admin deployment
+        shell: bash
+        run: bash scripts/deploy-snb-survey-admin-gas.sh
