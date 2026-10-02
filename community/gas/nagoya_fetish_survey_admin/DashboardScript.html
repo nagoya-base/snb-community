@@ -181,6 +181,10 @@
       errorEl.hidden = true;
       contentEl.hidden = false;
 
+      var fin = data.finalization || {};
+      document.getElementById('kpi-final-count').textContent = fin.finalResponseCount + '件';
+      document.getElementById('kpi-closed-at').textContent = '2026年9月30日 23:59まで';
+      document.getElementById('kpi-finalized-at').textContent = '2026年10月1日';
       document.getElementById('kpi-total').textContent = data.basic.total;
       document.getElementById('kpi-last-response').textContent = formatDateTime(data.basic.lastResponseAt);
       renderTallyTable(document.getElementById('table-daily'),
@@ -256,9 +260,17 @@
       });
     }
 
-    function showError() {
+    var COUNT_MISMATCH_PREFIX = '確定回答数との不一致を検出しました。';
+
+    function showError(err) {
       loadingEl.hidden = true;
       errorEl.hidden = false;
+      // 件数不一致（fail closed）の場合のみ、固定文言のエラー内容を表示する。
+      var message = err && typeof err.message === 'string' ? err.message : '';
+      if (message.indexOf(COUNT_MISMATCH_PREFIX) !== -1) {
+        document.getElementById('dashboard-error-message').textContent =
+          message.slice(message.indexOf(COUNT_MISMATCH_PREFIX));
+      }
     }
 
     google.script.run.withSuccessHandler(render).withFailureHandler(showError).getAdminDashboardData();

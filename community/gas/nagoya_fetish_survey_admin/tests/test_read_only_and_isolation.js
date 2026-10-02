@@ -36,7 +36,8 @@ const publicCode = fs.readFileSync(path.join(PUBLIC_DIR, 'Code.gs'), 'utf8');
 const writeOperationPatterns = [
   /\.appendRow\s*\(/, /\.setValue\s*\(/, /\.setValues\s*\(/, /\.setFormula\s*\(/, /\.setFormulas\s*\(/,
   /\.deleteRow\s*\(/, /\.deleteRows\s*\(/, /\.deleteColumn\s*\(/, /\.clear\s*\(/, /\.clearContent\s*\(/,
-  /\.insertSheet\s*\(/, /\.deleteSheet\s*\(/, /\.insertRow\s*\(/, /\.setFrozenRows\s*\(/
+  /\.insertSheet\s*\(/, /\.deleteSheet\s*\(/, /\.insertRow\s*\(/, /\.setFrozenRows\s*\(/,
+  /\.setProperty\s*\(/, /\.setProperties\s*\(/, /\.copyTo\s*\(/, /\.insertSheet\s*\(/
 ];
 writeOperationPatterns.forEach((pattern) => {
   assert(!pattern.test(adminCode), 'admin Code.gs contains no ' + pattern + ' (read-only requirement)');
