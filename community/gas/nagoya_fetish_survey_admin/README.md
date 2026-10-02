@@ -61,9 +61,24 @@ Google Apps ScriptのHTML Serviceで動く、**読み取り専用**の管理者�
 | `DashboardStyles.html` | `<style>`のみ。 |
 | `DashboardScript.html` | クライアント側ロジック。`getAdminDashboardData()`の呼び出し・表・棒グラフの描画。 |
 
+## 確定母集団（アンケート終了・121件で固定）
+
+アンケートは2026-09-30T23:59:59.999+09:00に終了し、121件で集計確定済み
+（finalize結果：`validNewSurveyRows: 121`、`finalizedAt: 2026-10-01T10:48:49.953Z`）。
+`Code.gs`の`buildFinalizedAdminRows_(rows)`が、responses読み込み後に1度だけ母集団を絞り込み、
+以降の全集計（地域・年代・衣装・SNBC・スーツ・深掘り・分岐・クロス集計・自由記述）へ同じ行を渡す。
+
+- 対象：`timestamp`が有効、かつ締切以前、かつ`completion_stage`が空でない現行アンケート回答のみ。
+  締切後の行・不正timestampの行・旧アンケート回答（`completion_stage`が空）は含めない。
+- 件数が`ADMIN_FINAL_RESPONSE_COUNT`（121）と一致しない場合は集計を停止し、
+  「確定回答数との不一致を検出しました。管理ダッシュボードの集計を停止しました。」を表示する（fail closed）。
+  エラーには回答内容・メール・ハッシュ・自由記述を含めず、件数のみ記載する。
+- responsesは引き続き読み取り専用。公開GAS・GitHub Pagesの公開結果は変更しない。
+
 ## 表示内容
 
-- **基本**：総回答数、日別回答数、最終回答日時。
+- **確定状態**：「アンケート終了・集計確定済み」・確定回答数121件・回答受付（2026年9月30日 23:59まで）・集計確定（2026年10月1日）を上部に固定表示。
+- **基本**：確定回答数、日別回答数、締切内の最終回答日時。
 - **地域**：都道府県別、愛知県内地域別、全国7地域ブロック別（三重県は近畿に分類）。
 - **年代**：元の7区分、公開結果と同じ簡略年代5区分の両方。
 - **衣装**：`interest_categories`全22カテゴリ、`primary_interest_category`、`engagement_preferences`。

@@ -36,7 +36,16 @@
  * 設定値
  * ══════════════════════════════════════════════════════════════ */
 
-var DASHBOARD_TITLE = '名古屋のフェチ・衣装交流に関するアンケート｜管理ダッシュボード（読み取り専用）';
+var DASHBOARD_TITLE = '名古屋のフェチ・衣装交流に関するアンケート｜管理ダッシュボード（確定済み・読み取り専用）';
+
+/* アンケート終了・集計確定の固定値。管理ダッシュボードの母集団は、この締切以前の現行アンケート
+   回答だけに固定する（締切後にresponsesへ行が追加されても集計に混入させない）。
+   確定回答数と一致しない場合は、異なる件数を黙って表示せずエラーで停止する（fail closed）。 */
+var ADMIN_SURVEY_CLOSED_AT_ISO = '2026-09-30T23:59:59.999+09:00';
+var ADMIN_SURVEY_FINALIZED_AT_ISO = '2026-10-01T10:48:49.953Z';
+var ADMIN_FINAL_RESPONSE_COUNT = 121;
+var ADMIN_FINAL_COUNT_MISMATCH_MESSAGE =
+  '確定回答数との不一致を検出しました。管理ダッシュボードの集計を停止しました。';
 
 var PROP_SPREADSHEET_ID = 'SPREADSHEET_ID';
 var RESPONSES_SHEET_NAME = 'responses';
@@ -321,7 +330,10 @@ function include(filename) {
 function getAdminDashboardData() {
   var sheet = getResponsesSheet_();
   var rows = readResponseRows_(sheet);
-  return buildAdminDashboardPayload_(rows);
+  // responses読み込み → 確定母集団へフィルタ → 既存の各集計処理、の順。以降の集計は
+  // すべて確定母集団（締切内の現行アンケート回答）だけを見る。
+  var finalRows = buildFinalizedAdminRows_(rows);
+  return buildAdminDashboardPayload_(finalRows);
 }
 
 function getResponsesSheet_() {
@@ -359,6 +371,50 @@ function readResponseRows_(sheet) {
 }
 
 /* ══════════════════════════════════════════════════════════════
+ * 確定母集団（アンケート終了・集計確定済み）
+ * ══════════════════════════════════════════════════════════════ */
+
+/**
+ * timestamp列の値をDateに解析する。Date・空でない文字列だけを受け付け、解析できなければnull。
+ * （null・空文字・数値等をnew Date()へ渡すと1970年等の有効日時になってしまうため弾く。）
+ */
+function parseResponseTimestamp_(raw) {
+  var date;
+  if (Object.prototype.toString.call(raw) === '[object Date]') {
+    date = raw;
+  } else if (typeof raw === 'string' && raw !== '') {
+    date = new Date(raw);
+  } else {
+    return null;
+  }
+  return isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * 管理ダッシュボードで使う確定母集団を作る唯一の入口。
+ *   - timestampが有効に解析できる
+ *   - timestamp <= ADMIN_SURVEY_CLOSED_AT_ISO（締切後の行は除外）
+ *   - completion_stageが空でない（旧アンケート回答は混ぜない）
+ * を満たす行だけを返し、件数がADMIN_FINAL_RESPONSE_COUNTと一致しなければ例外を投げる。
+ * エラー本文には回答内容・ハッシュ・自由記述等を一切含めない（件数のみ）。
+ * 入力rowsは変更しない（読み取り専用）。
+ */
+function buildFinalizedAdminRows_(rows) {
+  var closedAtMs = new Date(ADMIN_SURVEY_CLOSED_AT_ISO).getTime();
+  var finalRows = rows.filter(function (row) {
+    var date = parseResponseTimestamp_(row.timestamp);
+    return date !== null &&
+      date.getTime() <= closedAtMs &&
+      isNewSurveyCompletionStage_(row.completion_stage);
+  });
+  if (finalRows.length !== ADMIN_FINAL_RESPONSE_COUNT) {
+    throw new Error(ADMIN_FINAL_COUNT_MISMATCH_MESSAGE +
+      '（期待:' + ADMIN_FINAL_RESPONSE_COUNT + '件／検出:' + finalRows.length + '件）');
+  }
+  return finalRows;
+}
+
+/* ══════════════════════════════════════════════════════════════
  * 集計ロジック（純粋関数。GAS APIに依存せず、rows（オブジェクト配列）だけを見る）
  * ══════════════════════════════════════════════════════════════ */
 
@@ -374,6 +430,12 @@ function buildAdminDashboardPayload_(rows) {
 
   return {
     generatedAt: new Date().toISOString(),
+    finalization: {
+      status: 'finalized',
+      finalResponseCount: ADMIN_FINAL_RESPONSE_COUNT,
+      closedAt: ADMIN_SURVEY_CLOSED_AT_ISO,
+      finalizedAt: ADMIN_SURVEY_FINALIZED_AT_ISO
+    },
     basic: basic,
     region: region,
     age: age,

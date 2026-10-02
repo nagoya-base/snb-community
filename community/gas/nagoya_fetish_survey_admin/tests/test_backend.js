@@ -440,6 +440,140 @@ assert(sandbox.REGION_HIGHLIGHT_LABELS.join(',') === ['東京都', '愛知県', 
     'buildDeepDiveSection_ (existing simple tally) still includes legacy rows, unaffected by the new crosstab filter');
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+ * 確定母集団（アンケート終了・121件固定）
+ * ══════════════════════════════════════════════════════════════ */
+{
+  const buildFinalizedAdminRows_ = sandbox.buildFinalizedAdminRows_;
+  const closed = new Date(sandbox.ADMIN_SURVEY_CLOSED_AT_ISO).getTime();
+  const SYNTHETIC_COMMENT = 'SYNTHETIC-COMMENT-SHOULD-NOT-LEAK';
+  const SYNTHETIC_HASH = 'SYNTHETIC-HASH-SHOULD-NOT-LEAK';
+
+  const validRow = (i, overrides) => makeRow(Object.assign({
+    timestamp: new Date(closed - (i + 1) * 60000),
+    respondent_hash: 'h' + i,
+    completion_stage: 'snbc_deep_dive',
+    prefecture: '愛知県',
+    age: '30〜39歳',
+    interest_categories: 'スーツ',
+    snbc_interest: 'はい',
+    free_comment: 'valid-comment-' + i
+  }, overrides));
+  const make121 = () => Array.from({ length: 121 }, (_, i) => validRow(i));
+  const failsClosed = (rows) => {
+    try { buildFinalizedAdminRows_(rows); return null; } catch (e) { return e; }
+  };
+
+  assert(sandbox.ADMIN_FINAL_RESPONSE_COUNT === 121, 'ADMIN_FINAL_RESPONSE_COUNT is 121');
+  assert(sandbox.ADMIN_SURVEY_CLOSED_AT_ISO === '2026-09-30T23:59:59.999+09:00', 'closed-at constant is fixed');
+  assert(sandbox.ADMIN_SURVEY_FINALIZED_AT_ISO === '2026-10-01T10:48:49.953Z', 'finalized-at constant is fixed');
+
+  // A. 締切前の現行アンケート121件 → 121件で正常表示
+  {
+    const rows = make121();
+    const final = buildFinalizedAdminRows_(rows);
+    const payload = buildAdminDashboardPayload_(final);
+    assert(final.length === 121 && payload.basic.total === 121, 'A: 121 in-deadline rows -> dashboard total is 121');
+    assert(payload.finalization.status === 'finalized' && payload.finalization.finalResponseCount === 121,
+      'A: payload carries the finalized status and count');
+    // 締切ちょうど（<=）は含める
+    const edge = make121();
+    edge[0].timestamp = new Date(closed);
+    assert(buildFinalizedAdminRows_(edge).length === 121, 'A: a row exactly at the deadline is included');
+    // ISO文字列のtimestampも解析できる
+    const strRows = make121();
+    strRows[0].timestamp = '2026-09-30T23:59:59.999+09:00';
+    assert(buildFinalizedAdminRows_(strRows).length === 121, 'A: string timestamp at the deadline is parsed and included');
+  }
+
+  // B. 締切後の回答を1件追加 → 除外され121件のまま
+  {
+    const rows = make121().concat([validRow(999, {
+      timestamp: new Date(closed + 1), free_comment: SYNTHETIC_COMMENT, respondent_hash: SYNTHETIC_HASH
+    })]);
+    const final = buildFinalizedAdminRows_(rows);
+    const payload = buildAdminDashboardPayload_(final);
+    assert(final.length === 121 && payload.basic.total === 121, 'B: a post-deadline row is excluded, total stays 121');
+    assert(payload.crosstab.sampleSize === 121, 'B: crosstab sample size stays 121');
+  }
+
+  // C. completion_stageが空の旧回答 → 混入しない
+  {
+    const rows = make121().concat([validRow(998, { completion_stage: '', free_comment: SYNTHETIC_COMMENT })]);
+    const final = buildFinalizedAdminRows_(rows);
+    assert(final.length === 121 && !final.some((r) => r.free_comment === SYNTHETIC_COMMENT),
+      'C: a legacy row (blank completion_stage) is not mixed into the finalized population');
+  }
+
+  // D. 不正timestamp行 → 混入しない
+  {
+    const bad = [
+      validRow(997, { timestamp: 'not-a-date' }),
+      validRow(996, { timestamp: '' }),
+      validRow(995, { timestamp: null }),
+      validRow(994, { timestamp: new Date('invalid') }),
+      validRow(993, { timestamp: 0 })
+    ];
+    const final = buildFinalizedAdminRows_(make121().concat(bad));
+    assert(final.length === 121, 'D: rows with unparseable/missing timestamps are excluded, got ' + final.length);
+  }
+
+  // E/F. 120件・122件 → 件数不一致エラー（fail closed）。内容を漏らさない
+  {
+    const e120 = failsClosed(make121().slice(0, 120));
+    const e122 = failsClosed(make121().concat([validRow(500)]));
+    assert(e120 && e120.message.indexOf('確定回答数との不一致を検出しました。管理ダッシュボードの集計を停止しました。') === 0,
+      'E: 120 in-deadline rows -> mismatch error');
+    assert(e122 && e122.message.indexOf('確定回答数との不一致を検出しました。管理ダッシュボードの集計を停止しました。') === 0,
+      'F: 122 in-deadline rows -> mismatch error');
+    const leaky = failsClosed(make121().slice(0, 119).concat([validRow(1, { free_comment: SYNTHETIC_COMMENT, respondent_hash: SYNTHETIC_HASH })]).slice(0, 120));
+    assert(leaky && leaky.message.indexOf(SYNTHETIC_COMMENT) === -1 && leaky.message.indexOf(SYNTHETIC_HASH) === -1,
+      'E/F: the mismatch error does not contain response content or hashes');
+    assert(failsClosed([]) !== null, 'E: an empty sheet also fails closed');
+  }
+
+  // G. 自由記述は締切後行から表示されない
+  {
+    const rows = make121().concat([
+      validRow(900, { timestamp: new Date(closed + 5000), free_comment: SYNTHETIC_COMMENT }),
+      validRow(901, { completion_stage: '', free_comment: SYNTHETIC_COMMENT })
+    ]);
+    const payload = buildAdminDashboardPayload_(buildFinalizedAdminRows_(rows));
+    assert(payload.freeComments.length === 121 && payload.freeComments.indexOf(SYNTHETIC_COMMENT) === -1,
+      'G: free comments from post-deadline/legacy rows are not shown');
+  }
+
+  // H. 各セクションが同一の確定母集団を使用する
+  {
+    const rows = make121().concat([
+      validRow(902, { timestamp: new Date(closed + 1000), prefecture: '東京都', age: '60歳以上', snbc_interest: 'いいえ' })
+    ]);
+    const payload = buildAdminDashboardPayload_(buildFinalizedAdminRows_(rows));
+    const sum = (items) => items.reduce((a, b) => a + b.count, 0);
+    assert(payload.basic.total === 121, 'H: basic uses the finalized population');
+    assert(sum(payload.region.prefecture) === 121 && findByName(payload.region.prefecture, '愛知県').count === 121,
+      'H: region uses the finalized population');
+    assert(sum(payload.age.original) === 121, 'H: age uses the finalized population');
+    assert(findByName(payload.costume.interestCategories, 'スーツ').count === 121, 'H: costume uses the finalized population');
+    assert(payload.highlights.snbcFunnel.interestYes === 121 && payload.snbc.interest.every((i) => i.name !== 'いいえ' || i.count === 0),
+      'H: SNBC uses the finalized population');
+    assert(payload.crosstab.sampleSize === 121, 'H: crosstab uses the finalized population');
+    assert(sum(payload.branching.completionStage) === 121, 'H: branching uses the finalized population');
+    assert(payload.suit && payload.deepDive, 'H: suit and deep-dive sections are built from the same rows');
+  }
+
+  // 入力rowsを変更しない / 最終回答日時は締切以前
+  {
+    const rows = make121().concat([validRow(903, { timestamp: new Date(closed + 86400000) })]);
+    const before = rows.length;
+    const payload = buildAdminDashboardPayload_(buildFinalizedAdminRows_(rows));
+    assert(rows.length === before, 'buildFinalizedAdminRows_ does not mutate its input');
+    assert(new Date(payload.basic.lastResponseAt).getTime() <= closed,
+      'lastResponseAt never reflects a post-deadline row');
+  }
+}
+
 if (failures > 0) {
   console.error('\n' + failures + ' failure(s) in test_backend.js');
   process.exitCode = 1;

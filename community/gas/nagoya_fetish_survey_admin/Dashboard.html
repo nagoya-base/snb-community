@@ -8,7 +8,7 @@
 <body>
   <div id="app">
     <header>
-      <h1>アンケート管理ダッシュボード（読み取り専用）</h1>
+      <h1>アンケート管理ダッシュボード（確定済み・読み取り専用）</h1>
       <p class="lead">
         名古屋のフェチ・衣装交流に関するアンケートの詳細分析用ダッシュボードです。
         このプロジェクトは回答スプレッドシートを読み取るだけで、回答の削除・編集・書き込みは一切行いません。
@@ -23,15 +23,24 @@
 
     <div id="dashboard-loading" class="state-panel">読み込み中です…</div>
     <div id="dashboard-error" class="state-panel state-panel--error" hidden>
-      読み込みに失敗しました。SPREADSHEET_IDの設定・responsesシートの有無を確認してください。
+      <span id="dashboard-error-message">読み込みに失敗しました。SPREADSHEET_IDの設定・responsesシートの有無を確認してください。</span>
     </div>
 
     <div id="dashboard-content" hidden>
+      <section class="section" id="finalized-banner">
+        <h2>アンケート終了・集計確定済み</h2>
+        <div class="kpi-row">
+          <div class="kpi"><div class="kpi__value" id="kpi-final-count">-</div><div class="kpi__label">確定回答数</div></div>
+          <div class="kpi"><div class="kpi__value" id="kpi-closed-at">-</div><div class="kpi__label">回答受付</div></div>
+          <div class="kpi"><div class="kpi__value" id="kpi-finalized-at">-</div><div class="kpi__label">集計確定</div></div>
+        </div>
+      </section>
+
       <section class="section">
         <h2>基本</h2>
         <div class="kpi-row">
-          <div class="kpi"><div class="kpi__value" id="kpi-total">-</div><div class="kpi__label">総回答数</div></div>
-          <div class="kpi"><div class="kpi__value" id="kpi-last-response">-</div><div class="kpi__label">最終回答日時</div></div>
+          <div class="kpi"><div class="kpi__value" id="kpi-total">-</div><div class="kpi__label">確定回答数</div></div>
+          <div class="kpi"><div class="kpi__value" id="kpi-last-response">-</div><div class="kpi__label">締切内の最終回答日時</div></div>
         </div>
         <h3>日別回答数</h3>
         <div class="overflow-x"><table class="tally-table" id="table-daily"></table></div>
