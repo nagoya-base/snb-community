@@ -92,9 +92,11 @@
 
     <p class="community-menu__heading">このページ内</p>
     <a href="#schedule" class="community-menu__link">開催情報</a>
-    <a href="#survey" class="community-menu__link">調査結果</a>
     <a href="#about" class="community-menu__link">SNBCについて</a>
     <a href="#format" class="community-menu__link">開催のかたち</a>
+    <a href="#survey" class="community-menu__link">調査結果</a>
+    <a href="#achievements" class="community-menu__link">開催実績</a>
+    <a href="#not-held" class="community-menu__link">終了した企画</a>
     <a href="#access" class="community-menu__link">アクセス</a>
   </div>
 </div>
@@ -126,55 +128,14 @@
   </div>
 </div>
 
-<!-- ── Survey（受付終了・調査結果公開導線） ── -->
-<section id="survey" data-section-view="survey" class="survey-highlight">
-  <div class="container">
-    <p class="section-label">Survey</p>
-    <h2>衣装・ユニフォーム嗜好アンケート 調査結果公開へ</h2>
-    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.85;">
-      たくさんのご回答、ありがとうございました。<br>
-      回答受付は2026年9月30日23:59をもって終了しました。<br>
-      選択式設問の単純集計を、確定後に結果ページで公開します。
-    </p>
-    <div class="next-banner" id="fetish-survey-banner">
-      <span class="next-dot"></span>
-      <div class="next-event">
-        <p class="next-event-title">📊 受付終了｜<strong>衣装・ユニフォーム嗜好アンケート</strong></p>
-        <ul class="next-event-detail">
-          <li>調査期間：〜2026年9月30日23:59（受付終了）</li>
-          <li id="fetish-survey-total" hidden>総回答数：<strong id="fetish-survey-total-count"></strong> 件</li>
-          <li>公開するのは選択式設問の集計値のみ（自由記述・個別回答は非公開）</li>
-        </ul>
-        <p class="next-event-note">
-          <a href="fetish-survey-results.html" data-cta-name="fetish_survey_results" data-cta-location="survey_section" data-event-slug="fetish_survey">調査結果を見る →</a>
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ── Schedule（開催情報） ── -->
 <section id="schedule" data-section-view="schedule">
   <div class="container">
     <p class="section-label">Schedule</p>
     <h2>開催情報</h2>
     <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.85;">
-      10月は、野球ユニ部のキャッチボール会（10/3・10/31）が開催予定です。
+      次回は、野球ユニ部のキャッチボール会（10/31）が開催予定です。
     </p>
-
-    <div class="next-banner" id="event-baseball-1003" style="margin-top:1.25rem;">
-      <span class="next-dot active"></span>
-      <div class="next-event">
-        <p class="next-event-title">⚾ 名古屋野球ユニ部｜<strong>10/3 キャッチボール会</strong></p>
-        <ul class="next-event-detail">
-          <li>10/3（土）13:00〜15:00</li>
-          <li>開催予定・募集中</li>
-        </ul>
-        <p class="next-event-note">
-          <a href="../baseball/#schedule" data-cta-name="event_detail" data-cta-location="event_card" data-event-slug="baseball_1003">開催情報・参加方法を見る →</a>
-        </p>
-      </div>
-    </div>
 
     <div class="next-banner" id="event-baseball-1031" style="margin-top:1.25rem;">
       <span class="next-dot active"></span>
@@ -190,19 +151,6 @@
       </div>
     </div>
 
-  </div>
-</section>
-
-<!-- ── Enquete（過去アンケート） ── -->
-<section id="enquete" data-section-view="enquete">
-  <div class="container">
-    <p class="section-label">Enquete</p>
-    <h2>9月企画アンケートは終了しました</h2>
-    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.85;">
-      9月企画アンケートへのご回答ありがとうございました。<br>
-      いただいたご意見・参加希望を、今後のSNBC企画づくりに活用します。<br>
-      「<a href="#survey" style="color:var(--color-community);text-decoration:underline;text-underline-offset:2px;">衣装・ユニフォーム嗜好アンケート</a>」の調査結果もあわせてご覧ください。
-    </p>
   </div>
 </section>
 
@@ -286,21 +234,26 @@
   </div>
 </section>
 
-<!-- ── Access ── -->
-<section id="access" data-section-view="access">
+<!-- ── Survey（アンケート・調査結果） ── -->
+<section id="survey" data-section-view="survey" class="survey-highlight">
   <div class="container">
-    <p class="section-label">Access</p>
-    <h2>アクセス</h2>
-    <div class="access-card">
-      <p class="access-card__walk"><strong>上前津駅 徒歩7〜8分</strong></p>
-      <p class="access-card__detail">
-        名古屋市営地下鉄 鶴舞線・名城線「上前津」駅 3番出口より徒歩7〜8分。<br>
-        所在地：名古屋市中区富士見町5-24 ラウムズ富士見町<br>
-        詳細な部屋番号等は、参加確定後にご案内いたします。
-      </p>
-      <div class="access-card__links">
-        <a href="https://nagoya-base.github.io/Studio-nagoya-base/pdf/access_guide.pdf" target="_blank" rel="noopener noreferrer" class="access-card__link">📄 アクセスガイドを見る（PDF・Studio Nagoya Base）</a>
-        <a href="https://nagoya-base.github.io/Studio-nagoya-base/how-to/#access" target="_blank" rel="noopener noreferrer" class="access-card__link">🗺 詳しいアクセス・地図を見る（Studio Nagoya Base）→</a>
+    <p class="section-label">Survey</p>
+    <h2>みんなの「好き」を今後の企画へ</h2>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.85;">
+      2026年9月に実施した衣装・ユニフォーム嗜好アンケートの結果を公開しています。いただいた回答は、今後の交流会や撮影企画の参考にしています。
+    </p>
+    <div class="next-banner" id="fetish-survey-banner">
+      <span class="next-dot"></span>
+      <div class="next-event">
+        <p class="next-event-title">📊 調査結果｜<strong>衣装・ユニフォーム嗜好アンケート</strong>（受付終了）</p>
+        <ul class="next-event-detail">
+          <li>調査期間：〜2026年9月30日23:59（受付終了・回答受付は終了しています）</li>
+          <li id="fetish-survey-total" hidden>総回答数：<strong id="fetish-survey-total-count"></strong> 件</li>
+          <li>公開するのは選択式設問の集計値のみ（自由記述・個別回答は非公開）</li>
+        </ul>
+        <p class="next-event-note">
+          <a href="fetish-survey-results.html" data-cta-name="fetish_survey_results" data-cta-location="survey_section" data-event-slug="fetish_survey">アンケート結果を見る →</a>
+        </p>
       </div>
     </div>
   </div>
@@ -312,6 +265,11 @@
     <p class="section-label">Achievements</p>
     <h2>開催実績</h2>
     <div class="past-events">
+      <div class="past-event-item">
+        <p class="past-event-title">名古屋野球ユニ部 10/3 キャッチボール会</p>
+        <p class="past-event-detail">2026年10月3日（土）13:00〜15:00開催</p>
+        <a href="../baseball/#schedule" style="display:inline-block;margin-top:4px;font-size:0.85rem;font-weight:700;color:#2E7D32;text-decoration:underline;text-underline-offset:3px;" data-cta-name="event_detail" data-cta-location="past_event_card" data-event-slug="baseball_1003">⚾ 野球ユニ部のページを見る →</a>
+      </div>
       <div class="past-event-item">
         <p class="past-event-title">Vol.1 サカユニ会</p>
         <p class="past-event-detail">2026年7月4日（土）・5日（日）開催・上前津（Studio Nagoya Base）</p>
@@ -336,16 +294,41 @@
   </div>
 </section>
 
-<!-- ── Not Held（不開催となった企画） ── -->
+<!-- ── Closed Projects（終了した企画） ── -->
 <section id="not-held" data-section-view="not-held">
   <div class="container">
-    <p class="section-label">Not Held</p>
-    <h2>不開催となった企画</h2>
+    <p class="section-label">Closed Projects</p>
+    <h2>終了した企画</h2>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.85;">
+      9月企画アンケートは終了しました。ご回答ありがとうございました。いただいたご意見・参加希望は、今後のSNBC企画づくりに活用します。<br>
+      「<a href="#survey" style="color:var(--color-community);text-decoration:underline;text-underline-offset:2px;">衣装・ユニフォーム嗜好アンケート</a>」の調査結果もあわせてご覧ください。
+    </p>
+    <p style="font-size:0.85rem;font-weight:700;margin-bottom:0.5rem;">不開催となった企画</p>
     <div class="past-events">
       <div class="past-event-item">
         <p class="past-event-title">学校・部活ユニ交流撮影会</p>
         <p class="past-event-detail">2026年9月19日（土）予定・最少催行人数（5名）に達せず不開催</p>
         <a href="school_uniform_20260919.html" style="display:inline-block;margin-top:4px;font-size:0.85rem;font-weight:700;color:var(--text-muted);text-decoration:underline;text-underline-offset:3px;" data-cta-name="event_detail" data-cta-location="not_held_card" data-event-slug="school_uniform_20260919">📋 詳細を見る（不開催の記録）→</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Access ── -->
+<section id="access" data-section-view="access">
+  <div class="container">
+    <p class="section-label">Access</p>
+    <h2>アクセス</h2>
+    <div class="access-card">
+      <p class="access-card__walk"><strong>上前津駅 徒歩7〜8分</strong></p>
+      <p class="access-card__detail">
+        名古屋市営地下鉄 鶴舞線・名城線「上前津」駅 3番出口より徒歩7〜8分。<br>
+        所在地：名古屋市中区富士見町5-24 ラウムズ富士見町<br>
+        詳細な部屋番号等は、参加確定後にご案内いたします。
+      </p>
+      <div class="access-card__links">
+        <a href="https://nagoya-base.github.io/Studio-nagoya-base/pdf/access_guide.pdf" target="_blank" rel="noopener noreferrer" class="access-card__link">📄 アクセスガイドを見る（PDF・Studio Nagoya Base）</a>
+        <a href="https://nagoya-base.github.io/Studio-nagoya-base/how-to/#access" target="_blank" rel="noopener noreferrer" class="access-card__link">🗺 詳しいアクセス・地図を見る（Studio Nagoya Base）→</a>
       </div>
     </div>
   </div>
