@@ -107,7 +107,7 @@ test('新設問は非公開（公開allowlistに入らない）で、既存IDの
   assert.strictEqual(byId.residence_country.visibility, 'private');
   const publicIds = schema.publicResults.items.map((i) => i.question);
   assert.ok(!publicIds.includes('aichi_area') && !publicIds.includes('residence_country') && !publicIds.includes('residence'));
-  assert.strictEqual(schema.schema_version, '2');
+  assert.strictEqual(schema.schema_version, '3');
 });
 
 /* ── core / Public GAS ── */
