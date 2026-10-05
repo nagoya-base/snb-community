@@ -1,0 +1,229 @@
+<script>
+(function () {
+  'use strict';
+  /* すべての値は textContent / createTextNode でのみ描画する（HTML文字列の組み立ては行わない）。 */
+  var data = null;
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+  }
+  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+  function pct(n, base) { return base ? (Math.round(n / base * 1000) / 10) + '%' : '-'; }
+
+  function barRow(label, count, base) {
+    var row = el('div', 'bar-row');
+    row.appendChild(el('span', '', label));
+    var bar = el('div', 'bar');
+    var fill = document.createElement('i');
+    fill.style.width = (base ? Math.min(100, count / base * 100) : 0) + '%';
+    bar.appendChild(fill);
+    row.appendChild(bar);
+    row.appendChild(el('span', 'num', count + '人 (' + pct(count, base) + ')'));
+    return row;
+  }
+
+  function renderOverview(root) {
+    var s = data.summary;
+    var kpis = el('div', 'kpis');
+    [['総回答数', s.totalRows], ['有効回答数', s.validRows], ['締切後の回答', s.lateRows], ['日時不明', s.unparseableRows],
+     ['重複拒否件数', s.duplicateRejects]].forEach(function (pair) {
+      var kpi = el('div', 'kpi');
+      kpi.appendChild(el('b', '', pair[1]));
+      kpi.appendChild(el('span', '', pair[0]));
+      kpis.appendChild(kpi);
+    });
+    root.appendChild(kpis);
+
+    var fin = el('div', 'card');
+    fin.appendChild(el('h2', '', '結果確定（finalize）'));
+    fin.appendChild(el('p', '', s.finalize.status === 'final'
+      ? '確定済み：' + s.finalize.finalizedAt + '（公開結果の基礎回答数 ' + s.finalize.publicTotal + '）'
+      : '未確定。締切後に Public GAS で finalizeSurvey を実行してください。'));
+    root.appendChild(fin);
+
+    var days = el('div', 'card');
+    days.appendChild(el('h2', '', '回答日別（有効回答）'));
+    var max = data.byDay.reduce(function (m, d) { return Math.max(m, d.count); }, 0);
+    data.byDay.forEach(function (d) { days.appendChild(barRow(d.date, d.count, max)); });
+    if (!data.byDay.length) days.appendChild(el('p', 'note', 'まだ回答がありません。'));
+    root.appendChild(days);
+
+    ['age_range', 'residence'].forEach(function (id) {
+      data.sections.forEach(function (section) {
+        section.questions.forEach(function (q) {
+          if (q.id !== id) return;
+          root.appendChild(questionCard(q, id === 'residence'));
+        });
+      });
+    });
+  }
+
+  function questionCard(q, hideZero) {
+    var card = el('div', 'card');
+    card.appendChild(el('h3', '', q.no + ' ' + q.label));
+    if (q.matrix) {
+      q.matrix.forEach(function (row) {
+        card.appendChild(el('p', 'note', row.label + '（回答 ' + row.view.base + '人）'));
+        row.view.options.forEach(function (o) { card.appendChild(barRow(o.label, o.count, row.view.base)); });
+      });
+      return card;
+    }
+    card.appendChild(el('p', 'note', '回答者数 ' + q.view.base + '人（各選択肢は「選んだ回答者数」。複数選択は合計が100%を超えます）'));
+    q.view.options.forEach(function (o) {
+      if (hideZero && o.count === 0) return;
+      card.appendChild(barRow(o.label, o.count, q.view.base));
+    });
+    return card;
+  }
+
+  function renderSimple(root) {
+    data.sections.forEach(function (section) {
+      var title = el('h2', '', section.title);
+      root.appendChild(title);
+      section.questions.forEach(function (q) { root.appendChild(questionCard(q, false)); });
+    });
+  }
+
+  function renderFunnel(root) {
+    data.funnels.forEach(function (flow) {
+      var card = el('div', 'card');
+      card.appendChild(el('h2', '', flow.label));
+      var top = flow.stages[0].count;
+      flow.stages.forEach(function (stage, i) {
+        var row = el('div', 'funnel-stage');
+        row.appendChild(el('span', '', (i ? '↓ ' : '') + stage.label));
+        var bar = el('div', 'bar');
+        var fill = document.createElement('i');
+        fill.style.width = (top ? stage.count / top * 100 : 0) + '%';
+        bar.appendChild(fill);
+        row.appendChild(bar);
+        row.appendChild(el('span', 'num', stage.count + '人 (' + pct(stage.count, top) + ')'));
+        card.appendChild(row);
+      });
+      card.appendChild(el('p', 'note', '各段階は前の段階をすべて満たした回答者のみを数えます（累積）。条件は survey.schema.json の funnels で定義。'));
+      root.appendChild(card);
+    });
+  }
+
+  function crosstabTable(result) {
+    var wrap = el('div', 'table-wrap');
+    var table = document.createElement('table');
+    var head = document.createElement('tr');
+    head.appendChild(el('th', '', result.rowLabel + ' ＼ ' + result.colLabel));
+    head.appendChild(el('th', '', '行の回答者数'));
+    result.cols.forEach(function (c) { head.appendChild(el('th', '', c.label)); });
+    table.appendChild(head);
+    result.rows.forEach(function (row) {
+      var tr = document.createElement('tr');
+      tr.appendChild(el('td', '', row.label));
+      tr.appendChild(el('td', '', row.base));
+      row.cells.forEach(function (n) {
+        tr.appendChild(el('td', '', n + (row.base ? ' (' + pct(n, row.base) + ')' : '')));
+      });
+      table.appendChild(tr);
+    });
+    wrap.appendChild(table);
+    return wrap;
+  }
+
+  function renderCross(root) {
+    var custom = el('div', 'card');
+    custom.appendChild(el('h2', '', '任意のクロス集計'));
+    var controls = el('div', 'controls');
+    var rowSel = document.createElement('select');
+    var colSel = document.createElement('select');
+    rowSel.setAttribute('aria-label', '行の設問');
+    colSel.setAttribute('aria-label', '列の設問');
+    data.axes.forEach(function (axis) {
+      [rowSel, colSel].forEach(function (sel) {
+        var opt = document.createElement('option');
+        opt.value = axis.key;
+        opt.textContent = axis.label;
+        sel.appendChild(opt);
+      });
+    });
+    var button = el('button', '', '集計する');
+    button.type = 'button';
+    var out = el('div');
+    controls.appendChild(rowSel);
+    controls.appendChild(el('span', '', '×'));
+    controls.appendChild(colSel);
+    controls.appendChild(button);
+    custom.appendChild(controls);
+    custom.appendChild(out);
+    button.addEventListener('click', function () {
+      clear(out);
+      out.appendChild(el('p', 'note', '集計中…'));
+      google.script.run
+        .withSuccessHandler(function (result) {
+          clear(out);
+          out.appendChild(crosstabTable(result));
+          out.appendChild(el('p', 'note', result.note));
+        })
+        .withFailureHandler(function () { clear(out); out.appendChild(el('p', 'warn', '集計に失敗しました。')); })
+        .getCrosstabData(rowSel.value, colSel.value);
+    });
+    root.appendChild(custom);
+
+    data.crosstabPresets.forEach(function (preset) {
+      var card = el('div', 'card');
+      card.appendChild(el('h3', '', preset.label));
+      card.appendChild(crosstabTable(preset));
+      card.appendChild(el('p', 'note', preset.note));
+      root.appendChild(card);
+    });
+  }
+
+  function freeCard(title, items) {
+    var card = el('div', 'card');
+    card.appendChild(el('h3', '', title + '（' + items.length + '件）'));
+    items.forEach(function (item) {
+      var div = el('div', 'free-item');
+      div.appendChild(el('small', '', item.at));
+      div.appendChild(document.createTextNode(item.text));
+      card.appendChild(div);
+    });
+    if (!items.length) card.appendChild(el('p', 'note', 'なし'));
+    return card;
+  }
+
+  function renderFree(root) {
+    data.freeText.texts.forEach(function (t) { root.appendChild(freeCard(t.label, t.items)); });
+    root.appendChild(el('h2', '', '「その他」自由記述'));
+    data.freeText.others.forEach(function (o) { root.appendChild(freeCard(o.label, o.items)); });
+    if (!data.freeText.others.length) root.appendChild(el('p', 'note', '「その他」の記述はまだありません。'));
+  }
+
+  var renderers = { overview: renderOverview, simple: renderSimple, funnel: renderFunnel, cross: renderCross, free: renderFree };
+
+  function showTab(name) {
+    Object.keys(renderers).forEach(function (key) {
+      document.getElementById('tab-' + key).hidden = key !== name;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+      b.setAttribute('aria-selected', b.getAttribute('data-tab') === name ? 'true' : 'false');
+    });
+  }
+
+  function render() {
+    Object.keys(renderers).forEach(function (key) {
+      var root = document.getElementById('tab-' + key);
+      clear(root);
+      renderers[key](root);
+    });
+    document.getElementById('status').hidden = true;
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+    b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); });
+  });
+
+  google.script.run
+    .withSuccessHandler(function (payload) { data = payload; render(); })
+    .withFailureHandler(function () { document.getElementById('status').textContent = '読み込みに失敗しました（権限または設定を確認してください）。'; })
+    .getDashboardData();
+})();
+</script>

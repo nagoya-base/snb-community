@@ -1,0 +1,13 @@
+{
+  "name": "snb-costume-portrait-survey",
+  "private": true,
+  "description": "男性の衣装・ポートレート意識調査（Issue #334）。schema正本・生成物・Public/Admin GAS・Frontendのテスト。",
+  "scripts": {
+    "build": "node tools/build-survey.js",
+    "build:check": "node tools/build-survey.js --check",
+    "test": "npm run build:check && node --test \"tests/*.test.js\""
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}

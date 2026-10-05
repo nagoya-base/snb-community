@@ -1,0 +1,131 @@
+name: Costume portrait survey Admin GAS
+
+# Issue #334「男性の衣装・ポートレート意識調査」の Admin GAS。
+# 既存の fetish 用 workflow / script / Environment / Secret とは独立。
+#  - Pull request: テスト・生成物の差分検査・配備バンドルの dry-run のみ（本番 deployment は更新しない）。
+#  - workflow_dispatch (main 限定・source_sha は main の最新): テスト → deploy ジョブ（Environment 承認）。
+#  - 初回の GAS プロジェクト作成・Web App deployment 作成・OAuth 承認は手動（README 参照）。以降は既存 deployment を更新する。
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/costume-portrait-admin-gas.yml'
+      - 'community/gas/costume_portrait_survey/**'
+      - 'community/costume-portrait-survey/**'
+      - 'community/costume-portrait-survey.html'
+      - 'community/costume-portrait-survey-results.html'
+      - 'scripts/costume-portrait-survey/**'
+      - 'scripts/tests/test_costume_portrait_deploy.py'
+      - 'scripts/verify-snb-survey-source-sha.sh'
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Current main HEAD SHA reviewed and merged for deployment (40 lowercase hex characters)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: costume-portrait-admin-gas-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Validate and dry-run the admin GAS bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main for source_sha verification
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require source_sha to be the current main HEAD
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
+            echo 'Manual deployment must be dispatched from the main branch.' >&2
+            exit 1
+          fi
+          bash scripts/verify-snb-survey-source-sha.sh
+      - name: Check out code under test
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_sha || github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test dependencies (npm ci, lockfile only)
+        working-directory: community/gas/costume_portrait_survey
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check generated files against survey.schema.json
+        working-directory: community/gas/costume_portrait_survey
+        run: npm run build:check
+      - name: Run survey tests (schema, Public GAS, Admin GAS, frontend)
+        working-directory: community/gas/costume_portrait_survey
+        run: npm test
+      - name: Simulate deployment order and failure gates without Google access
+        run: python3 -m unittest scripts.tests.test_costume_portrait_deploy -v
+      - name: Validate the allowlisted admin bundle without GAS access (dry-run)
+        run: |
+          set -euo pipefail
+          bundle="$(mktemp -d "$RUNNER_TEMP/costume-portrait-dry-run.XXXXXXXX")/out"
+          COSTUME_PORTRAIT_SCRIPT_ID='dry-run-only' node scripts/costume-portrait-survey/prepare-gas.js stage admin "$GITHUB_WORKSPACE" "$bundle"
+          BUNDLE="$bundle" node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const { TARGETS } = require('./scripts/costume-portrait-survey/prepare-gas');
+          const config = JSON.parse(fs.readFileSync(path.join(process.env.BUNDLE, '.clasp.json')));
+          const actual = fs.readdirSync(process.env.BUNDLE).filter(n => !n.startsWith('.')).sort();
+          const expected = [...TARGETS.admin.files, 'appsscript.json'].sort();
+          if (config.scriptId !== 'dry-run-only' || config.rootDir !== '.' || JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error('Unexpected clasp rootDir or staged files.');
+          }
+          const manifest = JSON.parse(fs.readFileSync(path.join(process.env.BUNDLE, 'appsscript.json')));
+          if (!manifest.webapp || manifest.webapp.access !== 'MYSELF') throw new Error('Admin Web App access must be MYSELF.');
+          if (manifest.oauthScopes.some(s => s.endsWith('/spreadsheets') || s.includes('send_mail'))) {
+            throw new Error('The admin bundle must stay read-only (no write or mail scopes).');
+          }
+          console.log('Dry-run bundle contains only the approved admin GAS files.');
+          NODE
+
+  deploy:
+    name: Update the existing admin Web App deployment
+    if: github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    # 手動作成する GitHub Environment。main 限定・承認者あり・この GAS 専用の Secret をここに登録する（README 参照）。
+    environment: costume-portrait-admin-production
+    env:
+      CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+      COSTUME_PORTRAIT_TARGET: admin
+      COSTUME_PORTRAIT_SCRIPT_ID: ${{ secrets.COSTUME_PORTRAIT_SCRIPT_ID }}
+      COSTUME_PORTRAIT_DEPLOYMENT_ID: ${{ secrets.COSTUME_PORTRAIT_DEPLOYMENT_ID }}
+      COSTUME_PORTRAIT_SOURCE_SHA: ${{ inputs.source_sha }}
+    steps:
+      - name: Check out the reviewed main HEAD
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned clasp (npm ci, lockfile only)
+        working-directory: scripts/costume-portrait-survey
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Put the pinned clasp on PATH
+        run: echo "$GITHUB_WORKSPACE/scripts/costume-portrait-survey/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Push files, create version and update only the existing deployment
+        shell: bash
+        run: bash scripts/costume-portrait-survey/deploy-gas.sh
