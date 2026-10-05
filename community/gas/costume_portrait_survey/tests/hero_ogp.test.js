@@ -80,8 +80,8 @@ for (const [name, page] of Object.entries(PAGES)) {
     assert.strictEqual(meta(d, 'meta[property="og:description"]'), meta(d, 'meta[name="description"]'));
   });
 
-  test(`${name}: noindex を維持（公開判断は別作業）`, () => {
-    assert.strictEqual(meta(doc(page), 'meta[name="robots"]'), 'noindex, nofollow');
+  test(`${name}: 公開済みのため noindex を含まない`, () => {
+    assert.strictEqual(doc(page).querySelector('meta[name="robots"]'), null);
   });
 }
 
