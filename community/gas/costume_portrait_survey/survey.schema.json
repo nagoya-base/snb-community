@@ -226,7 +226,8 @@
       "questions": [
         "shoot_duration",
         "weekdays",
-        "time_slots"
+        "weekday_time_slots",
+        "holiday_time_slots"
       ]
     },
     {
@@ -822,31 +823,23 @@
           "other": true
         }
       ],
-      "help": "時間帯は次の設問で別にお聞きします。当てはまるものをすべて選んでください。"
+      "help": "利用しやすい日の区分を、当てはまるものすべて選んでください。選んだ区分に応じて、次に時間帯をお聞きします。"
     },
     {
-      "id": "time_slots",
-      "no": "Q14",
+      "id": "weekday_time_slots",
+      "no": "Q14-1",
       "type": "multi",
-      "label": "利用しやすい時間帯",
+      "label": "平日に利用しやすい時間帯",
       "required": true,
       "visibility": "public",
+      "showIf": {
+        "question": "weekdays",
+        "includes": "weekday"
+      },
       "options": [
         {
-          "id": "morning",
-          "label": "午前"
-        },
-        {
-          "id": "t10_13",
-          "label": "10:00〜13:00"
-        },
-        {
-          "id": "t11_14",
-          "label": "11:00〜14:00"
-        },
-        {
-          "id": "t12_15",
-          "label": "12:00〜15:00"
+          "id": "t09_12",
+          "label": "9:00〜12:00"
         },
         {
           "id": "t13_16",
@@ -861,12 +854,16 @@
           "label": "15:00〜18:00"
         },
         {
-          "id": "evening",
-          "label": "夕方"
+          "id": "t18_21",
+          "label": "18:00〜21:00"
         },
         {
-          "id": "night",
-          "label": "夜"
+          "id": "t19_22",
+          "label": "19:00〜22:00"
+        },
+        {
+          "id": "t20_23",
+          "label": "20:00〜23:00"
         },
         {
           "id": "no_preference",
@@ -879,7 +876,64 @@
           "other": true
         }
       ],
-      "help": "曜日とは別に、利用しやすい時間帯をすべて選んでください（重なる枠は、近いものをいくつ選んでも構いません）。"
+      "help": "12:00〜13:00のお昼時を避けたい場合などの目安に、当てはまるものをすべて選んでください。"
+    },
+    {
+      "id": "holiday_time_slots",
+      "no": "Q14-2",
+      "type": "multi",
+      "label": "土日祝に利用しやすい時間帯",
+      "required": true,
+      "visibility": "public",
+      "showIf": {
+        "question": "weekdays",
+        "in": [
+          "saturday",
+          "sunday",
+          "holiday"
+        ]
+      },
+      "options": [
+        {
+          "id": "t09_12",
+          "label": "9:00〜12:00"
+        },
+        {
+          "id": "t13_16",
+          "label": "13:00〜16:00"
+        },
+        {
+          "id": "t14_17",
+          "label": "14:00〜17:00"
+        },
+        {
+          "id": "t15_18",
+          "label": "15:00〜18:00"
+        },
+        {
+          "id": "t18_21",
+          "label": "18:00〜21:00"
+        },
+        {
+          "id": "t19_22",
+          "label": "19:00〜22:00"
+        },
+        {
+          "id": "t20_23",
+          "label": "20:00〜23:00"
+        },
+        {
+          "id": "no_preference",
+          "label": "特に決まっていない",
+          "exclusive": true
+        },
+        {
+          "id": "other",
+          "label": "その他",
+          "other": true
+        }
+      ],
+      "help": "平日の時間帯とは別にお聞きします。当てはまるものをすべて選んでください。"
     },
     {
       "id": "photo_count",
@@ -1861,11 +1915,11 @@
       "id": "free_themes",
       "no": "Q29",
       "type": "text",
-      "label": "今後やってみたい撮影テーマや企画があれば教えてください",
+      "label": "今後、服装・フェチ・スポーツ・撮影などについて、調べてほしいテーマがあれば教えてください",
       "required": false,
       "visibility": "private",
       "maxLength": 1000,
-      "help": "衣装・服装・フェチ・スポーツなど、自由にお書きください。"
+      "help": "衣装・服装・フェチ・スポーツ・撮影スタイルなど、自由にお書きください。"
     },
     {
       "id": "cheer_message",
@@ -2055,13 +2109,23 @@
       }
     },
     {
-      "id": "interest_x_timeslot",
-      "label": "撮られたい意向 × 時間帯",
+      "id": "interest_x_weekday_time",
+      "label": "撮られたい意向 × 平日の時間帯",
       "row": {
         "question": "portrait_interest"
       },
       "col": {
-        "question": "time_slots"
+        "question": "weekday_time_slots"
+      }
+    },
+    {
+      "id": "interest_x_holiday_time",
+      "label": "撮られたい意向 × 土日祝の時間帯",
+      "row": {
+        "question": "portrait_interest"
+      },
+      "col": {
+        "question": "holiday_time_slots"
       }
     },
     {
@@ -2229,9 +2293,14 @@
         "title": "利用しやすい曜日"
       },
       {
-        "id": "time_slots",
-        "question": "time_slots",
-        "title": "利用しやすい時間帯"
+        "id": "weekday_time_slots",
+        "question": "weekday_time_slots",
+        "title": "平日に利用しやすい時間帯"
+      },
+      {
+        "id": "holiday_time_slots",
+        "question": "holiday_time_slots",
+        "title": "土日祝に利用しやすい時間帯"
       },
       {
         "id": "photo_count",

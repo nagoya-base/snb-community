@@ -17,22 +17,35 @@ const rows = (env) => env.spreadsheet.getSheetByName('responses').rows;
 
 /* ── schema ── */
 
-test('曜日（平日/土曜/日曜/祝日）は時間帯と独立した複数選択で、組み合わせ設問ではない', () => {
+const SLOT_IDS = ['t09_12', 't13_16', 't14_17', 't15_18', 't18_21', 't19_22', 't20_23', 'no_preference', 'other'];
+const SLOT_LABELS = ['9:00〜12:00', '13:00〜16:00', '14:00〜17:00', '15:00〜18:00', '18:00〜21:00', '19:00〜22:00', '20:00〜23:00', '特に決まっていない', 'その他'];
+const RETIRED_SLOT_IDS = ['morning', 't10_13', 't11_14', 't12_15', 'evening', 'night', 'after_21'];
+
+test('Q13: 平日/土曜/日曜/祝日を独立して複数選択でき、「特に決まっていない」は排他、「その他」は自由記述', () => {
   assert.strictEqual(byId.weekdays.type, 'multi');
   assert.deepStrictEqual(optionIds('weekdays'), ['weekday', 'saturday', 'sunday', 'holiday', 'no_preference', 'other']);
-  assert.deepStrictEqual(optionLabels('weekdays').slice(0, 5), ['平日', '土曜日', '日曜日', '祝日', '特に決まっていない']);
-  assert.ok(!optionLabels('weekdays').some((l) => /[0-9]|午前|夕方|夜/.test(l)), '曜日設問に時間帯を含めない');
-  assert.strictEqual(byId.time_slots.type, 'multi');
-  assert.ok(!byId.time_slots.showIf && !byId.weekdays.showIf, '曜日と時間帯は互いに条件付けしない');
-  // 既存 question ID は維持
-  assert.ok(byId.weekdays && byId.time_slots);
+  assert.deepStrictEqual(optionLabels('weekdays'), ['平日', '土曜日', '日曜日', '祝日', '特に決まっていない', 'その他']);
+  assert.strictEqual(byId.weekdays.options.find((o) => o.id === 'no_preference').exclusive, true);
+  assert.strictEqual(byId.weekdays.options.find((o) => o.id === 'other').other, true);
+  assert.ok(!byId.weekdays.showIf);
 });
 
-test('時間帯に 13:00〜16:00 / 14:00〜17:00 を含む候補が揃っている', () => {
-  assert.deepStrictEqual(optionLabels('time_slots'), ['午前', '10:00〜13:00', '11:00〜14:00', '12:00〜15:00', '13:00〜16:00', '14:00〜17:00', '15:00〜18:00', '夕方', '夜', '特に決まっていない', 'その他']);
-  assert.ok(optionLabels('time_slots').includes('13:00〜16:00'));
-  assert.ok(optionLabels('time_slots').includes('14:00〜17:00'));
-  assert.strictEqual(new Set(optionIds('time_slots')).size, optionIds('time_slots').length);
+test('平日用・土日祝用の時間帯は同じ選択肢で、別設問・複数選択。旧time_slotsと廃止IDは存在しない', () => {
+  assert.ok(!byId.time_slots, '共通のtime_slotsは廃止');
+  for (const id of ['weekday_time_slots', 'holiday_time_slots']) {
+    assert.strictEqual(byId[id].type, 'multi', id);
+    assert.strictEqual(byId[id].required, true, id);
+    assert.deepStrictEqual(optionIds(id), SLOT_IDS, id);
+    assert.deepStrictEqual(optionLabels(id), SLOT_LABELS, id);
+    assert.strictEqual(byId[id].options.find((o) => o.id === 'no_preference').exclusive, true, id);
+    assert.strictEqual(byId[id].options.find((o) => o.id === 'other').other, true, id);
+    for (const gone of RETIRED_SLOT_IDS) assert.ok(!optionIds(id).includes(gone), id + ':' + gone);
+    assert.ok(!optionLabels(id).some((l) => /午前|夕方|夜/.test(l)), id);
+  }
+  assert.ok(optionLabels('weekday_time_slots').includes('13:00〜16:00') && optionLabels('weekday_time_slots').includes('14:00〜17:00'));
+  assert.notStrictEqual(byId.weekday_time_slots.label, byId.holiday_time_slots.label);
+  assert.deepStrictEqual(byId.weekday_time_slots.showIf, { question: 'weekdays', includes: 'weekday' });
+  assert.deepStrictEqual(byId.holiday_time_slots.showIf, { question: 'weekdays', in: ['saturday', 'sunday', 'holiday'] });
 });
 
 test('aichi_area / residence_country は residence への条件付き設問で、residence 自体のIDは維持', () => {
@@ -76,12 +89,15 @@ test('LEDビデオライトは「（白色）」付きで、stable IDは不変�
   assert.strictEqual(byId.equipment_wanted.options.find((o) => o.id === 'rgb_light').label, 'RGBカラーライト');
 });
 
-test('Q29は「衣装撮影」限定でなく、衣装・服装・フェチ・スポーツ・企画を受け付けるが ID/列は不変', () => {
+test('Q29は「調べてほしいテーマ」で、衣装撮影に限定せず、ID/列は不変', () => {
   const q29 = byId.free_themes;
   assert.strictEqual(q29.no, 'Q29');
   assert.strictEqual(q29.type, 'text');
   assert.strictEqual(q29.required, false);
-  assert.strictEqual(q29.label, '今後やってみたい撮影テーマや企画があれば教えてください');
+  assert.strictEqual(q29.label, '今後、服装・フェチ・スポーツ・撮影などについて、調べてほしいテーマがあれば教えてください');
+  assert.strictEqual(q29.help, '衣装・服装・フェチ・スポーツ・撮影スタイルなど、自由にお書きください。');
+  assert.ok(q29.label.includes('調べてほしい'), '「調べてほしいテーマ」という元の目的を維持');
+  assert.ok(!/やってみたい/.test(q29.label + q29.help));
   assert.ok(!/衣装撮影|衣装・撮影について/.test(q29.label + q29.help));
   for (const w of ['衣装', '服装', 'フェチ', 'スポーツ']) assert.ok(q29.help.includes(w), w);
 });
@@ -96,19 +112,43 @@ test('新設問は非公開（公開allowlistに入らない）で、既存IDの
 
 /* ── core / Public GAS ── */
 
-test('平日/土曜/日曜/祝日を独立して複数選択でき、保存される。「特に決まっていない」は排他', () => {
+test('平日・土日祝の時間帯は別列に保存され、旧IDや排他違反は拒否される', () => {
   const { env, ctx } = loadPublic();
-  const ok = validPayload(ctx, { weekdays: ['weekday', 'saturday', 'sunday', 'holiday'], time_slots: ['t13_16', 't14_17', 'evening'] });
+  const ok = validPayload(ctx, { weekdays: ['weekday', 'saturday', 'holiday'], weekday_time_slots: ['t13_16', 't19_22'], holiday_time_slots: ['t14_17'] });
   assert.deepStrictEqual(submit(ctx, ok), { ok: true, status: 'accepted' });
   const header = rows(env)[0];
-  assert.strictEqual(rows(env)[1][header.indexOf('weekdays')], '|weekday|saturday|sunday|holiday|');
-  assert.strictEqual(rows(env)[1][header.indexOf('time_slots')], '|t13_16|t14_17|evening|');
-  const mixed = validPayload(ctx, { weekdays: ['weekday', 'no_preference'] });
-  assert.ok(fieldCodes(submit(ctx, mixed)).includes('weekdays:exclusive_conflict'));
-  const slotMixed = validPayload(ctx, { time_slots: ['t13_16', 'no_preference'] });
-  assert.ok(fieldCodes(submit(ctx, slotMixed)).includes('time_slots:exclusive_conflict'));
-  const oldId = validPayload(ctx, { time_slots: ['t09_12'] });
-  assert.ok(fieldCodes(submit(ctx, oldId)).includes('time_slots:invalid_option'));
+  assert.strictEqual(rows(env)[1][header.indexOf('weekdays')], '|weekday|saturday|holiday|');
+  assert.strictEqual(rows(env)[1][header.indexOf('weekday_time_slots')], '|t13_16|t19_22|');
+  assert.strictEqual(rows(env)[1][header.indexOf('holiday_time_slots')], '|t14_17|');
+  assert.ok(!header.includes('time_slots'));
+  assert.ok(fieldCodes(submit(ctx, validPayload(ctx, { weekdays: ['weekday', 'no_preference'] }))).includes('weekdays:exclusive_conflict'));
+  assert.ok(fieldCodes(submit(ctx, validPayload(ctx, { weekday_time_slots: ['t13_16', 'no_preference'] }))).includes('weekday_time_slots:exclusive_conflict'));
+  for (const gone of RETIRED_SLOT_IDS) assert.ok(fieldCodes(submit(ctx, validPayload(ctx, { weekday_time_slots: [gone] }))).includes('weekday_time_slots:invalid_option'), gone);
+  assert.strictEqual(rows(env).length, 2);
+});
+
+test('時間帯設問は該当区分を選んだ時だけ必須で、未選択区分の回答はhidden_fieldで拒否（Public GAS）', () => {
+  const { env, ctx } = loadPublic();
+  const miss = (answers) => fieldCodes(submit(ctx, validPayload(ctx, answers)));
+  // 平日のみ: 平日時間帯が必須、土日祝時間帯は送れない
+  assert.ok(miss({ weekdays: ['weekday'], weekday_time_slots: undefined }).includes('weekday_time_slots:required'));
+  assert.ok(miss({ weekdays: ['weekday'], holiday_time_slots: ['t13_16'] }).includes('holiday_time_slots:hidden_field'));
+  // 土/日/祝のいずれか: 土日祝時間帯が必須、平日時間帯は送れない
+  for (const d of ['saturday', 'sunday', 'holiday']) {
+    assert.ok(miss({ weekdays: [d], holiday_time_slots: undefined }).includes('holiday_time_slots:required'), d);
+    assert.ok(miss({ weekdays: [d], weekday_time_slots: ['t13_16'] }).includes('weekday_time_slots:hidden_field'), d);
+  }
+  // 特に決まっていない / その他のみ: どちらも送れない
+  for (const only of [['no_preference'], ['other']]) {
+    const codes = fieldCodes(submit(ctx, validPayload(ctx, { weekdays: only }, only[0] === 'other' ? { weekdays: '平日夜のみ' } : {}, {})));
+    assert.deepStrictEqual(codes, [], only.join());
+    assert.ok(miss({ weekdays: only, weekday_time_slots: ['t13_16'] }).includes('weekday_time_slots:hidden_field'));
+    assert.ok(miss({ weekdays: only, holiday_time_slots: ['t13_16'] }).includes('holiday_time_slots:hidden_field'));
+  }
+  // 両方選べば両方必須
+  const both = miss({ weekdays: ['weekday', 'sunday'], weekday_time_slots: undefined, holiday_time_slots: undefined });
+  assert.ok(both.includes('weekday_time_slots:required') && both.includes('holiday_time_slots:required'));
+  assert.ok(rows(env).length >= 1);
 });
 
 test('愛知県を選んだ時だけ aichi_area が必須で、それ以外では送信不可（Public GAS）', () => {
@@ -211,7 +251,7 @@ test('Adminで新設問（愛知の地域は集計、国名は自由記述一覧
   const country = data.freeText.texts.find((t) => t.id === 'residence_country');
   assert.ok(country, '国名はAdminの自由記述一覧で確認できる');
   assert.deepStrictEqual(country.items.map((i) => i.text), ['=タイ'], 'sanitizeは表示時に戻る');
-  assert.ok(data.freeText.texts.some((t) => t.id === 'free_themes' && t.label.includes('今後やってみたい')));
+  assert.ok(data.freeText.texts.some((t) => t.id === 'free_themes' && t.label.includes('調べてほしい')));
 });
 
 /* ── Frontend ── */
@@ -282,4 +322,80 @@ test('Frontend：海外を選ぶと国名が必須で、選び直すと国名が
   assert.strictEqual(payload.answers.residence, 'pref_13');
   assert.ok(!('aichi_area' in payload.answers));
   assert.ok(!('residence_country' in payload.answers));
+});
+
+test('Frontend：時間帯設問は平日／土日祝の選択に応じて表示・必須になり、非表示にした回答はpayloadから消える', async () => {
+  const { document, calls, window } = await openPage();
+  const hidden = (id) => q(document, id).hidden;
+  const checked = (id) => Array.from(q(document, id).querySelectorAll('input:checked')).map((i) => i.value);
+  document.getElementById('cp-age').click();
+  next(document);
+  for (let i = 0; i < 30 && pageTitle(document) !== '撮影時間・曜日・時間帯'; i++) { fillVisible(document); next(document); }
+  assert.strictEqual(pageTitle(document), '撮影時間・曜日・時間帯');
+  assert.ok(hidden('weekday_time_slots') && hidden('holiday_time_slots'), '曜日未選択では両方非表示');
+
+  choose(document, 'weekdays', 'weekday');
+  assert.ok(!hidden('weekday_time_slots') && hidden('holiday_time_slots'), '平日のみ');
+  choose(document, 'weekdays', 'saturday');
+  assert.ok(!hidden('weekday_time_slots') && !hidden('holiday_time_slots'), '平日+土曜');
+  choose(document, 'weekday_time_slots', 't13_16');
+  choose(document, 'holiday_time_slots', 't14_17');
+  assert.deepStrictEqual([checked('weekday_time_slots'), checked('holiday_time_slots')], [['t13_16'], ['t14_17']]);
+
+  // 平日を外すと平日時間帯は非表示・クリア。土曜を外して「特に決まっていない」だけにすると土日祝時間帯も消える。
+  choose(document, 'weekdays', 'weekday');
+  assert.ok(hidden('weekday_time_slots') && !hidden('holiday_time_slots'));
+  assert.deepStrictEqual(checked('weekday_time_slots'), []);
+  choose(document, 'weekdays', 'sunday');
+  choose(document, 'weekdays', 'saturday');
+  assert.ok(!hidden('holiday_time_slots'), '日曜が残っている間は表示');
+  choose(document, 'weekdays', 'no_preference');
+  assert.ok(hidden('weekday_time_slots') && hidden('holiday_time_slots'), '「特に決まっていない」のみなら時間帯は不要');
+  assert.deepStrictEqual(checked('holiday_time_slots'), []);
+
+  // 必須: 平日を選んで時間帯未回答なら先へ進めない
+  choose(document, 'weekdays', 'weekday');
+  next(document);
+  assert.strictEqual(pageTitle(document), '撮影時間・曜日・時間帯');
+  assert.ok(q(document, 'weekday_time_slots').textContent.includes('必須'));
+  choose(document, 'weekday_time_slots', 't19_22');
+  fillVisible(document); // 同ページの他の必須設問（実撮影時間）
+  next(document);
+  assert.notStrictEqual(pageTitle(document), '撮影時間・曜日・時間帯');
+
+  for (let i = 0; i < 30 && pageTitle(document) !== '送信前の確認'; i++) { fillVisible(document); next(document); }
+  assert.strictEqual(pageTitle(document), '送信前の確認');
+  next(document);
+  await settle();
+  const payload = JSON.parse(calls.find((c) => c.options.method === 'POST').options.body);
+  assert.deepStrictEqual(payload.answers.weekdays, ['weekday']);
+  assert.deepStrictEqual(payload.answers.weekday_time_slots, ['t19_22']);
+  assert.ok(!('holiday_time_slots' in payload.answers), '非表示の土日祝時間帯は送らない');
+  assert.ok(!('time_slots' in payload.answers));
+  assert.ok(window);
+});
+
+test('Adminは平日と土日祝の時間帯を別々に集計し、混ぜない', () => {
+  const pub = loadPublic();
+  submit(pub.ctx, validPayload(pub.ctx, { weekdays: ['weekday'], weekday_time_slots: ['t13_16', 't18_21'], holiday_time_slots: undefined }));
+  submit(pub.ctx, validPayload(pub.ctx, { weekdays: ['weekday', 'sunday'], weekday_time_slots: ['t13_16'], holiday_time_slots: ['t09_12'] }));
+  submit(pub.ctx, validPayload(pub.ctx, { weekdays: ['holiday'], weekday_time_slots: undefined, holiday_time_slots: ['t20_23'] }));
+  const admin = loadAdmin();
+  admin.env.spreadsheet = pub.env.spreadsheet;
+  const data = plain(admin.ctx.getDashboardData());
+  const view = (id) => data.sections.flatMap((s) => s.questions).find((x) => x.id === id).view;
+  const count = (v, id) => v.options.find((o) => o.id === id).count;
+  const wd = view('weekday_time_slots');
+  const hd = view('holiday_time_slots');
+  assert.strictEqual(wd.base, 2);
+  assert.strictEqual(hd.base, 2);
+  assert.strictEqual(count(wd, 't13_16'), 2);
+  assert.strictEqual(count(wd, 't18_21'), 1);
+  assert.strictEqual(count(wd, 't09_12'), 0, '土日祝の回答が平日に混ざらない');
+  assert.strictEqual(count(hd, 't09_12'), 1);
+  assert.strictEqual(count(hd, 't20_23'), 1);
+  assert.strictEqual(count(hd, 't13_16'), 0, '平日の回答が土日祝に混ざらない');
+  assert.ok(!data.sections.flatMap((s) => s.questions).some((x) => x.id === 'time_slots'));
+  const ids = data.crosstabPresets.map((p) => p.id);
+  assert.ok(ids.includes('interest_x_weekday_time') && ids.includes('interest_x_holiday_time') && !ids.includes('interest_x_timeslot'));
 });

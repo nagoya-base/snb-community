@@ -52,7 +52,7 @@ const SPEC = {
   workwear_interest: ['Q5-2', true, 'costume_interest:workwear'],
   costume_wear: ['Q6-A', true], costume_photographed: ['Q6-B', true], costume_shoot: ['Q7', true],
   portrait_interest: ['Q8', true], portrait_styles: ['Q9', true], face_exposure: ['Q10', true], photo_usage: ['Q11', true],
-  shoot_duration: ['Q12', true], weekdays: ['Q13', true], time_slots: ['Q14', true], photo_count: ['Q15', true],
+  shoot_duration: ['Q12', true], weekdays: ['Q13', true], weekday_time_slots: ['Q14-1', true, 'weekdays:weekday'], photo_count: ['Q15', true],
   retouch: ['Q16', true], hesitation: ['Q16-A', true], backdrop: ['Q17', true], portrait_price: ['Q18', true],
   shooter_interest: ['Q20', true], studio_rental: ['Q21', true, 'gate'], party_size: ['Q22', true, 'gate'],
   equipment_wanted: ['Q23', true, 'gate'], equipment_experience: ['Q24', true, 'gate'],
@@ -127,7 +127,7 @@ test('調査内容の受入条件（衣装・ユニフォーム・作業服の�
 test('マーケティング項目（価格・意向・撮影障壁・ファンサイト用途など）を取得する設問がある', () => {
   assert.ok(optionsOf(byId.hesitation).length >= 10);
   assert.ok(optionsOf(byId.photo_usage).some((o) => o.id === 'fansite_monetize'));
-  for (const id of ['shoot_duration', 'weekdays', 'time_slots', 'photo_count', 'retouch', 'backdrop', 'portrait_price', 'shooter_interest', 'studio_rental', 'rental_price', 'equipment_experience', 'equipment_support', 'intent_3m']) {
+  for (const id of ['shoot_duration', 'weekdays', 'weekday_time_slots', 'holiday_time_slots', 'photo_count', 'retouch', 'backdrop', 'portrait_price', 'shooter_interest', 'studio_rental', 'rental_price', 'equipment_experience', 'equipment_support', 'intent_3m']) {
     assert.ok(byId[id], id);
   }
   assert.ok(optionsOf(byId.equipment_wanted).some((o) => o.id === 'monoblock_strobe'));
