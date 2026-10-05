@@ -100,3 +100,15 @@ test('リポジトリに認証情報・clasp設定が含まれない', () => {
     assert.ok(!/refresh_token|access_token"\s*:\s*"[A-Za-z0-9._-]{20,}|ya29\./.test(content), f);
   }
 });
+
+test('admin: dry-run は access=ANYONE_ANONYMOUS・executeAs=USER_DEPLOYING・scopeはspreadsheets+external_requestのみを検証する（Issue #354）', () => {
+  const verify = job(workflows.admin, 'verify');
+  assert.match(verify, /manifest\.webapp\.access !== 'ANYONE_ANONYMOUS'/);
+  assert.match(verify, /manifest\.webapp\.executeAs !== 'USER_DEPLOYING'/);
+  assert.match(verify, /auth\/spreadsheets'/);
+  assert.match(verify, /auth\/script\.external_request/);
+  assert.ok(!/access !== 'MYSELF'/.test(workflows.admin));
+  // Admin UI（GitHub Pages）の変更でもPR検証が走る
+  assert.match(workflows.admin, /community\/costume-portrait-survey-admin\.html/);
+  assert.match(workflows.admin, /community\/costume-portrait-survey-admin\/\*\*/);
+});

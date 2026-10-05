@@ -1,13 +1,13 @@
 {
   "timeZone": "Asia/Tokyo",
-  "exceptionLogging": "STACKDRIVER",
+  "exceptionLogging": "NONE",
   "runtimeVersion": "V8",
   "oauthScopes": [
     "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/userinfo.email"
+    "https://www.googleapis.com/auth/script.external_request"
   ],
   "webapp": {
     "executeAs": "USER_DEPLOYING",
-    "access": "MYSELF"
+    "access": "ANYONE_ANONYMOUS"
   }
 }

@@ -5,6 +5,7 @@ name: Costume portrait survey Admin GAS
 #  - Pull request: テスト・生成物の差分検査・配備バンドルの dry-run のみ（本番 deployment は更新しない）。
 #  - workflow_dispatch (main 限定・source_sha は main の最新): テスト → deploy ジョブ（Environment 承認）。
 #  - 初回の GAS プロジェクト作成・Web App deployment 作成・OAuth 承認は手動（README 参照）。以降は既存 deployment を更新する。
+#  - Admin UI（Googleログイン）は GitHub Pages 側。Admin GAS は JSON API（doPost）で、ID token を毎回サーバー検証する（Issue #354）。
 
 on:
   pull_request:
@@ -15,6 +16,8 @@ on:
       - 'community/costume-portrait-survey/**'
       - 'community/costume-portrait-survey.html'
       - 'community/costume-portrait-survey-results.html'
+      - 'community/costume-portrait-survey-admin.html'
+      - 'community/costume-portrait-survey-admin/**'
       - 'scripts/costume-portrait-survey/**'
       - 'scripts/tests/test_costume_portrait_deploy.py'
       - 'scripts/verify-snb-survey-source-sha.sh'
@@ -91,10 +94,14 @@ jobs:
             throw new Error('Unexpected clasp rootDir or staged files.');
           }
           const manifest = JSON.parse(fs.readFileSync(path.join(process.env.BUNDLE, 'appsscript.json')));
-          if (!manifest.webapp || manifest.webapp.access !== 'MYSELF') throw new Error('Admin Web App access must be MYSELF.');
-          const adminScopes = manifest.oauthScopes;
-          if (!adminScopes.includes('https://www.googleapis.com/auth/spreadsheets') || adminScopes.some(s => s.includes('send_mail'))) {
-            throw new Error('The admin bundle needs the spreadsheets scope for openById and must not have mail scopes.');
+          // Googleログイン（GitHub Pages）から fetch で到達するため匿名到達可。データは doPost で ID token を検証するまで返らない。
+          // executeAs=USER_DEPLOYING: Spreadsheet はデプロイ者権限で読み、VIEWER へ共有しない。
+          if (!manifest.webapp || manifest.webapp.access !== 'ANYONE_ANONYMOUS' || manifest.webapp.executeAs !== 'USER_DEPLOYING') {
+            throw new Error('Admin Web App must be access ANYONE_ANONYMOUS and executeAs USER_DEPLOYING.');
+          }
+          const allowedScopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/script.external_request'];
+          if (manifest.oauthScopes.some(s => !allowedScopes.includes(s)) || !allowedScopes.every(s => manifest.oauthScopes.includes(s))) {
+            throw new Error('The admin bundle must use exactly spreadsheets (required by SpreadsheetApp.openById; the code is read-only) + script.external_request (no mail scopes).');
           }
           console.log('Dry-run bundle contains only the approved admin GAS files.');
           NODE

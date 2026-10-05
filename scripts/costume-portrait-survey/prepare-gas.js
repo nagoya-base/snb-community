@@ -19,8 +19,13 @@ const TARGETS = {
   },
   admin: {
     dir: BASE + '/admin',
-    files: ['Aggregate.gs', 'Auth.gs', 'Dashboard.html', 'DashboardScript.html', 'DashboardStyles.html', 'Data.gs', 'Main.gs', 'SurveyGenerated.gs'],
-    requiredScopes: ['https://www.googleapis.com/auth/spreadsheets']
+    files: ['Aggregate.gs', 'Auth.gs', 'Data.gs', 'IdToken.gs', 'Main.gs', 'SurveyGenerated.gs'],
+    // 旧構成（HTML Service で配信していた Dashboard*.html）。既存プロジェクトに残っていてもよい（push で置き換わり削除される）。
+    legacyFiles: ['Dashboard.html', 'DashboardScript.html', 'DashboardStyles.html'],
+    requiredScopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/script.external_request'],
+    // SpreadsheetApp.openById() は spreadsheets scope が必須（readonly では実行時に権限不足。#358）。Admin のコードは読み取り専用（テストで静的検査）。
+    // これ以外のscope（メール送信など）は追加させない。
+    allowedScopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/script.external_request']
   }
 };
 // 初回に手動作成したGASプロジェクトに最初から入っている空のスタブ（Code.gs / コード.gs）は上書きしてよい。
@@ -49,6 +54,7 @@ function normalizeRemoteName(name) {
 function validateRemote(target, remoteDir) {
   const cfg = targetConfig(target);
   const expected = new Set(cfg.files);
+  const legacy = new Set(cfg.legacyFiles || []);
   const names = fs.readdirSync(remoteDir).filter((n) => !n.startsWith('.'));
   if (!names.includes(MANIFEST)) throw new Error('Existing GAS manifest is missing.');
   const report = [];
@@ -60,6 +66,7 @@ function validateRemote(target, remoteDir) {
     if (!isFile) kind = 'directory';
     else if (name === MANIFEST) kind = 'manifest';
     else if (expected.has(normalized)) kind = 'expected';
+    else if (legacy.has(normalized)) kind = 'legacy';
     else if (PLACEHOLDER_NAMES.has(name.normalize('NFC')) && PLACEHOLDER_BODY.test(fs.readFileSync(full, 'utf8'))) kind = 'placeholder';
     report.push({ name, kind });
   }
@@ -69,26 +76,37 @@ function validateRemote(target, remoteDir) {
   return report;
 }
 
+// Admin Web App: 個人Gmailの OWNER / VIEWER を Google の ID token で識別するため、GitHub Pages のログイン画面から
+// fetch で到達できる必要がある（ANYONE_ANONYMOUS）。認可は doPost で毎回 ID token を検証して行い、未認証にはデータを返さない
+// （Main.gs / IdToken.gs / Auth.gs）。executeAs=USER_DEPLOYING のため Spreadsheet はデプロイ者のみが読み、VIEWER へ共有しない。
+const ADMIN_WEBAPP_ACCESS = 'ANYONE_ANONYMOUS';
+const ADMIN_WEBAPP_EXECUTE_AS = 'USER_DEPLOYING';
+// 既存Adminは初回手動デプロイの MYSELF（または以前の ANYONE / DOMAIN）からの移行を許す。未知の値は拒否。
+const ADMIN_REMOTE_ACCESS = ['MYSELF', 'DOMAIN', 'ANYONE', ADMIN_WEBAPP_ACCESS];
+
 function validateRemoteManifest(target, manifest) {
   if (!isPlainObject(manifest)) throw new Error('Existing GAS manifest must be a JSON object.');
   const extra = Object.keys(manifest).filter((k) => !MANAGED_KEYS.includes(k) && !PRESERVED_KEYS.includes(k));
   if (extra.length) throw new Error('Existing GAS manifest has additional settings; review before overwriting.');
   if (target === 'admin' && manifest.webapp !== undefined) {
-    if (!isPlainObject(manifest.webapp) || manifest.webapp.access !== 'MYSELF') {
-      throw new Error('Existing admin Web App access is not "MYSELF"; refusing to deploy.');
+    if (!isPlainObject(manifest.webapp) || !ADMIN_REMOTE_ACCESS.includes(manifest.webapp.access)) {
+      throw new Error('Existing admin Web App access is unknown; refusing to deploy.');
     }
   }
   return manifest;
 }
 
-// リポジトリのmanifestが管理するキーはリポジトリ側を正とし、webapp/dependenciesはリモートの値をそのまま残す
-// （Web Appの公開範囲などデプロイ設定はCIで変更しない）。リモートにwebappが無い場合のみ、
-// リポジトリが定義している値（admin = MYSELF）を使う。
+// リポジトリのmanifestが管理するキーはリポジトリ側を正とし、dependencies等はリモートの値をそのまま残す。
+// Public の webapp はリモートの値を残す（公開範囲はCIで変更しない）。
+// Admin の webapp はリポジトリ側（access=ANYONE_ANONYMOUS / executeAs=USER_DEPLOYING）を正とする。
 function stageManifest(target, repoManifest, remoteManifest) {
   const cfg = targetConfig(target);
   if (!isPlainObject(repoManifest)) throw new Error('Repository manifest must be a JSON object.');
   for (const scope of cfg.requiredScopes) {
     if (!(repoManifest.oauthScopes || []).includes(scope)) throw new Error('Repository manifest is missing a required OAuth scope.');
+  }
+  if (cfg.allowedScopes && (repoManifest.oauthScopes || []).some((scope) => !cfg.allowedScopes.includes(scope))) {
+    throw new Error('Repository manifest has an OAuth scope that is not allowed for the ' + target + ' GAS bundle.');
   }
   if (target === 'public' && repoManifest.webapp !== undefined) throw new Error('The public manifest must not define the Web App settings.');
   const staged = JSON.parse(JSON.stringify(repoManifest));
@@ -98,8 +116,11 @@ function stageManifest(target, repoManifest, remoteManifest) {
       if (Object.prototype.hasOwnProperty.call(remoteManifest, key)) staged[key] = JSON.parse(JSON.stringify(remoteManifest[key]));
     }
   }
-  if (target === 'admin' && (!staged.webapp || staged.webapp.access !== 'MYSELF')) {
-    throw new Error('Admin Web App access must be "MYSELF".');
+  if (target === 'admin') {
+    staged.webapp = JSON.parse(JSON.stringify(repoManifest.webapp || {}));
+    if (staged.webapp.access !== ADMIN_WEBAPP_ACCESS || staged.webapp.executeAs !== ADMIN_WEBAPP_EXECUTE_AS) {
+      throw new Error('Admin Web App must be access "ANYONE_ANONYMOUS" (data is returned only after server-side ID token verification) and executeAs "USER_DEPLOYING".');
+    }
   }
   return staged;
 }
@@ -151,4 +172,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { prepare, validateRemote, validateRemoteManifest, stageManifest, normalizeRemoteName, TARGETS, MANIFEST, BASE };
+module.exports = { ADMIN_WEBAPP_ACCESS, ADMIN_WEBAPP_EXECUTE_AS, prepare, validateRemote, validateRemoteManifest, stageManifest, normalizeRemoteName, TARGETS, MANIFEST, BASE };
