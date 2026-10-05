@@ -130,7 +130,8 @@ UUID形式・schema_version・**未知field（top-level / answers / other_texts 
 - `finalizeSurvey()`（Apps Scriptエディタから**締切後に1回**手動実行）：
   `responseRows / validRows / lateRows / unparseableRows / publicTotal / finalizedAt / status:"final"` を算出し、公開payloadを
   Script Propertiesへチャンク保存（読み戻し検証後に確定マーカー）。以後Spreadsheetを書き換えても公開値は変わらない。
-  二重実行は何も書き換えず確定済み統計を返す。途中失敗時はスナップショットを残さない。締切前は拒否。統計は `meta` シートにも書く。
+  二重実行は何も書き換えず確定済み統計を返す。途中失敗時はスナップショットを残さない。
+  **締切前、締切時刻ちょうど（受付中）、および `SURVEY_CLOSES_AT` が未設定・不正値・存在しない日付の場合は確定を拒否**（`survey_not_closed` / `survey_close_not_configured`）。設定不正のまま確定して「有効回答0件」の誤った結果を固定しないため、締切値そのものを先に検証する。統計は `meta` シートにも書く。
 - **Issueとの差**: Issue §9は「Admin GASがfinalize」と読めるが、既存方式（finalizeはPublic側のScript Propertiesへ固定）を踏襲し、
   AdminはSpreadsheetを**読み取り専用**に保つため、finalize実行はPublic GAS、Adminは `meta` シートから確定状態を**表示**する。
 

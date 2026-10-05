@@ -1,7 +1,8 @@
 /**
  * 締切後の結果確定（finalize）。Apps Scriptエディタから `finalizeSurvey` を1回だけ手動実行する。
  *
- *  - 締切前は何もせずエラー（未確定の数値を最終結果にしない）。
+ *  - 締切前、または締切設定（SURVEY_CLOSES_AT）が未設定・不正な場合は何もせずエラー（未確定の数値を最終結果にしない）。
+ *    締切時刻ちょうどは受付中のため確定できず、1ms後から確定できる。
  *  - 締切内(timestamp <= 締切)の有効回答だけで公開payloadを作り、Script Propertiesへチャンク保存する。
  *    以後の公開結果はこのスナップショットを返すだけで、Spreadsheetの後続変更では変わらない。
  *  - 二重実行は安全：確定済みなら何も書き換えず、確定済みの統計を返す。
@@ -78,8 +79,11 @@ function finalizeSurvey_(now) {
       logEvent_('finalize', { already: true });
       return { status: 'final', already: true, finalizedAt: existing.finalizedAt, stats: JSON.parse(getProperty_(PROP_FINAL_META)).stats };
     }
-    if (isSurveyOpen_(now)) throw new Error('survey_not_closed');
+    // 締切値そのものを明示検証する。isSurveyOpen_() は未設定/不正でも false を返す（受付はfail closed）ため、
+    // 「締切済み」と「締切設定不正」を区別できず、不正値のまま確定すると全行がlate扱いの誤った確定結果になる。
     var closesAt = parseCloseTime_(getProperty_(PROP_CLOSES_AT));
+    if (closesAt === null) throw new Error('survey_close_not_configured');
+    if (now.getTime() <= closesAt) throw new Error('survey_not_closed'); // 締切時刻ちょうどは受付中
 
     var spreadsheet = openSpreadsheet_();
     var rows = readResponseRows_(getResponsesSheet_());

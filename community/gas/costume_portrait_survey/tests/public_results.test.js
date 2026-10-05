@@ -184,3 +184,55 @@ test('ログに公開結果・回答内容を出さない', () => {
   ctx.finalizeSurvey_(CLOSED);
   assert.ok(!env.logs.join('\n').includes('内緒のひとこと'));
 });
+
+// ── finalize の締切設定検証（レビュー指摘: 設定不正のまま誤確定させない） ──
+const noFinalizeArtifacts = (env) => {
+  assert.ok(![...env.props.keys()].some((k) => k.startsWith('FINAL_RESULTS_') || k === 'FINALIZED_AT'), 'snapshot/FINALIZED_AT must not exist');
+  const meta = Object.fromEntries(env.spreadsheet.getSheetByName('meta').rows);
+  assert.notStrictEqual(meta.finalize_status, 'final');
+  assert.ok(!Object.keys(meta).some((k) => k.startsWith('finalize_') || k === 'finalized_at'));
+};
+
+test('finalize：SURVEY_CLOSES_AT 未設定では拒否し、何も作成しない', () => {
+  const { env, ctx } = loadPublic();
+  seed(ctx, 31);
+  env.props.delete('SURVEY_CLOSES_AT');
+  assert.throws(() => ctx.finalizeSurvey_(CLOSED), /survey_close_not_configured/);
+  noFinalizeArtifacts(env);
+  assert.deepStrictEqual(plain(ctx.readPublicResults_()), { ok: true, status: 'not_finalized' });
+});
+
+test('finalize：不正文字列・存在しない日付・タイムゾーン無し・空白では拒否し、何も作成しない', () => {
+  for (const bad of ['', '   ', 'tomorrow', 'NaN', '0', '2026-11-15', '2026-02-30T00:00:00+09:00', '2026-13-01T00:00:00+09:00', '2026-11-15T23:59:59']) {
+    const { env, ctx } = loadPublic();
+    seed(ctx, 31);
+    env.props.set('SURVEY_CLOSES_AT', bad);
+    assert.throws(() => ctx.finalizeSurvey_(CLOSED), /survey_close_not_configured/, JSON.stringify(bad));
+    noFinalizeArtifacts(env);
+  }
+});
+
+test('finalize：締切時刻ちょうどは拒否（受付中）、1ms後は成功', () => {
+  const { env, ctx } = loadPublic({ closesAt: '2026-11-30T23:59:59+09:00' });
+  seed(ctx, 31);
+  const edge = Date.parse('2026-11-30T23:59:59+09:00');
+  assert.throws(() => ctx.finalizeSurvey_(new Date(edge - 1)), /survey_not_closed/);
+  assert.throws(() => ctx.finalizeSurvey_(new Date(edge)), /survey_not_closed/);
+  noFinalizeArtifacts(env);
+  const result = plain(ctx.finalizeSurvey_(new Date(edge + 1)));
+  assert.strictEqual(result.status, 'final');
+  assert.strictEqual(result.stats.validRows, 31);
+  assert.strictEqual(result.stats.lateRows, 0, '有効回答が誤ってlate扱いにならない');
+  assert.strictEqual(plain(ctx.readPublicResults_()).results.total, 31);
+});
+
+test('finalize：設定不正で拒否した後、締切を正しく設定すれば確定できる（誤確定で復旧不能にならない）', () => {
+  const { env, ctx } = loadPublic();
+  seed(ctx, 31);
+  env.props.set('SURVEY_CLOSES_AT', 'garbage');
+  assert.throws(() => ctx.finalizeSurvey_(CLOSED), /survey_close_not_configured/);
+  env.props.set('SURVEY_CLOSES_AT', '2026-12-31T23:59:59+09:00');
+  const result = plain(ctx.finalizeSurvey_(CLOSED));
+  assert.strictEqual(result.stats.validRows, 31);
+  assert.strictEqual(result.stats.lateRows, 0);
+});
