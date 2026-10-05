@@ -39,6 +39,7 @@ snb-community/
 │   └── style.css
 ├── images/                 # 画像（WebP中心・OGP用JPEGあり）
 ├── assets/form-runtime/    # form-builder生成フォーム用の共通CSS/JS（forms.css / forms.js）
+├── community/costume-portrait-survey*.html  # 男性の衣装・ポートレート意識調査（Issue #334。Frontend/GAS/テストは community/gas/costume_portrait_survey/ 、手順はそのREADME）
 ├── tools/form-builder/     # フォームジェネレーター（運営内部ツール、公開ナビ非掲載。詳細は同ディレクトリのREADME参照）
 ├── robots.txt
 ├── sitemap.xml
