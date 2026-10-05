@@ -145,3 +145,40 @@ test('sitemap.xml に survey / results の2URLが登録されている', () => {
     assert.ok(sitemap.includes(`<loc>${SITE}${page}</loc>`), `${page} が sitemap.xml にある`);
   }
 });
+
+// ── #347: /portrait/ 導線統合 ──
+const PORTRAIT = 'portrait/index.html';
+
+for (const [name, page] of Object.entries(PAGES)) {
+  test(`${name}: .cp-back は /portrait/ を指し、文言が統一されている`, () => {
+    const a = doc(page).querySelector('.cp-back');
+    assert.strictEqual(a.getAttribute('href'), '../portrait/');
+    assert.strictEqual(a.textContent.trim(), '← ポートレート撮影ページに戻る');
+  });
+}
+
+test('portrait: 調査・読みもの section が #flow の後・#faq の前にあり、アンケートCTAを持つ', () => {
+  const d = doc(PORTRAIT);
+  const ids = Array.from(d.querySelectorAll('section[id]')).map((e) => e.id);
+  const r = ids.indexOf('research');
+  assert.ok(r > ids.indexOf('flow') && r < ids.indexOf('faq'));
+  const sec = d.getElementById('research');
+  assert.strictEqual(sec.querySelector('h2').textContent.trim(), '調査・読みもの');
+  assert.ok(sec.querySelector('.research-grid > .research-card'));
+  const cta = sec.querySelector('.research-card__cta');
+  assert.strictEqual(cta.getAttribute('href'), '../community/costume-portrait-survey.html');
+  assert.strictEqual(cta.textContent.trim(), 'アンケートに回答する');
+  assert.strictEqual(cta.getAttribute('data-cta-name'), 'survey');
+  assert.strictEqual(cta.getAttribute('data-cta-location'), 'research');
+});
+
+test('portrait: #research が全 scroll-margin-top 指定に含まれ、既存の主要CTAが残っている', () => {
+  const html = read(PORTRAIT);
+  const blocks = html.match(/#top, [^{]*\.gallery-category \{ scroll-margin-top/g);
+  assert.strictEqual(blocks.length, 3);
+  blocks.forEach((b) => assert.ok(b.includes('#research')));
+  const d = doc(PORTRAIT);
+  assert.ok(d.querySelector('#contact'));
+  assert.ok(d.querySelector('#plans'));
+  assert.ok(d.querySelector('a[href="#contact"][data-cta-name="consult"]'));
+});
