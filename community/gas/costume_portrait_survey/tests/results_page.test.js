@@ -45,7 +45,7 @@ test('確定後は「最終結果」と明示する', async () => {
 test('不正なレスポンスは読み込みエラーにし、30件未満とは表示しない', async () => {
   const bads = [{ ok: true }, { ok: true, results: {} }, { ok: true, results: { status: 'partial', total: 30, items: [] } },
     { ok: true, results: { status: 'partial', phase: 'x', total: 30, items: [] } }, { ok: true, results: { status: 'final', items: [] } },
-    { ok: false, error: 'survey_close_not_configured' }, { ok: true, status: 'not_finalized' }];
+    { ok: false, error: 'survey_close_not_configured' }];
   for (const bad of bads) {
     const { document } = await openPage({ page: PAGE, fetch: () => bad });
     assert.ok(body(document).includes('読み込めませんでした'), JSON.stringify(bad));
@@ -71,4 +71,11 @@ test('確定結果を表示し、抑止されたセルは「非公開」、ラ�
 test('通信失敗時は読み込みエラーを表示する', async () => {
   const { document } = await openPage({ page: PAGE, fetch: () => new Error('offline') });
   assert.ok(body(document).includes('読み込めませんでした'));
+});
+
+test('旧GASの not_finalized 応答は「公開準備中」と表示し、エラーにも30件未満にもしない', async () => {
+  const { document } = await openPage({ page: PAGE, fetch: () => ({ ok: true, status: 'not_finalized' }) });
+  assert.ok(body(document).includes('途中集計の公開準備中です'));
+  assert.ok(!body(document).includes('読み込めませんでした'));
+  assert.ok(!body(document).includes('30件以上集まると'));
 });

@@ -76,6 +76,8 @@
     .then(function (response) { if (!response.ok) throw new Error('http'); return response.json(); })
     .then(function (body) {
       if (!body || body.ok !== true) throw new Error('bad');
+      // 旧GAS（途中集計対応前）の応答。GAS更新までの間だけ、エラーではなく準備中として扱う。
+      if (body.status === 'not_finalized' && body.results === undefined) { message('途中集計の公開準備中です。しばらくしてから再度ご確認ください。'); return; }
       var results = body.results;
       if (!isValidResults(results)) throw new Error('bad');
       if (results.status === 'insufficient') { message('有効回答が30件以上集まると、途中集計を公開します。'); return; }
