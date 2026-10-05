@@ -4,5 +4,5 @@
  * 締切や受付状態はここへ書かず、必ずstatus APIから取得する（Frontendで締切を判断しない）。
  */
 window.COSTUME_PORTRAIT_CONFIG = {
-  endpoint: ''
+  endpoint: 'https://script.google.com/macros/s/AKfycbyVgAxFlWO-3Lfq3oDx-MWO-T3g_gtYZatxIQZwLkRX5-yGSQsJoXee2ZhMvvPZrD0r/exec'
 };
