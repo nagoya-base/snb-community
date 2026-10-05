@@ -7,12 +7,16 @@
  *   RESPONDENT_SALT     setupScriptProperties() で自動生成（上書きしない）
  *   SURVEY_CLOSES_AT    締切（タイムゾーン付きISO 8601。例 2026-11-15T23:59:59+09:00）
  *   NOTIFICATION_EMAIL  Q30通知の宛先
+ *
+ * 任意のScript Property:
+ *   LIVE_TEST_ENABLED   E2E実送信テストを許可する間だけ true。未設定/false は拒否（既定）。
  */
 
 var PROP_SPREADSHEET_ID = 'SPREADSHEET_ID';
 var PROP_SALT = 'RESPONDENT_SALT';
 var PROP_CLOSES_AT = 'SURVEY_CLOSES_AT';
 var PROP_NOTIFICATION_EMAIL = 'NOTIFICATION_EMAIL';
+var PROP_LIVE_TEST_ENABLED = 'LIVE_TEST_ENABLED';
 
 var SHEET_RESPONSES = 'responses';
 var SHEET_META = 'meta';
@@ -25,6 +29,11 @@ var NOTIFICATION_SUBJECT = '【衣装・ポートレート意識調査】応援�
 function getProperty_(key) {
   var value = PropertiesService.getScriptProperties().getProperty(key);
   return typeof value === 'string' ? value : '';
+}
+
+/** E2E実送信テストは明示的に true の間だけ許可。未設定・他の値はすべて無効。 */
+function isLiveTestEnabled_() {
+  return getProperty_(PROP_LIVE_TEST_ENABLED).trim().toLowerCase() === 'true';
 }
 
 /**
