@@ -16,10 +16,13 @@ function seed(ctx, n, variant = () => ({})) {
 }
 const ageCycle = ['age_20_24', 'age_30_34', 'age_40_49', 'age_20_24'];
 
-test('finalize前は公開結果を返さない（未確定）', () => {
+test('未確定でも30件以上なら途中集計（status:partial）。finalが流用されない', () => {
   const { ctx } = loadPublic();
   seed(ctx, 35);
-  assert.deepStrictEqual(plain(ctx.readPublicResults_()), { ok: true, status: 'not_finalized' });
+  const results = plain(ctx.readPublicResults_(OPEN)).results;
+  assert.strictEqual(results.status, 'partial');
+  assert.strictEqual(results.phase, 'collecting');
+  assert.strictEqual(results.total, 35);
 });
 
 test('締切前の finalize は拒否される（未確定の数値を最終結果にしない）', () => {
@@ -163,7 +166,7 @@ test('finalize が途中で失敗したら確定マーカー/スナップショ�
   assert.throws(() => ctx.finalizeSurvey_(CLOSED), /quota/);
   props.setProperty = realSet;
   assert.ok(![...env.props.keys()].some((k) => k.startsWith('FINAL_RESULTS_') || k === 'FINALIZED_AT'));
-  assert.deepStrictEqual(plain(ctx.readPublicResults_()), { ok: true, status: 'not_finalized' });
+  assert.strictEqual(plain(ctx.readPublicResults_(CLOSED)).results.status, 'partial');
   // 再実行で確定できる
   assert.strictEqual(plain(ctx.finalizeSurvey_(CLOSED)).status, 'final');
 });
@@ -200,7 +203,7 @@ test('finalize：SURVEY_CLOSES_AT 未設定では拒否し、何も作成しな�
   env.props.delete('SURVEY_CLOSES_AT');
   assert.throws(() => ctx.finalizeSurvey_(CLOSED), /survey_close_not_configured/);
   noFinalizeArtifacts(env);
-  assert.deepStrictEqual(plain(ctx.readPublicResults_()), { ok: true, status: 'not_finalized' });
+  assert.deepStrictEqual(plain(ctx.readPublicResults_(CLOSED)), { ok: false, error: 'survey_close_not_configured' });
 });
 
 test('finalize：不正文字列・存在しない日付・タイムゾーン無し・空白では拒否し、何も作成しない', () => {
@@ -236,4 +239,119 @@ test('finalize：設定不正で拒否した後、締切を正しく設定すれ
   const result = plain(ctx.finalizeSurvey_(CLOSED));
   assert.strictEqual(result.stats.validRows, 31);
   assert.strictEqual(result.stats.lateRows, 0);
+});
+
+// ── 途中集計（Issue #359） ──
+const finalMarkers = (env) => [...env.props.keys()].filter((k) => k.startsWith('FINAL_RESULTS_') || k === 'FINALIZED_AT');
+const addRow = (env, mutate) => {
+  const sheet = env.spreadsheet.getSheetByName('responses');
+  const row = sheet.rows[1].slice();
+  mutate(row, sheet.rows[0]);
+  sheet.rows.push(row);
+};
+
+test('途中集計：未確定29件は件数・集計とも非公開、30件ちょうどで公開', () => {
+  const { ctx } = loadPublic();
+  seed(ctx, 29);
+  const body = plain(ctx.readPublicResults_(OPEN));
+  assert.deepStrictEqual(body, { ok: true, results: { status: 'insufficient', schema_version: SV, min_total: 30 } });
+  assert.ok(!JSON.stringify(body).includes('29'));
+  seed(ctx, 1);
+  const r = plain(ctx.readPublicResults_(OPEN)).results;
+  assert.strictEqual(r.status, 'partial');
+  assert.strictEqual(r.total, 30);
+  assert.ok(r.items.length > 0);
+});
+
+test('途中集計：回答追加後の再取得で更新され、確定マーカー・スナップショット・metaを作らない', () => {
+  const { env, ctx } = loadPublic();
+  seed(ctx, 30);
+  assert.strictEqual(plain(ctx.readPublicResults_(OPEN)).results.total, 30);
+  seed(ctx, 2);
+  assert.strictEqual(plain(ctx.readPublicResults_(OPEN)).results.total, 32);
+  assert.deepStrictEqual(finalMarkers(env), []);
+  const meta = Object.fromEntries(env.spreadsheet.getSheetByName('meta').rows);
+  assert.ok(!Object.keys(meta).some((k) => k.startsWith('finalize_') || k === 'finalized_at'));
+});
+
+test('途中集計：締切後・未確定は closed_pending で、締切後行・日時不正行・テスト行を除外', () => {
+  const { env, ctx } = loadPublic({ closesAt: '2026-11-30T23:59:59+09:00' });
+  seed(ctx, 30);
+  const tsIdx = () => env.spreadsheet.getSheetByName('responses').rows[0].indexOf('timestamp');
+  addRow(env, (row) => { row[tsIdx()] = new Date('2026-12-05T00:00:00+09:00'); });
+  addRow(env, (row) => { row[tsIdx()] = 'not a date'; });
+  addRow(env, (row, header) => { row[header.indexOf('completion_status')] = 'test'; });
+  const r = plain(ctx.readPublicResults_(CLOSED)).results;
+  assert.strictEqual(r.status, 'partial');
+  assert.strictEqual(r.phase, 'closed_pending');
+  assert.strictEqual(r.total, 30);
+});
+
+test('途中集計：テスト行・締切後行は30件判定にも入らない', () => {
+  const { env, ctx } = loadPublic({ closesAt: '2026-11-30T23:59:59+09:00' });
+  seed(ctx, 29);
+  for (let i = 0; i < 5; i++) addRow(env, (row, header) => { row[header.indexOf('completion_status')] = 'test'; });
+  addRow(env, (row, header) => { row[header.indexOf('timestamp')] = new Date('2026-12-05T00:00:00+09:00'); });
+  assert.strictEqual(plain(ctx.readPublicResults_(CLOSED)).results.status, 'insufficient');
+});
+
+test('途中集計：締切設定が未設定・不正ならエラー（誤った集計を公開しない）', () => {
+  for (const bad of [undefined, '', 'garbage', '2026-02-30T00:00:00+09:00', '2026-11-15T23:59:59']) {
+    const { env, ctx } = loadPublic();
+    seed(ctx, 31);
+    if (bad === undefined) env.props.delete('SURVEY_CLOSES_AT'); else env.props.set('SURVEY_CLOSES_AT', bad);
+    assert.deepStrictEqual(plain(ctx.readPublicResults_(CLOSED)), { ok: false, error: 'survey_close_not_configured' }, String(bad));
+    assert.deepStrictEqual(finalMarkers(env), []);
+  }
+});
+
+test('途中集計：少数カテゴリ秘匿・二次秘匿・allowlistが維持される', () => {
+  const { ctx } = loadPublic();
+  seed(ctx, 40, (i) => ({
+    portrait_interest: i < 2 ? 'not_at_all' : i < 12 ? 'interested' : 'very_interested',
+    backdrop: i < 2 ? ['white', 'fantasy'] : ['white'],
+    sexual_orientation: 'gay', residence: 'pref_23', cheer_message: '応援してます', portrait_price: '7000_8999'
+  }));
+  const body = plain(ctx.readPublicResults_(OPEN));
+  const text = JSON.stringify(body);
+  for (const forbidden of ['portrait_price', 'residence', 'sexual_orientation', 'cheer_message', '応援してます', 'respondent_hash', 'timestamp', 'pref_23', '7000_8999']) assert.ok(!text.includes(forbidden), forbidden);
+  assert.deepStrictEqual(Object.keys(body.results).sort(), ['items', 'phase', 'schema_version', 'status', 'survey_version', 'total']);
+  const backdrop = body.results.items.find((i) => i.id === 'backdrop').categories;
+  assert.strictEqual(backdrop.find((c) => c.id === 'fantasy').count, null);
+  assert.strictEqual(backdrop.find((c) => c.id === 'white').count, 40);
+  const interest = body.results.items.find((i) => i.id === 'portrait_interest').categories;
+  assert.strictEqual(interest.find((c) => c.id === 'not_at_all').count, null);
+  assert.ok(interest.filter((c) => c.count === null).length >= 2, '二次秘匿');
+});
+
+test('途中集計→finalize：最終結果へ切り替わり、後続のシート変更で変わらない。途中集計とfinalの集計対象は一致', () => {
+  const { env, ctx } = loadPublic();
+  seed(ctx, 33);
+  const partial = plain(ctx.readPublicResults_(CLOSED)).results;
+  ctx.finalizeSurvey_(CLOSED);
+  const final = plain(ctx.readPublicResults_(CLOSED)).results;
+  assert.strictEqual(final.status, 'final');
+  assert.ok(!('phase' in final));
+  assert.deepStrictEqual(Object.assign({}, final, { status: 'partial', phase: 'closed_pending' }), partial);
+  const snapshot = JSON.stringify(final);
+  env.spreadsheet.getSheetByName('responses').rows.splice(1, 20);
+  assert.strictEqual(JSON.stringify(plain(ctx.readPublicResults_(CLOSED)).results), snapshot);
+  env.failOpen = true;
+  assert.strictEqual(JSON.stringify(plain(ctx.readPublicResults_(CLOSED)).results), snapshot);
+});
+
+test('確定済みでも30件未満は非公開を維持', () => {
+  const { ctx } = loadPublic();
+  seed(ctx, 29);
+  ctx.finalizeSurvey_(CLOSED);
+  assert.deepStrictEqual(plain(ctx.readPublicResults_(CLOSED)), { ok: true, results: { status: 'insufficient', schema_version: SV, min_total: 30 } });
+});
+
+test('doGet(results)：途中集計をJSONで返し、Spreadsheet読み取り失敗は server_error（30件未満にしない）', () => {
+  const { env, ctx } = loadPublic();
+  seed(ctx, 30);
+  const ok = JSON.parse(ctx.doGet({ parameter: { action: 'results' } }).getContent());
+  assert.strictEqual(ok.results.status, 'partial');
+  env.failOpen = true;
+  assert.deepStrictEqual(JSON.parse(ctx.doGet({ parameter: { action: 'results' } }).getContent()), { ok: false, error: 'server_error' });
 });

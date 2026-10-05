@@ -129,7 +129,16 @@ UUID形式・schema_version・**未知field（top-level / answers / other_texts 
 
 ## 公開結果（allowlist）と finalize
 
-- `GET ?action=results` は**締切後に finalize したスナップショットだけ**を返す（ライブ集計・Spreadsheet参照なし）。
+- `GET ?action=results`（Issue #359）：
+  | 状態 | 応答 `results.status` | 表示 |
+  |---|---|---|
+  | 有効回答30件未満（確定前後とも） | `insufficient`（件数・集計なし） | 「有効回答が30件以上集まると、途中集計を公開します。」 |
+  | 未確定・受付中・30件以上 | `partial` + `phase:"collecting"` | 途中集計 |
+  | 未確定・受付終了後・30件以上 | `partial` + `phase:"closed_pending"` | 受付終了・最終確定待ち |
+  | 確定済み・30件以上 | `final`（確定スナップショット。Spreadsheetは読まない） | 最終結果 |
+  途中集計は読み取りのみで、確定マーカー・スナップショット・metaは作らない。抽出条件は `collectValidRecords_` を finalize と共有する
+  （test行・日時なし/不正・締切後の行を除外）。`SURVEY_CLOSES_AT` が未設定・不正なら途中集計は出さず `{ok:false,error:"survey_close_not_configured"}`。
+  フロントは通信失敗・不正レスポンス・`ok:false` を読み込みエラーとして扱い、「30件未満」とは表示しない。
 - allowlist方式：`schema.publicResults.items` に列挙され、かつ設問が `visibility:"public"` の項目だけを一から組み立てる。
   UUID/hash・timestamp・個票・自由記述・Q30・価格・3か月意向・居住地域・性的指向は構造上出力されない。
   公開前に `assertPublicPayload_` が key/項目を再検査し、1つでも許可外なら公開を止める。
@@ -367,4 +376,5 @@ python3 -m unittest scripts.tests.test_costume_portrait_deploy -v   # リポジ�
   Admin の `webapp` はリポジトリ側（`ANYONE_ANONYMOUS` / `USER_DEPLOYING`）が正。既存の `MYSELF` 等からの移行は許可し、未知の値・許可外scope（メール送信等）は拒否する。
 - **schemaを変えるとき**: `survey.schema.json` を編集 → `npm run build` → コミット。回答開始後に設問構造を変える場合は
   `schema_version` を上げ、`responses` のヘッダーと整合させる（ヘッダー不一致時は保存を拒否する）。
-- **締切後**: Public で `finalizeSurvey()` を実行 → `?action=results` と公開結果ページで確認（30件以上のときのみ表示）。
+- **受付中**: 有効回答30件以上で途中集計が公開される（運用操作は不要）。
+- **締切後**: Public で `finalizeSurvey()` を実行 → `?action=results` と公開結果ページで「最終結果」表示を確認（30件以上のときのみ表示）。

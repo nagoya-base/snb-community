@@ -5,12 +5,12 @@
  * 設問が visibility:"public" の項目だけを一から組み立てる。UUID・hash・timestamp・個票・自由記述・
  * 価格受容・実利用意向・居住地域・性的指向は、構造上この関数の出力に含まれ得ない。
  *
- *  - 有効回答数 < minTotal(30) の場合は件数も含め一切公開しない。
+ *  - 有効回答数 < minTotal(30) の場合は件数も含め一切公開しない（途中集計・確定とも同じ）。
  *  - カテゴリ別countが minCell(3) 未満の値は公開しない（0も含む）。単一選択で1カテゴリだけ
  *    伏せた場合は、合計からの逆算を防ぐため次に小さい公開値も伏せる（二次秘匿）。
  *  - 年代は粗い区分（schema.publicResults.ageGroups）へ再集約する。
  */
-var PUBLIC_PAYLOAD_KEYS = ['status', 'schema_version', 'survey_version', 'total', 'min_total', 'items'];
+var PUBLIC_PAYLOAD_KEYS = ['status', 'schema_version', 'survey_version', 'phase', 'total', 'min_total', 'items'];
 var PUBLIC_ITEM_KEYS = ['id', 'title', 'type', 'base', 'suppressed', 'categories'];
 var PUBLIC_CATEGORY_KEYS = ['id', 'label', 'count', 'pct'];
 
@@ -59,7 +59,8 @@ function applySuppression_(categories, base, isSingle) {
 }
 
 /** @param {Array<Object>} records 有効回答の内部表現（SurveyCore.decodeRecord の結果） */
-function buildPublicPayload_(records) {
+/** @param {string=} status 集計の種別。確定は 'final'（既定）、途中集計は 'partial'。30件未満は常に 'insufficient'。 */
+function buildPublicPayload_(records, status) {
   var cfg = SURVEY_SCHEMA.publicResults;
   if (records.length < cfg.minTotal) {
     return { status: 'insufficient', schema_version: SURVEY_SCHEMA.schema_version, min_total: cfg.minTotal };
@@ -84,7 +85,7 @@ function buildPublicPayload_(records) {
     });
   });
   return {
-    status: 'final',
+    status: status || 'final',
     schema_version: SURVEY_SCHEMA.schema_version,
     survey_version: SURVEY_SCHEMA.survey_version,
     total: records.length,

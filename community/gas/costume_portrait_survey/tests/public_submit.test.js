@@ -321,7 +321,7 @@ test('doGet のルーティング：status / results / その他（管理機能�
   const uuid = crypto.randomUUID();
   const status = JSON.parse(ctx.doGet({ parameter: { action: 'status', uuid } }).getContent());
   assert.strictEqual(status.status, 'open');
-  assert.deepStrictEqual(JSON.parse(ctx.doGet({ parameter: { action: 'results' } }).getContent()), { ok: true, status: 'not_finalized' });
+  assert.deepStrictEqual(JSON.parse(ctx.doGet({ parameter: { action: 'results' } }).getContent()), { ok: true, results: { status: 'insufficient', schema_version: ctx.SURVEY_SCHEMA.schema_version, min_total: 30 } });
   const root = JSON.parse(ctx.doGet({}).getContent());
   assert.strictEqual(root.service, 'costume-portrait-survey');
   for (const action of ['admin', 'dump', 'export', 'rows']) {

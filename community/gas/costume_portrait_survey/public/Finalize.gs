@@ -66,6 +66,26 @@ function classifyTimestamp_(value, closesAt) {
   return time > closesAt ? 'late' : 'valid';
 }
 
+/**
+ * 公開集計の対象行を抽出する（finalize と途中集計の共通処理。集計対象がずれないよう1か所に集約）。
+ * test行・日時が空の行は除外、締切後(late)・日時不正(unparseable)は件数だけ数えて除外する。
+ */
+function collectValidRecords_(rows, closesAt) {
+  var stats = { responseRows: 0, validRows: 0, lateRows: 0, unparseableRows: 0, publicTotal: 0 };
+  var records = [];
+  rows.forEach(function (row) {
+    if (row.completion_status === 'test') return;
+    if (row.timestamp === '' || row.timestamp === null || row.timestamp === undefined) return;
+    stats.responseRows++;
+    var kind = classifyTimestamp_(row.timestamp, closesAt);
+    if (kind === 'late') { stats.lateRows++; return; }
+    if (kind === 'unparseable') { stats.unparseableRows++; return; }
+    stats.validRows++;
+    records.push(SurveyCore.decodeRecord(SURVEY_SCHEMA, row));
+  });
+  return { records: records, stats: stats };
+}
+
 function finalizeSurvey() {
   return finalizeSurvey_(new Date());
 }
@@ -87,19 +107,9 @@ function finalizeSurvey_(now) {
     if (now.getTime() <= closesAt) throw new Error('survey_not_closed'); // 締切時刻ちょうどは受付中
 
     var spreadsheet = openSpreadsheet_();
-    var rows = readResponseRows_(getResponsesSheet_());
-    var stats = { responseRows: 0, validRows: 0, lateRows: 0, unparseableRows: 0, publicTotal: 0 };
-    var records = [];
-    rows.forEach(function (row) {
-      if (row.completion_status === 'test') return;
-      if (row.timestamp === '' || row.timestamp === null || row.timestamp === undefined) return;
-      stats.responseRows++;
-      var kind = classifyTimestamp_(row.timestamp, closesAt);
-      if (kind === 'late') { stats.lateRows++; return; }
-      if (kind === 'unparseable') { stats.unparseableRows++; return; }
-      stats.validRows++;
-      records.push(SurveyCore.decodeRecord(SURVEY_SCHEMA, row));
-    });
+    var collected = collectValidRecords_(readResponseRows_(getResponsesSheet_()), closesAt);
+    var stats = collected.stats;
+    var records = collected.records;
 
     var payload = assertPublicPayload_(buildPublicPayload_(records));
     if (payload.status === 'final' && payload.total !== stats.validRows) throw new Error('total_mismatch');
@@ -145,10 +155,25 @@ function readSnapshotJson_(properties) {
   return text;
 }
 
-/** 公開結果API。確定済みスナップショットを返すだけで、Spreadsheetは一切読まない。 */
-function readPublicResults_() {
-  if (!readFinalMeta_()) return { ok: true, status: 'not_finalized' };
-  var payload = JSON.parse(readSnapshotJson_(PropertiesService.getScriptProperties()));
-  assertPublicPayload_(payload);
-  return { ok: true, results: payload };
+/**
+ * 公開結果API。
+ *  - 確定済み：スナップショットを返すだけ（Spreadsheetは読まない）。status は final / insufficient。
+ *  - 未確定：有効回答から途中集計を都度生成する（読み取りのみ。確定マーカー・スナップショットは作らない）。
+ *    30件以上なら status:'partial'（phase: collecting=受付中 / closed_pending=受付終了・最終確定待ち）、
+ *    30件未満は status:'insufficient'（件数も返さない）。
+ *    締切設定が未設定・不正な場合は、全行がlate扱いの誤った集計を出さないようエラーを返す。
+ */
+function readPublicResults_(now) {
+  var properties = PropertiesService.getScriptProperties();
+  if (readFinalMeta_()) {
+    var payload = JSON.parse(readSnapshotJson_(properties));
+    assertPublicPayload_(payload);
+    return { ok: true, results: payload };
+  }
+  var closesAt = parseCloseTime_(getProperty_(PROP_CLOSES_AT));
+  if (closesAt === null) return errorBody_('survey_close_not_configured');
+  var collected = collectValidRecords_(readResponseRows_(getResponsesSheet_()), closesAt);
+  var partial = buildPublicPayload_(collected.records, 'partial');
+  if (partial.status === 'partial') partial.phase = (now || new Date()).getTime() <= closesAt ? 'collecting' : 'closed_pending';
+  return { ok: true, results: assertPublicPayload_(partial) };
 }

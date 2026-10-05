@@ -1,6 +1,7 @@
 /*
- * 公開結果ページ。Public GASの ?action=results（締切後にfinalizeで確定した匿名スナップショット）だけを表示する。
- * 有効回答30件未満・未確定の間は件数も含め何も表示しない。自由記述・価格・地域・性的指向などは
+ * 公開結果ページ。Public GASの ?action=results だけを表示する（確定済みスナップショット＝最終結果、
+ * 未確定で有効回答30件以上＝途中集計）。有効回答30件未満は件数も含め何も表示しない。
+ * 通信失敗・不正なレスポンスは読み込みエラーとして扱い、「30件未満」とは表示しない。自由記述・価格・地域・性的指向などは
  * APIがそもそも返さない（allowlist）。回答由来の文字列は textContent のみで描画する。
  */
 (function () {
@@ -22,9 +23,28 @@
     root.appendChild(box);
   }
 
+  var NOTICES = {
+    final: { label: '最終結果', text: 'アンケートの受付は終了し、結果を確定しました。以下が最終結果です。' },
+    collecting: { label: '途中集計', text: '途中集計です。受付中のため、結果は回答の追加により変わります。' },
+    closed_pending: { label: '受付終了・最終確定待ち', text: '受付は終了しました。現在は途中集計を表示しています。最終結果は確定後に公開します。' }
+  };
+  function noticeKey(results) {
+    if (results.status === 'final') return 'final';
+    if (results.status === 'partial' && (results.phase === 'collecting' || results.phase === 'closed_pending')) return results.phase;
+    return null;
+  }
+  function isValidResults(results) {
+    if (!results || typeof results !== 'object') return false;
+    if (results.status === 'insufficient') return true;
+    return noticeKey(results) !== null && typeof results.total === 'number' && Array.isArray(results.items);
+  }
+
   function render(results) {
     while (root.firstChild) root.removeChild(root.firstChild);
+    var notice = NOTICES[noticeKey(results)];
     var head = el('div', 'cp-card');
+    head.appendChild(el('p', 'cp-badge', notice.label));
+    head.appendChild(el('p', 'cp-lead', notice.text));
     head.appendChild(el('h2', '', '有効回答数：' + results.total + '件'));
     head.appendChild(el('p', 'cp-lead', '3件未満のカテゴリは、個人が推測されないよう「非公開」としています。複数選択の設問は、選んだ人の割合のため合計が100%を超えます。'));
     root.appendChild(head);
@@ -56,9 +76,9 @@
     .then(function (response) { if (!response.ok) throw new Error('http'); return response.json(); })
     .then(function (body) {
       if (!body || body.ok !== true) throw new Error('bad');
-      if (body.status === 'not_finalized') { message('結果は、アンケートの受付終了後に確定してから公開します。'); return; }
       var results = body.results;
-      if (!results || results.status === 'insufficient') { message('回答数が十分に集まるまで、結果は公開しません。'); return; }
+      if (!isValidResults(results)) throw new Error('bad');
+      if (results.status === 'insufficient') { message('有効回答が30件以上集まると、途中集計を公開します。'); return; }
       render(results);
     })
     .catch(function () { message('結果を読み込めませんでした。時間をおいて再度お試しください。'); });
