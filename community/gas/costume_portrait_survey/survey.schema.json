@@ -15,7 +15,7 @@
     "costume_category": [
       {
         "id": "uniform",
-        "label": "制服・ユニフォーム"
+        "label": "スポーツユニフォーム"
       },
       {
         "id": "suit",
@@ -428,7 +428,7 @@
       "id": "uniform_interest",
       "no": "Q5-1",
       "type": "multi",
-      "label": "興味のある制服・ユニフォーム",
+      "label": "興味のあるスポーツユニフォーム",
       "required": true,
       "visibility": "public",
       "optionSet": "uniform_detail",
@@ -490,7 +490,7 @@
       "id": "uniform_wear",
       "no": "Q6-A-1",
       "type": "multi",
-      "label": "着てみたい制服・ユニフォーム",
+      "label": "着てみたいスポーツユニフォーム",
       "required": true,
       "visibility": "private",
       "optionSet": "uniform_detail",
@@ -556,7 +556,7 @@
       "id": "uniform_photographed",
       "no": "Q6-B-1",
       "type": "multi",
-      "label": "撮られてみたい制服・ユニフォーム",
+      "label": "撮られてみたいスポーツユニフォーム",
       "required": true,
       "visibility": "private",
       "optionSet": "uniform_detail",
@@ -622,7 +622,7 @@
       "id": "uniform_shoot",
       "no": "Q7-1",
       "type": "multi",
-      "label": "撮ってみたい制服・ユニフォーム",
+      "label": "撮ってみたいスポーツユニフォーム",
       "required": true,
       "visibility": "private",
       "optionSet": "uniform_detail",
@@ -2544,7 +2544,7 @@
       {
         "id": "uniform_interest",
         "question": "uniform_interest",
-        "title": "興味のある制服・ユニフォーム"
+        "title": "興味のあるスポーツユニフォーム"
       },
       {
         "id": "workwear_interest",
