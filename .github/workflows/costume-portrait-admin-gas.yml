@@ -99,9 +99,9 @@ jobs:
           if (!manifest.webapp || manifest.webapp.access !== 'ANYONE_ANONYMOUS' || manifest.webapp.executeAs !== 'USER_DEPLOYING') {
             throw new Error('Admin Web App must be access ANYONE_ANONYMOUS and executeAs USER_DEPLOYING.');
           }
-          const allowedScopes = ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/script.external_request'];
+          const allowedScopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/script.external_request'];
           if (manifest.oauthScopes.some(s => !allowedScopes.includes(s)) || !allowedScopes.every(s => manifest.oauthScopes.includes(s))) {
-            throw new Error('The admin bundle must use exactly spreadsheets.readonly + script.external_request (no write or mail scopes).');
+            throw new Error('The admin bundle must use exactly spreadsheets (required by SpreadsheetApp.openById; the code is read-only) + script.external_request (no mail scopes).');
           }
           console.log('Dry-run bundle contains only the approved admin GAS files.');
           NODE

@@ -480,7 +480,8 @@ test('Admin GAS は読み取り専用で、Public GAS とは別プロジェク�
   assert.strictEqual(manifest.webapp.access, 'ANYONE_ANONYMOUS');
   assert.strictEqual(manifest.webapp.executeAs, 'USER_DEPLOYING');
   assert.deepStrictEqual(manifest.oauthScopes.slice().sort(), [
-    'https://www.googleapis.com/auth/script.external_request', 'https://www.googleapis.com/auth/spreadsheets.readonly']);
+    'https://www.googleapis.com/auth/script.external_request', 'https://www.googleapis.com/auth/spreadsheets']);
+  // openById には spreadsheets scope が必須（#358）。書き込みはコード側で存在しないこと（上の静的検査）で担保する
   const publicSource = fs.readdirSync(path.join(ROOT, 'public')).filter((f) => f.endsWith('.gs'))
     .map((f) => fs.readFileSync(path.join(ROOT, 'public', f), 'utf8')).join('\n');
   for (const word of ['getDashboardData', 'getCrosstabData', 'HtmlService', 'ADMIN_ALLOWED_EMAILS', 'ADMIN_OWNER_EMAILS', 'ADMIN_VIEWER_EMAILS', 'ADMIN_GOOGLE_CLIENT_ID', 'getActiveUser', 'verifyGoogleIdToken_']) assert.ok(!publicSource.includes(word), word);
@@ -499,4 +500,9 @@ test('README：個人Gmail対応の認証方式・OAuth Client設定・tokenを�
   assert.ok(readme.includes('VIEWER に Spreadsheet') || readme.includes('VIEWER へは共有しない'));
   assert.ok(/Storage|localStorage/.test(readme) && readme.includes('メモリ上の変数だけ'));
   assert.ok(!/ADMIN_ALLOWED_EMAILS` \(カンマ|アクセス=\*\*自分のみ/.test(readme), '旧方式の手順を残さない');
+  // 本番deploy前チェックリスト（実機診断 + 実通信）
+  for (const word of ['本番deploy前チェックリスト', 'diagBigIntAndRsa', 'diagJwksFetch', 'diagVerifyRealToken', 'diagClearToken', 'GISログイン成功', 'クロスオリジンPOST成功',
+    'OWNER取得成功', 'VIEWER取得成功', '未登録Gmailはforbidden', 'token期限切れはunauthenticated', 'VIEWERレスポンスに自由記述等が含まれない']) assert.ok(readme.includes(word), word);
+  assert.ok(readme.includes('"error":"forbidden"') && readme.includes('"error":"unauthenticated"'));
+  assert.ok(/readonly.*権限不足/.test(readme.replace(/\n/g, '')) || readme.includes('spreadsheets.readonly` では実行時に権限不足'));
 });

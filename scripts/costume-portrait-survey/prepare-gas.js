@@ -22,9 +22,10 @@ const TARGETS = {
     files: ['Aggregate.gs', 'Auth.gs', 'Data.gs', 'IdToken.gs', 'Main.gs', 'SurveyGenerated.gs'],
     // 旧構成（HTML Service で配信していた Dashboard*.html）。既存プロジェクトに残っていてもよい（push で置き換わり削除される）。
     legacyFiles: ['Dashboard.html', 'DashboardScript.html', 'DashboardStyles.html'],
-    requiredScopes: ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/script.external_request'],
-    // これ以外のscope（Spreadsheet書き込み・メール送信など）は追加させない。
-    allowedScopes: ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/script.external_request']
+    requiredScopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/script.external_request'],
+    // SpreadsheetApp.openById() は spreadsheets scope が必須（readonly では実行時に権限不足。#358）。Admin のコードは読み取り専用（テストで静的検査）。
+    // これ以外のscope（メール送信など）は追加させない。
+    allowedScopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/script.external_request']
   }
 };
 // 初回に手動作成したGASプロジェクトに最初から入っている空のスタブ（Code.gs / コード.gs）は上書きしてよい。

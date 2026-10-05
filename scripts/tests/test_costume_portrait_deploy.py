@@ -39,7 +39,7 @@ PUBLIC_REMOTE_MANIFEST = {
 }
 ADMIN_REMOTE_MANIFEST = {
     'timeZone': 'Asia/Tokyo', 'exceptionLogging': 'STACKDRIVER', 'runtimeVersion': 'V8',
-    'oauthScopes': ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/userinfo.email'],
+    'oauthScopes': ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/userinfo.email'],
     'webapp': {'executeAs': 'USER_DEPLOYING', 'access': 'MYSELF'},
 }
 ADMIN_WEBAPP = {'executeAs': 'USER_DEPLOYING', 'access': 'ANYONE_ANONYMOUS'}
@@ -295,15 +295,16 @@ class AdminDeployTest(DeployBase, unittest.TestCase):
         self.assertEqual(manifest['webapp'], ADMIN_WEBAPP)
         self.assertEqual(sorted(manifest['oauthScopes']), [
             'https://www.googleapis.com/auth/script.external_request',
-            'https://www.googleapis.com/auth/spreadsheets.readonly'])
+            'https://www.googleapis.com/auth/spreadsheets'])
 
     def test_stage_rejects_write_or_mail_scopes_and_non_anonymous_webapp(self):
         base = json.loads((BASE / 'admin/appsscript.json').read_text())
         bad_manifests = [
-            dict(base, oauthScopes=base['oauthScopes'] + ['https://www.googleapis.com/auth/spreadsheets']),
+            dict(base, oauthScopes=base['oauthScopes'] + ['https://www.googleapis.com/auth/drive']),
             dict(base, oauthScopes=base['oauthScopes'] + ['https://www.googleapis.com/auth/script.send_mail']),
             dict(base, oauthScopes=base['oauthScopes'] + ['https://www.googleapis.com/auth/userinfo.email']),
-            dict(base, oauthScopes=['https://www.googleapis.com/auth/spreadsheets.readonly']),
+            dict(base, oauthScopes=['https://www.googleapis.com/auth/spreadsheets']),
+            dict(base, oauthScopes=['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/script.external_request']),
             dict(base, webapp={'executeAs': 'USER_ACCESSING', 'access': 'ANYONE_ANONYMOUS'}),
             dict(base, webapp={'executeAs': 'USER_DEPLOYING', 'access': 'ANYONE'}),
             dict(base, webapp={'executeAs': 'USER_DEPLOYING', 'access': 'MYSELF'}),

@@ -163,6 +163,8 @@ Admin GAS（executeAs=USER_DEPLOYING）
 - **なぜ UI を GitHub Pages に置くか**: Google Identity Services は「Authorized JavaScript origins」に登録した**固定の origin** でしか動かない（ワイルドカード不可）。
   Apps Script の HTML Service は sandbox iframe で配信され、origin を固定で登録できる根拠を確認できなかったため使わない。GitHub Pages の origin は固定で、既に Public GAS への `fetch` でも使っている。
 - 本人確認の根拠は **Googleが署名したtokenのみ**。クライアントが送る email / role は存在せず、送られても使わない（テストで担保）。
+- **OAuth scope**: `spreadsheets`（`SpreadsheetApp.openById()` に必須。`spreadsheets.readonly` では実行時に権限不足になる: #358）と `script.external_request`（Googleの公開鍵取得）の2つだけ。
+  `userinfo.email` は不要（Sessionを使わない）。**Admin はコード上 読み取り専用**で、書き込み系API・メール送信・Logger/console は存在しない（テストで静的検査）。CI は上記2つ以外の scope（`send_mail` 等）を持つ bundle をデプロイしない。
 
 ### CORS / Web App 設定
 
@@ -247,8 +249,52 @@ tokeninfo endpoint は公式が debugging 向けとしているため使わず�
 - **ログアウト**: 画面右上の「ログアウト」で保持tokenを破棄しダッシュボードを消去してログイン画面へ戻る（Googleアカウント自体からのログアウトはしない）。
 - CSPを `<meta>` で付与（`script-src` は自ページ+GISのみ、インラインscriptなし）。`connect-src` は `script.google.com` / `script.googleusercontent.com`（GASの応答リダイレクト先）。
 
+### 本番deploy前チェックリスト（実機・実通信の確認）
+
+**このチェックリストが全て PASS するまで、本番の Admin deploy・Script Properties・OAuth Client・`config.js` 本番値の反映をしない。**
+CI とユニットテストでは Apps Script の実機（V8）・Googleの実トークン・GitHub Pages からの実通信は確認できないため、人手で次の2段階を行う。
+どちらも**使い捨て・テスト用**の環境で行い、本番の Admin GAS / 本番 Script Properties / 本番 OAuth Client / 本番 Spreadsheet には触れない。
+
+#### A. 実機診断（空の使い捨て Apps Script プロジェクト。Spreadsheet・Web App 不要）
+
+認証コード（`admin/IdToken.gs`）は変更せず、**本番バンドルに含まれない別置きの診断**（`diagnostics/AdminAuthDiagnostic.gs`）で、次の3点を成功/失敗だけで確認する。
+診断は Logger に `PASS` / `FAIL` と分類だけを出し、ID token・email・sub・公開鍵の中身は出力しない。`doPost` 等の Admin API を含むプロジェクトでは実行を拒否する（本番に診断の入口を残さない）。
+
+1. 新規の空の Apps Script プロジェクトを作り、ファイルは **`admin/IdToken.gs`（無変更）と `diagnostics/AdminAuthDiagnostic.gs` の2つだけ**にする。`appsscript.json` の `oauthScopes` は `https://www.googleapis.com/auth/script.external_request` のみ。
+2. **BigInt が使える / RSA検証が実機で正しい**: エディタで `diagBigIntAndRsa` を実行 → ログに `PASS BigInt is available` / `PASS modPow_ (BigInt) known answer` / `PASS RS256 verify: valid signature accepted` / `PASS RS256 verify: tampered signature rejected`。
+3. **Google JWKS を UrlFetchApp で取得できる**: `diagJwksFetch` を実行（初回は外部通信の承認）→ `PASS JWKS fetched via UrlFetchApp` / `PASS JWKS keys are RSA with kid/n/e` / `PASS getGoogleSigningKey_ resolves a kid`。
+4. **実際の Google ID token を `verifyGoogleIdToken_()` が検証できる**（B の環境ができてから行う）: ログイン直後（有効期間は約1時間）に、ブラウザの開発者ツール → Network → `/exec` への POST の Request payload から `idToken` の値をコピーする（アプリの画面・Logger には出ない）。
+   使い捨てプロジェクトの Script Properties に `ADMIN_GOOGLE_CLIENT_ID`（そのtokenを発行した Client ID）と `DIAG_ID_TOKEN`（コピーした値）を設定し、`diagVerifyRealToken` を実行 → `PASS real ID token verified …`。
+   失敗時の分類: `unauthenticated`（期限切れ・`aud` 不一致・署名不正）/ `not_configured`（`ADMIN_GOOGLE_CLIENT_ID` 未設定）。
+5. 終了後は `diagClearToken` で `DIAG_ID_TOKEN` を削除し、**使い捨てプロジェクトごと削除**する。token をチャットやIssueに貼らない。
+
+#### B. GitHub Pages → Admin GAS の実通信（テスト用 Admin GAS + ローカル配信）
+
+1. **テスト用 Admin GAS**: 新規 Apps Script プロジェクトに `admin/` の全ファイルと `appsscript.json` を配置（clasp で push してもよい）。Script Properties は
+   `SPREADSHEET_ID`（**テスト用にコピーしたSpreadsheet**。目印として `free_ideas` 等に `SECRET-CHECK-1` のような文字列を入れておく）/ `ADMIN_GOOGLE_CLIENT_ID` / `ADMIN_OWNER_EMAILS` / `ADMIN_VIEWER_EMAILS`。
+   Web App は「実行 = 自分」「アクセス = 全員」でデプロイし、`/exec` URL を控える。`script.external_request` と `spreadsheets` を承認する。
+2. **テスト用 OAuth クライアント**（Webアプリケーション）: 承認済みの JavaScript 生成元に `http://localhost:8000`（同意画面が「テスト」ならテストユーザーに OWNER・VIEWER・未登録確認用の Gmail を追加）。
+3. リポジトリを手元に取得し、`community/costume-portrait-survey-admin/config.js` を**コミットせずに**書き換える（`endpoint` = テスト用 `/exec`、`googleClientId` = テスト用 Client ID）。
+   リポジトリのルートで `python3 -m http.server 8000` → `http://localhost:8000/community/costume-portrait-survey-admin.html` を開く。
+4. 次を確認する。
+
+| # | 確認 | 手順 | 期待結果 |
+|---|---|---|---|
+| 1 | GISログイン成功 | OWNERのGmailでログインボタンから認証 | ログインボタンが表示されポップアップが完了。Console に `origin_mismatch` / CSP違反がない |
+| 2 | クロスオリジンPOST成功 | Network で `/exec` への POST を確認 | 最終的に 200 で `{"ok":true,…}` が読める。Console に CORS エラーがない（`text/plain` の単純リクエスト・プリフライトなし） |
+| 3 | OWNER取得成功 | 画面表示 | 「管理者権限: OWNER」。概要・単純集計・ファネル・クロス集計・自由記述の5タブ。任意クロス集計が動く |
+| 4 | VIEWER取得成功 | ログアウト → VIEWERのGmailでログイン | 「管理者権限: VIEWER」。概要・単純集計・クロス集計の3タブのみ（ファネル・自由記述タブなし、任意クロス集計UIなし） |
+| 5 | 未登録Gmailはforbidden | ログアウト → 未登録のGmailでログイン | 「このアカウントには管理画面の利用権限がありません」。Network のレスポンスが `{"ok":false,"error":"forbidden"}` でデータなし |
+| 6 | token期限切れはunauthenticated | 約60分以上前に取得したID tokenで `curl -sL -X POST -H 'Content-Type: text/plain' --data '{"action":"dashboard","idToken":"<期限切れtoken>"}' "<exec URL>"`（または同一画面で60分以上放置後に「集計する」） | `{"ok":false,"error":"unauthenticated"}`、画面はログイン画面に戻り再ログインを促す。`"idToken":"invalid"` でも同じ結果（無認証・不正tokenでデータが返らない） |
+| 7 | VIEWERレスポンスに自由記述等が含まれない | VIEWERでログイン後、Network の dashboard レスポンス JSON を検索 | `SECRET-CHECK-1` が0件。`free_ideas` / `free_themes` / `cheer_message` / `residence_country` / `freeText` / `funnels` / `finalize` / `axes` が0件 |
+| 8 | tokenが露出しない | OWNER/VIEWERログイン中に Network / Application / Console を確認 | URLに token がない（POST body のみ）。Local/Session Storage・Cookie が空。Console に出力がない。ログアウト後はダッシュボードの内容がDOMに残らない |
+
+5. A の手順4（実トークン検証）を実施する。
+6. 本番反映後（下記）、GitHub Pages の実URL（`https://nagoya-base.github.io/…`）で #1〜#5・#7 を再確認する（localhost と GitHub Pages では origin だけが異なる。本番の Client ID には GitHub Pages の origin を登録済みであること）。
+
 ### 本番反映の手順（人手。このPRでは行わない）
 
+0. 上記「本番deploy前チェックリスト」A・B が全て PASS していること。
 1. 上記「OAuth クライアントID の作り方」でClient IDを作成。
 2. Admin GAS の Script Properties に `ADMIN_GOOGLE_CLIENT_ID` / `ADMIN_OWNER_EMAILS` / `ADMIN_VIEWER_EMAILS` を設定（`ADMIN_ALLOWED_EMAILS` は使われなくなるので、確認後に削除）。
 3. main へマージ → Actions *Costume portrait survey Admin GAS* を `workflow_dispatch`（`source_sha` = main最新）→ Environment承認。
@@ -300,7 +346,7 @@ python3 -m unittest scripts.tests.test_costume_portrait_deploy -v   # リポジ�
    - Public: 実行ユーザー=自分、アクセス=全員（匿名可）
    - Admin: 実行ユーザー=自分、アクセス=**全員（`ANYONE_ANONYMOUS`）**。データは doPost でGoogle ID tokenを検証するまで一切返らない（CIは `ANYONE_ANONYMOUS` + `USER_DEPLOYING` 以外ならデプロイしない）
 7. Apps Scriptエディタで Public の `setupScriptProperties()`（salt生成）→ `setupSpreadsheet()`（`responses` / `meta` シートとヘッダー作成）を実行。
-   このとき **OAuth承認**（Spreadsheet・`script.send_mail`）を行う。Adminは Apps Script エディタから一度関数を実行し、`spreadsheets.readonly` と `script.external_request`（Googleの公開鍵取得）を承認する。
+   このとき **OAuth承認**（Spreadsheet・`script.send_mail`）を行う。Adminは Apps Script エディタから一度関数を実行し、`spreadsheets` と `script.external_request`（Googleの公開鍵取得）を承認する。
 8. **GitHub Environment を2つ新規作成**（Settings → Environments）
    - `costume-portrait-public-production` / `costume-portrait-admin-production`
    - どちらも **Deployment branches = `main` のみ** + **Required reviewers（承認者）**
@@ -318,7 +364,7 @@ python3 -m unittest scripts.tests.test_costume_portrait_deploy -v   # リポジ�
   *Admin GAS* を `workflow_dispatch`（`source_sha` = main最新commit）→ Environment承認 → `deploy-gas.sh`。
   既存deploymentを `update-deployment` するだけで、新規deploymentは作らず `/exec` URLは変わらない。
   Script Properties・`SPREADSHEET_ID` は変更しない。Public のWeb Appアクセス設定は変更しない（remoteの `webapp` を保持）。
-  Admin の `webapp` はリポジトリ側（`ANYONE_ANONYMOUS` / `USER_DEPLOYING`）が正。既存の `MYSELF` 等からの移行は許可し、未知の値・書き込み/メールscopeは拒否する。
+  Admin の `webapp` はリポジトリ側（`ANYONE_ANONYMOUS` / `USER_DEPLOYING`）が正。既存の `MYSELF` 等からの移行は許可し、未知の値・許可外scope（メール送信等）は拒否する。
 - **schemaを変えるとき**: `survey.schema.json` を編集 → `npm run build` → コミット。回答開始後に設問構造を変える場合は
   `schema_version` を上げ、`responses` のヘッダーと整合させる（ヘッダー不一致時は保存を拒否する）。
 - **締切後**: Public で `finalizeSurvey()` を実行 → `?action=results` と公開結果ページで確認（30件以上のときのみ表示）。
