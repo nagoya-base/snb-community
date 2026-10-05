@@ -350,6 +350,14 @@ test('Dashboard UI：ロール表示。VIEWERでは返却されなかったタ�
   assert.ok(doc.getElementById('tab-overview').textContent.includes('有効回答数'));
 });
 
+test('README は ANYONE=全員のメール取得可 とは書かず、同一Workspaceドメイン等の条件を明記している', () => {
+  const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+  assert.ok(readme.includes('OWNER / VIEWER として利用できるGoogleアカウント条件'));
+  assert.ok(readme.includes('同一Workspaceドメイン') && readme.includes('個人Gmail'));
+  assert.ok(readme.includes('「ログイン済みGoogleユーザー全員のメールが取れる」設定ではない'));
+  assert.ok(!/ANYONE[^\n]*(なら|であれば)[^\n]*メール[^\n]*(取得できる|取れる)/.test(readme));
+});
+
 test('Admin GAS は読み取り専用で、Public GAS とは別プロジェクト（管理機能を混在させない）', () => {
   const adminSource = fs.readdirSync(path.join(ROOT, 'admin')).filter((f) => /\.(gs|html)$/.test(f))
     .map((f) => fs.readFileSync(path.join(ROOT, 'admin', f), 'utf8')).join('\n');

@@ -8,8 +8,9 @@
  *       ADMIN_VIEWER_EMAILS : 閲覧専用の限定権限（カンマ区切り。未設定でもよい）
  *     判定順は OWNER → VIEWER → forbidden（両方にあれば OWNER 優先）。比較は trim + lowercase。
  *     未設定・空・Sessionメール取得不能はすべて拒否（fail closed）。
- *     注意: executeAs=USER_DEPLOYING では getActiveUser().getEmail() はデプロイ者と同じGoogle Workspaceドメインの
- *     アカウントでのみ取得できる。別ドメイン・個人Gmailは空文字になり forbidden となる（README参照）。
+ *     注意: executeAs=USER_DEPLOYING では、公式が getActiveUser().getEmail() の取得を述べているのは
+ *     デプロイ者本人と同一Google Workspaceドメインのアカウントのみ。それ以外は取得不可として扱い、
+ *     空文字 → forbidden となる（accessがANYONEでもメールが取れるとは限らない。README参照）。
  *  旧 ADMIN_ALLOWED_EMAILS は意図的に読まない（自動fallbackしない。移行はREADME参照）。
  *  ロールは常にサーバー側で Session から決める。クライアントからの指定は受け付けない。
  * Public GASには管理機能を置かない（別プロジェクト）。

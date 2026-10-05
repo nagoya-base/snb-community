@@ -175,7 +175,38 @@ Admin GAS・Web Appは1つのまま、ログインユーザーのメールアド
 - manifestの `access` に指定できる値は `MYSELF` / `DOMAIN` / `ANYONE`（ログイン済みGoogleユーザー）/ `ANYONE_ANONYMOUS`（匿名可）。**匿名は使わない**。
 - URLに到達できるのは「Googleにログイン済みの誰でも」だが、**実行時に Session のメールを `ADMIN_OWNER_EMAILS` / `ADMIN_VIEWER_EMAILS` と照合し、未登録は `forbidden`**（データは一切返らない）。URLが漏れても未登録アカウントは何も見られない。
 - `executeAs: USER_DEPLOYING` を維持する理由: `USER_ACCESSING` にすると各ユーザー自身の権限でSpreadsheetを読むことになり、VIEWERにSpreadsheetの閲覧権限を与える必要が出て、**VIEWERが生データ（自由記述等）を直接開けてしまう**ため。Spreadsheetはデプロイ者のみが持ち、VIEWERへは共有しない。
-- **重要な前提（メール取得条件）**: `executeAs: USER_DEPLOYING` の Web App では、`Session.getActiveUser().getEmail()` は**デプロイ者と同じ Google Workspace ドメインのアカウントでのみ**取得できる。別ドメイン・個人Gmailのアカウントは空文字となり、**fail closed で `forbidden`**（安全側に倒れるが、利用はできない）。したがって OWNER / VIEWER は**デプロイ者と同じWorkspaceドメインのアカウント**を登録すること。個人Gmailを使いたい場合は本構成では不可（別途アーキテクチャの検討が必要）。
+- **`access: ANYONE` は「ログイン済みGoogleユーザー全員のメールが取れる」設定ではない。** `ANYONE` はURLに到達できる範囲を決めるだけで、メールが取れるかどうかは別の条件（下記）で決まる。
+
+#### OWNER / VIEWER として利用できるGoogleアカウント条件
+
+`executeAs: USER_DEPLOYING` の Web App で `Session.getActiveUser().getEmail()` が取得できるかは、**デプロイ者と閲覧者の組み合わせ**で決まる。
+
+根拠（Apps Script 公式リファレンス `Class User` / `Class Session`）:
+- 「ユーザーのメールアドレスは、そのユーザーの認可なしにスクリプトを実行できるコンテキスト（単純トリガー、Sheetsのカスタム関数、**“execute as me” でデプロイしたWeb App**）では取得できない。セキュリティポリシーにより取得できない場合は空文字を返す。」
+- 「ただし、**開発者本人が実行する場合、または開発者がそのユーザーと同じ Google Workspace ドメインに属する場合**には、これらの制限は一般に適用されない。」
+
+公式が取得可能と述べているのは「デプロイ者本人」と「デプロイ者と同一Workspaceドメイン」だけ。それ以外は公式に取得可能とは書かれておらず、本構成では**取得不可として扱う**（空文字 → `forbidden`）。
+
+| デプロイ者 → アクセスするアカウント | メール取得 | OWNER/VIEWERとして使えるか |
+|---|---|---|
+| 個人Gmail → 個人Gmail（他人） | 取得不可として扱う | ×（空文字 → forbidden） |
+| Workspace → **同一Workspaceドメイン** | 取得可（公式: 同一ドメインは制限が適用されない） | ○ |
+| Workspace → 別Workspaceドメイン | 取得不可として扱う | × |
+| Workspace → 個人Gmail | 取得不可として扱う | × |
+| 個人Gmail → Workspace | 取得不可として扱う | × |
+| デプロイ者本人（どの種別でも） | 取得可（公式: 開発者本人） | ○（OWNER 1名） |
+
+- 公式リファレンスは上記の組み合わせを個別に列挙しておらず、「同一Workspaceドメインと開発者本人を除き取得できない」という一般則のみを記載している。個人Gmail同士や別ドメインでの空文字は、公式の一般則に加え、開発者コミュニティの報告（`getActiveUser().getEmail()` が別ドメイン・gmail.com で空になる）とも一致するが、**個別の組み合わせを実機で検証したものではない**。
+- 「同一ドメイン」で取得できる場合も公式は「generally（一般に）」と書いており、管理者ポリシー等で変わりうる。**本番デプロイ後、OWNER/VIEWERの各アカウントで実際にロールが判定されることを必ず確認する**。副ドメイン・ドメインエイリアスのアカウントは未検証のため、プライマリドメインのアカウントを使う。
+- 取得できない場合は常に fail closed（`forbidden`）。データが漏れることはなく、「使えない」だけ。
+
+#### Issue #351「複数管理者」を満たせる範囲
+
+- **満たせる**: デプロイ者が Google Workspace アカウントで、**OWNER / VIEWER 全員が同じWorkspaceドメインのアカウント**である場合（OWNER複数・VIEWER複数とも可）。
+- **一部のみ**: デプロイ者が個人Gmailの場合は、デプロイ者本人（OWNER 1名）しか識別できない。VIEWER や2人目のOWNERは使えない（= 2ロール運用は成立しない）。
+- **満たせない**: 別ドメイン・個人Gmailのアカウントを VIEWER / OWNER にすること。本構成では識別できず全員拒否される。
+- 上記を満たせないケースの代替案（本PRの対象外）: `executeAs: USER_ACCESSING` にすればメールは取得できるが、各ユーザー自身の権限でSpreadsheetを読むことになり、VIEWERに閲覧権限を与えると**生データを直接開けてしまう**ためVIEWERの分離要件を満たせない。別方式（別途Issueで検討）が必要。
+
 - 既存のAdminデプロイ（`MYSELF`）はCIが `ANYONE` へ更新する（リモートが匿名公開 `ANYONE_ANONYMOUS` の場合はデプロイを拒否）。デプロイ後、デプロイ管理画面の「アクセスできるユーザー」が「Googleアカウントを持つ全員」になっていることを必ず確認する。
 
 #### Script Properties（Admin）
