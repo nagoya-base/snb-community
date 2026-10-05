@@ -114,17 +114,36 @@ if (result.deploymentId !== process.env.COSTUME_PORTRAIT_DEPLOYMENT_ID ||
 NODE
 
 # 5) 同じ deployment ID が新しい version を指していること（= /exec URL は維持されたまま）。
-if ! clasp --auth "$auth_file" --json list-deployments >"$deploy_root/deployments-after.json" 2>/dev/null; then
-  echo 'Updated deployment could not be listed for verification.' >&2
-  exit 1
-fi
-DEPLOYMENTS="$deploy_root/deployments-after.json" VERSION="$version_number" node <<'NODE'
+# Apps Script API は update-deployment 成功直後の list-deployments に旧 version を返すことがあるため、
+# 一時的な反映遅延を false failure にしないよう短時間だけ再確認する。
+verification_ok=0
+for attempt in 1 2 3 4 5; do
+  deployments_after="$deploy_root/deployments-after-$attempt.json"
+  if clasp --auth "$auth_file" --json list-deployments >"$deployments_after" 2>/dev/null; then
+    if DEPLOYMENTS="$deployments_after" VERSION="$version_number" node <<'NODE'
 const fs = require('fs');
 const deployments = JSON.parse(fs.readFileSync(process.env.DEPLOYMENTS, 'utf8'));
-if (!Array.isArray(deployments) ||
-    !deployments.some(item => item.deploymentId === process.env.COSTUME_PORTRAIT_DEPLOYMENT_ID &&
-      item.versionNumber === Number(process.env.VERSION))) {
-  throw new Error('The existing deployment does not reference the newly created version.');
-}
+if (!Array.isArray(deployments)) process.exit(2);
+const matches = deployments.some(item =>
+  item.deploymentId === process.env.COSTUME_PORTRAIT_DEPLOYMENT_ID &&
+  item.versionNumber === Number(process.env.VERSION));
+process.exit(matches ? 0 : 1);
 NODE
+    then
+      verification_ok=1
+      break
+    fi
+  fi
+
+  if [[ "$attempt" -lt 5 ]]; then
+    echo "Deployment verification is not visible yet; retrying ($attempt/5)."
+    sleep $((attempt * 2))
+  fi
+done
+
+if [[ "$verification_ok" -ne 1 ]]; then
+  echo 'The updated deployment did not become visible after retries.' >&2
+  exit 1
+fi
+
 echo "Existing $COSTUME_PORTRAIT_TARGET Web App deployment now references version $version_number."
