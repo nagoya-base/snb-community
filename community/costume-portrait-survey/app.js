@@ -394,6 +394,12 @@
   function shell() {
     clear(app);
     var hero = el('header', 'cp-hero');
+    var heroImg = el('img', 'cp-hero-img');
+    heroImg.src = '../images/community/costume-portrait-survey/hero-main.webp';
+    heroImg.alt = '男性向けポトレ意識調査。ユニフォーム×スーツ×男性ポートレート。野球ユニフォーム姿とスーツ姿の男性と「あなたが撮られたい一着を教えてください 匿名アンケート」の文字';
+    heroImg.width = 1200; heroImg.height = 600;
+    heroImg.setAttribute('fetchpriority', 'high');
+    hero.appendChild(heroImg);
     hero.appendChild(el('h1', '', schema.title));
     hero.appendChild(el('p', 'cp-sub', schema.subtitle));
     app.appendChild(hero);
