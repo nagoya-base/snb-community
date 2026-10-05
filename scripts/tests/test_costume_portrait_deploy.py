@@ -21,9 +21,10 @@ DEPLOYMENT = 'test-existing-deployment'
 FILES = {
     'public': ['Config.gs', 'Finalize.gs', 'Log.gs', 'Main.gs', 'Notify.gs', 'Respondent.gs', 'Results.gs',
                'Setup.gs', 'SheetStore.gs', 'Submission.gs', 'SurveyGenerated.gs', 'Validation.gs'],
-    'admin': ['Aggregate.gs', 'Auth.gs', 'Dashboard.html', 'DashboardScript.html', 'DashboardStyles.html',
-              'Data.gs', 'Main.gs', 'SurveyGenerated.gs'],
+    'admin': ['Aggregate.gs', 'Auth.gs', 'Data.gs', 'IdToken.gs', 'Main.gs', 'SurveyGenerated.gs'],
 }
+# Production Admin before Issue #354 still holds the HTML Service dashboard files (replaced by the push).
+LEGACY_ADMIN_FILES = ['Dashboard.html', 'DashboardScript.html', 'DashboardStyles.html']
 
 
 def pulled(target):
@@ -41,6 +42,7 @@ ADMIN_REMOTE_MANIFEST = {
     'oauthScopes': ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/userinfo.email'],
     'webapp': {'executeAs': 'USER_DEPLOYING', 'access': 'MYSELF'},
 }
+ADMIN_WEBAPP = {'executeAs': 'USER_DEPLOYING', 'access': 'ANYONE_ANONYMOUS'}
 
 MOCK = '''#!/usr/bin/env python3
 import json, os, pathlib, sys
@@ -131,11 +133,15 @@ class DeployBase:
         for name in ('README.md', 'package.json', 'tests', 'survey.schema.json', 'survey-core.js'):
             self.assertNotIn(name, self.staged['files'])
 
-    def test_staged_manifest_keeps_the_remote_webapp_settings(self):
+    def test_staged_manifest_webapp_settings(self):
         result, _, _ = self.run_deploy()
         self.assertEqual(result.returncode, 0, result.stderr)
         staged = json.loads(self.staged['manifest'])
-        self.assertEqual(staged['webapp'], self.REMOTE_MANIFEST['webapp'])
+        if self.TARGET == 'admin':
+            # Admin の webapp はリポジトリ側が正（MYSELF → ANYONE_ANONYMOUS へ移行。データは ID token 検証後にのみ返る）
+            self.assertEqual(staged['webapp'], ADMIN_WEBAPP)
+        else:
+            self.assertEqual(staged['webapp'], self.REMOTE_MANIFEST['webapp'])
         self.assertEqual(staged['oauthScopes'],
                          json.loads((BASE / self.TARGET / 'appsscript.json').read_text())['oauthScopes'])
 
@@ -247,13 +253,36 @@ class AdminDeployTest(DeployBase, unittest.TestCase):
     TARGET = 'admin'
     REMOTE_MANIFEST = ADMIN_REMOTE_MANIFEST
 
-    def test_non_myself_access_is_rejected(self):
-        for access in ('ANYONE', 'ANYONE_ANONYMOUS', 'DOMAIN'):
+    def test_existing_myself_or_signed_in_access_is_migrated_to_the_repository_setting(self):
+        for access in ('MYSELF', 'DOMAIN', 'ANYONE', 'ANYONE_ANONYMOUS'):
+            manifest = dict(ADMIN_REMOTE_MANIFEST, webapp={'executeAs': 'USER_DEPLOYING', 'access': access})
+            result, commands, updated = self.run_deploy(manifest=manifest)
+            self.assertEqual(result.returncode, 0, access + result.stderr)
+            self.assertEqual(json.loads(self.staged['manifest'])['webapp'], ADMIN_WEBAPP, access)
+
+    def test_unknown_remote_access_is_rejected(self):
+        for access in ('UNKNOWN', ''):
             manifest = dict(ADMIN_REMOTE_MANIFEST, webapp={'executeAs': 'USER_DEPLOYING', 'access': access})
             result, commands, updated = self.run_deploy(manifest=manifest)
             self.assertNotEqual(result.returncode, 0, access)
             self.assertEqual(commands, ['list-deployments', 'pull'])
             self.assertFalse(updated)
+
+    def test_legacy_dashboard_files_in_the_existing_project_are_replaced_not_refused(self):
+        remote = {n: 'old' for n in pulled('admin') + LEGACY_ADMIN_FILES}
+        result, commands, updated = self.run_deploy(remote=remote)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(updated)
+        for name in LEGACY_ADMIN_FILES:
+            self.assertNotIn(name, self.staged['files'])
+
+    def test_other_unexpected_remote_files_are_still_refused(self):
+        remote = {n: 'old' for n in pulled('admin') + LEGACY_ADMIN_FILES}
+        remote['Extra.js'] = 'function x() {}'
+        result, commands, updated = self.run_deploy(remote=remote)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(commands, ['list-deployments', 'pull'])
+        self.assertFalse(updated)
 
     def test_unexpected_remote_manifest_settings_are_rejected(self):
         manifest = dict(ADMIN_REMOTE_MANIFEST, urlFetchWhitelist=['https://example.com'])
@@ -261,9 +290,31 @@ class AdminDeployTest(DeployBase, unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(commands, ['list-deployments', 'pull'])
 
-    def test_repository_admin_manifest_is_myself(self):
+    def test_repository_admin_manifest_is_token_gated_anonymous_with_minimal_scopes(self):
         manifest = json.loads((BASE / 'admin/appsscript.json').read_text())
-        self.assertEqual(manifest['webapp']['access'], 'MYSELF')
+        self.assertEqual(manifest['webapp'], ADMIN_WEBAPP)
+        self.assertEqual(sorted(manifest['oauthScopes']), [
+            'https://www.googleapis.com/auth/script.external_request',
+            'https://www.googleapis.com/auth/spreadsheets.readonly'])
+
+    def test_stage_rejects_write_or_mail_scopes_and_non_anonymous_webapp(self):
+        base = json.loads((BASE / 'admin/appsscript.json').read_text())
+        bad_manifests = [
+            dict(base, oauthScopes=base['oauthScopes'] + ['https://www.googleapis.com/auth/spreadsheets']),
+            dict(base, oauthScopes=base['oauthScopes'] + ['https://www.googleapis.com/auth/script.send_mail']),
+            dict(base, oauthScopes=base['oauthScopes'] + ['https://www.googleapis.com/auth/userinfo.email']),
+            dict(base, oauthScopes=['https://www.googleapis.com/auth/spreadsheets.readonly']),
+            dict(base, webapp={'executeAs': 'USER_ACCESSING', 'access': 'ANYONE_ANONYMOUS'}),
+            dict(base, webapp={'executeAs': 'USER_DEPLOYING', 'access': 'ANYONE'}),
+            dict(base, webapp={'executeAs': 'USER_DEPLOYING', 'access': 'MYSELF'}),
+        ]
+        script = ("const {stageManifest}=require(process.argv[1]);"
+                  "try{stageManifest('admin',JSON.parse(process.argv[2]),null);process.exit(0)}catch(e){process.exit(3)}")
+        for manifest in bad_manifests:
+            result = subprocess.run(['node', '-e', script, str(PREPARE), json.dumps(manifest)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 3, json.dumps(manifest))
+        ok = subprocess.run(['node', '-e', script, str(PREPARE), json.dumps(base)], capture_output=True, text=True)
+        self.assertEqual(ok.returncode, 0, ok.stderr)
 
 
 class PrepareTest(unittest.TestCase):

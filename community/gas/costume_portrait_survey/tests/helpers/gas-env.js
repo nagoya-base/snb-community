@@ -60,6 +60,10 @@ function createEnv(options = {}) {
     failMail: false,
     failOpen: false,
     activeEmail: '',
+    jwks: null,
+    jwksStatus: 200,
+    fetches: [],
+    cache: new Map(),
     sandbox: null
   };
   const properties = {
@@ -100,6 +104,13 @@ function createEnv(options = {}) {
       createTextOutput: (text) => ({ text, setMimeType() { return this; }, getContent() { return text; } })
     },
     Session: { getActiveUser: () => ({ getEmail: () => env.activeEmail }) },
+    UrlFetchApp: {
+      fetch: (url, options) => {
+        env.fetches.push({ url, options: options || {} });
+        return { getResponseCode: () => env.jwksStatus, getContentText: () => JSON.stringify({ keys: env.jwks || [] }) };
+      }
+    },
+    CacheService: { getScriptCache: () => ({ get: (k) => (env.cache.has(k) ? env.cache.get(k) : null), put: (k, v) => { env.cache.set(k, v); } }) },
     HtmlService: {}
   };
   return env;
@@ -130,14 +141,19 @@ function loadPublic(options = {}) {
   return { env, ctx };
 }
 
+const OWNER_EMAIL = 'admin@example.com';
+
+/** Admin GAS を読み込む。認証はID token（偽IdPが署名）。owner(): OWNER_EMAIL の有効なtoken、tokenFor(email, claims) は任意。 */
 function loadAdmin() {
+  const jwt = require('./jwt');
   const env = createEnv();
   const ctx = loadDir(env, path.join(ROOT, 'admin'));
   env.props.set('SPREADSHEET_ID', 'sheet-id');
   env.props.set('SURVEY_CLOSES_AT', '2026-12-31T23:59:59+09:00');
-  env.props.set('ADMIN_ALLOWED_EMAILS', 'admin@example.com');
-  env.activeEmail = 'admin@example.com';
-  return { env, ctx };
+  env.props.set('ADMIN_GOOGLE_CLIENT_ID', jwt.CLIENT_ID);
+  env.props.set('ADMIN_OWNER_EMAILS', OWNER_EMAIL);
+  env.jwks = [jwt.GOOGLE_KEY.jwk];
+  return { env, ctx, jwt, tokenFor: (email, claims, options) => jwt.token(email, claims, options), owner: () => jwt.token(OWNER_EMAIL) };
 }
 
 /** schemaから、検証を通る最小の回答を作る。overrides: {設問ID: 値}、otherTexts: {設問ID: 文字列} */
@@ -167,4 +183,4 @@ function validPayload(ctx, overrides = {}, otherTexts = {}, extra = {}) {
   }, extra);
 }
 
-module.exports = { ROOT, createEnv, loadDir, loadPublic, loadAdmin, validPayload, plain, FakeSheet, FakeSpreadsheet };
+module.exports = { OWNER_EMAIL, ROOT, createEnv, loadDir, loadPublic, loadAdmin, validPayload, plain, FakeSheet, FakeSpreadsheet };

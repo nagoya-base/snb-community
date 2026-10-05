@@ -12,8 +12,10 @@ Public/Admin分離、clasp更新という**設計パターンだけ**を踏襲�
 GitHub Pages (community/costume-portrait-survey.html)
         │ GET ?action=status / POST text/plain
         ▼
-Public GAS  ───────────►  本調査専用 Spreadsheet  ◄───────────  Admin GAS（自分のみ・読み取り専用）
- (public/)                (responses / meta)                      (admin/)
+Public GAS  ───────────►  本調査専用 Spreadsheet  ◄───────────  Admin GAS（デプロイ者権限で読み取り専用・ID token検証）
+ (public/)                (responses / meta)                      (admin/)  ▲
+                                                                             │ POST text/plain { idToken, action }
+GitHub Pages (community/costume-portrait-survey-admin.html) ─ Googleログイン(GIS) → ID token ─┘
 ```
 
 ## ディレクトリ
@@ -24,7 +26,8 @@ Public GAS  ───────────►  本調査専用 Spreadsheet  �
 | `src/survey-core.js` | schema駆動の共通エンジン（検証・分岐・保存形式・集計・ファネル）。設問をベタ書きしない |
 | `tools/build-survey.js` | schema + core から3つの生成物を作る。`--check` で差分を検出（CI） |
 | `public/` | Public GAS（`SurveyGenerated.gs` は生成物） |
-| `admin/` | Admin GAS（`SurveyGenerated.gs` は生成物） |
+| `admin/` | Admin GAS = JSON API（`IdToken.gs` ID token検証 / `Auth.gs` ロール判定 / `Main.gs` doPost。`SurveyGenerated.gs` は生成物） |
+| `../../costume-portrait-survey-admin.html` / `../../costume-portrait-survey-admin/` | 管理ダッシュボードUI（GitHub Pages。Googleログイン・描画。`config.js` に接続先とClient ID） |
 | `../../costume-portrait-survey/` | Frontend（`survey.generated.js` は生成物、`app.js`、`results.js`、`config.js`、`style.css`） |
 | `../../costume-portrait-survey.html` / `-results.html` | 回答ページ / 公開結果ページ |
 | `tests/` | `npm test`（schema・core・Public・Admin・Frontend・workflow） |
@@ -140,15 +143,129 @@ UUID形式・schema_version・**未知field（top-level / answers / other_texts 
 - **Issueとの差**: Issue §9は「Admin GASがfinalize」と読めるが、既存方式（finalizeはPublic側のScript Propertiesへ固定）を踏襲し、
   AdminはSpreadsheetを**読み取り専用**に保つため、finalize実行はPublic GAS、Adminは `meta` シートから確定状態を**表示**する。
 
-## Admin GAS
+## Admin（管理ダッシュボード）: 個人Gmailで OWNER / VIEWER を分離する（Issue #354）
 
-- 別プロジェクト・Web App「自分のみ（MYSELF）」・`spreadsheets.readonly` のみ（書き込み/メールscopeなし）。
-  さらに Script Property `ADMIN_ALLOWED_EMAILS`（カンマ区切り）に含まれるアカウントのみ実行可（未設定/不一致は拒否）。
-- 概要（総回答数・有効回答数・締切後/日時不明・重複拒否件数・日別・finalize状態・年代/居住地）、全設問の単純集計、
-  ファネル2種（ポートレート需要 / 撮影者・スタジオ・機材需要）、クロス集計（Issue記載の13種 + **任意の2設問を選べる汎用UI**）、
-  自由記述（各「その他」・Q28・Q29・Q30）。描画は `textContent` のみ（XSS対策）。
-- **集計の意味**: count は「その選択肢を選んだ回答者数」（延べ選択数ではない）。複数選択×複数選択のセルは
+### 方式
+
+```
+ブラウザ（GitHub Pages: 固定origin https://nagoya-base.github.io）
+  1. Google Identity Services で Googleログイン（個人Gmail可）→ Google が署名した ID token を取得
+  2. fetch POST (Content-Type: text/plain) { "action": "dashboard", "idToken": "…" } → Admin GAS /exec
+Admin GAS（executeAs=USER_DEPLOYING）
+  3. ID token の署名・iss・aud・exp・email_verified をサーバーで検証（毎リクエスト）
+  4. 検証済み email を ADMIN_OWNER_EMAILS / ADMIN_VIEWER_EMAILS と照合 → owner / viewer / forbidden
+  5. ロール別に別個のレスポンスを組み立てて返す（Spreadsheetはデプロイ者権限で読む）
+```
+
+- **なぜこの方式か**: `Session.getActiveUser().getEmail()` は `USER_DEPLOYING` の Web App では「デプロイ者本人と同一 Workspace ドメイン」以外で取得が保証されず、
+  個人Gmail同士では成立しない（PR #352 の方式の限界）。`USER_ACCESSING` にすると VIEWER に Spreadsheet の閲覧権限が必要になり、生データを直接開けてしまう。
+  そこで **本人確認を Google が署名した ID token に一本化**し、Spreadsheet はデプロイ者権限のまま、VIEWER へは共有しない。
+- **なぜ UI を GitHub Pages に置くか**: Google Identity Services は「Authorized JavaScript origins」に登録した**固定の origin** でしか動かない（ワイルドカード不可）。
+  Apps Script の HTML Service は sandbox iframe で配信され、origin を固定で登録できる根拠を確認できなかったため使わない。GitHub Pages の origin は固定で、既に Public GAS への `fetch` でも使っている。
+- 本人確認の根拠は **Googleが署名したtokenのみ**。クライアントが送る email / role は存在せず、送られても使わない（テストで担保）。
+
+### CORS / Web App 設定
+
+| 項目 | 値 | 理由 |
+|---|---|---|
+| `executeAs` | `USER_DEPLOYING` | Spreadsheet をデプロイ者権限で読む。VIEWER に Spreadsheet を共有しない。 |
+| `access` | `ANYONE_ANONYMOUS`（全員） | ブラウザの `fetch` は Google の Cookie を送れず、`ANYONE`（要ログイン）にすると accounts.google.com へのリダイレクトで失敗する。**到達できることとデータを返すことは別**: トークン検証を通らなければデータは1バイトも返らない（fail closed）。`doGet` もデータを返さない。 |
+| リクエスト | `POST` + `Content-Type: text/plain;charset=utf-8` | 「単純リクエスト」なのでCORSプリフライト（OPTIONS）が発生しない。GAS は OPTIONS に応答できず、CORSヘッダも設定できないため、この形が前提。Public GAS の回答送信（`app.js`）と同じ実績ある方式。 |
+| `credentials` | `omit` | Cookie・Googleセッションを一切使わない（認証はbody内のtokenのみ → CSRFの余地なし）。 |
+
+- tokenは **URLのquery・Header・Cookie・Storage には載せない**（POST body のみ）。
+- 認可はサーバー側のみ。CI（`prepare-gas.js` / workflow）は `access=ANYONE_ANONYMOUS` かつ `executeAs=USER_DEPLOYING` を必須とし、それ以外はデプロイしない。
+
+### API（doPost）
+
+リクエスト body（JSON）→ レスポンス:
+
+| action | 追加フィールド | 成功 | 備考 |
+|---|---|---|---|
+| `dashboard` | なし | `{ ok:true, role, data }` | OWNER: 全データ / VIEWER: allowlist のみ |
+| `crosstab` | `rowKey`, `colKey` | `{ ok:true, data }` | VIEWER は許可済みの組み合わせのみ |
+
+エラーは `{ ok:false, error }` で `error` は `unauthenticated`（token不正・期限切れ → 再ログイン）/ `forbidden`（未登録・VIEWERの禁止集計）/ `bad_request` / `server_error` のみ。詳細・例外内容は返さない。
+**すべてのAPIで毎回** token を検証する（最初の1回だけ認証して以降が無認証、にはならない）。
+
+### ID token の検証方式
+
+tokeninfo endpoint は公式が debugging 向けとしているため使わず、**Googleの公開鍵（JWKS）でRS256署名をApps Script内で検証**する（`admin/IdToken.gs`）。payloadをbase64デコードしただけでは信用しない。
+
+1. 形式（3セグメント・長さ上限4096・base64url）
+2. header: `alg=RS256` かつ `kid` あり（`none` / HS256 等は拒否）
+3. `https://www.googleapis.com/oauth2/v3/certs` の公開鍵（`CacheService` に1時間キャッシュ。未知 `kid` での再取得は60秒に1回まで）で **RSASSA-PKCS1-v1_5 / SHA-256 署名を検証**（BigInt）
+4. 署名検証後に claim を検証: `iss` が `accounts.google.com` / `https://accounts.google.com`、`aud` が `ADMIN_GOOGLE_CLIENT_ID` と完全一致、`exp` 未経過、`iat` が未来でない（許容5分）、`sub` あり、`email` あり、`email_verified === true`
+5. email を trim + lowercase して allowlist と照合。`sub` は検証済み identity に含めるが保存・ログ出力しない
+
+どの失敗も `unauthenticated`（fail closed）。公開鍵が取得できない場合も拒否。単体テストでは偽IdP（実行時にメモリ上で生成したRSA鍵）で本物のRS256署名を作ってこの検証コードを通すため、**実tokenや秘密鍵はリポジトリにない**。
+
+### 権限（OWNER / VIEWER）
+
+| | OWNER | VIEWER |
+|---|---|---|
+| 総回答数・有効回答数 | ○ | ○ |
+| 締切後/日時不明/重複拒否件数・finalize状態・schema情報（内部メタ） | ○ | ×（返さない） |
+| 日別件数 | ○ | ○ |
+| 単純集計 | 全設問（private・センシティブ含む） | `VIEWER_ALLOWED_QUESTION_IDS` の設問のみ |
+| クロス集計 | 17種 + 任意の2設問 | `VIEWER_ALLOWED_CROSSTAB_IDS` の許可済み組み合わせのみ（任意軸は不可） |
+| ファネル | ○ | ×（返さない） |
+| 自由記述（「その他」・`free_ideas` / `free_themes` / `cheer_message`・`residence_country`） | ○ | ×（返さない） |
+
+- **VIEWERは「DOMで隠す」のではなく、GAS側（`getViewerDashboardData_()`）でレスポンスを別に組み立てる。** 自由記述・センシティブ生データ・内部メタはJSONに含まれない。UIは返ってきたデータだけを描画し、返却されなかったタブはDOMごと作らない。
+- VIEWER allowlist は `admin/Aggregate.gs` に明示定義（`survey.schema.json` の `visibility` とは独立）。設問を増やす場合は allowlist へ明示的に追加する。
+- finalize は従来どおり Public GAS で実行（Adminは `meta` からの状態表示のみ。OWNERのみ）。
+- 判定順: `ADMIN_OWNER_EMAILS` → `ADMIN_VIEWER_EMAILS` → forbidden。**両方にあれば OWNER 優先**。比較は trim + lowercase。未設定・空・未登録は forbidden。旧 `ADMIN_ALLOWED_EMAILS` は使わない。
+
+### Script Properties（Admin GAS）
+
+| Key | 内容 |
+|---|---|
+| `SPREADSHEET_ID` | 同じSpreadsheet |
+| `ADMIN_GOOGLE_CLIENT_ID` | Google Cloud の OAuth クライアントID（Webアプリケーション）。ID token の `aud` と照合する。秘密情報ではないが環境差し替えのためProperty管理（未設定なら全拒否） |
+| `ADMIN_OWNER_EMAILS` | OWNERのGmail等（カンマ区切り） |
+| `ADMIN_VIEWER_EMAILS` | VIEWERのGmail等（カンマ区切り。未設定でもよい） |
+| `SURVEY_CLOSES_AT` | Publicと同じ値（任意） |
+
+### OAuth クライアントID の作り方（Google Cloud Console。手動）
+
+1. 管理用のGoogle Cloudプロジェクトを用意（Public/Admin GASとは独立でよい。課金不要）。
+2. 「Google Auth Platform → ブランディング/対象」: ユーザーの種類=**外部**、アプリ名・サポートメールを設定。スコープは追加しない（Googleログインの基本情報のみ）。
+   公開ステータスが「テスト」の間は、OWNER/VIEWER の Gmail を**テストユーザー**に追加する（テストユーザー以外はログインできない場合がある。運用が安定したら「本番」へ）。
+3. 「クライアント → クライアントを作成」: アプリケーションの種類=**ウェブ アプリケーション**。
+   - **承認済みの JavaScript 生成元**: `https://nagoya-base.github.io`（スキーム+ホストのみ。パス・末尾スラッシュ・ワイルドカード不可）。ローカル確認が必要なら `http://localhost` と `http://localhost:<port>` を追加。
+   - **承認済みのリダイレクトURI**: **不要（空でよい）**。Googleログインボタン（GIS・ID token方式）はポップアップで `credential` を直接返し、リダイレクトを使わない。
+   - クライアントシークレットは**使わない**（発行されても不要。コミット・Propertyへの登録禁止）。access token / refresh token も使わない。
+4. 発行された Client ID を Admin GAS の `ADMIN_GOOGLE_CLIENT_ID` に設定し、同じ値を `community/costume-portrait-survey-admin/config.js` の `googleClientId` に設定する。
+
+### 画面（GitHub Pages）
+
+- URL: `https://nagoya-base.github.io/snb-community/community/costume-portrait-survey-admin.html`（`noindex`・sitemap/導線なし・GA4なし）。
+- `config.js` の `endpoint`（Admin `/exec` URL）と `googleClientId` が空の間は「未設定」を表示し、ログインも通信もしない。
+- 未認証: Googleログインボタンのみ。成功: ダッシュボードと「管理者権限: OWNER / VIEWER」を表示。未登録: 「このアカウントには管理画面の利用権限がありません」。token期限切れ: 再ログインを促す。内部エラー・token内容は出さない。
+- **tokenはメモリ上の変数だけ**に保持（localStorage / sessionStorage / Cookie / URL / console / Logger / Spreadsheet には出さない・保存しない）。ID tokenの有効期間は約1時間。期限が切れたらサーバーが `unauthenticated` を返し、再ログインになる。
+- **ログアウト**: 画面右上の「ログアウト」で保持tokenを破棄しダッシュボードを消去してログイン画面へ戻る（Googleアカウント自体からのログアウトはしない）。
+- CSPを `<meta>` で付与（`script-src` は自ページ+GISのみ、インラインscriptなし）。`connect-src` は `script.google.com` / `script.googleusercontent.com`（GASの応答リダイレクト先）。
+
+### 本番反映の手順（人手。このPRでは行わない）
+
+1. 上記「OAuth クライアントID の作り方」でClient IDを作成。
+2. Admin GAS の Script Properties に `ADMIN_GOOGLE_CLIENT_ID` / `ADMIN_OWNER_EMAILS` / `ADMIN_VIEWER_EMAILS` を設定（`ADMIN_ALLOWED_EMAILS` は使われなくなるので、確認後に削除）。
+3. main へマージ → Actions *Costume portrait survey Admin GAS* を `workflow_dispatch`（`source_sha` = main最新）→ Environment承認。
+   初回は新しい scope（`script.external_request`）の**OAuth承認**がApps Scriptエディタで必要（デプロイ者が一度、エディタから任意の関数を実行して承認）。
+4. **デプロイの管理で Admin Web App の設定を確認**: 「次のユーザーとして実行 = 自分」「アクセスできるユーザー = **全員**（`ANYONE_ANONYMOUS`）」。
+   CIは manifest の `webapp` を更新するが、既存deploymentのアクセス設定が実際に切り替わるかは**実機で未確認**。「自分のみ」のままなら、既存deploymentの編集で全員へ変更する（`/exec` URLは維持される）。
+5. `config.js` に Admin の `/exec` URL と Client ID を設定してコミット→マージ（GitHub Pagesに反映）。
+6. **ロール確認**: OWNERのGmailでログイン → 「管理者権限: OWNER」で全タブ（ファネル・自由記述含む）。VIEWERのGmailでログイン → 「管理者権限: VIEWER」でファネル・自由記述タブが無いこと、任意クロス集計UIが無いこと。未登録のGmail → 権限なし表示。
+   ブラウザの開発者ツール（Network）で、レスポンスに VIEWER で自由記述等が含まれないことも確認する。
+7. 古い `Dashboard*.html` はCIの `clasp push` で置き換わり削除される。
+
+### 集計の意味
+
+- count は「その選択肢を選んだ回答者数」（延べ選択数ではない）。複数選択×複数選択のセルは
   「行・列の両方を選んだ回答者数」で、1人が複数セルに入るため合計は回答者数と一致しない。割合の分母は行の値を選んだ回答者数。
+- 概要（総回答数・有効回答数・締切後/日時不明・重複拒否件数・日別・finalize状態・年代/居住地）、全設問の単純集計、
+  ファネル2種、クロス集計（固定17種 + 任意の2設問）、自由記述（各「その他」・Q28・Q29・Q30）。描画は `textContent` のみ（XSS対策）。
 
 ## GA4
 
@@ -178,12 +295,12 @@ python3 -m unittest scripts.tests.test_costume_portrait_deploy -v   # リポジ�
    最初のデプロイは Actions（下記）で行うのが安全。`appsscript.json` はCIが管理するため手でコピペしない。
 5. **Script Properties**
    - Public: `SPREADSHEET_ID` / `SURVEY_CLOSES_AT` / `NOTIFICATION_EMAIL`（`RESPONDENT_SALT` は手順7で生成）
-   - Admin: `SPREADSHEET_ID`（同じSpreadsheet） / `ADMIN_ALLOWED_EMAILS` / `SURVEY_CLOSES_AT`（Publicと同じ値。締切後の行の判別用、任意）
+   - Admin: `SPREADSHEET_ID`（同じSpreadsheet） / `ADMIN_GOOGLE_CLIENT_ID` / `ADMIN_OWNER_EMAILS` / `ADMIN_VIEWER_EMAILS`（任意） / `SURVEY_CLOSES_AT`（Publicと同じ値。締切後の行の判別用、任意）。詳細は「Admin（管理ダッシュボード）」
 6. **Web App deployment を各プロジェクトで1回だけ作成**し、Deployment ID と `/exec` URL を控える。
    - Public: 実行ユーザー=自分、アクセス=全員（匿名可）
-   - Admin: 実行ユーザー=自分、アクセス=**自分のみ**（CIは `MYSELF` 以外ならデプロイを拒否）
+   - Admin: 実行ユーザー=自分、アクセス=**全員（`ANYONE_ANONYMOUS`）**。データは doPost でGoogle ID tokenを検証するまで一切返らない（CIは `ANYONE_ANONYMOUS` + `USER_DEPLOYING` 以外ならデプロイしない）
 7. Apps Scriptエディタで Public の `setupScriptProperties()`（salt生成）→ `setupSpreadsheet()`（`responses` / `meta` シートとヘッダー作成）を実行。
-   このとき **OAuth承認**（Spreadsheet・`script.send_mail`）を行う。Adminも初回アクセス時に承認する。
+   このとき **OAuth承認**（Spreadsheet・`script.send_mail`）を行う。Adminは Apps Script エディタから一度関数を実行し、`spreadsheets.readonly` と `script.external_request`（Googleの公開鍵取得）を承認する。
 8. **GitHub Environment を2つ新規作成**（Settings → Environments）
    - `costume-portrait-public-production` / `costume-portrait-admin-production`
    - どちらも **Deployment branches = `main` のみ** + **Required reviewers（承認者）**
@@ -191,6 +308,7 @@ python3 -m unittest scripts.tests.test_costume_portrait_deploy -v   # リポジ�
      `CLASPRC_JSON`（clasp認証。GitHub Secretsのみ。コミット禁止）/ `COSTUME_PORTRAIT_SCRIPT_ID` / `COSTUME_PORTRAIT_DEPLOYMENT_ID`
    - ※ Environmentの作成・保護ルール・Secret登録はコードからは行えないため手動設定が必要。
 9. `community/costume-portrait-survey/config.js` の `endpoint` に Public の `/exec` URL を設定してコミット。
+   管理ダッシュボードは `community/costume-portrait-survey-admin/config.js` に Admin の `/exec` URL と OAuth クライアントIDを設定してコミット（「Admin（管理ダッシュボード）」参照）。
 10. 公開前に `community/costume-portrait-survey.html` の `<meta name="robots" content="noindex…">` を外し、
     必要なら `community/index.html` / `sitemap.xml` に導線を追加する（現状は未公開のため追加していない）。
 
@@ -199,7 +317,8 @@ python3 -m unittest scripts.tests.test_costume_portrait_deploy -v   # リポジ�
 - **コード更新**: PRで検証（本番は更新されない）→ mainへマージ → Actions の *Costume portrait survey Public GAS* /
   *Admin GAS* を `workflow_dispatch`（`source_sha` = main最新commit）→ Environment承認 → `deploy-gas.sh`。
   既存deploymentを `update-deployment` するだけで、新規deploymentは作らず `/exec` URLは変わらない。
-  Script Properties・`SPREADSHEET_ID`・Web Appのアクセス設定は変更しない（remoteの `webapp` を保持）。
+  Script Properties・`SPREADSHEET_ID` は変更しない。Public のWeb Appアクセス設定は変更しない（remoteの `webapp` を保持）。
+  Admin の `webapp` はリポジトリ側（`ANYONE_ANONYMOUS` / `USER_DEPLOYING`）が正。既存の `MYSELF` 等からの移行は許可し、未知の値・書き込み/メールscopeは拒否する。
 - **schemaを変えるとき**: `survey.schema.json` を編集 → `npm run build` → コミット。回答開始後に設問構造を変える場合は
   `schema_version` を上げ、`responses` のヘッダーと整合させる（ヘッダー不一致時は保存を拒否する）。
 - **締切後**: Public で `finalizeSurvey()` を実行 → `?action=results` と公開結果ページで確認（30件以上のときのみ表示）。

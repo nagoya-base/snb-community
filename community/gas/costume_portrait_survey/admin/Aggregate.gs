@@ -152,3 +152,78 @@ function buildDashboard_(rows, meta) {
     freeText: buildFreeText_(valid)
   };
 }
+
+/**
+ * ===== VIEWER（閲覧専用）向け =====
+ * survey.schema.json の visibility（公開結果ページ向け）とは独立した、Admin VIEWER専用のallowlist。
+ * ここに無い設問は VIEWER のレスポンスに一切含めない（単純集計・クロス集計・軸一覧のいずれも）。
+ * 除外の方針: 自由記述（text型）、センシティブ属性（性的指向・居住地・愛知県内の地域・移動範囲）、
+ * 見せ方・ためらい理由・価格・機材・3か月意向・撮影者側の設問、matrix、ファネル、内部メタ。
+ * 設問を増やしたいときはここへ明示的に追加する（schemaのvisibilityでは自動的に増えない）。
+ */
+var VIEWER_ALLOWED_QUESTION_IDS = [
+  'age_range',
+  'costume_interest', 'uniform_interest', 'workwear_interest', 'suit_interest', 'school_uniform_interest',
+  'costume_wear', 'costume_photographed', 'costume_shoot',
+  'portrait_interest', 'portrait_styles', 'face_exposure', 'photo_usage', 'backdrop',
+  'shoot_duration', 'weekdays', 'weekday_time_slots', 'holiday_time_slots', 'photo_count', 'retouch'
+];
+
+/** VIEWERに許すクロス集計（schema.crosstabs の id）。両軸が上のallowlistに含まれるものだけを明示する。 */
+var VIEWER_ALLOWED_CROSSTAB_IDS = [
+  'age_x_costume', 'age_x_portrait_interest', 'costume_x_photographed', 'costume_x_shoot', 'costume_x_backdrop',
+  'interest_x_weekday', 'interest_x_weekday_time', 'interest_x_holiday_time', 'usage_x_interest'
+];
+
+function getViewerAllowedQuestionIds_() {
+  return VIEWER_ALLOWED_QUESTION_IDS.filter(function (id) {
+    var q = SurveyCore.getQuestion(SURVEY_SCHEMA, id);
+    return q && q.type !== 'text' && q.type !== 'matrix';
+  });
+}
+
+function getViewerCrosstabs_() {
+  var allowedQuestions = getViewerAllowedQuestionIds_();
+  return SURVEY_SCHEMA.crosstabs.filter(function (c) {
+    return VIEWER_ALLOWED_CROSSTAB_IDS.indexOf(c.id) !== -1 && !c.row.row && !c.col.row &&
+      allowedQuestions.indexOf(c.row.question) !== -1 && allowedQuestions.indexOf(c.col.question) !== -1;
+  });
+}
+
+/** VIEWERが取得できるのは許可済みプリセットと完全に同じ（行,列）の組み合わせのみ。任意の軸の組み合わせは不可。 */
+function isViewerCrosstab_(rowKey, colKey) {
+  return getViewerCrosstabs_().some(function (c) {
+    return axisKey_(c.row) === rowKey && axisKey_(c.col) === colKey;
+  });
+}
+
+function buildViewerDashboard_(rows) {
+  var valid = rows.filter(function (r) { return r.kind === 'valid'; });
+  var records = valid.map(function (r) { return r.record; });
+  var byDay = {};
+  valid.forEach(function (r) {
+    var day = Utilities.formatDate(new Date(r.time), 'Asia/Tokyo', 'yyyy-MM-dd');
+    byDay[day] = (byDay[day] || 0) + 1;
+  });
+  var allowed = getViewerAllowedQuestionIds_();
+  var sections = SURVEY_SCHEMA.sections.map(function (section) {
+    return {
+      id: section.id, title: section.title,
+      questions: section.questions.filter(function (id) { return allowed.indexOf(id) !== -1; }).map(function (id) {
+        var q = SurveyCore.getQuestion(SURVEY_SCHEMA, id);
+        return { id: q.id, no: q.no, label: q.label, type: q.type, view: tallyToView_({ question: q.id }, records) };
+      })
+    };
+  }).filter(function (section) { return section.questions.length; });
+  return {
+    summary: { totalRows: rows.length, validRows: valid.length },
+    byDay: Object.keys(byDay).sort().map(function (d) { return { date: d, count: byDay[d] }; }),
+    sections: sections,
+    crosstabPresets: getViewerCrosstabs_().map(function (c) {
+      var result = buildCrosstab_(axisKey_(c.row), axisKey_(c.col), records);
+      result.id = c.id;
+      result.label = c.label;
+      return result;
+    })
+  };
+}
