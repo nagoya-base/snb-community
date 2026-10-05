@@ -1,5 +1,5 @@
 {
-  "schema_version": "2",
+  "schema_version": "3",
   "survey_version": "2026-10",
   "survey_id": "costume_portrait_2026",
   "title": "ユニ・スーツ・衣装で、撮られたい？撮りたい？",
@@ -23,7 +23,11 @@
       },
       {
         "id": "workwear",
-        "label": "作業服・制服"
+        "label": "職業制服・作業服"
+      },
+      {
+        "id": "school_uniform",
+        "label": "学生服・学校制服"
       },
       {
         "id": "rubber",
@@ -121,10 +125,6 @@
         "label": "シングレット"
       },
       {
-        "id": "uniform_school_jersey",
-        "label": "学校ジャージ"
-      },
-      {
         "id": "other",
         "label": "その他",
         "other": true
@@ -152,6 +152,100 @@
         "label": "ツナギ"
       },
       {
+        "id": "security",
+        "label": "警備員"
+      },
+      {
+        "id": "railway",
+        "label": "鉄道・駅員"
+      },
+      {
+        "id": "aviation",
+        "label": "航空・パイロット・空港制服"
+      },
+      {
+        "id": "medical_whitecoat",
+        "label": "医療・白衣"
+      },
+      {
+        "id": "factory_workwear",
+        "label": "工場・作業着"
+      },
+      {
+        "id": "other",
+        "label": "その他",
+        "other": true
+      }
+    ],
+    "suit_detail": [
+      {
+        "id": "business_suit",
+        "label": "ビジネススーツ"
+      },
+      {
+        "id": "young_business",
+        "label": "若手会社員・リクルートスーツ風"
+      },
+      {
+        "id": "three_piece",
+        "label": "スリーピース"
+      },
+      {
+        "id": "formal_tuxedo",
+        "label": "フォーマル・タキシード"
+      },
+      {
+        "id": "shirt_tie",
+        "label": "ワイシャツ＋ネクタイ"
+      },
+      {
+        "id": "shirt_slacks",
+        "label": "ワイシャツ＋スラックス"
+      },
+      {
+        "id": "vest_style",
+        "label": "ベストスタイル"
+      },
+      {
+        "id": "full_coordination",
+        "label": "革靴・靴下まで含めた全身コーデ"
+      },
+      {
+        "id": "other",
+        "label": "その他",
+        "other": true
+      }
+    ],
+    "school_uniform_detail": [
+      {
+        "id": "gakuran",
+        "label": "学ラン"
+      },
+      {
+        "id": "school_blazer",
+        "label": "学校ブレザー"
+      },
+      {
+        "id": "sailor_uniform",
+        "label": "セーラー服"
+      },
+      {
+        "id": "gym_uniform",
+        "label": "体操服"
+      },
+      {
+        "id": "school_jersey",
+        "label": "学校ジャージ"
+      },
+      {
+        "id": "school_swimwear",
+        "label": "学校・水泳部系スイムウェア"
+      },
+      {
+        "id": "school_shirt_slacks",
+        "label": "ワイシャツ＋スラックスの学生スタイル"
+      },
+      {
         "id": "other",
         "label": "その他",
         "other": true
@@ -165,7 +259,9 @@
       "questions": [
         "costume_interest",
         "uniform_interest",
-        "workwear_interest"
+        "workwear_interest",
+        "suit_interest",
+        "school_uniform_interest"
       ]
     },
     {
@@ -175,7 +271,9 @@
       "questions": [
         "costume_wear",
         "uniform_wear",
-        "workwear_wear"
+        "workwear_wear",
+        "suit_wear",
+        "school_uniform_wear"
       ]
     },
     {
@@ -185,7 +283,9 @@
       "questions": [
         "costume_photographed",
         "uniform_photographed",
-        "workwear_photographed"
+        "workwear_photographed",
+        "suit_photographed",
+        "school_uniform_photographed"
       ]
     },
     {
@@ -194,7 +294,9 @@
       "questions": [
         "costume_shoot",
         "uniform_shoot",
-        "workwear_shoot"
+        "workwear_shoot",
+        "suit_shoot",
+        "school_uniform_shoot"
       ]
     },
     {
@@ -203,6 +305,7 @@
       "questions": [
         "portrait_interest",
         "portrait_styles",
+        "fetish_presentation",
         "face_exposure"
       ]
     },
@@ -338,13 +441,39 @@
       "id": "workwear_interest",
       "no": "Q5-2",
       "type": "multi",
-      "label": "興味のある作業服・制服",
+      "label": "興味のある職業制服・作業服",
       "required": true,
       "visibility": "public",
       "optionSet": "workwear_detail",
       "showIf": {
         "question": "costume_interest",
         "includes": "workwear"
+      }
+    },
+    {
+      "id": "suit_interest",
+      "no": "Q5-3",
+      "type": "multi",
+      "label": "興味のあるスーツ・ビジネススタイル",
+      "required": true,
+      "visibility": "public",
+      "optionSet": "suit_detail",
+      "showIf": {
+        "question": "costume_interest",
+        "includes": "suit"
+      }
+    },
+    {
+      "id": "school_uniform_interest",
+      "no": "Q5-4",
+      "type": "multi",
+      "label": "興味のある学生服・学校制服",
+      "required": true,
+      "visibility": "public",
+      "optionSet": "school_uniform_detail",
+      "showIf": {
+        "question": "costume_interest",
+        "includes": "school_uniform"
       }
     },
     {
@@ -375,7 +504,7 @@
       "id": "workwear_wear",
       "no": "Q6-A-2",
       "type": "multi",
-      "label": "着てみたい作業服・制服",
+      "label": "着てみたい職業制服・作業服",
       "required": true,
       "visibility": "private",
       "optionSet": "workwear_detail",
@@ -384,6 +513,34 @@
         "includes": "workwear"
       },
       "priorityFrom": "workwear_interest"
+    },
+    {
+      "id": "suit_wear",
+      "no": "Q6-A-3",
+      "type": "multi",
+      "label": "自分が着てみたいスーツ・ビジネススタイル",
+      "required": true,
+      "visibility": "private",
+      "optionSet": "suit_detail",
+      "showIf": {
+        "question": "costume_wear",
+        "includes": "suit"
+      },
+      "priorityFrom": "suit_interest"
+    },
+    {
+      "id": "school_uniform_wear",
+      "no": "Q6-A-4",
+      "type": "multi",
+      "label": "自分が着てみたい学生服・学校制服",
+      "required": true,
+      "visibility": "private",
+      "optionSet": "school_uniform_detail",
+      "showIf": {
+        "question": "costume_wear",
+        "includes": "school_uniform"
+      },
+      "priorityFrom": "school_uniform_interest"
     },
     {
       "id": "costume_photographed",
@@ -413,7 +570,7 @@
       "id": "workwear_photographed",
       "no": "Q6-B-2",
       "type": "multi",
-      "label": "撮られてみたい作業服・制服",
+      "label": "撮られてみたい職業制服・作業服",
       "required": true,
       "visibility": "private",
       "optionSet": "workwear_detail",
@@ -422,6 +579,34 @@
         "includes": "workwear"
       },
       "priorityFrom": "workwear_interest"
+    },
+    {
+      "id": "suit_photographed",
+      "no": "Q6-B-3",
+      "type": "multi",
+      "label": "自分がその姿を撮られてみたいスーツ・ビジネススタイル",
+      "required": true,
+      "visibility": "private",
+      "optionSet": "suit_detail",
+      "showIf": {
+        "question": "costume_photographed",
+        "includes": "suit"
+      },
+      "priorityFrom": "suit_interest"
+    },
+    {
+      "id": "school_uniform_photographed",
+      "no": "Q6-B-4",
+      "type": "multi",
+      "label": "自分がその姿を撮られてみたい学生服・学校制服",
+      "required": true,
+      "visibility": "private",
+      "optionSet": "school_uniform_detail",
+      "showIf": {
+        "question": "costume_photographed",
+        "includes": "school_uniform"
+      },
+      "priorityFrom": "school_uniform_interest"
     },
     {
       "id": "costume_shoot",
@@ -451,7 +636,7 @@
       "id": "workwear_shoot",
       "no": "Q7-2",
       "type": "multi",
-      "label": "撮ってみたい作業服・制服",
+      "label": "撮ってみたい職業制服・作業服",
       "required": true,
       "visibility": "private",
       "optionSet": "workwear_detail",
@@ -460,6 +645,34 @@
         "includes": "workwear"
       },
       "priorityFrom": "workwear_interest"
+    },
+    {
+      "id": "suit_shoot",
+      "no": "Q7-3",
+      "type": "multi",
+      "label": "他の人が着ている姿を撮ってみたいスーツ・ビジネススタイル",
+      "required": true,
+      "visibility": "private",
+      "optionSet": "suit_detail",
+      "showIf": {
+        "question": "costume_shoot",
+        "includes": "suit"
+      },
+      "priorityFrom": "suit_interest"
+    },
+    {
+      "id": "school_uniform_shoot",
+      "no": "Q7-4",
+      "type": "multi",
+      "label": "他の人が着ている姿を撮ってみたい学生服・学校制服",
+      "required": true,
+      "visibility": "private",
+      "optionSet": "school_uniform_detail",
+      "showIf": {
+        "question": "costume_shoot",
+        "includes": "school_uniform"
+      },
+      "priorityFrom": "school_uniform_interest"
     },
     {
       "id": "portrait_interest",
@@ -555,6 +768,67 @@
         {
           "id": "cosplay_work",
           "label": "コスプレ作品"
+        },
+        {
+          "id": "other",
+          "label": "その他",
+          "other": true
+        }
+      ]
+    },
+    {
+      "id": "fetish_presentation",
+      "no": "Q9-A",
+      "type": "multi",
+      "label": "どのような見せ方・シチュエーションに惹かれますか？",
+      "help": "撮影表現として惹かれるものを、いくつでも選んでください。",
+      "required": true,
+      "visibility": "private",
+      "options": [
+        {
+          "id": "sweaty_post_workout",
+          "label": "汗・運動後っぽい雰囲気"
+        },
+        {
+          "id": "mid_change",
+          "label": "着替え途中"
+        },
+        {
+          "id": "shoes_feet",
+          "label": "靴・足元を重視"
+        },
+        {
+          "id": "socks",
+          "label": "ソックスを重視"
+        },
+        {
+          "id": "back_view",
+          "label": "後ろ姿を重視"
+        },
+        {
+          "id": "body_detail",
+          "label": "身体の一部を強調"
+        },
+        {
+          "id": "uniform_dressed_down",
+          "label": "ユニフォームを着崩した姿"
+        },
+        {
+          "id": "suit_dressed_down",
+          "label": "ネクタイを緩めるなど、スーツを着崩した姿"
+        },
+        {
+          "id": "clothing_detail",
+          "label": "衣装・素材・ディテールのアップ"
+        },
+        {
+          "id": "clean_formal",
+          "label": "きっちり着こなした姿"
+        },
+        {
+          "id": "no_preference",
+          "label": "特にこだわらない",
+          "exclusive": true
         },
         {
           "id": "other",
@@ -2178,6 +2452,36 @@
       "col": {
         "question": "portrait_price"
       }
+    },
+    {
+      "id": "interest_x_suit_photographed",
+      "label": "撮られたい意向 × 撮られてみたいスーツ・ビジネススタイル",
+      "row": {
+        "question": "portrait_interest"
+      },
+      "col": {
+        "question": "suit_photographed"
+      }
+    },
+    {
+      "id": "interest_x_school_photographed",
+      "label": "撮られたい意向 × 撮られてみたい学生服・学校制服",
+      "row": {
+        "question": "portrait_interest"
+      },
+      "col": {
+        "question": "school_uniform_photographed"
+      }
+    },
+    {
+      "id": "interest_x_fetish_presentation",
+      "label": "撮られたい意向 × 見せ方・シチュエーション",
+      "row": {
+        "question": "portrait_interest"
+      },
+      "col": {
+        "question": "fetish_presentation"
+      }
     }
   ],
   "publicResults": {
@@ -2245,7 +2549,17 @@
       {
         "id": "workwear_interest",
         "question": "workwear_interest",
-        "title": "興味のある作業服・制服"
+        "title": "興味のある職業制服・作業服"
+      },
+      {
+        "id": "suit_interest",
+        "question": "suit_interest",
+        "title": "興味のあるスーツ・ビジネススタイル"
+      },
+      {
+        "id": "school_uniform_interest",
+        "question": "school_uniform_interest",
+        "title": "興味のある学生服・学校制服"
       },
       {
         "id": "costume_wear",

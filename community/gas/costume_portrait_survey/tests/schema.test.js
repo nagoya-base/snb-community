@@ -50,6 +50,11 @@ const SPEC = {
   age_range: ['Q1', true], sexual_orientation: ['Q2', false], residence: ['Q3', true], aichi_area: ['Q3-1', true, 'residence:pref_23'], residence_country: ['Q3-2', true, 'residence:overseas'], travel_range: ['Q4', true],
   costume_interest: ['Q5', true], uniform_interest: ['Q5-1', true, 'costume_interest:uniform'],
   workwear_interest: ['Q5-2', true, 'costume_interest:workwear'],
+  suit_interest: ['Q5-3', true, 'costume_interest:suit'], school_uniform_interest: ['Q5-4', true, 'costume_interest:school_uniform'],
+  suit_wear: ['Q6-A-3', true, 'costume_wear:suit'], school_uniform_wear: ['Q6-A-4', true, 'costume_wear:school_uniform'],
+  suit_photographed: ['Q6-B-3', true, 'costume_photographed:suit'], school_uniform_photographed: ['Q6-B-4', true, 'costume_photographed:school_uniform'],
+  suit_shoot: ['Q7-3', true, 'costume_shoot:suit'], school_uniform_shoot: ['Q7-4', true, 'costume_shoot:school_uniform'],
+  fetish_presentation: ['Q9-A', true],
   costume_wear: ['Q6-A', true], costume_photographed: ['Q6-B', true], costume_shoot: ['Q7', true],
   portrait_interest: ['Q8', true], portrait_styles: ['Q9', true], face_exposure: ['Q10', true], photo_usage: ['Q11', true],
   shoot_duration: ['Q12', true], weekdays: ['Q13', true], weekday_time_slots: ['Q14-1', true, 'weekdays:weekday'], photo_count: ['Q15', true],
@@ -100,6 +105,8 @@ test('衣装定義は optionSet 1か所だけ（Q5/Q6-A/Q6-B/Q7 で共有）', (
   for (const prefix of ['interest', 'wear', 'photographed', 'shoot']) {
     assert.strictEqual(byId['uniform_' + prefix].optionSet, 'uniform_detail');
     assert.strictEqual(byId['workwear_' + prefix].optionSet, 'workwear_detail');
+    assert.strictEqual(byId['suit_' + prefix].optionSet, 'suit_detail');
+    assert.strictEqual(byId['school_uniform_' + prefix].optionSet, 'school_uniform_detail');
   }
   for (const id of ['costume_wear', 'costume_photographed', 'costume_shoot']) assert.strictEqual(byId[id].priorityFrom, 'costume_interest');
 });
@@ -107,18 +114,18 @@ test('衣装定義は optionSet 1か所だけ（Q5/Q6-A/Q6-B/Q7 で共有）', (
 test('調査内容の受入条件（衣装・ユニフォーム・作業服の選択肢と表記）', () => {
   const labels = (set) => schema.optionSets[set].map((o) => o.label);
   const costume = labels('costume_category');
-  for (const l of ['ユニフォーム', 'スーツ', '作業服・制服', 'ラバー', 'ゼンタイ（全身タイツ）', 'レザー', 'ヒーロースーツ', 'アニメ・ゲーム等のコスプレ', '和装', '女装', 'ふんどし', '下着', 'ヌード', 'その他']) {
+  for (const l of ['ユニフォーム', 'スーツ', '職業制服・作業服', '学生服・学校制服', 'ラバー', 'ゼンタイ（全身タイツ）', 'レザー', 'ヒーロースーツ', 'アニメ・ゲーム等のコスプレ', '和装', '女装', 'ふんどし', '下着', 'ヌード', 'その他']) {
     assert.ok(costume.includes(l), l);
   }
   assert.ok(!costume.includes('ゼンタイ'));
   const uniform = labels('uniform_detail');
-  for (const l of ['野球', 'サッカー', 'ラグビー', 'アメリカンフットボール', 'バスケットボール', 'バレーボール', '陸上', '競パン', '柔道', '空手', '剣道', 'シングレット', '学校ジャージ', 'その他']) {
+  for (const l of ['野球', 'サッカー', 'ラグビー', 'アメリカンフットボール', 'バスケットボール', 'バレーボール', '陸上', '競パン', '柔道', '空手', '剣道', 'シングレット', 'その他']) {
     assert.ok(uniform.includes(l), l);
   }
-  assert.ok(!uniform.includes('水泳'));
-  assert.deepStrictEqual(labels('workwear_detail'), ['警察', '消防', '自衛隊', '運送業者', 'ツナギ', 'その他']);
+  assert.ok(!uniform.includes('水泳') && !uniform.includes('学校ジャージ'), '学校系は school_uniform_detail へ');
+  assert.deepStrictEqual(labels('workwear_detail'), ['警察', '消防', '自衛隊', '運送業者', 'ツナギ', '警備員', '鉄道・駅員', '航空・パイロット・空港制服', '医療・白衣', '工場・作業着', 'その他']);
   // 過度な深掘りをしていない（チーム別・メーカー別等の設問が無い）
-  assert.ok(schema.questions.length <= 42); // 条件付き2問（aichi_area / residence_country）を含む
+  assert.ok(schema.questions.length <= 51); // 条件付き（aichi_area / residence_country / スーツ・学生服の枝8問）とQ9-Aを含む
   assert.ok(!schema.questions.some((q) => /ブランド|メーカー|チーム/.test(q.label)));
   // 緊縛・予約・決済に関する設問は無い
   assert.ok(!schema.questions.some((q) => /緊縛|予約|決済|Stripe/.test(q.label)));

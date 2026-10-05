@@ -82,7 +82,7 @@ test('「その他」：選択時のみ自由記述が必須、未選択なら�
 });
 
 test('ユニフォーム/作業服の詳細は親を選んだ時だけ表示・必須、非表示時の回答は拒否', () => {
-  let p = base(); p.answers.costume_interest = ['suit'];
+  let p = base(); p.answers.costume_interest = ['rubber'];
   delete p.answers.uniform_interest; delete p.answers.workwear_interest;
   assert.strictEqual(check(p.answers).ok, true);
   p.answers.uniform_interest = ['uniform_baseball'];

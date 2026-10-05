@@ -84,7 +84,7 @@ test('allowlist：非公開項目（価格・意向・地域・性的指向・�
     'shooter_interest', 'studio_rental', 'equipment', 'age_confirmed', 'notification']) {
     assert.ok(!text.includes(forbidden), forbidden);
   }
-  const allowedItems = ['age_range', 'costume_interest', 'uniform_interest', 'workwear_interest', 'costume_wear', 'costume_photographed', 'costume_shoot', 'portrait_interest',
+  const allowedItems = ['age_range', 'costume_interest', 'uniform_interest', 'workwear_interest', 'suit_interest', 'school_uniform_interest', 'costume_wear', 'costume_photographed', 'costume_shoot', 'portrait_interest',
     'portrait_styles', 'photo_usage', 'face_exposure', 'shoot_duration', 'weekdays', 'weekday_time_slots', 'holiday_time_slots', 'photo_count', 'retouch', 'backdrop'];
   assert.deepStrictEqual(body.results.items.map((i) => i.id), allowedItems);
   assert.deepStrictEqual(Object.keys(body.results).sort(), ['items', 'schema_version', 'status', 'survey_version', 'total']);

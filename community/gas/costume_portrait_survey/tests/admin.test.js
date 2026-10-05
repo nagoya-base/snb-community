@@ -33,7 +33,7 @@ test('データが無い場合も壊れず、0件のダッシュボードを返�
   assert.deepStrictEqual(data.funnels[0].stages.map((s) => s.count), [0, 0, 0, 0, 0]);
   assert.strictEqual(view(data, 'age_range').view.base, 0);
   assert.strictEqual(view(data, 'age_range').view.options[0].pct, 0);
-  assert.strictEqual(data.crosstabPresets.length, 14);
+  assert.strictEqual(data.crosstabPresets.length, 17);
   assert.deepStrictEqual(data.freeText.others, []);
 });
 
@@ -107,12 +107,13 @@ test('クロス集計：単一×複数、複数×複数、matrix行の軸（人�
   }
 });
 
-test('主要クロス集計14種（時間帯は平日・土日祝を別集計）がすべて組み込まれ、計算できる', () => {
+test('主要クロス集計17種（時間帯は平日・土日祝を別集計）がすべて組み込まれ、計算できる', () => {
   const { admin } = adminWith([{ answers: {} }, { answers: { shooter_interest: 'want_to_try' } }]);
   const data = dashboard(admin);
   assert.deepStrictEqual(data.crosstabPresets.map((p) => p.id), [
     'age_x_costume', 'age_x_portrait_interest', 'costume_x_photographed', 'costume_x_shoot', 'costume_x_backdrop', 'interest_x_price',
-    'interest_x_weekday', 'interest_x_weekday_time', 'interest_x_holiday_time', 'usage_x_interest', 'shooter_x_studio', 'studio_x_rental_price', 'experience_x_support', 'intent3m_x_price']);
+    'interest_x_weekday', 'interest_x_weekday_time', 'interest_x_holiday_time', 'usage_x_interest', 'shooter_x_studio', 'studio_x_rental_price', 'experience_x_support', 'intent3m_x_price',
+    'interest_x_suit_photographed', 'interest_x_school_photographed', 'interest_x_fetish_presentation']);
   for (const p of data.crosstabPresets) {
     assert.ok(p.rows.length && p.cols.length, p.id);
     assert.ok(p.rows.every((r) => r.cells.length === p.cols.length), p.id);

@@ -71,7 +71,7 @@ test('必須項目が未入力なら進めず、エラー位置（その設問�
   assert.ok(err.textContent.length > 0);
   assert.ok(q(document, 'costume_interest').classList.contains('cp-has-error'));
   assert.ok(events().some((e) => e.name === 'form_error' && e.params.error_type === 'validation'));
-  choose(document, 'costume_interest', 'suit');
+  choose(document, 'costume_interest', 'rubber');
   next(document);
   assert.strictEqual(pageTitle(document), '着てみたい衣装');
 });
@@ -97,7 +97,7 @@ test('「その他」：選択時のみ自由記述欄が出て必須、未選�
   choose(document, 'costume_interest', 'other');
   assert.strictEqual(other().hidden, true);
   assert.strictEqual(other().querySelector('input').value, '');
-  choose(document, 'costume_interest', 'suit');
+  choose(document, 'costume_interest', 'rubber');
   next(document);
   assert.strictEqual(pageTitle(document), '着てみたい衣装');
 });
@@ -130,17 +130,17 @@ test('Q5の選択がQ6-Aで優先表示され、Q5で未選択の衣装も「ほ
   const { document } = await openPage();
   document.getElementById('cp-age').click();
   next(document);
-  choose(document, 'costume_interest', 'suit');
+  choose(document, 'costume_interest', 'zentai');
   choose(document, 'costume_interest', 'rubber');
   next(document);
   const wear = q(document, 'costume_wear');
   const primary = Array.from(wear.querySelectorAll(':scope > .cp-options input')).map((i) => i.value);
-  assert.deepStrictEqual(primary, ['suit', 'rubber']);
+  assert.deepStrictEqual(primary, ['rubber', 'zentai']);
   const more = wear.querySelector('details.cp-more');
   assert.ok(more);
   const rest = Array.from(more.querySelectorAll('input')).map((i) => i.value);
   assert.ok(rest.includes('uniform') && rest.includes('nude') && rest.includes('other'));
-  assert.ok(!rest.includes('suit'));
+  assert.ok(!rest.includes('zentai'));
   // Q5で選んでいない「ユニフォーム」も選べ、詳細が出る
   choose(document, 'costume_wear', 'uniform');
   assert.strictEqual(q(document, 'uniform_wear').hidden, false);
