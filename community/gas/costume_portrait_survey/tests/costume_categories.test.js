@@ -26,9 +26,9 @@ test('トップカテゴリ：school_uniform を追加し、uniform / suit / wor
   assert.strictEqual(labels.school_uniform, '学生服・学校制服');
   assert.strictEqual(labels.workwear, '職業制服・作業服');
   assert.strictEqual(labels.suit, 'スーツ');
-  assert.strictEqual(labels.uniform, '制服・ユニフォーム');
+  assert.strictEqual(labels.uniform, 'スポーツユニフォーム');
   assert.deepStrictEqual(['uniform_interest', 'uniform_wear', 'uniform_photographed', 'uniform_shoot'].map((id) => byId[id].label),
-    ['興味のある制服・ユニフォーム', '着てみたい制服・ユニフォーム', '撮られてみたい制服・ユニフォーム', '撮ってみたい制服・ユニフォーム']);
+    ['興味のあるスポーツユニフォーム', '着てみたいスポーツユニフォーム', '撮られてみたいスポーツユニフォーム', '撮ってみたいスポーツユニフォーム']);
   assert.strictEqual(byId.uniform_interest.optionSet, 'uniform_detail');
   assert.ok(!optionIds('uniform_detail').includes('uniform_school_jersey'), '学校ジャージは学生服側へ');
   assert.ok(!optionIds('uniform_detail').some((id) => /gakuran|sailor|blazer/.test(id)), '学生服をuniform_detailへ混ぜない');

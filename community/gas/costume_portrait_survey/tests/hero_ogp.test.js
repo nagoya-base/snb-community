@@ -98,7 +98,7 @@ test('title / description', () => {
   assert.strictEqual(s.title, 'ユニ・スーツ・衣装で、撮られたい？撮りたい？｜男性の衣装・ポートレート意識調査｜SNBコミュニティ');
   assert.strictEqual(r.title, '男性の衣装・ポートレート意識調査｜公開結果｜SNBコミュニティ');
   const d = meta(s, 'meta[name="description"]');
-  for (const w of ['制服・ユニフォーム', '学生服・学校制服', 'スーツ', '18歳以上']) assert.ok(d.includes(w), w);
+  for (const w of ['スポーツユニフォーム', '学生服・学校制服', 'スーツ', '18歳以上']) assert.ok(d.includes(w), w);
 });
 
 test('app.js は hero を動的生成しない（shell は動的領域の初期化のみ）', () => {
