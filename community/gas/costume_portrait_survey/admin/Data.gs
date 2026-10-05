@@ -40,7 +40,7 @@ function parseOtherTexts_(cell) {
   } catch (ignored) { return {}; }
 }
 
-/** responsesを行オブジェクトで読み、内部表現(record)へデコードする。列順に依存しない。 */
+/** responsesを行オブジェクトで読み、内部表現(record)へデコードする。列順に依存しない。test行は管理集計へ渡さない。 */
 function readResponses_(spreadsheet) {
   var sheet = spreadsheet.getSheetByName(SHEET_RESPONSES);
   if (!sheet) throw new Error('responses_sheet_missing');
@@ -54,6 +54,7 @@ function readResponses_(spreadsheet) {
   values.forEach(function (cells) {
     var obj = {};
     header.forEach(function (name, i) { obj[name] = cells[i]; });
+    if (obj.completion_status === 'test') return;
     if (obj.timestamp === '' || obj.timestamp === null || obj.timestamp === undefined) return;
     textColumns_().forEach(function (key) { obj[key] = unsanitizeCell_(obj[key]); });
     var time = parseTimestamp_(obj.timestamp);

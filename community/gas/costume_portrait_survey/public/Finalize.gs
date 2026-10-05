@@ -4,6 +4,7 @@
  *  - 締切前、または締切設定（SURVEY_CLOSES_AT）が未設定・不正な場合は何もせずエラー（未確定の数値を最終結果にしない）。
  *    締切時刻ちょうどは受付中のため確定できず、1ms後から確定できる。
  *  - 締切内(timestamp <= 締切)の有効回答だけで公開payloadを作り、Script Propertiesへチャンク保存する。
+ *    completion_status=test のE2Eテスト行は件数・集計・公開結果から除外する。
  *    以後の公開結果はこのスナップショットを返すだけで、Spreadsheetの後続変更では変わらない。
  *  - 二重実行は安全：確定済みなら何も書き換えず、確定済みの統計を返す。
  *  - 途中で失敗したらスナップショットを残さない（確定扱いにしない）。
@@ -90,6 +91,7 @@ function finalizeSurvey_(now) {
     var stats = { responseRows: 0, validRows: 0, lateRows: 0, unparseableRows: 0, publicTotal: 0 };
     var records = [];
     rows.forEach(function (row) {
+      if (row.completion_status === 'test') return;
       if (row.timestamp === '' || row.timestamp === null || row.timestamp === undefined) return;
       stats.responseRows++;
       var kind = classifyTimestamp_(row.timestamp, closesAt);

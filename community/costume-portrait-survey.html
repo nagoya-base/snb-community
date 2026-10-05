@@ -9,10 +9,10 @@
   <meta name="description" content="ユニフォーム、スーツ、ラバー、下着など、男性の衣装とポートレート撮影についての匿名アンケート。対象は18歳以上です。">
   <link rel="canonical" href="https://nagoya-base.github.io/snb-community/community/costume-portrait-survey.html">
 
-  <!-- ?test=1 は保存・通信・GA4を一切行わない画面確認用、?test=closed は受付終了表示の確認用。 -->
+  <!-- ?test=1 は保存・通信なし、?test=submit は実送信テスト、?test=closed は受付終了表示確認。いずれもGA4を送らない。 -->
   <script>
     window.SNB_TEST_MODE = (function () {
-      try { var t = new URLSearchParams(window.location.search).get('test'); return t === '1' || t === 'closed'; } catch (e) { return false; }
+      try { var t = new URLSearchParams(window.location.search).get('test'); return t === '1' || t === 'submit' || t === 'closed'; } catch (e) { return false; }
     })();
   </script>
   <script>
@@ -38,6 +38,7 @@
     </main>
   </div>
   <script src="costume-portrait-survey/config.js"></script>
+  <script src="costume-portrait-survey/live-test.js"></script>
   <script src="costume-portrait-survey/survey.generated.js"></script>
   <script src="costume-portrait-survey/app.js"></script>
 </body>
