@@ -1,5 +1,6 @@
 'use strict';
-const SV = require('../survey.schema.json').schema_version;
+const SCHEMA = require('../survey.schema.json');
+const SV = SCHEMA.schema_version;
 const test = require('node:test');
 const assert = require('node:assert');
 const { openPage, settle, q, pageTitle, progressText, choose, setText, next, back, advanceToReview, visibleFieldsets } = require('./helpers/dom');
@@ -16,8 +17,9 @@ test('初回表示：status APIを呼び、冒頭に「18歳以上です」の�
   assert.strictEqual(calls.length, 1);
   assert.match(calls[0].url, /\?action=status&uuid=[0-9a-f-]{36}$/);
   assert.strictEqual(calls[0].options.method, 'GET');
-  assert.ok(text(document).includes('ユニ・スーツ・衣装で、撮られたい？撮りたい？'));
-  assert.ok(text(document).includes('男性の衣装・ポートレート意識調査'));
+  // hero（h1・サブタイトル）はHTML固定。#cp-app（動的領域）の外にあり、schema と一致する
+  assert.strictEqual(document.querySelector('.cp-hero h1').textContent, SCHEMA.title);
+  assert.strictEqual(document.querySelector('.cp-hero .cp-sub').textContent, SCHEMA.subtitle);
   assert.ok(text(document).includes('約8〜10分'));
   assert.ok(text(document).includes('18歳以上です'));
   assert.ok(text(document).includes('18歳以上'));
