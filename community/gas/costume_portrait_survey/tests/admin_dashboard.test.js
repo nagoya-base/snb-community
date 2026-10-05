@@ -54,7 +54,7 @@ test('各タブ（概要・単純集計・ファネル・クロス集計・自�
   assert.ok(doc.getElementById('tab-overview').textContent.includes('重複拒否件数'));
   assert.ok(doc.getElementById('tab-simple').querySelectorAll('.card').length > 30);
   assert.ok(doc.getElementById('tab-funnel').textContent.includes('ポートレート撮影の需要ファネル'));
-  assert.strictEqual(doc.getElementById('tab-cross').querySelectorAll('table').length, 13);
+  assert.strictEqual(doc.getElementById('tab-cross').querySelectorAll('table').length, 14);
   assert.ok(doc.getElementById('tab-cross').querySelectorAll('select').length === 2);
   assert.ok(doc.getElementById('tab-free').textContent.includes('Q30'));
   // タブ切替

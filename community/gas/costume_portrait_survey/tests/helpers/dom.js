@@ -1,4 +1,5 @@
 'use strict';
+const SV = require('../../survey.schema.json').schema_version;
 const fs = require('fs');
 const path = require('path');
 const { JSDOM, ResourceLoader, VirtualConsole } = require('jsdom');
@@ -61,7 +62,7 @@ async function openPage(opts = {}) {
 
 function defaultFetch(url, options) {
   if (options.method === 'POST') return { ok: true, status: 'accepted' };
-  return { ok: true, status: 'open', answered: false, schema_version: '1', survey_version: '2026-10' };
+  return { ok: true, status: 'open', answered: false, schema_version: SV, survey_version: '2026-10' };
 }
 
 /** window.dataLayer に積まれた GA4 イベント（['event', name, params]）。 */

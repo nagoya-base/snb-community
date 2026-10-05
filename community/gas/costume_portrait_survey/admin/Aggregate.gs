@@ -94,7 +94,7 @@ function buildFreeText_(rows) {
     });
     return { id: id, label: q.no + ' ' + q.label, items: items };
   }
-  return { others: others, texts: ['free_ideas', 'free_themes', 'cheer_message'].map(textList) };
+  return { others: others, texts: textColumns_().map(textList) };
 }
 
 function buildDashboard_(rows, meta) {

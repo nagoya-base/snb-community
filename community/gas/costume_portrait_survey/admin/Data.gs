@@ -6,7 +6,10 @@ var SHEET_RESPONSES = 'responses';
 var SHEET_META = 'meta';
 var PROP_SPREADSHEET_ID = 'SPREADSHEET_ID';
 var PROP_CLOSES_AT = 'SURVEY_CLOSES_AT';
-var TEXT_COLUMNS = ['free_ideas', 'free_themes', 'cheer_message'];
+/** 自由記述（text型）の列。schema由来。 */
+function textColumns_() {
+  return SURVEY_SCHEMA.questions.filter(function (q) { return q.type === 'text'; }).map(function (q) { return q.id; });
+}
 
 function openSpreadsheet_() {
   var id = PropertiesService.getScriptProperties().getProperty(PROP_SPREADSHEET_ID);
@@ -53,7 +56,7 @@ function readResponses_(spreadsheet) {
     header.forEach(function (name, i) { obj[name] = cells[i]; });
     if (obj.completion_status === 'test') return;
     if (obj.timestamp === '' || obj.timestamp === null || obj.timestamp === undefined) return;
-    TEXT_COLUMNS.forEach(function (key) { obj[key] = unsanitizeCell_(obj[key]); });
+    textColumns_().forEach(function (key) { obj[key] = unsanitizeCell_(obj[key]); });
     var time = parseTimestamp_(obj.timestamp);
     var kind = time === null ? 'unparseable' : (deadline !== null && time > deadline ? 'late' : 'valid');
     rows.push({

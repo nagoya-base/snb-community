@@ -1,4 +1,5 @@
 'use strict';
+const SV = require('../survey.schema.json').schema_version;
 const test = require('node:test');
 const assert = require('node:assert');
 const { openPage, settle, q, pageTitle, progressText, choose, setText, next, back, advanceToReview, visibleFieldsets } = require('./helpers/dom');
@@ -231,7 +232,7 @@ test('送信：fetch POST + text/plain、payloadはstable IDとage_confirmed=tru
   assert.strictEqual(posts[0].options.headers['Content-Type'], 'text/plain;charset=utf-8');
   const payload = JSON.parse(posts[0].options.body);
   assert.strictEqual(payload.age_confirmed, true);
-  assert.strictEqual(payload.schema_version, '1');
+  assert.strictEqual(payload.schema_version, SV);
   assert.match(payload.uuid, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   assert.strictEqual(payload.website, '');
   assert.strictEqual(typeof payload.elapsed_ms, 'number');
@@ -250,7 +251,7 @@ test('二重クリック防止：送信中はボタンが無効になり、POST�
   let release;
   const gate = new Promise((resolve) => { release = resolve; });
   const { document, calls } = await reviewPage({
-    fetch: (url, options) => (options.method === 'POST' ? gate.then(() => ({ ok: true, status: 'accepted' })) : { ok: true, status: 'open', answered: false, schema_version: '1' })
+    fetch: (url, options) => (options.method === 'POST' ? gate.then(() => ({ ok: true, status: 'accepted' })) : { ok: true, status: 'open', answered: false, schema_version: SV })
   });
   const button = document.getElementById('cp-next');
   button.click();
@@ -268,7 +269,7 @@ test('二重クリック防止：送信中はボタンが無効になり、POST�
 });
 
 test('duplicate_submission は失敗ではなく「回答はすでに受付済みです」と表示する', async () => {
-  const { document } = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'duplicate_submission' } : { ok: true, status: 'open', answered: false, schema_version: '1' }) });
+  const { document } = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'duplicate_submission' } : { ok: true, status: 'open', answered: false, schema_version: SV }) });
   next(document);
   await settle();
   assert.ok(text(document).includes('回答はすでに受付済みです'));
@@ -279,7 +280,7 @@ test('保存後に応答だけ失われた場合：通信エラー→入力保�
   let attempt = 0;
   const { document, calls, events } = await reviewPage({
     fetch: (url, o) => {
-      if (o.method !== 'POST') return { ok: true, status: 'open', answered: false, schema_version: '1' };
+      if (o.method !== 'POST') return { ok: true, status: 'open', answered: false, schema_version: SV };
       attempt++;
       return attempt === 1 ? new Error('network down') : { ok: false, error: 'duplicate_submission' };
     }
@@ -302,7 +303,7 @@ test('保存後に応答だけ失われた場合：通信エラー→入力保�
 });
 
 test('HTTPエラー・server_error は再送可能なエラー表示', async () => {
-  const { document } = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'server_error' } : { ok: true, status: 'open', answered: false, schema_version: '1' }) });
+  const { document } = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'server_error' } : { ok: true, status: 'open', answered: false, schema_version: SV }) });
   next(document);
   await settle();
   assert.strictEqual(document.getElementById('cp-submit-error').hidden, false);
@@ -310,7 +311,7 @@ test('HTTPエラー・server_error は再送可能なエラー表示', async () 
 });
 
 test('schema_mismatch：再読み込みを促す表示（保存されない）', async () => {
-  const { document, events } = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'schema_mismatch' } : { ok: true, status: 'open', answered: false, schema_version: '1' }) });
+  const { document, events } = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'schema_mismatch' } : { ok: true, status: 'open', answered: false, schema_version: SV }) });
   next(document);
   await settle();
   assert.ok(text(document).includes('ページが古くなっています'));
@@ -319,14 +320,14 @@ test('schema_mismatch：再読み込みを促す表示（保存されない）',
 
 test('survey_closed（送信時）：未回答なら受付終了、回答済みなら「受付済み」', async () => {
   let answered = false;
-  const fetchImpl = (url, o) => (o.method === 'POST' ? { ok: false, error: 'survey_closed' } : { ok: true, status: 'closed', answered, schema_version: '1' });
-  const a = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'survey_closed' } : { ok: true, status: 'open', answered: false, schema_version: '1' }) });
+  const fetchImpl = (url, o) => (o.method === 'POST' ? { ok: false, error: 'survey_closed' } : { ok: true, status: 'closed', answered, schema_version: SV });
+  const a = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'survey_closed' } : { ok: true, status: 'open', answered: false, schema_version: SV }) });
   next(a.document);
   await settle();
   assert.ok(text(a.document).includes('アンケートの受付は終了しました'));
   // 締切直前に保存済みで応答が失われた再送
   let phase = 'open';
-  const b = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'survey_closed' } : { ok: true, status: phase, answered: phase === 'closed', schema_version: '1' }) });
+  const b = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'survey_closed' } : { ok: true, status: phase, answered: phase === 'closed', schema_version: SV }) });
   phase = 'closed';
   next(b.document);
   await settle();
@@ -335,12 +336,12 @@ test('survey_closed（送信時）：未回答なら受付終了、回答済み�
 });
 
 test('invalid_request（サーバー検証で不備）：該当セクションへ戻りエラー表示、年齢未確認ならintroへ', async () => {
-  const { document } = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'invalid_request', fields: [{ field: 'backdrop', code: 'required' }] } : { ok: true, status: 'open', answered: false, schema_version: '1' }) });
+  const { document } = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'invalid_request', fields: [{ field: 'backdrop', code: 'required' }] } : { ok: true, status: 'open', answered: false, schema_version: SV }) });
   next(document);
   await settle();
   assert.strictEqual(pageTitle(document), '背景・世界観');
   assert.strictEqual(q(document, 'backdrop').querySelector('.cp-err').hidden, false);
-  const age = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'invalid_request', fields: [{ field: 'age_confirmed', code: 'required' }] } : { ok: true, status: 'open', answered: false, schema_version: '1' }) });
+  const age = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'invalid_request', fields: [{ field: 'age_confirmed', code: 'required' }] } : { ok: true, status: 'open', answered: false, schema_version: SV }) });
   next(age.document);
   await settle();
   assert.strictEqual(age.document.getElementById('cp-age-error').hidden, false);
@@ -348,7 +349,7 @@ test('invalid_request（サーバー検証で不備）：該当セクション�
 
 // ── 受付状態（status API） ──
 test('status=closed：入力画面を出さず受付終了（締切はFrontendでハードコードしない）', async () => {
-  const { document, calls } = await openPage({ fetch: () => ({ ok: true, status: 'closed', answered: false, schema_version: '1' }) });
+  const { document, calls } = await openPage({ fetch: () => ({ ok: true, status: 'closed', answered: false, schema_version: SV }) });
   assert.ok(text(document).includes('アンケートの受付は終了しました'));
   assert.strictEqual(document.getElementById('cp-form'), null);
   assert.strictEqual(postCalls(calls).length, 0);
@@ -357,13 +358,13 @@ test('status=closed：入力画面を出さず受付終了（締切はFrontend�
 });
 
 test('status=answered：入力画面を出さず「回答はすでに受付済みです」', async () => {
-  const { document } = await openPage({ fetch: () => ({ ok: true, status: 'open', answered: true, schema_version: '1' }) });
+  const { document } = await openPage({ fetch: () => ({ ok: true, status: 'open', answered: true, schema_version: SV }) });
   assert.ok(text(document).includes('回答はすでに受付済みです'));
   assert.strictEqual(document.getElementById('cp-form'), null);
 });
 
 test('status の schema_version が異なる場合は再読み込みを促す', async () => {
-  const { document } = await openPage({ fetch: () => ({ ok: true, status: 'open', answered: false, schema_version: '2' }) });
+  const { document } = await openPage({ fetch: () => ({ ok: true, status: 'open', answered: false, schema_version: '999' }) });
   assert.ok(text(document).includes('ページが古くなっています'));
 });
 
@@ -414,7 +415,7 @@ test('GA4：既存イベントのみ。UUID・回答内容・自由記述・性�
 });
 
 test('GA4：重複回答（受付済み）では survey_submit を送らない', async () => {
-  const { document, events } = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'duplicate_submission' } : { ok: true, status: 'open', answered: false, schema_version: '1' }) });
+  const { document, events } = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'duplicate_submission' } : { ok: true, status: 'open', answered: false, schema_version: SV }) });
   next(document);
   await settle();
   assert.ok(!events().some((e) => e.name === 'survey_submit'));

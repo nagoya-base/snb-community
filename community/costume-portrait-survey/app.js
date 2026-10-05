@@ -198,8 +198,10 @@
   }
 
   function renderText(q, fieldset) {
-    var area = document.createElement('textarea');
-    area.className = 'cp-textarea';
+    var area = document.createElement(q.multiline === false ? 'input' : 'textarea');
+    if (q.multiline === false) area.type = 'text';
+    area.autocomplete = 'off';
+    area.className = q.multiline === false ? 'cp-text' : 'cp-textarea';
     area.name = 'q_' + q.id;
     area.value = state.answers[q.id] || '';
     area.setAttribute('data-text-input', q.id);
