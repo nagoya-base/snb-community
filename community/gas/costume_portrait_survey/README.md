@@ -12,7 +12,7 @@ Public/Admin分離、clasp更新という**設計パターンだけ**を踏襲�
 GitHub Pages (community/costume-portrait-survey.html)
         │ GET ?action=status / POST text/plain
         ▼
-Public GAS  ───────────►  本調査専用 Spreadsheet  ◄───────────  Admin GAS（自分のみ・読み取り専用）
+Public GAS  ───────────►  本調査専用 Spreadsheet  ◄───────────  Admin GAS（ログイン済みGoogleアカウント限定・メールでロール判定・読み取り専用）
  (public/)                (responses / meta)                      (admin/)
 ```
 
@@ -141,7 +141,7 @@ UUID形式・schema_version・**未知field（top-level / answers / other_texts 
 
 ## Admin GAS
 
-- 別プロジェクト・Web App「自分のみ（MYSELF）」・`spreadsheets.readonly` のみ（書き込み/メールscopeなし）。
+- 別プロジェクト・Web App は `access: ANYONE`（**ログイン済みのGoogleアカウントのみ。匿名 `ANYONE_ANONYMOUS` は不可**）・`executeAs: USER_DEPLOYING`・`spreadsheets.readonly` のみ（書き込み/メール送信scopeなし）。
   さらに実行時に Session のメールアドレスを Script Properties と照合し、**OWNER / VIEWER の2ロール**で権限を分ける（下記「権限（OWNER / VIEWER）」）。未設定・不一致・メール取得不能は拒否（fail closed）。
 - 概要（総回答数・有効回答数・締切後/日時不明・重複拒否件数・日別・finalize状態・年代/居住地）、全設問の単純集計、
   ファネル2種（ポートレート需要 / 撮影者・スタジオ・機材需要）、クロス集計（Issue記載の13種 + **任意の2設問を選べる汎用UI**）、
@@ -164,6 +164,20 @@ Admin GAS・Web Appは1つのまま、ログインユーザーのメールアド
 - **VIEWER allowlistは `admin/Aggregate.gs` に明示定義**（`survey.schema.json` の `visibility` とは独立。publicは「公開結果ページ向け」の意味で、Admin VIEWER権限と一致するとは限らないため）。除外: 自由記述（text型）、`sexual_orientation` / `residence` / `aichi_area` / `travel_range`、`fetish_presentation` / `hesitation`、価格・機材・撮影者系、`intent_3m`（matrix）。設問を増やす場合は allowlist へ明示的に追加する。
 - finalize は従来どおり Public GAS で実行する（Adminに実行機能はなく、`meta` からの状態表示のみ）。状態表示は OWNER のみ。
 
+#### Web Appアクセス設定（MYSELF → ANYONE に変更した理由）
+
+`MYSELF` ではデプロイ者以外のGoogleアカウントはWeb Appに到達できず、別アカウントの OWNER / VIEWER が `getAdminRole_()` に届かない。そのため `appsscript.json` は次のとおり。
+
+```json
+"webapp": { "executeAs": "USER_DEPLOYING", "access": "ANYONE" }
+```
+
+- manifestの `access` に指定できる値は `MYSELF` / `DOMAIN` / `ANYONE`（ログイン済みGoogleユーザー）/ `ANYONE_ANONYMOUS`（匿名可）。**匿名は使わない**。
+- URLに到達できるのは「Googleにログイン済みの誰でも」だが、**実行時に Session のメールを `ADMIN_OWNER_EMAILS` / `ADMIN_VIEWER_EMAILS` と照合し、未登録は `forbidden`**（データは一切返らない）。URLが漏れても未登録アカウントは何も見られない。
+- `executeAs: USER_DEPLOYING` を維持する理由: `USER_ACCESSING` にすると各ユーザー自身の権限でSpreadsheetを読むことになり、VIEWERにSpreadsheetの閲覧権限を与える必要が出て、**VIEWERが生データ（自由記述等）を直接開けてしまう**ため。Spreadsheetはデプロイ者のみが持ち、VIEWERへは共有しない。
+- **重要な前提（メール取得条件）**: `executeAs: USER_DEPLOYING` の Web App では、`Session.getActiveUser().getEmail()` は**デプロイ者と同じ Google Workspace ドメインのアカウントでのみ**取得できる。別ドメイン・個人Gmailのアカウントは空文字となり、**fail closed で `forbidden`**（安全側に倒れるが、利用はできない）。したがって OWNER / VIEWER は**デプロイ者と同じWorkspaceドメインのアカウント**を登録すること。個人Gmailを使いたい場合は本構成では不可（別途アーキテクチャの検討が必要）。
+- 既存のAdminデプロイ（`MYSELF`）はCIが `ANYONE` へ更新する（リモートが匿名公開 `ANYONE_ANONYMOUS` の場合はデプロイを拒否）。デプロイ後、デプロイ管理画面の「アクセスできるユーザー」が「Googleアカウントを持つ全員」になっていることを必ず確認する。
+
 #### Script Properties（Admin）
 
 | Key | 内容 |
@@ -183,7 +197,7 @@ viewer1@example.com,viewer2@example.com
 
 - 判定順: `ADMIN_OWNER_EMAILS` → `ADMIN_VIEWER_EMAILS` → 拒否。**同じメールが両方にあればOWNER優先**。比較は前後空白除去 + 小文字化。
 - 未設定・空文字・Sessionメール取得不能はすべて拒否（未設定のpropertyは許可判定に一切使われない）。
-- Web Appアクセス「自分のみ（MYSELF）」と、Spreadsheet読み取り専用（`spreadsheets.readonly`）は維持。Public GAS・回答スキーマ・Spreadsheet列・`schema_version` は変更しない。
+- Spreadsheet読み取り専用（`spreadsheets.readonly`）は維持。Web Appは `MYSELF` から `ANYONE`（ログイン済みGoogleのみ）へ変更（下記「Web Appアクセス設定」）。Public GAS・回答スキーマ・Spreadsheet列・`schema_version` は変更しない。
 
 #### 旧 `ADMIN_ALLOWED_EMAILS` からの移行
 
@@ -228,7 +242,7 @@ python3 -m unittest scripts.tests.test_costume_portrait_deploy -v   # リポジ�
    - Admin: `SPREADSHEET_ID`（同じSpreadsheet） / `ADMIN_OWNER_EMAILS` / `ADMIN_VIEWER_EMAILS`（任意） / `SURVEY_CLOSES_AT`（Publicと同じ値。締切後の行の判別用、任意）
 6. **Web App deployment を各プロジェクトで1回だけ作成**し、Deployment ID と `/exec` URL を控える。
    - Public: 実行ユーザー=自分、アクセス=全員（匿名可）
-   - Admin: 実行ユーザー=自分、アクセス=**自分のみ**（CIは `MYSELF` 以外ならデプロイを拒否）
+   - Admin: 実行ユーザー=自分、アクセス=**Googleアカウントを持つ全員（`ANYONE`）**。匿名（`ANYONE_ANONYMOUS`）は不可（CIは `access=ANYONE` かつ `executeAs=USER_DEPLOYING` 以外ならデプロイを拒否）。許可メール以外はGAS側で拒否される
 7. Apps Scriptエディタで Public の `setupScriptProperties()`（salt生成）→ `setupSpreadsheet()`（`responses` / `meta` シートとヘッダー作成）を実行。
    このとき **OAuth承認**（Spreadsheet・`script.send_mail`）を行う。Adminも初回アクセス時に承認する。
 8. **GitHub Environment を2つ新規作成**（Settings → Environments）

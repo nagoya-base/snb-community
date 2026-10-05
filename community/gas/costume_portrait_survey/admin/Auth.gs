@@ -1,11 +1,15 @@
 /**
  * Admin認証（二重防御）+ OWNER / VIEWER ロール判定。
- *  1. Web Appのデプロイ設定「アクセスできるユーザー：自分のみ（MYSELF）」。CIはこの値を検証し、違えばデプロイしない。
+ *  1. Web Appのデプロイ設定は access=ANYONE（ログイン済みのGoogleアカウントのみ。匿名=ANYONE_ANONYMOUSは不可）、
+ *     executeAs=USER_DEPLOYING（Spreadsheetはデプロイ者のみが読む）。CIはこの値を検証し、違えばデプロイしない。
+ *     MYSELFでは別アカウントのOWNER/VIEWERがここへ到達できないため使わない。
  *  2. 実行時にも Session のメールアドレスを Script Properties と照合してロールを決める。
  *       ADMIN_OWNER_EMAILS  : フル権限（カンマ区切り）
  *       ADMIN_VIEWER_EMAILS : 閲覧専用の限定権限（カンマ区切り。未設定でもよい）
  *     判定順は OWNER → VIEWER → forbidden（両方にあれば OWNER 優先）。比較は trim + lowercase。
  *     未設定・空・Sessionメール取得不能はすべて拒否（fail closed）。
+ *     注意: executeAs=USER_DEPLOYING では getActiveUser().getEmail() はデプロイ者と同じGoogle Workspaceドメインの
+ *     アカウントでのみ取得できる。別ドメイン・個人Gmailは空文字になり forbidden となる（README参照）。
  *  旧 ADMIN_ALLOWED_EMAILS は意図的に読まない（自動fallbackしない。移行はREADME参照）。
  *  ロールは常にサーバー側で Session から決める。クライアントからの指定は受け付けない。
  * Public GASには管理機能を置かない（別プロジェクト）。

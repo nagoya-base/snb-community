@@ -91,7 +91,7 @@ jobs:
             throw new Error('Unexpected clasp rootDir or staged files.');
           }
           const manifest = JSON.parse(fs.readFileSync(path.join(process.env.BUNDLE, 'appsscript.json')));
-          if (!manifest.webapp || manifest.webapp.access !== 'MYSELF') throw new Error('Admin Web App access must be MYSELF.');
+          if (!manifest.webapp || manifest.webapp.access !== 'ANYONE' || manifest.webapp.executeAs !== 'USER_DEPLOYING') throw new Error('Admin Web App must be access ANYONE (signed-in Google users only, never ANYONE_ANONYMOUS) and executeAs USER_DEPLOYING.');
           if (manifest.oauthScopes.some(s => s.endsWith('/spreadsheets') || s.includes('send_mail'))) {
             throw new Error('The admin bundle must stay read-only (no write or mail scopes).');
           }

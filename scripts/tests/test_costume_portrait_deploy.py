@@ -131,11 +131,15 @@ class DeployBase:
         for name in ('README.md', 'package.json', 'tests', 'survey.schema.json', 'survey-core.js'):
             self.assertNotIn(name, self.staged['files'])
 
-    def test_staged_manifest_keeps_the_remote_webapp_settings(self):
+    def test_staged_manifest_webapp_settings(self):
         result, _, _ = self.run_deploy()
         self.assertEqual(result.returncode, 0, result.stderr)
         staged = json.loads(self.staged['manifest'])
-        self.assertEqual(staged['webapp'], self.REMOTE_MANIFEST['webapp'])
+        if self.TARGET == 'admin':
+            # Adminのwebappはリポジトリ側が正（MYSELF → ANYONE へ移行。匿名は不可）
+            self.assertEqual(staged['webapp'], {'executeAs': 'USER_DEPLOYING', 'access': 'ANYONE'})
+        else:
+            self.assertEqual(staged['webapp'], self.REMOTE_MANIFEST['webapp'])
         self.assertEqual(staged['oauthScopes'],
                          json.loads((BASE / self.TARGET / 'appsscript.json').read_text())['oauthScopes'])
 
@@ -247,8 +251,8 @@ class AdminDeployTest(DeployBase, unittest.TestCase):
     TARGET = 'admin'
     REMOTE_MANIFEST = ADMIN_REMOTE_MANIFEST
 
-    def test_non_myself_access_is_rejected(self):
-        for access in ('ANYONE', 'ANYONE_ANONYMOUS', 'DOMAIN'):
+    def test_anonymous_or_unknown_remote_access_is_rejected(self):
+        for access in ('ANYONE_ANONYMOUS', 'UNKNOWN', ''):
             manifest = dict(ADMIN_REMOTE_MANIFEST, webapp={'executeAs': 'USER_DEPLOYING', 'access': access})
             result, commands, updated = self.run_deploy(manifest=manifest)
             self.assertNotEqual(result.returncode, 0, access)
@@ -261,9 +265,11 @@ class AdminDeployTest(DeployBase, unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(commands, ['list-deployments', 'pull'])
 
-    def test_repository_admin_manifest_is_myself(self):
+    def test_repository_admin_manifest_is_signed_in_users_only(self):
         manifest = json.loads((BASE / 'admin/appsscript.json').read_text())
-        self.assertEqual(manifest['webapp']['access'], 'MYSELF')
+        self.assertEqual(manifest['webapp']['access'], 'ANYONE')
+        self.assertNotEqual(manifest['webapp']['access'], 'ANYONE_ANONYMOUS')
+        self.assertEqual(manifest['webapp']['executeAs'], 'USER_DEPLOYING')
 
 
 class PrepareTest(unittest.TestCase):

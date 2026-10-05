@@ -357,7 +357,11 @@ test('Admin GAS は読み取り専用で、Public GAS とは別プロジェク�
     assert.ok(!adminSource.includes(api), api);
   }
   const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'admin', 'appsscript.json'), 'utf8'));
-  assert.strictEqual(manifest.webapp.access, 'MYSELF');
+  // 別Googleアカウント（OWNER/VIEWER）が到達できる必要があるため MYSELF ではなく ANYONE（ログイン済みGoogleユーザー）。匿名は不可。
+  // 認可はデプロイ後の実行時に Session メール × ADMIN_OWNER/VIEWER_EMAILS で fail closed 判定する（Auth.gs）。
+  assert.strictEqual(manifest.webapp.access, 'ANYONE');
+  assert.notStrictEqual(manifest.webapp.access, 'ANYONE_ANONYMOUS');
+  assert.strictEqual(manifest.webapp.executeAs, 'USER_DEPLOYING'); // Spreadsheetはデプロイ者のみ。VIEWERへ直接共有しない
   assert.ok(manifest.oauthScopes.every((s) => !s.endsWith('/spreadsheets') && !s.includes('send_mail')));
   const publicSource = fs.readdirSync(path.join(ROOT, 'public')).filter((f) => f.endsWith('.gs'))
     .map((f) => fs.readFileSync(path.join(ROOT, 'public', f), 'utf8')).join('\n');

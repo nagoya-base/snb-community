@@ -69,21 +69,28 @@ function validateRemote(target, remoteDir) {
   return report;
 }
 
+// Admin Web App: ログイン済みGoogleアカウントのみ（匿名不可）。ロール判定は実行時に Session のメールで行う（Auth.gs）。
+// executeAs=USER_DEPLOYING のためSpreadsheetはデプロイ者のみが読め、VIEWERに直接共有しない。
+const ADMIN_WEBAPP_ACCESS = 'ANYONE';
+const ADMIN_WEBAPP_EXECUTE_AS = 'USER_DEPLOYING';
+const ADMIN_REMOTE_ACCESS = ['MYSELF', 'DOMAIN', ADMIN_WEBAPP_ACCESS];
+
 function validateRemoteManifest(target, manifest) {
   if (!isPlainObject(manifest)) throw new Error('Existing GAS manifest must be a JSON object.');
   const extra = Object.keys(manifest).filter((k) => !MANAGED_KEYS.includes(k) && !PRESERVED_KEYS.includes(k));
   if (extra.length) throw new Error('Existing GAS manifest has additional settings; review before overwriting.');
+  // 既存Adminは MYSELF（初回手動デプロイ）→ ANYONE への移行を許す。匿名公開・不明な値は拒否。
   if (target === 'admin' && manifest.webapp !== undefined) {
-    if (!isPlainObject(manifest.webapp) || manifest.webapp.access !== 'MYSELF') {
-      throw new Error('Existing admin Web App access is not "MYSELF"; refusing to deploy.');
+    if (!isPlainObject(manifest.webapp) || !ADMIN_REMOTE_ACCESS.includes(manifest.webapp.access)) {
+      throw new Error('Existing admin Web App access must not be anonymous or unknown; refusing to deploy.');
     }
   }
   return manifest;
 }
 
-// リポジトリのmanifestが管理するキーはリポジトリ側を正とし、webapp/dependenciesはリモートの値をそのまま残す
-// （Web Appの公開範囲などデプロイ設定はCIで変更しない）。リモートにwebappが無い場合のみ、
-// リポジトリが定義している値（admin = MYSELF）を使う。
+// リポジトリのmanifestが管理するキーはリポジトリ側を正とし、dependencies等はリモートの値をそのまま残す。
+// Public の webapp はリモートの値を残す（公開範囲はCIで変更しない）。
+// Admin の webapp はリポジトリ側（access=ANYONE / executeAs=USER_DEPLOYING）を正とする。
 function stageManifest(target, repoManifest, remoteManifest) {
   const cfg = targetConfig(target);
   if (!isPlainObject(repoManifest)) throw new Error('Repository manifest must be a JSON object.');
@@ -98,8 +105,11 @@ function stageManifest(target, repoManifest, remoteManifest) {
       if (Object.prototype.hasOwnProperty.call(remoteManifest, key)) staged[key] = JSON.parse(JSON.stringify(remoteManifest[key]));
     }
   }
-  if (target === 'admin' && (!staged.webapp || staged.webapp.access !== 'MYSELF')) {
-    throw new Error('Admin Web App access must be "MYSELF".');
+  if (target === 'admin') {
+    staged.webapp = JSON.parse(JSON.stringify(repoManifest.webapp || {}));
+    if (staged.webapp.access !== ADMIN_WEBAPP_ACCESS || staged.webapp.executeAs !== ADMIN_WEBAPP_EXECUTE_AS) {
+      throw new Error('Admin Web App must be access "ANYONE" (signed-in Google users, never anonymous) and executeAs "USER_DEPLOYING".');
+    }
   }
   return staged;
 }
