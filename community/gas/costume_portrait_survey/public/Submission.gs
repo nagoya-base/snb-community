@@ -72,8 +72,13 @@ function processSubmission_(rawBody, now) {
     logEvent_('duplicate');
     return errorBody_('duplicate_submission');
   }
-  logEvent_('accepted');
 
+  if (validation.testMode) {
+    logEvent_('accepted_test');
+    return { ok: true, status: 'accepted_test', test: true };
+  }
+
+  logEvent_('accepted');
   // 回答保存の成功後に通知する。通知の失敗は回答の成否に影響させない。
   var status = notifyCheerMessage_(validation.clean, now);
   if (status !== 'none') {
@@ -91,11 +96,13 @@ function saveWithLock_(hash, validation, now) {
   try {
     var spreadsheet = openSpreadsheet_();
     var sheet = getResponsesSheet_();
-    if (hasRespondentHash_(sheet, hash)) {
+    // test行は本番重複判定に使わない。test送信自体は繰り返しE2E確認できるよう重複拒否しない。
+    if (!validation.testMode && hasRespondentHash_(sheet, hash, 'complete')) {
       try { incrementMetaCounter_(spreadsheet, 'duplicate_rejects'); } catch (ignored) { /* カウンタ失敗は無視 */ }
       return { duplicate: true };
     }
-    var row = appendResponse_(sheet, buildRow_(validation.clean, hash, now, validation.elapsedMs));
+    var completionStatus = validation.testMode ? 'test' : 'complete';
+    var row = appendResponse_(sheet, buildRow_(validation.clean, hash, now, validation.elapsedMs, completionStatus));
     SpreadsheetApp.flush();
     return { duplicate: false, sheet: sheet, row: row };
   } finally {
@@ -106,12 +113,13 @@ function saveWithLock_(hash, validation, now) {
 /**
  * 入力前のstatus。submitと同じサーバー側hash照合を使うが、hash自体は返さない。
  * 返すのはこのUUIDの持ち主自身が知り得る「回答済みか」だけ。
+ * test行は回答済み判定に含めない。
  */
 function processStatus_(uuid, now) {
   if (!isValidUuid_(uuid)) return errorBody_('invalid_request', { reason: 'invalid_uuid' });
   var answered = false;
   try {
-    answered = hasRespondentHash_(getResponsesSheet_(), hashRespondent_(uuid));
+    answered = hasRespondentHash_(getResponsesSheet_(), hashRespondent_(uuid), 'complete');
   } catch (error) {
     logEvent_('error', { code: 'status_failed' });
     return errorBody_('server_error');
