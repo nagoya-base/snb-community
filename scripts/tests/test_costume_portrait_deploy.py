@@ -38,7 +38,7 @@ PUBLIC_REMOTE_MANIFEST = {
 }
 ADMIN_REMOTE_MANIFEST = {
     'timeZone': 'Asia/Tokyo', 'exceptionLogging': 'STACKDRIVER', 'runtimeVersion': 'V8',
-    'oauthScopes': ['https://www.googleapis.com/auth/spreadsheets.readonly', 'https://www.googleapis.com/auth/userinfo.email'],
+    'oauthScopes': ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/userinfo.email'],
     'webapp': {'executeAs': 'USER_DEPLOYING', 'access': 'MYSELF'},
 }
 

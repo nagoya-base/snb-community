@@ -92,8 +92,9 @@ jobs:
           }
           const manifest = JSON.parse(fs.readFileSync(path.join(process.env.BUNDLE, 'appsscript.json')));
           if (!manifest.webapp || manifest.webapp.access !== 'MYSELF') throw new Error('Admin Web App access must be MYSELF.');
-          if (manifest.oauthScopes.some(s => s.endsWith('/spreadsheets') || s.includes('send_mail'))) {
-            throw new Error('The admin bundle must stay read-only (no write or mail scopes).');
+          const adminScopes = manifest.oauthScopes;
+          if (!adminScopes.includes('https://www.googleapis.com/auth/spreadsheets') || adminScopes.some(s => s.includes('send_mail'))) {
+            throw new Error('The admin bundle needs the spreadsheets scope for openById and must not have mail scopes.');
           }
           console.log('Dry-run bundle contains only the approved admin GAS files.');
           NODE

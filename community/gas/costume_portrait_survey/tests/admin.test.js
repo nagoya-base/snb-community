@@ -204,7 +204,8 @@ test('Admin GAS は読み取り専用で、Public GAS とは別プロジェク�
   }
   const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'admin', 'appsscript.json'), 'utf8'));
   assert.strictEqual(manifest.webapp.access, 'MYSELF');
-  assert.ok(manifest.oauthScopes.every((s) => !s.endsWith('/spreadsheets') && !s.includes('send_mail')));
+  assert.ok(manifest.oauthScopes.includes('https://www.googleapis.com/auth/spreadsheets'), 'openByIdにはspreadsheets scopeが必要');
+  assert.ok(manifest.oauthScopes.every((s) => !s.includes('send_mail')));
   const publicSource = fs.readdirSync(path.join(ROOT, 'public')).filter((f) => f.endsWith('.gs'))
     .map((f) => fs.readFileSync(path.join(ROOT, 'public', f), 'utf8')).join('\n');
   for (const word of ['getDashboardData', 'getCrosstabData', 'HtmlService', 'ADMIN_ALLOWED_EMAILS', 'getActiveUser']) assert.ok(!publicSource.includes(word), word);
