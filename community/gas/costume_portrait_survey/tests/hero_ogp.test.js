@@ -138,3 +138,10 @@ test('画面切替・送信完了・受付終了でも hero は1つのまま同�
   assert.strictEqual(closed.document.querySelectorAll('.cp-hero').length, 1);
   assert.ok(closed.document.getElementById('cp-app').textContent.includes('アンケートの受付は終了しました'));
 });
+
+test('sitemap.xml に survey / results の2URLが登録されている', () => {
+  const sitemap = read('sitemap.xml');
+  for (const page of Object.values(PAGES)) {
+    assert.ok(sitemap.includes(`<loc>${SITE}${page}</loc>`), `${page} が sitemap.xml にある`);
+  }
+});
