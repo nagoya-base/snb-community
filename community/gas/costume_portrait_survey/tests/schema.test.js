@@ -114,7 +114,7 @@ test('衣装定義は optionSet 1か所だけ（Q5/Q6-A/Q6-B/Q7 で共有）', (
 test('調査内容の受入条件（衣装・ユニフォーム・作業服の選択肢と表記）', () => {
   const labels = (set) => schema.optionSets[set].map((o) => o.label);
   const costume = labels('costume_category');
-  for (const l of ['ユニフォーム', 'スーツ', '職業制服・作業服', '学生服・学校制服', 'ラバー', 'ゼンタイ（全身タイツ）', 'レザー', 'ヒーロースーツ', 'アニメ・ゲーム等のコスプレ', '和装', '女装', 'ふんどし', '下着', 'ヌード', 'その他']) {
+  for (const l of ['制服・ユニフォーム', 'スーツ', '職業制服・作業服', '学生服・学校制服', 'ラバー', 'ゼンタイ（全身タイツ）', 'レザー', 'ヒーロースーツ', 'アニメ・ゲーム等のコスプレ', '和装', '女装', 'ふんどし', '下着', 'ヌード', 'その他']) {
     assert.ok(costume.includes(l), l);
   }
   assert.ok(!costume.includes('ゼンタイ'));
