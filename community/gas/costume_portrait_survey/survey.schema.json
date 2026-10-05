@@ -1,5 +1,5 @@
 {
-  "schema_version": "1",
+  "schema_version": "2",
   "survey_version": "2026-10",
   "survey_id": "costume_portrait_2026",
   "title": "ユニ・スーツ・衣装で、撮られたい？撮りたい？",
@@ -294,6 +294,8 @@
         "age_range",
         "sexual_orientation",
         "residence",
+        "aichi_area",
+        "residence_country",
         "travel_range"
       ]
     },
@@ -577,6 +579,10 @@
           "label": "一部なら写ってもよい"
         },
         {
+          "id": "ok_if_not_public",
+          "label": "SNSなどに公開しない前提なら、顔が写ってもよい"
+        },
+        {
           "id": "hidden_face",
           "label": "顔を隠して撮影したい"
         },
@@ -806,11 +812,17 @@
           "label": "祝日"
         },
         {
+          "id": "no_preference",
+          "label": "特に決まっていない",
+          "exclusive": true
+        },
+        {
           "id": "other",
           "label": "その他",
           "other": true
         }
-      ]
+      ],
+      "help": "時間帯は次の設問で別にお聞きします。当てはまるものをすべて選んでください。"
     },
     {
       "id": "time_slots",
@@ -821,31 +833,53 @@
       "visibility": "public",
       "options": [
         {
-          "id": "t09_12",
-          "label": "9:00～12:00"
+          "id": "morning",
+          "label": "午前"
+        },
+        {
+          "id": "t10_13",
+          "label": "10:00〜13:00"
+        },
+        {
+          "id": "t11_14",
+          "label": "11:00〜14:00"
         },
         {
           "id": "t12_15",
-          "label": "12:00～15:00"
+          "label": "12:00〜15:00"
+        },
+        {
+          "id": "t13_16",
+          "label": "13:00〜16:00"
+        },
+        {
+          "id": "t14_17",
+          "label": "14:00〜17:00"
         },
         {
           "id": "t15_18",
-          "label": "15:00～18:00"
+          "label": "15:00〜18:00"
         },
         {
-          "id": "t18_21",
-          "label": "18:00～21:00"
+          "id": "evening",
+          "label": "夕方"
         },
         {
-          "id": "after_21",
-          "label": "21:00以降"
+          "id": "night",
+          "label": "夜"
+        },
+        {
+          "id": "no_preference",
+          "label": "特に決まっていない",
+          "exclusive": true
         },
         {
           "id": "other",
           "label": "その他",
           "other": true
         }
-      ]
+      ],
+      "help": "曜日とは別に、利用しやすい時間帯をすべて選んでください（重なる枠は、近いものをいくつ選んでも構いません）。"
     },
     {
       "id": "photo_count",
@@ -908,7 +942,7 @@
         },
         {
           "id": "both",
-          "label": "両方ほしい"
+          "label": "「しっかりレタッチした写真（少数）」と「明るさ・色等を調整した写真（多数）」の両方ほしい"
         },
         {
           "id": "none",
@@ -923,7 +957,8 @@
           "label": "その他",
           "other": true
         }
-      ]
+      ],
+      "help": "「両方」は、しっかりレタッチした少数の写真と、明るさ・色等を調整した多数の写真の両方を指します。"
     },
     {
       "id": "hesitation",
@@ -1167,7 +1202,7 @@
         },
         {
           "id": "led_video_light",
-          "label": "LEDビデオライト"
+          "label": "LEDビデオライト（白色）"
         },
         {
           "id": "rgb_light",
@@ -1726,6 +1761,51 @@
       ]
     },
     {
+      "id": "aichi_area",
+      "no": "Q3-1",
+      "type": "single",
+      "label": "愛知県のどの地域にお住まいですか？",
+      "required": true,
+      "visibility": "private",
+      "showIf": {
+        "question": "residence",
+        "includes": "pref_23"
+      },
+      "options": [
+        {
+          "id": "nagoya_city",
+          "label": "名古屋市内"
+        },
+        {
+          "id": "owari",
+          "label": "尾張地区"
+        },
+        {
+          "id": "mikawa",
+          "label": "三河地区"
+        },
+        {
+          "id": "unknown_other",
+          "label": "その他 / わからない"
+        }
+      ],
+      "help": "集客エリアの把握のための区分で、行政区分の厳密さは問いません。"
+    },
+    {
+      "id": "residence_country",
+      "no": "Q3-2",
+      "type": "text",
+      "label": "お住まいの国名を入力してください",
+      "required": true,
+      "visibility": "private",
+      "showIf": {
+        "question": "residence",
+        "includes": "overseas"
+      },
+      "maxLength": 50,
+      "multiline": false
+    },
+    {
       "id": "travel_range",
       "no": "Q4",
       "type": "single",
@@ -1781,10 +1861,11 @@
       "id": "free_themes",
       "no": "Q29",
       "type": "text",
-      "label": "男性の衣装・撮影について、今後調べてほしいテーマがあれば教えてください",
+      "label": "今後やってみたい撮影テーマや企画があれば教えてください",
       "required": false,
       "visibility": "private",
-      "maxLength": 1000
+      "maxLength": 1000,
+      "help": "衣装・服装・フェチ・スポーツなど、自由にお書きください。"
     },
     {
       "id": "cheer_message",

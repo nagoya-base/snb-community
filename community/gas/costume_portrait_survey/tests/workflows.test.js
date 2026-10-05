@@ -93,9 +93,10 @@ test('リポジトリに認証情報・clasp設定が含まれない', () => {
   const files = execSync('git ls-files', { cwd: REPO, encoding: 'utf8' }).split('\n').filter(Boolean);
   assert.deepStrictEqual(files.filter((f) => /(^|\/)\.clasprc\.json$|(^|\/)\.clasp\.json$/.test(f)), []);
   // テストファイル自身は検査パターンやダミー値を含むため対象外。
+  // GAS Web Appの /exec URL（AKfycb...）は公開エンドポイントであり認証情報ではない（#339と同一変更）。
   const newFiles = files.filter((f) => /costume[-_]portrait/.test(f) && !/package-lock\.json$/.test(f) && !/(^|\/)tests\//.test(f) && fs.statSync(path.join(REPO, f)).isFile());
   for (const f of newFiles) {
     const content = fs.readFileSync(path.join(REPO, f), 'utf8');
-    assert.ok(!/refresh_token|access_token"\s*:\s*"[A-Za-z0-9._-]{20,}|AKfycb[A-Za-z0-9_-]{20,}|ya29\./.test(content), f);
+    assert.ok(!/refresh_token|access_token"\s*:\s*"[A-Za-z0-9._-]{20,}|ya29\./.test(content), f);
   }
 });

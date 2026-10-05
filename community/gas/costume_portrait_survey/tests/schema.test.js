@@ -40,13 +40,14 @@ test('schema_version / survey_version / question・option stable ID が揃って
 
 test('選択式設問には原則「その他」がある（matrix・text以外は全設問）', () => {
   for (const q of schema.questions.filter((x) => x.type === 'single' || x.type === 'multi')) {
-    assert.strictEqual(optionsOf(q).filter((o) => o.other).length, 1, q.id);
+    // aichi_area は「その他 / わからない」を自由記述なしの固定選択肢として持つ（地域区分のため）。
+    assert.strictEqual(optionsOf(q).filter((o) => o.other).length, q.id === 'aichi_area' ? 0 : 1, q.id);
   }
 });
 
 // Issue #334「必須 / 任意 / 分岐一覧」を、schemaとは独立に書き下した期待値。
 const SPEC = {
-  age_range: ['Q1', true], sexual_orientation: ['Q2', false], residence: ['Q3', true], travel_range: ['Q4', true],
+  age_range: ['Q1', true], sexual_orientation: ['Q2', false], residence: ['Q3', true], aichi_area: ['Q3-1', true, 'residence:pref_23'], residence_country: ['Q3-2', true, 'residence:overseas'], travel_range: ['Q4', true],
   costume_interest: ['Q5', true], uniform_interest: ['Q5-1', true, 'costume_interest:uniform'],
   workwear_interest: ['Q5-2', true, 'costume_interest:workwear'],
   costume_wear: ['Q6-A', true], costume_photographed: ['Q6-B', true], costume_shoot: ['Q7', true],
@@ -117,7 +118,7 @@ test('調査内容の受入条件（衣装・ユニフォーム・作業服の�
   assert.ok(!uniform.includes('水泳'));
   assert.deepStrictEqual(labels('workwear_detail'), ['警察', '消防', '自衛隊', '運送業者', 'ツナギ', 'その他']);
   // 過度な深掘りをしていない（チーム別・メーカー別等の設問が無い）
-  assert.ok(schema.questions.length <= 40);
+  assert.ok(schema.questions.length <= 42); // 条件付き2問（aichi_area / residence_country）を含む
   assert.ok(!schema.questions.some((q) => /ブランド|メーカー|チーム/.test(q.label)));
   // 緊縛・予約・決済に関する設問は無い
   assert.ok(!schema.questions.some((q) => /緊縛|予約|決済|Stripe/.test(q.label)));

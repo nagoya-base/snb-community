@@ -1,4 +1,5 @@
 'use strict';
+const SV = require('../survey.schema.json').schema_version;
 const test = require('node:test');
 const assert = require('node:assert');
 const { loadPublic, validPayload, plain } = require('./helpers/gas-env');
@@ -34,7 +35,7 @@ test('有効回答30件未満は、件数も含め一切公開しない', () => 
   const result = plain(ctx.finalizeSurvey_(CLOSED));
   assert.strictEqual(result.stats.validRows, 29);
   const body = plain(ctx.readPublicResults_());
-  assert.deepStrictEqual(body, { ok: true, results: { status: 'insufficient', schema_version: '1', min_total: 30 } });
+  assert.deepStrictEqual(body, { ok: true, results: { status: 'insufficient', schema_version: SV, min_total: 30 } });
   assert.ok(!JSON.stringify(body).includes('29'));
   assert.ok(env);
 });
@@ -95,7 +96,7 @@ test('allowlist：非公開項目（価格・意向・地域・性的指向・�
 
 test('assertPublicPayload_ は allowlist 外のkey・項目が混入したら公開を止める', () => {
   const { ctx } = loadPublic();
-  const good = { status: 'final', schema_version: '1', survey_version: 'x', total: 30, items: [] };
+  const good = { status: 'final', schema_version: SV, survey_version: 'x', total: 30, items: [] };
   assert.doesNotThrow(() => ctx.assertPublicPayload_(JSON.parse(JSON.stringify(good))));
   assert.throws(() => ctx.assertPublicPayload_(Object.assign({}, good, { respondent_hash: 'x' })), /not_allowed/);
   assert.throws(() => ctx.assertPublicPayload_(Object.assign({}, good, { items: [{ id: 'portrait_price', title: 'x', type: 'single', base: 1, suppressed: false, categories: [] }] })), /not_allowed/);

@@ -52,6 +52,9 @@ npm run build:check  # CIと同じ差分検査
 - `showIf`: `{question, includes}` / `{question, in:[…]}`。親が非表示なら子も非表示。`sections[].showIf` も同様。
 - 「その他」は `other: true` の選択肢。選択した場合のみ自由記述が必須（最大 `limits.otherMaxLength`）。
 - `exclusive: true`（例「特にない」）は他の選択肢と同時に選べない。
+- 条件付き自由記述: `type: text` に `showIf` / `required` / `maxLength` を指定できる（例 `residence_country`＝海外選択時のみ必須）。`multiline: false` で1行入力。非表示になった回答は破棄され、サーバーも `hidden_field` で拒否する。
+- 居住地の細分化: `aichi_area`（愛知県選択時のみ必須）・`residence_country` は `visibility: private`。公開結果へは出さず、Adminで確認する（自由記述はAdminの自由記述一覧、地域は基本情報の集計）。
+- schema_version 2: 曜日/時間帯の分離・`aichi_area`・`residence_country` 追加に伴い `responses` に2列追加。回答済みの旧ヘッダーのシートは保存を拒否するため、公開前にシートを作り直してから `setupSpreadsheet()` を実行する。
 - `priorityFrom`: Q6-A/Q6-B/Q7でQ5の選択を上位表示する（未選択の衣装も「ほかの候補も選ぶ」から選べる）。
 - `funnels` / `funnelFlows`: ファネル判定式。Admin集計・テストが同じ定義を使う（コードにベタ書きしない）。
 - `crosstabs`: Adminの固定クロス集計13種。`publicResults`: 公開allowlist（項目・年代の粗い区分・閾値30/3）。

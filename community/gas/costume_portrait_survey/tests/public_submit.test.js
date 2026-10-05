@@ -1,4 +1,5 @@
 'use strict';
+const SV = require('../survey.schema.json').schema_version;
 const test = require('node:test');
 const assert = require('node:assert');
 const crypto = require('crypto');
@@ -30,7 +31,7 @@ test('初回回答が成功し、Spreadsheetへstable IDで保存される', () 
   assert.strictEqual(cell(env, 'hesitation'), '|face_exposure_worry|price_concern|body_confidence|');
   assert.strictEqual(cell(env, 'age_range').startsWith('age_'), true);
   assert.strictEqual(cell(env, 'survey_version'), '2026-10');
-  assert.strictEqual(cell(env, 'schema_version'), '1');
+  assert.strictEqual(cell(env, 'schema_version'), SV);
   assert.strictEqual(cell(env, 'completion_status'), 'complete');
   assert.strictEqual(cell(env, 'age_confirmed'), true);
   assert.strictEqual(cell(env, 'intent_3m__get_portrait'), 'interested');
@@ -186,7 +187,7 @@ test('invalid enum / 必須欠落 / 不正UUID / 条件付き必須を拒否す�
 
 test('schema_version 不一致は schema_mismatch（保存しない）', () => {
   const { env, ctx } = loadPublic();
-  for (const v of ['0', '2', 1, undefined, null]) {
+  for (const v of ['0', '999', 1, undefined, null]) {
     const p = validPayload(ctx); if (v === undefined) delete p.schema_version; else p.schema_version = v;
     assert.strictEqual(submit(ctx, p).error, 'schema_mismatch', String(v));
   }
@@ -300,7 +301,7 @@ test('status API：未回答/回答済み/締切を返し、hashもUUIDも返さ
   const { env, ctx } = loadPublic();
   const payload = validPayload(ctx);
   const before = plain(ctx.processStatus_(payload.uuid, NOW));
-  assert.deepStrictEqual(before, { ok: true, status: 'open', answered: false, schema_version: '1', survey_version: '2026-10' });
+  assert.deepStrictEqual(before, { ok: true, status: 'open', answered: false, schema_version: SV, survey_version: '2026-10' });
   submit(ctx, payload);
   const after = plain(ctx.processStatus_(payload.uuid, NOW));
   assert.strictEqual(after.answered, true);
