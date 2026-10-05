@@ -20,7 +20,7 @@ const TARGETS = {
   admin: {
     dir: BASE + '/admin',
     files: ['Aggregate.gs', 'Auth.gs', 'Dashboard.html', 'DashboardScript.html', 'DashboardStyles.html', 'Data.gs', 'Main.gs', 'SurveyGenerated.gs'],
-    requiredScopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    requiredScopes: ['https://www.googleapis.com/auth/spreadsheets']
   }
 };
 // 初回に手動作成したGASプロジェクトに最初から入っている空のスタブ（Code.gs / コード.gs）は上書きしてよい。

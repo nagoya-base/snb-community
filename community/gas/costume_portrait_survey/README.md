@@ -142,7 +142,7 @@ UUID形式・schema_version・**未知field（top-level / answers / other_texts 
 
 ## Admin GAS
 
-- 別プロジェクト・Web App「自分のみ（MYSELF）」・`spreadsheets.readonly` のみ（書き込み/メールscopeなし）。
+- 別プロジェクト・Web App「自分のみ（MYSELF）」・`spreadsheets` scope（openById に必須。コード上は読み取り専用で書き込み処理なし・メールscopeなし）。
   さらに Script Property `ADMIN_ALLOWED_EMAILS`（カンマ区切り）に含まれるアカウントのみ実行可（未設定/不一致は拒否）。
 - 概要（総回答数・有効回答数・締切後/日時不明・重複拒否件数・日別・finalize状態・年代/居住地）、全設問の単純集計、
   ファネル2種（ポートレート需要 / 撮影者・スタジオ・機材需要）、クロス集計（Issue記載の13種 + **任意の2設問を選べる汎用UI**）、
