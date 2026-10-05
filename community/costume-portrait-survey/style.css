@@ -18,6 +18,7 @@ body {
 }
 .cp-wrap { max-width: 680px; margin: 0 auto; padding: 16px 16px 120px; }
 .cp-back { display: inline-block; margin: 4px 0 12px; color: var(--cp-muted); font-size: .88rem; }
+.cp-hero-img { display: block; width: 100%; height: auto; aspect-ratio: 2 / 1; object-fit: cover; border-radius: 12px; margin: 0 0 12px; background: #111; }
 .cp-hero h1 { font-size: 1.45rem; line-height: 1.4; margin: 0 0 4px; }
 .cp-hero .cp-sub { font-size: 1rem; font-weight: 700; color: var(--cp-accent); margin: 0 0 12px; }
 .cp-card { background: var(--cp-card); border: 1px solid var(--cp-line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
