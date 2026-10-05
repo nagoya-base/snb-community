@@ -10,11 +10,11 @@
   window.SNB_EVENTS = [
     {
       id: "baseball-next-activity",
-      title: "10月キャッチボール会",
+      title: "キャッチボール会",
       date: null,
-      /* 10/3・10/31の2日開催のため、単一date運用（自動finished判定）は使わない。
-         最後の10/31開催終了後、statusを手動で"finished"へ切り替えること（Issue #247）。 */
-      dateLabel: "10/3（土）・10/31（土）",
+      /* 10/31・11/14・11/28の複数日開催のため、単一date運用（自動finished判定）は使わない。
+         最後の11/28開催終了後、statusを手動で"finished"へ切り替えること（Issue #247・#349）。 */
+      dateLabel: "10/31（土）・11/14（土）・11/28（土）",
       timeLabel: "13:00〜15:00",
       venue: "名古屋市内（公園・グラウンド）",
       fee: "基本無料",
