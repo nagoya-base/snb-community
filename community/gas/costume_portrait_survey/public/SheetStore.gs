@@ -6,6 +6,7 @@
  *  - 複数選択: |baseball|soccer| 形式（Spreadsheet永続化専用。内部処理は配列）
  *  - matrix（Q27）: 行ごとに1列（intent_3m__get_portrait = definitely）
  *  - 「その他」自由記述: other_texts 列にJSON（選択値へは埋め込まない）
+ *  - completion_status: complete（本番回答）/ test（E2E実送信テスト）
  */
 var FIXED_HEAD_COLUMNS = ['timestamp', 'survey_version', 'schema_version', 'respondent_hash', 'completion_status', 'age_confirmed'];
 var FIXED_TAIL_COLUMNS = ['other_texts', 'client_elapsed_ms', 'notification_status'];
@@ -44,14 +45,14 @@ function sanitizeCell_(value) {
   return /^[=+\-@\t\r]/.test(value) ? "'" + value : value;
 }
 
-function buildRow_(clean, hash, now, elapsedMs) {
+function buildRow_(clean, hash, now, elapsedMs, completionStatus) {
   var answers = clean.answers;
   var cells = {
     timestamp: now,
     survey_version: SURVEY_SCHEMA.survey_version,
     schema_version: SURVEY_SCHEMA.schema_version,
     respondent_hash: hash,
-    completion_status: 'complete',
+    completion_status: completionStatus === 'test' ? 'test' : 'complete',
     age_confirmed: true,
     other_texts: sanitizeCell_(JSON.stringify(clean.other_texts)),
     client_elapsed_ms: elapsedMs,
@@ -71,12 +72,16 @@ function buildRow_(clean, hash, now, elapsedMs) {
 
 function hashColumnIndex_() { return responseHeader_().indexOf('respondent_hash') + 1; }
 
-function hasRespondentHash_(sheet, hash) {
+/** completionStatusを省略した場合は本番回答（complete）だけを重複判定対象にする。 */
+function hasRespondentHash_(sheet, hash, completionStatus) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return false;
-  var hashes = sheet.getRange(2, hashColumnIndex_(), lastRow - 1, 1).getValues();
-  for (var i = 0; i < hashes.length; i++) {
-    if (hashes[i][0] === hash) return true;
+  var wantedStatus = completionStatus || 'complete';
+  var hashCol = hashColumnIndex_();
+  // respondent_hash と completion_status は固定ヘッダ上で隣接している。
+  var values = sheet.getRange(2, hashCol, lastRow - 1, 2).getValues();
+  for (var i = 0; i < values.length; i++) {
+    if (values[i][0] === hash && values[i][1] === wantedStatus) return true;
   }
   return false;
 }
