@@ -507,7 +507,7 @@
     var card = el('div', 'cp-card');
     card.appendChild(el('h2', '', '送信前の確認'));
     card.appendChild(el('p', '', 'ここまでのご回答を送信します。送信後の修正はできません。'));
-    card.appendChild(el('p', 'cp-lead', '個々の回答や自由記述は公開しません。公開するのは、十分な回答数が集まった後の匿名の集計結果の一部だけです。'));
+    card.appendChild(el('p', 'cp-lead', '個々の回答や自由記述は公開しません。公開するのは、有効回答が30件以上集まった後の匿名の集計結果（受付中は途中集計）の一部だけです。'));
     var err = el('p', 'cp-err');
     err.id = 'cp-submit-error';
     err.setAttribute('role', 'alert');
@@ -709,13 +709,13 @@
         { text: '公開結果のページへ', href: RESULTS_URL });
     } else {
       showMessage('ok', 'ご回答ありがとうございました',
-        ['回答を受け付けました。集計結果の一部は、回答数が十分に集まった後に公開します。'],
+        ['回答を受け付けました。有効回答が30件以上集まると、匿名の途中集計を公開します（受付中は回答の追加により変わります）。最終結果は受付終了後に確定して公開します。'],
         { text: '公開結果のページへ', href: RESULTS_URL });
     }
   }
   function showClosed() {
     showMessage('warn', 'アンケートの受付は終了しました',
-      ['たくさんのご回答ありがとうございました。結果は集計後に公開します。'],
+      ['たくさんのご回答ありがとうございました。有効回答が30件以上集まっている場合は途中集計を公開しています。最終結果は確定後に公開します。'],
       { text: '公開結果のページへ', href: RESULTS_URL });
   }
   function showUpdateNeeded() {

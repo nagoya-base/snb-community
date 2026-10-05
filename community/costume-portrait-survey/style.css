@@ -85,3 +85,4 @@ fieldset.cp-q.cp-has-error .cp-options, fieldset.cp-q.cp-has-error .cp-matrix { 
 .cp-bar i { display: block; height: 100%; background: var(--cp-accent); }
 .cp-num { text-align: right; font-variant-numeric: tabular-nums; }
 @media (min-width: 720px) { .cp-wrap { padding-top: 32px; } }
+.cp-badge { display: inline-block; margin: 0 0 8px; padding: 2px 12px; border-radius: 999px; background: var(--cp-accent-pale); border: 1px solid #f0c4bb; font-weight: 700; font-size: 0.9rem; }
