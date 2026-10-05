@@ -29,10 +29,13 @@ function validatePayload_(payload) {
   // honeypot：人間には見えない欄。入力があればbotとして拒否する。
   if (payload.website !== undefined && payload.website !== '') fail('website', 'honeypot');
 
+  // E2E実送信テスト（test_mode=true かつ LIVE_TEST_ENABLED=true）だけ最短回答時間を免除する。
+  // 通常回答、および LIVE_TEST_ENABLED が無効なときの test_mode は免除しない（後者は上で disabled 拒否）。
+  var liveTest = payload.test_mode === true && isLiveTestEnabled_();
   var elapsed = payload.elapsed_ms;
   if (typeof elapsed !== 'number' || !isFinite(elapsed) || elapsed < 0 || elapsed > MAX_ELAPSED_MS) {
     fail('elapsed_ms', 'invalid_type');
-  } else if (elapsed < SURVEY_SCHEMA.limits.minElapsedMs) {
+  } else if (!liveTest && elapsed < SURVEY_SCHEMA.limits.minElapsedMs) {
     fail('elapsed_ms', 'too_fast');
   }
 
@@ -45,6 +48,6 @@ function validatePayload_(payload) {
     clean: result.clean,
     uuid: typeof payload.uuid === 'string' ? payload.uuid : null,
     elapsedMs: typeof elapsed === 'number' ? Math.floor(elapsed) : 0,
-    testMode: payload.test_mode === true && isLiveTestEnabled_()
+    testMode: liveTest
   };
 }

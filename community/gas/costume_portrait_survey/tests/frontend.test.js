@@ -349,6 +349,31 @@ test('invalid_request（サーバー検証で不備）：該当セクション�
   assert.strictEqual(age.document.getElementById('cp-age-error').hidden, false);
 });
 
+test('invalid_request（設問以外のfield）：専用文言を出し、内部codeは画面に出さない', async () => {
+  const GENERIC = '入力内容に不備があるため送信できませんでした。内容をご確認ください。';
+  const cases = [
+    [[{ field: 'elapsed_ms', code: 'too_fast' }], '回答が早すぎるため送信できませんでした。内容をご確認のうえ、少し時間をおいてもう一度お試しください。'],
+    [[{ field: 'test_mode', code: 'disabled' }], 'テスト送信は現在無効です。管理者がLIVE_TEST_ENABLEDを有効にしてください。'],
+    [[{ field: 'uuid', code: 'invalid_uuid' }], 'ブラウザ情報を確認できませんでした。ページを再読み込みしてもう一度お試しください。'],
+    [[{ field: 'website', code: 'honeypot' }], GENERIC],
+    [[{ field: 'mystery_field', code: 'weird_code' }], GENERIC],
+    [[{ field: 'elapsed_ms', code: 'invalid_type' }], GENERIC]
+  ];
+  for (const [fields, expected] of cases) {
+    const { document } = await reviewPage({ fetch: (url, o) => (o.method === 'POST' ? { ok: false, error: 'invalid_request', fields } : { ok: true, status: 'open', answered: false, schema_version: SV }) });
+    next(document);
+    await settle();
+    const err = document.getElementById('cp-submit-error');
+    assert.strictEqual(pageTitle(document), '送信前の確認', JSON.stringify(fields));
+    assert.strictEqual(err.hidden, false);
+    assert.strictEqual(err.textContent, expected, JSON.stringify(fields));
+    for (const f of fields) {
+      if (expected === GENERIC) { assert.ok(!err.textContent.includes(f.code), '内部codeを露出しない'); assert.ok(!err.textContent.includes(f.field)); }
+    }
+    assert.strictEqual(document.getElementById('cp-next').disabled, false, '再送可能');
+  }
+});
+
 // ── 受付状態（status API） ──
 test('status=closed：入力画面を出さず受付終了（締切はFrontendでハードコードしない）', async () => {
   const { document, calls } = await openPage({ fetch: () => ({ ok: true, status: 'closed', answered: false, schema_version: SV }) });
