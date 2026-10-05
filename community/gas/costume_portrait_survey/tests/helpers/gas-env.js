@@ -135,7 +135,7 @@ function loadAdmin() {
   const ctx = loadDir(env, path.join(ROOT, 'admin'));
   env.props.set('SPREADSHEET_ID', 'sheet-id');
   env.props.set('SURVEY_CLOSES_AT', '2026-12-31T23:59:59+09:00');
-  env.props.set('ADMIN_ALLOWED_EMAILS', 'admin@example.com');
+  env.props.set('ADMIN_OWNER_EMAILS', 'admin@example.com');
   env.activeEmail = 'admin@example.com';
   return { env, ctx };
 }

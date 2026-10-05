@@ -4,6 +4,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const { loadPublic, loadAdmin, validPayload, plain, ROOT } = require('./helpers/gas-env');
+const { buildPage } = require('./helpers/admin-page');
 
 const NOW = new Date('2026-11-01T12:00:00+09:00');
 
@@ -178,6 +179,15 @@ test('自由記述：「その他」・Q28・Q29・Q30 を管理画面から確�
   assert.ok(data.freeText.others.every((o) => o.label.startsWith('Q')));
 });
 
+function asRole(admin, email, owners, viewers) {
+  admin.env.activeEmail = email;
+  ['ADMIN_OWNER_EMAILS', 'ADMIN_VIEWER_EMAILS'].forEach((k, i) => {
+    const v = [owners, viewers][i];
+    if (v === undefined) admin.env.props.delete(k); else admin.env.props.set(k, v);
+  });
+}
+const roleOf = (admin) => { try { return admin.ctx.getAdminRole_(); } catch (e) { return String(e.message); } };
+
 test('認証：許可メール以外・未設定・取得不能はすべて拒否（fail closed）', () => {
   const admin = loadAdmin();
   admin.env.spreadsheet.insertSheet('responses');
@@ -190,10 +200,154 @@ test('認証：許可メール以外・未設定・取得不能はすべて拒�
   assert.throws(() => admin.ctx.getDashboardData(), /forbidden/);
   admin.env.activeEmail = 'ADMIN@example.com ';
   assert.doesNotThrow(() => admin.ctx.getDashboardData());
-  admin.env.props.delete('ADMIN_ALLOWED_EMAILS');
+  admin.env.props.delete('ADMIN_OWNER_EMAILS');
   assert.throws(() => admin.ctx.getDashboardData(), /forbidden/);
-  admin.env.props.set('ADMIN_ALLOWED_EMAILS', ' , ');
+  admin.env.props.set('ADMIN_OWNER_EMAILS', ' , ');
   assert.throws(() => admin.ctx.getDashboardData(), /forbidden/);
+});
+
+test('ロール判定：owner / viewer / 未登録 / 両方登録はowner優先 / 正規化 / 未設定・空・メール空', () => {
+  const admin = loadAdmin();
+  asRole(admin, 'o@example.com', 'o@example.com', 'v@example.com');
+  assert.strictEqual(roleOf(admin), 'owner');
+  asRole(admin, 'v@example.com', 'o@example.com', 'v@example.com');
+  assert.strictEqual(roleOf(admin), 'viewer');
+  asRole(admin, 'x@example.com', 'o@example.com', 'v@example.com');
+  assert.strictEqual(roleOf(admin), 'forbidden');
+  asRole(admin, 'both@example.com', 'both@example.com', 'both@example.com');
+  assert.strictEqual(roleOf(admin), 'owner');
+  asRole(admin, '  V@Example.COM ', 'o@example.com', ' a@example.com , V@EXAMPLE.com ');
+  assert.strictEqual(roleOf(admin), 'viewer');
+  asRole(admin, 'O@EXAMPLE.COM', ' o@example.com ', undefined);
+  assert.strictEqual(roleOf(admin), 'owner');
+  // 未設定・空・空白のみ
+  asRole(admin, 'v@example.com', undefined, undefined);
+  assert.strictEqual(roleOf(admin), 'forbidden');
+  asRole(admin, 'v@example.com', '', '');
+  assert.strictEqual(roleOf(admin), 'forbidden');
+  asRole(admin, 'v@example.com', ' , ', ' ,, ');
+  assert.strictEqual(roleOf(admin), 'forbidden');
+  // Sessionメールが空 / 取得で例外
+  asRole(admin, '', 'o@example.com', 'v@example.com');
+  assert.strictEqual(roleOf(admin), 'forbidden');
+  admin.env.sandbox.Session.getActiveUser = () => { throw new Error('no'); };
+  asRole(admin, 'o@example.com', 'o@example.com', 'v@example.com');
+  assert.strictEqual(roleOf(admin), 'forbidden');
+});
+
+test('旧 ADMIN_ALLOWED_EMAILS は fallback として使われない（設定漏れは拒否）', () => {
+  const admin = loadAdmin();
+  asRole(admin, 'legacy@example.com', undefined, undefined);
+  admin.env.props.set('ADMIN_ALLOWED_EMAILS', 'legacy@example.com');
+  assert.strictEqual(roleOf(admin), 'forbidden');
+  assert.throws(() => admin.ctx.getDashboardData(), /forbidden/);
+  assert.throws(() => admin.ctx.doGet(), /forbidden/);
+});
+
+const SECRET = {
+  free_ideas: 'SECRET_IDEAS_TEXT', free_themes: 'SECRET_THEMES_TEXT', cheer_message: 'SECRET_CHEER_TEXT',
+  residence_country: 'SECRET_COUNTRY_TEXT'
+};
+const SENSITIVE_IDS = ['sexual_orientation', 'residence', 'aichi_area', 'residence_country', 'free_ideas', 'free_themes', 'cheer_message',
+  'fetish_presentation', 'hesitation', 'portrait_price', 'intent_3m', 'travel_range', 'rental_price', 'equipment_wanted'];
+
+function roleSetup(role) {
+  const pub = loadPublic();
+  const answers = { portrait_interest: 'other', age_range: 'age_25_29', residence: 'pref_99', sexual_orientation: 'prefer_not' };
+  const probe = validPayload(pub.ctx, answers, { portrait_interest: 'SECRET_OTHER_TEXT' });
+  Object.assign(probe.answers, SECRET);
+  const r = plain(pub.ctx.processSubmission_(JSON.stringify(probe), NOW));
+  if (!r.ok) {
+    // 居住国入力が許される選択肢へ切替（schema由来）
+    const q = pub.ctx.SURVEY_SCHEMA.questions.find((x) => x.id === 'residence');
+    const abroad = q.options.find((o) => /overseas|abroad|foreign/.test(o.id)) || q.options[q.options.length - 1];
+    const retry = validPayload(pub.ctx, Object.assign({}, answers, { residence: abroad.id }), { portrait_interest: 'SECRET_OTHER_TEXT' });
+    Object.assign(retry.answers, SECRET);
+    assert.strictEqual(plain(pub.ctx.processSubmission_(JSON.stringify(retry), NOW)).ok, true);
+  }
+  pub.ctx.processSubmission_(JSON.stringify(validPayload(pub.ctx)), NOW);
+  const admin = loadAdmin();
+  admin.env.spreadsheet = pub.env.spreadsheet;
+  asRole(admin, role + '@example.com', 'owner@example.com', 'viewer@example.com');
+  return { admin, pub };
+}
+
+test('OWNER：自由記述・cheer_message・private項目・内部メタ・全クロス集計を従来どおり取得できる', () => {
+  const { admin } = roleSetup('owner');
+  const data = dashboard(admin);
+  assert.strictEqual(data.role, 'owner');
+  const json = JSON.stringify(data);
+  Object.values(SECRET).concat(['SECRET_OTHER_TEXT']).forEach((t) => assert.ok(json.includes(t), t));
+  for (const id of ['sexual_orientation', 'residence', 'portrait_price', 'intent_3m']) assert.ok(view(data, id), id);
+  assert.ok(data.summary.finalize && 'duplicateRejects' in data.summary && 'lateRows' in data.summary);
+  assert.strictEqual(data.crosstabPresets.length, 17);
+  assert.ok(data.funnels.length === 2 && data.axes.length > 30);
+  assert.doesNotThrow(() => admin.ctx.getCrosstabData('residence', 'sexual_orientation'));
+});
+
+test('VIEWER：総数・日別・allowlist単純集計は取得でき、自由記述/cheer/国名/内部metaは返却に存在しない', () => {
+  const { admin } = roleSetup('viewer');
+  const data = dashboard(admin);
+  assert.strictEqual(data.role, 'viewer');
+  assert.strictEqual(data.summary.totalRows, 2);
+  assert.strictEqual(data.summary.validRows, 2);
+  assert.deepStrictEqual(data.byDay, [{ date: '2026-11-01', count: 2 }]);
+  assert.strictEqual(view(data, 'age_range').view.base, 2);
+  assert.strictEqual(view(data, 'age_range').view.options.find((o) => o.id === 'age_25_29').count, 1);
+  const json = JSON.stringify(data);
+  Object.values(SECRET).concat(['SECRET_OTHER_TEXT']).forEach((t) => assert.ok(!json.includes(t), t));
+  for (const key of ['freeText', 'funnels', 'axes', 'finalize', 'duplicateRejects', 'lateRows', 'unparseableRows', 'schemaVersion']) {
+    assert.ok(!json.includes('"' + key + '"'), key);
+  }
+  for (const id of SENSITIVE_IDS) assert.ok(!json.includes('"' + id + '"'), id);
+  assert.deepStrictEqual(data.sections.flatMap((s) => s.questions).map((q) => q.id).sort(), plain(admin.ctx.getViewerAllowedQuestionIds_()).sort());
+});
+
+test('VIEWER：allowlistは明示定義で、センシティブ設問・自由記述を含まない／クロス集計は両軸が許可済みのものだけ', () => {
+  const { admin } = roleSetup('viewer');
+  const allowed = plain(admin.ctx.getViewerAllowedQuestionIds_());
+  const schema = admin.ctx.SURVEY_SCHEMA;
+  for (const id of SENSITIVE_IDS) assert.ok(!allowed.includes(id), id);
+  assert.ok(allowed.every((id) => schema.questions.find((q) => q.id === id).type !== 'text'));
+  const data = dashboard(admin);
+  assert.ok(data.crosstabPresets.length > 0 && data.crosstabPresets.length < 17);
+  for (const p of data.crosstabPresets) {
+    const def = schema.crosstabs.find((c) => c.id === p.id);
+    assert.ok(allowed.includes(def.row.question) && allowed.includes(def.col.question), p.id);
+  }
+  assert.ok(!data.crosstabPresets.some((p) => /price|fetish|studio|support/.test(p.id)));
+});
+
+test('VIEWER：禁止クロス集計・任意軸は拒否、許可プリセットは取得可（クライアントの指定は信用しない）', () => {
+  const { admin } = roleSetup('viewer');
+  for (const [r, c] of [['residence', 'sexual_orientation'], ['age_range', 'residence'], ['portrait_interest', 'portrait_price'],
+    ['age_range', 'cheer_message'], ['intent_3m:get_portrait', 'age_range'], ['age_range', 'backdrop'], ['costume_interest', 'age_range']]) {
+    assert.throws(() => admin.ctx.getCrosstabData(r, c), /forbidden/, r + '×' + c);
+  }
+  const ok = plain(admin.ctx.getCrosstabData('age_range', 'costume_interest'));
+  assert.strictEqual(ok.rowKey, 'age_range');
+  // OWNERは同じ関数で任意軸を取得できる
+  asRole(admin, 'owner@example.com', 'owner@example.com', 'viewer@example.com');
+  assert.doesNotThrow(() => admin.ctx.getCrosstabData('age_range', 'backdrop'));
+});
+
+test('Dashboard UI：ロール表示。VIEWERでは返却されなかったタブ（ファネル・自由記述）がDOMごと存在しない', () => {
+  const owner = roleSetup('owner');
+  const o = buildPage(plain(owner.admin.ctx.getDashboardData()));
+  assert.ok(o.w.document.getElementById('role').textContent.includes('OWNER'));
+  assert.ok(o.w.document.getElementById('tab-free') && o.w.document.getElementById('tab-funnel'));
+  const viewer = roleSetup('viewer');
+  const v = buildPage(plain(viewer.admin.ctx.getDashboardData()));
+  const doc = v.w.document;
+  assert.ok(doc.getElementById('role').textContent.includes('VIEWER'));
+  assert.strictEqual(doc.getElementById('tab-free'), null);
+  assert.strictEqual(doc.getElementById('tab-funnel'), null);
+  assert.strictEqual(doc.querySelector('[data-tab="free"]'), null);
+  assert.strictEqual(doc.querySelector('[data-tab="funnel"]'), null);
+  assert.strictEqual(doc.getElementById('tab-cross').querySelectorAll('select').length, 0);
+  assert.ok(doc.getElementById('tab-cross').querySelectorAll('table').length > 0);
+  assert.ok(!doc.body.textContent.includes('重複拒否件数') && !doc.body.textContent.includes('finalize'));
+  assert.ok(doc.getElementById('tab-overview').textContent.includes('有効回答数'));
 });
 
 test('Admin GAS は読み取り専用で、Public GAS とは別プロジェクト（管理機能を混在させない）', () => {
@@ -207,7 +361,7 @@ test('Admin GAS は読み取り専用で、Public GAS とは別プロジェク�
   assert.ok(manifest.oauthScopes.every((s) => !s.endsWith('/spreadsheets') && !s.includes('send_mail')));
   const publicSource = fs.readdirSync(path.join(ROOT, 'public')).filter((f) => f.endsWith('.gs'))
     .map((f) => fs.readFileSync(path.join(ROOT, 'public', f), 'utf8')).join('\n');
-  for (const word of ['getDashboardData', 'getCrosstabData', 'HtmlService', 'ADMIN_ALLOWED_EMAILS', 'getActiveUser']) assert.ok(!publicSource.includes(word), word);
+  for (const word of ['getDashboardData', 'getCrosstabData', 'HtmlService', 'ADMIN_ALLOWED_EMAILS', 'ADMIN_OWNER_EMAILS', 'ADMIN_VIEWER_EMAILS', 'getActiveUser']) assert.ok(!publicSource.includes(word), word);
   const publicManifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'appsscript.json'), 'utf8'));
   assert.ok(publicManifest.oauthScopes.includes('https://www.googleapis.com/auth/script.send_mail'));
   assert.ok(publicManifest.oauthScopes.includes('https://www.googleapis.com/auth/spreadsheets'));

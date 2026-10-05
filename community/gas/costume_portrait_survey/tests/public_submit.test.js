@@ -327,7 +327,7 @@ test('doGet のルーティング：status / results / その他（管理機能�
   for (const action of ['admin', 'dump', 'export', 'rows']) {
     assert.deepStrictEqual(JSON.parse(ctx.doGet({ parameter: { action } }).getContent()), root);
   }
-  assert.ok(!/getDashboardData|Dashboard|ADMIN_ALLOWED/.test(require('fs').readdirSync(require('path').join(__dirname, '..', 'public')).map((f) => require('fs').readFileSync(require('path').join(__dirname, '..', 'public', f), 'utf8')).join('\n')));
+  assert.ok(!/getDashboardData|Dashboard|ADMIN_ALLOWED|ADMIN_OWNER|ADMIN_VIEWER/.test(require('fs').readdirSync(require('path').join(__dirname, '..', 'public')).map((f) => require('fs').readFileSync(require('path').join(__dirname, '..', 'public', f), 'utf8')).join('\n')));
 });
 
 // ── メール通知 ──

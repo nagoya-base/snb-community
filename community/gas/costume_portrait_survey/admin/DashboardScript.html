@@ -30,6 +30,7 @@
     var kpis = el('div', 'kpis');
     [['総回答数', s.totalRows], ['有効回答数', s.validRows], ['締切後の回答', s.lateRows], ['日時不明', s.unparseableRows],
      ['重複拒否件数', s.duplicateRejects]].forEach(function (pair) {
+      if (pair[1] === undefined) return;
       var kpi = el('div', 'kpi');
       kpi.appendChild(el('b', '', pair[1]));
       kpi.appendChild(el('span', '', pair[0]));
@@ -37,12 +38,14 @@
     });
     root.appendChild(kpis);
 
-    var fin = el('div', 'card');
-    fin.appendChild(el('h2', '', '結果確定（finalize）'));
-    fin.appendChild(el('p', '', s.finalize.status === 'final'
-      ? '確定済み：' + s.finalize.finalizedAt + '（公開結果の基礎回答数 ' + s.finalize.publicTotal + '）'
-      : '未確定。締切後に Public GAS で finalizeSurvey を実行してください。'));
-    root.appendChild(fin);
+    if (s.finalize) {
+      var fin = el('div', 'card');
+      fin.appendChild(el('h2', '', '結果確定（finalize）'));
+      fin.appendChild(el('p', '', s.finalize.status === 'final'
+        ? '確定済み：' + s.finalize.finalizedAt + '（公開結果の基礎回答数 ' + s.finalize.publicTotal + '）'
+        : '未確定。締切後に Public GAS で finalizeSurvey を実行してください。'));
+      root.appendChild(fin);
+    }
 
     var days = el('div', 'card');
     days.appendChild(el('h2', '', '回答日別（有効回答）'));
@@ -130,6 +133,17 @@
   }
 
   function renderCross(root) {
+    if (data.axes) root.appendChild(customCrossCard());
+    data.crosstabPresets.forEach(function (preset) {
+      var card = el('div', 'card');
+      card.appendChild(el('h3', '', preset.label));
+      card.appendChild(crosstabTable(preset));
+      card.appendChild(el('p', 'note', preset.note));
+      root.appendChild(card);
+    });
+  }
+
+  function customCrossCard() {
     var custom = el('div', 'card');
     custom.appendChild(el('h2', '', '任意のクロス集計'));
     var controls = el('div', 'controls');
@@ -166,15 +180,7 @@
         .withFailureHandler(function () { clear(out); out.appendChild(el('p', 'warn', '集計に失敗しました。')); })
         .getCrosstabData(rowSel.value, colSel.value);
     });
-    root.appendChild(custom);
-
-    data.crosstabPresets.forEach(function (preset) {
-      var card = el('div', 'card');
-      card.appendChild(el('h3', '', preset.label));
-      card.appendChild(crosstabTable(preset));
-      card.appendChild(el('p', 'note', preset.note));
-      root.appendChild(card);
-    });
+    return custom;
   }
 
   function freeCard(title, items) {
@@ -198,6 +204,8 @@
   }
 
   var renderers = { overview: renderOverview, simple: renderSimple, funnel: renderFunnel, cross: renderCross, free: renderFree };
+  /* サーバーが返したデータだけを描画する。返却されなかった区分のタブは、隠すのではなくDOMから取り除く。 */
+  var requiredData = { funnel: 'funnels', free: 'freeText' };
 
   function showTab(name) {
     Object.keys(renderers).forEach(function (key) {
@@ -209,8 +217,16 @@
   }
 
   function render() {
-    Object.keys(renderers).forEach(function (key) {
+    document.getElementById('role').textContent = ' 管理者権限: ' + (data.role === 'owner' ? 'OWNER' : 'VIEWER');
+    Object.keys(renderers).slice().forEach(function (key) {
       var root = document.getElementById('tab-' + key);
+      if (requiredData[key] && !data[requiredData[key]]) {
+        root.parentNode.removeChild(root);
+        var tab = document.querySelector('.tabs button[data-tab="' + key + '"]');
+        if (tab) tab.parentNode.removeChild(tab);
+        delete renderers[key];
+        return;
+      }
       clear(root);
       renderers[key](root);
     });

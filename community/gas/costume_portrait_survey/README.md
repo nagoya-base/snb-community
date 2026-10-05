@@ -142,10 +142,58 @@ UUID形式・schema_version・**未知field（top-level / answers / other_texts 
 ## Admin GAS
 
 - 別プロジェクト・Web App「自分のみ（MYSELF）」・`spreadsheets.readonly` のみ（書き込み/メールscopeなし）。
-  さらに Script Property `ADMIN_ALLOWED_EMAILS`（カンマ区切り）に含まれるアカウントのみ実行可（未設定/不一致は拒否）。
+  さらに実行時に Session のメールアドレスを Script Properties と照合し、**OWNER / VIEWER の2ロール**で権限を分ける（下記「権限（OWNER / VIEWER）」）。未設定・不一致・メール取得不能は拒否（fail closed）。
 - 概要（総回答数・有効回答数・締切後/日時不明・重複拒否件数・日別・finalize状態・年代/居住地）、全設問の単純集計、
   ファネル2種（ポートレート需要 / 撮影者・スタジオ・機材需要）、クロス集計（Issue記載の13種 + **任意の2設問を選べる汎用UI**）、
   自由記述（各「その他」・Q28・Q29・Q30）。描画は `textContent` のみ（XSS対策）。
+### 権限（OWNER / VIEWER）
+
+Admin GAS・Web Appは1つのまま、ログインユーザーのメールアドレスでロールを決める（ロールは常にサーバー側でSessionから判定。クライアントからの指定・URLトークン・パスワードは使わない）。
+
+| | OWNER | VIEWER |
+|---|---|---|
+| 総回答数・有効回答数 | ○ | ○ |
+| 締切後/日時不明/重複拒否件数・finalize状態・schema情報（内部メタ） | ○ | ×（返さない） |
+| 日別件数 | ○ | ○ |
+| 単純集計 | 全設問（private・センシティブ含む） | `VIEWER_ALLOWED_QUESTION_IDS` の設問のみ |
+| クロス集計 | 17種 + 任意の2設問 | `VIEWER_ALLOWED_CROSSTAB_IDS` の許可済み組み合わせのみ（任意軸は不可） |
+| ファネル | ○ | ×（返さない） |
+| 自由記述（「その他」・`free_ideas` / `free_themes` / `cheer_message`・`residence_country`） | ○ | ×（返さない） |
+
+- **VIEWERは「DOMで隠す」のではなく、GAS側（`getViewerDashboardData_()`）でレスポンスを別に組み立てる。** 自由記述・センシティブ生データ・内部メタはJSONに含まれない。UIは返ってきたデータだけを描画し、返却されなかったタブはDOMごと存在しない。
+- **VIEWER allowlistは `admin/Aggregate.gs` に明示定義**（`survey.schema.json` の `visibility` とは独立。publicは「公開結果ページ向け」の意味で、Admin VIEWER権限と一致するとは限らないため）。除外: 自由記述（text型）、`sexual_orientation` / `residence` / `aichi_area` / `travel_range`、`fetish_presentation` / `hesitation`、価格・機材・撮影者系、`intent_3m`（matrix）。設問を増やす場合は allowlist へ明示的に追加する。
+- finalize は従来どおり Public GAS で実行する（Adminに実行機能はなく、`meta` からの状態表示のみ）。状態表示は OWNER のみ。
+
+#### Script Properties（Admin）
+
+| Key | 内容 |
+|---|---|
+| `SPREADSHEET_ID` | 同じSpreadsheet |
+| `ADMIN_OWNER_EMAILS` | OWNERのメールアドレス（カンマ区切り） |
+| `ADMIN_VIEWER_EMAILS` | VIEWERのメールアドレス（カンマ区切り）。VIEWERを使わない場合は未設定でよい（OWNERだけの運用も可） |
+| `SURVEY_CLOSES_AT` | Publicと同じ値（任意） |
+
+```text
+ADMIN_OWNER_EMAILS
+owner@example.com
+
+ADMIN_VIEWER_EMAILS
+viewer1@example.com,viewer2@example.com
+```
+
+- 判定順: `ADMIN_OWNER_EMAILS` → `ADMIN_VIEWER_EMAILS` → 拒否。**同じメールが両方にあればOWNER優先**。比較は前後空白除去 + 小文字化。
+- 未設定・空文字・Sessionメール取得不能はすべて拒否（未設定のpropertyは許可判定に一切使われない）。
+- Web Appアクセス「自分のみ（MYSELF）」と、Spreadsheet読み取り専用（`spreadsheets.readonly`）は維持。Public GAS・回答スキーマ・Spreadsheet列・`schema_version` は変更しない。
+
+#### 旧 `ADMIN_ALLOWED_EMAILS` からの移行
+
+**旧propertyは自動fallbackしない**（設定漏れのまま全員がOWNER/VIEWER扱いになる事故を避けるため）。デプロイ後に新propertyを設定するまで、全員が拒否される。
+
+1. 現在の `ADMIN_ALLOWED_EMAILS` の値を、そのまま `ADMIN_OWNER_EMAILS` へ設定（既存管理者はOWNER）。
+2. 閲覧専用にしたい人がいれば `ADMIN_VIEWER_EMAILS` を設定。
+3. OWNER / VIEWER それぞれでWeb Appを開いて動作確認（VIEWERに自由記述・ファネル・内部メタが出ないこと）。
+4. 確認後、`ADMIN_ALLOWED_EMAILS` を削除。
+
 - **集計の意味**: count は「その選択肢を選んだ回答者数」（延べ選択数ではない）。複数選択×複数選択のセルは
   「行・列の両方を選んだ回答者数」で、1人が複数セルに入るため合計は回答者数と一致しない。割合の分母は行の値を選んだ回答者数。
 
@@ -177,7 +225,7 @@ python3 -m unittest scripts.tests.test_costume_portrait_deploy -v   # リポジ�
    最初のデプロイは Actions（下記）で行うのが安全。`appsscript.json` はCIが管理するため手でコピペしない。
 5. **Script Properties**
    - Public: `SPREADSHEET_ID` / `SURVEY_CLOSES_AT` / `NOTIFICATION_EMAIL`（`RESPONDENT_SALT` は手順7で生成）
-   - Admin: `SPREADSHEET_ID`（同じSpreadsheet） / `ADMIN_ALLOWED_EMAILS` / `SURVEY_CLOSES_AT`（Publicと同じ値。締切後の行の判別用、任意）
+   - Admin: `SPREADSHEET_ID`（同じSpreadsheet） / `ADMIN_OWNER_EMAILS` / `ADMIN_VIEWER_EMAILS`（任意） / `SURVEY_CLOSES_AT`（Publicと同じ値。締切後の行の判別用、任意）
 6. **Web App deployment を各プロジェクトで1回だけ作成**し、Deployment ID と `/exec` URL を控える。
    - Public: 実行ユーザー=自分、アクセス=全員（匿名可）
    - Admin: 実行ユーザー=自分、アクセス=**自分のみ**（CIは `MYSELF` 以外ならデプロイを拒否）

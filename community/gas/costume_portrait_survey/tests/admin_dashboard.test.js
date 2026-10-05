@@ -4,28 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { JSDOM } = require('jsdom');
 const { loadAdmin, loadPublic, validPayload, plain, ROOT } = require('./helpers/gas-env');
 
-function read(name) { return fs.readFileSync(path.join(ROOT, 'admin', name), 'utf8'); }
-
-function buildPage(payload) {
-  const html = read('Dashboard.html')
-    .replace("<?!= include('DashboardStyles'); ?>", '')
-    .replace("<?!= include('DashboardScript'); ?>", '');
-  const script = read('DashboardScript.html').replace(/^<script>/, '').replace(/<\/script>\s*$/, '');
-  const calls = [];
-  const dom = new JSDOM(html, { runScripts: 'outside-only' });
-  const w = dom.window;
-  w.google = { script: { run: {
-    withSuccessHandler(ok) { this.ok = ok; return this; },
-    withFailureHandler(ng) { this.ng = ng; return this; },
-    getDashboardData() { calls.push('dashboard'); this.ok(payload); },
-    getCrosstabData(r, c) { calls.push(['cross', r, c]); }
-  } } };
-  w.eval(script);
-  return { w, calls };
-}
+const { buildPage, read } = require('./helpers/admin-page');
 
 test('自由記述・その他・Q30のHTML/スクリプトは文字列として表示され、要素として解釈されない', () => {
   const evil = '<img src=x onerror="window.__xss=1"><script>window.__xss=2</script>';
