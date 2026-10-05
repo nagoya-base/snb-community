@@ -108,6 +108,7 @@ browser UUID (localStorage) → status / submit で送信
 UUID形式・schema_version・**未知field（top-level / answers / other_texts / matrix行）の拒否**・payloadサイズ（100KB）・
 締切・malformed JSON。スパム対策は honeypot（`website`）・最短回答時間（`elapsed_ms`≥20秒）・サイズ制限のみ
 （reCAPTCHA・fingerprintingは非対象）。
+最短回答時間は通常回答では常に適用する。免除されるのは `test_mode:true` かつ `LIVE_TEST_ENABLED=true` のE2E実送信テスト（`?test=submit`）だけで、`LIVE_TEST_ENABLED` が無効な `test_mode` は `test_mode:disabled` で拒否する。test行は `completion_status=test` で保存され、重複判定・公開集計・Admin集計・finalizeには含めない。
 
 ### 締切
 

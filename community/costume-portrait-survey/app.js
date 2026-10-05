@@ -626,6 +626,22 @@
       });
   }
 
+  /* 設問に対応しないfield（envelope）のerrorは、内部codeを出さず、利用者に必要な案内だけを出す。 */
+  var ENVELOPE_MESSAGES = {
+    'elapsed_ms:too_fast': '回答が早すぎるため送信できませんでした。内容をご確認のうえ、少し時間をおいてもう一度お試しください。',
+    'test_mode:disabled': 'テスト送信は現在無効です。管理者がLIVE_TEST_ENABLEDを有効にしてください。',
+    'uuid:invalid_uuid': 'ブラウザ情報を確認できませんでした。ページを再読み込みしてもう一度お試しください。'
+  };
+  var GENERIC_INVALID_MESSAGE = '入力内容に不備があるため送信できませんでした。内容をご確認ください。';
+
+  function envelopeMessage(fields) {
+    for (var i = 0; i < fields.length; i++) {
+      var key = String(fields[i].field) + ':' + String(fields[i].code);
+      if (Object.prototype.hasOwnProperty.call(ENVELOPE_MESSAGES, key)) return ENVELOPE_MESSAGES[key];
+    }
+    return GENERIC_INVALID_MESSAGE; // website:honeypot・未知のfield/codeは内部仕様を明かさず汎用文言
+  }
+
   function handleInvalidRequest(body) {
     var fields = body && Array.isArray(body.fields) ? body.fields : [];
     var targetPage = null;
@@ -650,7 +666,7 @@
         showErrors(map);
       }
     } else {
-      submitError('入力内容に不備があるため送信できませんでした。内容をご確認ください。');
+      submitError(envelopeMessage(fields));
     }
   }
 
