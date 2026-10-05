@@ -80,8 +80,8 @@ for (const [name, page] of Object.entries(PAGES)) {
     assert.strictEqual(meta(d, 'meta[property="og:description"]'), meta(d, 'meta[name="description"]'));
   });
 
-  test(`${name}: noindex を維持（公開判断は別作業）`, () => {
-    assert.strictEqual(meta(doc(page), 'meta[name="robots"]'), 'noindex, nofollow');
+  test(`${name}: 公開済みのため noindex を含まない`, () => {
+    assert.strictEqual(doc(page).querySelector('meta[name="robots"]'), null);
   });
 }
 
@@ -137,4 +137,11 @@ test('画面切替・送信完了・受付終了でも hero は1つのまま同�
   const closed = await openPage({ fetch: () => ({ ok: true, status: 'closed', answered: false, schema_version: SCHEMA.schema_version }) });
   assert.strictEqual(closed.document.querySelectorAll('.cp-hero').length, 1);
   assert.ok(closed.document.getElementById('cp-app').textContent.includes('アンケートの受付は終了しました'));
+});
+
+test('sitemap.xml に survey / results の2URLが登録されている', () => {
+  const sitemap = read('sitemap.xml');
+  for (const page of Object.values(PAGES)) {
+    assert.ok(sitemap.includes(`<loc>${SITE}${page}</loc>`), `${page} が sitemap.xml にある`);
+  }
 });
