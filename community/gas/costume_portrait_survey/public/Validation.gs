@@ -24,6 +24,7 @@ function validatePayload_(payload) {
   if (payload.age_confirmed !== true) fail('age_confirmed', 'required');
   if (!isValidUuid_(payload.uuid)) fail('uuid', 'invalid_uuid');
   if (payload.test_mode !== undefined && typeof payload.test_mode !== 'boolean') fail('test_mode', 'invalid_type');
+  if (payload.test_mode === true && !isLiveTestEnabled_()) fail('test_mode', 'disabled');
 
   // honeypot：人間には見えない欄。入力があればbotとして拒否する。
   if (payload.website !== undefined && payload.website !== '') fail('website', 'honeypot');
@@ -44,6 +45,6 @@ function validatePayload_(payload) {
     clean: result.clean,
     uuid: typeof payload.uuid === 'string' ? payload.uuid : null,
     elapsedMs: typeof elapsed === 'number' ? Math.floor(elapsed) : 0,
-    testMode: payload.test_mode === true
+    testMode: payload.test_mode === true && isLiveTestEnabled_()
   };
 }
