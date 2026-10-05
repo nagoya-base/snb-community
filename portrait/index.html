@@ -69,16 +69,16 @@
     h2 { font-size: 1.5rem; letter-spacing: 0.04em; margin-bottom: 2rem; }
 
     /* ── Anchor jump offset（sticky nav + ローカルナビ分の余白）── */
-    #top, #purpose, #plans, #gallery, #photographer, #flow, #faq, #contact,
+    #top, #purpose, #plans, #gallery, #photographer, #flow, #research, #faq, #contact,
     .plan-card, .gallery-category { scroll-margin-top: 132px; }
     @media (max-width: 860px) {
       /* ローカルナビはPCのみ表示のため、モバイルはグローバルナビ分のみ考慮
          （.portrait-subnav の表示切替と同じ 860px に統一） */
-      #top, #purpose, #plans, #gallery, #photographer, #flow, #faq, #contact,
+      #top, #purpose, #plans, #gallery, #photographer, #flow, #research, #faq, #contact,
       .plan-card, .gallery-category { scroll-margin-top: 72px; }
     }
     @media (max-width: 480px) {
-      #top, #purpose, #plans, #gallery, #photographer, #flow, #faq, #contact,
+      #top, #purpose, #plans, #gallery, #photographer, #flow, #research, #faq, #contact,
       .plan-card, .gallery-category { scroll-margin-top: 108px; }
     }
 
@@ -129,6 +129,33 @@
     }
     .value-card__title { font-size: 1.02rem; font-weight: 800; color: var(--navy); margin-bottom: 0.6rem; }
     .value-card__text { font-size: 0.86rem; color: var(--text-muted); line-height: 1.85; }
+
+    /* ── Research（調査・読みもの：サブ導線。価格カード・申込CTAより目立たせない）── */
+    .research-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+    .research-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.35rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .research-card__tag { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem; letter-spacing: 0.06em; }
+    .research-card__title { font-size: 1.02rem; font-weight: 800; color: var(--navy); margin-bottom: 0.6rem; }
+    .research-card__text { font-size: 0.86rem; color: var(--text-muted); line-height: 1.85; margin-bottom: 1.1rem; }
+    .research-card__cta {
+      margin-top: auto;
+      background: transparent;
+      color: var(--navy);
+      border-color: var(--border);
+    }
+    .research-card__cta:hover { border-color: var(--navy); color: var(--navy); }
 
     /* ── Brand closing box ── */
     .brand-box {
@@ -1420,6 +1447,22 @@
   </div>
 </section>
 
+<!-- ── 調査・読みもの（サブ導線。今後の調査結果・読みものカードを .research-grid に追加できる） ── -->
+<section id="research">
+  <div class="container">
+    <p class="section-label">Research</p>
+    <h2>調査・読みもの</h2>
+    <div class="research-grid">
+      <article class="research-card">
+        <p class="research-card__tag">アンケート実施中</p>
+        <h3 class="research-card__title">男性の衣装・ポートレート意識調査</h3>
+        <p class="research-card__text">制服・ユニフォーム、学生服、スーツなど、どんな衣装で撮られたい？撮りたい？今後の撮影企画やスタジオづくりの参考にする匿名アンケートを実施しています。</p>
+        <a href="../community/costume-portrait-survey.html" class="btn research-card__cta" data-cta-name="survey" data-cta-location="research">アンケートに回答する</a>
+      </article>
+    </div>
+  </div>
+</section>
+
 <!-- ── FAQ ── -->
 <section id="faq">
   <div class="container">
@@ -2285,7 +2328,7 @@
   });
 
   /* セクション表示計測：各セクションが画面に入ったら1回だけ送出 */
-  var SECTION_IDS = ['gallery', 'photographer', 'flow', 'faq', 'contact'];
+  var SECTION_IDS = ['gallery', 'photographer', 'flow', 'research', 'faq', 'contact'];
   if ('IntersectionObserver' in window) {
     var fired = {};
     var sectionObserver = new IntersectionObserver(function (entries) {
