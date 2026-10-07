@@ -62,10 +62,13 @@ test('Googleログイン成功（OWNER）：tokenだけをtext/plainのPOSTで�
   assert.strictEqual(page.visible('login-view'), false);
   assert.strictEqual(page.visible('dashboard-view'), true);
   assert.ok(page.text('role').includes('管理者権限: OWNER'));
-  assert.deepStrictEqual(Array.from(page.d.querySelectorAll('#tabs button')).map((b) => b.getAttribute('data-tab')), ['overview', 'simple', 'funnel', 'cross', 'free']);
+  assert.deepStrictEqual(Array.from(page.d.querySelectorAll('#tabs button')).map((b) => b.getAttribute('data-tab')), ['overview', 'simple', 'funnel', 'demand', 'cross', 'free']);
   assert.ok(page.text('tab-overview').includes('総回答数') && page.text('tab-overview').includes('重複拒否件数'));
   assert.ok(page.d.getElementById('tab-simple').querySelectorAll('.card').length > 30);
   assert.ok(page.text('tab-funnel').includes('ポートレート撮影の需要ファネル'));
+  const demand = page.text('tab-demand');
+  assert.ok(demand.includes('① 撮られたい人') && demand.includes('分母') && demand.includes('前段階比') && demand.includes('全回答者比'));
+  assert.ok(demand.includes('ストロボのみ') && demand.includes('常時光のみ') && demand.includes('既存データでは判定できない需要'));
   assert.strictEqual(page.d.getElementById('tab-cross').querySelectorAll('table').length, 17);
   assert.strictEqual(page.d.getElementById('tab-cross').querySelectorAll('select').length, 2);
   assert.ok(page.text('tab-free').includes('こんな撮影会'));
@@ -81,7 +84,7 @@ test('Googleログイン成功（VIEWER）：ロール表示。返却されな�
   assert.ok(page.text('role').includes('管理者権限: VIEWER'));
   const d = page.d;
   assert.deepStrictEqual(Array.from(d.querySelectorAll('#tabs button')).map((b) => b.getAttribute('data-tab')), ['overview', 'simple', 'cross']);
-  for (const id of ['tab-free', 'tab-funnel']) assert.strictEqual(d.getElementById(id), null, id);
+  for (const id of ['tab-free', 'tab-funnel', 'tab-demand']) assert.strictEqual(d.getElementById(id), null, id);
   assert.strictEqual(d.getElementById('tab-cross').querySelectorAll('select').length, 0);
   assert.ok(d.getElementById('tab-cross').querySelectorAll('table').length > 0);
   assert.ok(!d.body.textContent.includes('重複拒否件数') && !d.body.textContent.includes('finalize'));

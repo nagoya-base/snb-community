@@ -62,6 +62,7 @@ npm run build:check  # CIと同じ差分検査
 - `priorityFrom`: Q6-A/Q6-B/Q7でQ5の選択を上位表示する（未選択の衣装も「ほかの候補も選ぶ」から選べる）。
 - `funnels` / `funnelFlows`: ファネル判定式。Admin集計・テストが同じ定義を使う（コードにベタ書きしない）。
 - `crosstabs`: Adminの固定クロス集計17種。`publicResults`: 公開allowlist（項目・年代の粗い区分・閾値30/3）。
+- 需要ファネル（Issue #361）: Admin OWNER専用。`admin/Aggregate.gs` の `DEMAND_FUNNELS` / `DEMAND_PREDICATES` に定義（既存stable IDのみ使用。schema・設問・Spreadsheet列・Public結果は変更しない。VIEWERのレスポンスには含めない）。被写体の撮影経験・セルフ撮影/動画等の利用形態は既存データから判定できないため集計しない。
 
 画面順は Issue のとおり：衣装（Q5→Q6-A→Q6-B→Q7）→撮られること→用途→背景→時間/曜日→枚数/仕上げ→不安→価格
 →人物撮影→（対象者のみ）スタジオ/機材→3か月意向→**基本情報（後半）**→自由回答。冒頭に「18歳以上です」。
