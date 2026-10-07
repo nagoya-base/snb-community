@@ -242,7 +242,7 @@ test('Adminで新設問（愛知の地域は集計、国名は自由記述一覧
   submit(pub.ctx, validPayload(pub.ctx, { residence: 'overseas', residence_country: '=タイ' }));
   const admin = loadAdmin();
   admin.env.spreadsheet = pub.env.spreadsheet;
-  const data = plain(admin.ctx.getDashboardData(admin.owner()));
+  const data = plain(admin.ctx.getDashboardData());
   const area = data.sections.flatMap((s) => s.questions).find((x) => x.id === 'aichi_area');
   assert.ok(area, 'aichi_area が基本情報セクションに出る');
   assert.strictEqual(area.view.base, 2);
@@ -382,7 +382,7 @@ test('Adminは平日と土日祝の時間帯を別々に集計し、混ぜない
   submit(pub.ctx, validPayload(pub.ctx, { weekdays: ['holiday'], weekday_time_slots: undefined, holiday_time_slots: ['t20_23'] }));
   const admin = loadAdmin();
   admin.env.spreadsheet = pub.env.spreadsheet;
-  const data = plain(admin.ctx.getDashboardData(admin.owner()));
+  const data = plain(admin.ctx.getDashboardData());
   const view = (id) => data.sections.flatMap((s) => s.questions).find((x) => x.id === id).view;
   const count = (v, id) => v.options.find((o) => o.id === id).count;
   const wd = view('weekday_time_slots');

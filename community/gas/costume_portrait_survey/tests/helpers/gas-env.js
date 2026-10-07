@@ -49,6 +49,26 @@ class FakeSpreadsheet {
   insertSheet(name) { const s = new FakeSheet(name); this.sheets.set(name, s); return s; }
 }
 
+/** HtmlService の最小フェイク。テンプレートの <?!= include('X') ?> だけを展開する（admin/ 配下の .html を読む）。 */
+function createHtmlService(env) {
+  const read = (name) => fs.readFileSync(path.join(ROOT, 'admin', name + '.html'), 'utf8');
+  const output = (content) => {
+    const out = { content, title: null, metas: {}, xFrame: null };
+    out.getContent = () => out.content;
+    out.setTitle = (t) => { out.title = t; return out; };
+    out.addMetaTag = (k, v) => { out.metas[k] = v; return out; };
+    out.setXFrameOptionsMode = (m) => { out.xFrame = m; return out; };
+    return out;
+  };
+  return {
+    XFrameOptionsMode: { DEFAULT: 'DEFAULT', ALLOWALL: 'ALLOWALL' },
+    createHtmlOutputFromFile: (name) => output(read(name)),
+    createTemplateFromFile: (name) => ({
+      evaluate: () => output(read(name).replace(/<\?!=\s*include\('([A-Za-z]+)'\)\s*\?>/g, (_m, inc) => env.sandbox.__include(inc)))
+    })
+  };
+}
+
 function createEnv(options = {}) {
   const env = {
     spreadsheet: new FakeSpreadsheet(),
@@ -113,6 +133,7 @@ function createEnv(options = {}) {
     CacheService: { getScriptCache: () => ({ get: (k) => (env.cache.has(k) ? env.cache.get(k) : null), put: (k, v) => { env.cache.set(k, v); } }) },
     HtmlService: {}
   };
+  env.sandbox.HtmlService = createHtmlService(env);
   return env;
 }
 
@@ -141,19 +162,14 @@ function loadPublic(options = {}) {
   return { env, ctx };
 }
 
-const OWNER_EMAIL = 'admin@example.com';
-
-/** Admin GAS を読み込む。認証はID token（偽IdPが署名）。owner(): OWNER_EMAIL の有効なtoken、tokenFor(email, claims) は任意。 */
+/** Admin GAS を読み込む。認証は Web App 設定（access=MYSELF）に一本化しており、コード側に認証・ロールは無い。 */
 function loadAdmin() {
-  const jwt = require('./jwt');
   const env = createEnv();
   const ctx = loadDir(env, path.join(ROOT, 'admin'));
+  env.sandbox.__include = (name) => ctx.include(name);
   env.props.set('SPREADSHEET_ID', 'sheet-id');
   env.props.set('SURVEY_CLOSES_AT', '2026-12-31T23:59:59+09:00');
-  env.props.set('ADMIN_GOOGLE_CLIENT_ID', jwt.CLIENT_ID);
-  env.props.set('ADMIN_OWNER_EMAILS', OWNER_EMAIL);
-  env.jwks = [jwt.GOOGLE_KEY.jwk];
-  return { env, ctx, jwt, tokenFor: (email, claims, options) => jwt.token(email, claims, options), owner: () => jwt.token(OWNER_EMAIL) };
+  return { env, ctx };
 }
 
 /** schemaから、検証を通る最小の回答を作る。overrides: {設問ID: 値}、otherTexts: {設問ID: 文字列} */
@@ -183,4 +199,4 @@ function validPayload(ctx, overrides = {}, otherTexts = {}, extra = {}) {
   }, extra);
 }
 
-module.exports = { OWNER_EMAIL, ROOT, createEnv, loadDir, loadPublic, loadAdmin, validPayload, plain, FakeSheet, FakeSpreadsheet };
+module.exports = { ROOT, createEnv, loadDir, loadPublic, loadAdmin, validPayload, plain, FakeSheet, FakeSpreadsheet };

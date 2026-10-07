@@ -197,7 +197,7 @@ test('Admin：新設問が独立集計され、クロス集計候補が追加さ
   variants.forEach((v) => assert.strictEqual(submit(pub.ctx, validPayload(pub.ctx, v)).ok, true));
   const admin = loadAdmin();
   admin.env.spreadsheet = pub.env.spreadsheet;
-  const data = plain(admin.ctx.getDashboardData(admin.owner()));
+  const data = plain(admin.ctx.getDashboardData());
   const view = (id) => data.sections.flatMap((s) => s.questions).find((x) => x.id === id).view;
   const count = (id, opt) => view(id).options.find((o) => o.id === opt).count;
   assert.strictEqual(count('suit_interest', 'three_piece'), 2);
