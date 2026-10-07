@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <base target="_top">
+  <title>衣装・ポートレート意識調査｜管理ダッシュボード</title>
+  <?!= include('DashboardStyles') ?>
+</head>
+<body>
+  <section id="dashboard-view">
+    <header class="top">
+      <div class="top-row">
+        <div>
+          <h1>衣装・ポートレート意識調査</h1>
+          <p class="sub">管理ダッシュボード（OWNER専用・読み取り専用・非公開）</p>
+        </div>
+      </div>
+      <nav id="tabs" class="tabs" role="tablist" aria-label="表示切替"></nav>
+    </header>
+    <main>
+      <p id="status" role="status"></p>
+      <div id="panels"></div>
+    </main>
+  </section>
+
+  <?!= include('DashboardScript') ?>
+</body>
+</html>

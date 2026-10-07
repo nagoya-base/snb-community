@@ -1,35 +1,23 @@
+<script>
 /*
- * 管理ダッシュボード（GitHub Pages）。Googleログイン（Google Identity Services）で得た ID token を
- * Admin GAS（doPost）へ送り、サーバーが検証・ロール判定した結果だけを描画する。
+ * 管理ダッシュボード（Admin GAS内HTML。OWNER 1名専用 / Issue #363）。
+ * アクセス制御は Web App 設定（executeAs=USER_DEPLOYING, access=MYSELF）のみ。ログイン・トークン・ロール分岐は無い。
+ * データは google.script.run で既存の Admin 集計関数（getDashboardData / getCrosstabData）から取得する。
  *
- *  - ID token は変数（メモリ）にだけ保持する。localStorage / sessionStorage / Cookie / URL / console へは出さない。
- *  - email / role をクライアントから送らない。表示するロールはサーバーのレスポンスの値。
  *  - 描画は textContent / createTextNode のみ（自由記述をHTMLとして解釈しない）。
- *  - サーバーが返さなかった区分（VIEWER の自由記述・ファネル等）のタブはDOMごと作らない。
+ *  - 返却に含まれない区分のタブはDOMごと作らない。
  */
 (function () {
   'use strict';
-  var config = window.COSTUME_PORTRAIT_ADMIN_CONFIG || {};
-  var endpoint = typeof config.endpoint === 'string' ? config.endpoint.trim() : '';
-  var clientId = typeof config.googleClientId === 'string' ? config.googleClientId.trim() : '';
-  var idToken = null; // メモリのみ。ログアウト・認証失敗で破棄する。
-  var gisReady = false;
   var data = null;
 
-  var loginView = document.getElementById('login-view');
   var dashboardView = document.getElementById('dashboard-view');
-  var loginMessage = document.getElementById('login-message');
   var statusEl = document.getElementById('status');
   var tabsEl = document.getElementById('tabs');
   var panelsEl = document.getElementById('panels');
 
   var MESSAGES = {
-    login: 'Googleアカウントでログインしてください。',
-    unconfigured: '管理ダッシュボードは未設定です（接続先とGoogleクライアントIDが設定されていません）。',
-    forbidden: 'このアカウントには管理画面の利用権限がありません。',
-    expired: 'ログインの有効期限が切れたか、認証に失敗しました。もう一度ログインしてください。',
-    failed: '読み込みに失敗しました。時間をおいてもう一度お試しください。',
-    gisFailed: 'Googleログインを読み込めませんでした。ページを再読み込みしてください。'
+    failed: '読み込みに失敗しました。時間をおいてもう一度お試しください。'
   };
 
   function el(tag, className, text) {
@@ -41,48 +29,15 @@
   function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
   function pct(n, base) { return base ? (Math.round(n / base * 1000) / 10) + '%' : '-'; }
 
-  // ---------- 通信 ----------
-  /** text/plain のPOST（CORSプリフライトなし）。失敗は Error(コード) で reject。token は本文にのみ載せる。 */
-  function callApi(payload) {
-    var body = { idToken: idToken };
-    Object.keys(payload).forEach(function (key) { body[key] = payload[key]; });
-    return fetch(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      cache: 'no-store',
-      credentials: 'omit',
-      referrerPolicy: 'no-referrer'
-    }).then(function (response) {
-      return response.json();
-    }).then(function (result) {
-      if (!result || result.ok !== true) throw new Error(result && typeof result.error === 'string' ? result.error : 'server_error');
-      return result;
-    }, function () { throw new Error('network'); });
-  }
-
-  // ---------- 画面切替 ----------
-  function showLogin(message) {
-    idToken = null;
-    data = null;
-    clear(tabsEl);
-    clear(panelsEl);
-    document.getElementById('role').textContent = '';
-    statusEl.textContent = '';
-    dashboardView.hidden = true;
-    loginView.hidden = false;
-    loginMessage.textContent = message || MESSAGES.login;
-  }
-
-  function logout() {
-    showLogin(MESSAGES.login);
-    try {
-      if (gisReady) window.google.accounts.id.disableAutoSelect();
-    } catch (ignored) { /* ログアウト自体はクライアント側の破棄で完了している */ }
-  }
-
-  function failureMessage(code) {
-    return code === 'forbidden' ? MESSAGES.forbidden : (code === 'unauthenticated' ? MESSAGES.expired : MESSAGES.failed);
+  // ---------- 通信（google.script.run） ----------
+  /** サーバー関数 name を args で呼ぶ Promise。失敗理由（例外内容）は画面へ出さない。 */
+  function callServer(name, args) {
+    return new Promise(function (resolve, reject) {
+      var runner = window.google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(function () { reject(new Error('server_error')); });
+      runner[name].apply(runner, args || []);
+    });
   }
 
   // ---------- 描画（ダッシュボード） ----------
@@ -232,12 +187,11 @@
     button.addEventListener('click', function () {
       clear(out);
       out.appendChild(el('p', 'note', '集計中…'));
-      callApi({ action: 'crosstab', rowKey: rowSel.value, colKey: colSel.value }).then(function (result) {
+      callServer('getCrosstabData', [rowSel.value, colSel.value]).then(function (result) {
         clear(out);
-        out.appendChild(crosstabTable(result.data));
-        out.appendChild(el('p', 'note', result.data.note));
-      }, function (error) {
-        if (error.message === 'unauthenticated') { showLogin(MESSAGES.expired); return; }
+        out.appendChild(crosstabTable(result));
+        out.appendChild(el('p', 'note', result.note));
+      }, function () {
         clear(out);
         out.appendChild(el('p', 'warn', '集計に失敗しました。'));
       });
@@ -380,10 +334,9 @@
     });
   }
 
-  function renderDashboard(role) {
+  function renderDashboard() {
     clear(tabsEl);
     clear(panelsEl);
-    document.getElementById('role').textContent = '管理者権限: ' + (role === 'owner' ? 'OWNER' : 'VIEWER');
     TABS.forEach(function (tab) {
       if (tab.requires && !data[tab.requires]) return;
       var button = el('button', '', tab.label);
@@ -402,53 +355,18 @@
   }
 
   function loadDashboard() {
-    loginView.hidden = true;
     dashboardView.hidden = false;
     clear(tabsEl);
     clear(panelsEl);
     statusEl.textContent = '読み込み中…';
-    callApi({ action: 'dashboard' }).then(function (result) {
-      data = result.data;
-      renderDashboard(result.role);
-    }, function (error) {
-      showLogin(failureMessage(error.message));
+    callServer('getDashboardData').then(function (result) {
+      data = result;
+      renderDashboard();
+    }, function () {
+      statusEl.textContent = MESSAGES.failed;
     });
   }
 
-  // ---------- Googleログイン（Google Identity Services） ----------
-  function onCredential(response) {
-    var credential = response && typeof response.credential === 'string' ? response.credential : '';
-    response = null;
-    if (!credential) { loginMessage.textContent = MESSAGES.expired; return; }
-    idToken = credential;
-    loadDashboard();
-  }
-
-  function initGoogleLogin() {
-    try {
-      window.google.accounts.id.initialize({ client_id: clientId, callback: onCredential, auto_select: false });
-      window.google.accounts.id.renderButton(document.getElementById('gis-button'),
-        { type: 'standard', theme: 'outline', size: 'large', text: 'signin_with', locale: 'ja' });
-      gisReady = true;
-    } catch (ignored) { loginMessage.textContent = MESSAGES.gisFailed; }
-  }
-
-  function loadGis() {
-    if (window.google && window.google.accounts && window.google.accounts.id) { initGoogleLogin(); return; }
-    var script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = initGoogleLogin;
-    script.onerror = function () { loginMessage.textContent = MESSAGES.gisFailed; };
-    document.head.appendChild(script);
-  }
-
-  document.getElementById('logout').addEventListener('click', logout);
-  if (!endpoint || !clientId) {
-    showLogin(MESSAGES.unconfigured);
-  } else {
-    showLogin(MESSAGES.login);
-    loadGis();
-  }
+  loadDashboard();
 })();
+</script>

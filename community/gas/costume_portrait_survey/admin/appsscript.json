@@ -3,11 +3,10 @@
   "exceptionLogging": "NONE",
   "runtimeVersion": "V8",
   "oauthScopes": [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/script.external_request"
+    "https://www.googleapis.com/auth/spreadsheets"
   ],
   "webapp": {
     "executeAs": "USER_DEPLOYING",
-    "access": "ANYONE_ANONYMOUS"
+    "access": "MYSELF"
   }
 }

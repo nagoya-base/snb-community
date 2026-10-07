@@ -4,8 +4,10 @@ name: Costume portrait survey Admin GAS
 # 既存の fetish 用 workflow / script / Environment / Secret とは独立。
 #  - Pull request: テスト・生成物の差分検査・配備バンドルの dry-run のみ（本番 deployment は更新しない）。
 #  - workflow_dispatch (main 限定・source_sha は main の最新): テスト → deploy ジョブ（Environment 承認）。
+#  - Admin は update-deployment が access を変更しないため、dispatch 入力 admin_access_set_to_myself（既存deploymentを「自分のみ」へ手動変更済み）が true でなければ配備しない。
 #  - 初回の GAS プロジェクト作成・Web App deployment 作成・OAuth 承認は手動（README 参照）。以降は既存 deployment を更新する。
-#  - Admin UI（Googleログイン）は GitHub Pages 側。Admin GAS は JSON API（doPost）で、ID token を毎回サーバー検証する（Issue #354）。
+#  - Admin は OWNER 1名専用の Apps Script Web App（Issue #363）。UI は Admin GAS 内の HTML（doGet）で、google.script.run で集計を取得する。
+#    アクセス制御は Web App 設定（executeAs=USER_DEPLOYING / access=MYSELF）のみ。OAuth Client ID・ID token・VIEWER は使わない。
 
 on:
   pull_request:
@@ -17,7 +19,6 @@ on:
       - 'community/costume-portrait-survey.html'
       - 'community/costume-portrait-survey-results.html'
       - 'community/costume-portrait-survey-admin.html'
-      - 'community/costume-portrait-survey-admin/**'
       - 'scripts/costume-portrait-survey/**'
       - 'scripts/tests/test_costume_portrait_deploy.py'
       - 'scripts/verify-snb-survey-source-sha.sh'
@@ -27,6 +28,11 @@ on:
         description: Current main HEAD SHA reviewed and merged for deployment (40 lowercase hex characters)
         required: true
         type: string
+      admin_access_set_to_myself:
+        description: 'REQUIRED: I already changed the EXISTING Admin Web App deployment access to "Only myself" (MYSELF) in Apps Script > Manage deployments, BEFORE this deploy (update-deployment does not change access)'
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -94,14 +100,13 @@ jobs:
             throw new Error('Unexpected clasp rootDir or staged files.');
           }
           const manifest = JSON.parse(fs.readFileSync(path.join(process.env.BUNDLE, 'appsscript.json')));
-          // Googleログイン（GitHub Pages）から fetch で到達するため匿名到達可。データは doPost で ID token を検証するまで返らない。
-          // executeAs=USER_DEPLOYING: Spreadsheet はデプロイ者権限で読み、VIEWER へ共有しない。
-          if (!manifest.webapp || manifest.webapp.access !== 'ANYONE_ANONYMOUS' || manifest.webapp.executeAs !== 'USER_DEPLOYING') {
-            throw new Error('Admin Web App must be access ANYONE_ANONYMOUS and executeAs USER_DEPLOYING.');
+          // OWNER 1名専用: access=MYSELF（デプロイ者本人のみ）。executeAs=USER_DEPLOYING: Spreadsheet はデプロイ者権限で読み、他ユーザーへ共有しない。
+          if (!manifest.webapp || manifest.webapp.access !== 'MYSELF' || manifest.webapp.executeAs !== 'USER_DEPLOYING') {
+            throw new Error('Admin Web App must be access MYSELF and executeAs USER_DEPLOYING.');
           }
-          const allowedScopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/script.external_request'];
+          const allowedScopes = ['https://www.googleapis.com/auth/spreadsheets'];
           if (manifest.oauthScopes.some(s => !allowedScopes.includes(s)) || !allowedScopes.every(s => manifest.oauthScopes.includes(s))) {
-            throw new Error('The admin bundle must use exactly spreadsheets (required by SpreadsheetApp.openById; the code is read-only) + script.external_request (no mail scopes).');
+            throw new Error('The admin bundle must use exactly spreadsheets (required by SpreadsheetApp.openById; the code is read-only). No external_request / mail scopes.');
           }
           console.log('Dry-run bundle contains only the approved admin GAS files.');
           NODE
@@ -119,7 +124,14 @@ jobs:
       COSTUME_PORTRAIT_SCRIPT_ID: ${{ secrets.COSTUME_PORTRAIT_SCRIPT_ID }}
       COSTUME_PORTRAIT_DEPLOYMENT_ID: ${{ secrets.COSTUME_PORTRAIT_DEPLOYMENT_ID }}
       COSTUME_PORTRAIT_SOURCE_SHA: ${{ inputs.source_sha }}
+      COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED: ${{ inputs.admin_access_set_to_myself && 'true' || 'false' }}
     steps:
+      - name: Require the existing deployment to be owner-only before deploying (fail closed)
+        run: |
+          if [[ "$COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED" != 'true' ]]; then
+            echo 'Set the admin_access_set_to_myself input only after changing the existing Admin deployment access to "Only myself" (MYSELF). Nothing was deployed.' >&2
+            exit 1
+          fi
       - name: Check out the reviewed main HEAD
         uses: actions/checkout@v4
         with:

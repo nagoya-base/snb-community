@@ -62,9 +62,8 @@ function setup(respondents = RESPONDENTS) {
   });
   const admin = loadAdmin();
   admin.env.spreadsheet = pub.env.spreadsheet;
-  admin.env.props.set('ADMIN_VIEWER_EMAILS', 'viewer@gmail.com');
-  const call = (who) => JSON.parse(admin.ctx.doPost({ postData: { contents: JSON.stringify({
-    action: 'dashboard', idToken: who === 'owner' ? admin.owner() : admin.tokenFor('viewer@gmail.com') }) } }).getContent());
+  // google.script.run は値をJSONで受け渡すため、往復させて同じ形にする。
+  const call = () => ({ data: JSON.parse(JSON.stringify(admin.ctx.getDashboardData())) });
   return { pub, admin, call };
 }
 
@@ -75,7 +74,7 @@ const byId = (cr) => Object.fromEntries(cr.options.map((o) => [o.id, o.count]));
 
 test('①撮られたい：ファネル段階・3か月以内層（Q27の定義と一致）と前段階比／全回答者比', () => {
   const { call } = setup();
-  const data = call('owner').data;
+  const data = call().data;
   const f = funnelOf(data, 'photographed');
   assert.deepStrictEqual(counts(f.stages), [6, 4, 4, 3, 3, 2]);
   assert.deepStrictEqual(f.stages.map((s) => s.prevPct), [null, 66.7, 100, 75, 100, 66.7]);
@@ -87,7 +86,7 @@ test('①撮られたい：ファネル段階・3か月以内層（Q27の定義�
 });
 
 test('①撮られたい：3か月以内層 × 年代・地域・愛知県内地域・衣装・価格のクロス', () => {
-  const f = funnelOf(setup().call('owner').data, 'photographed');
+  const f = funnelOf(setup().call().data, 'photographed');
   const age = cross(f, 'near_term_photographed', 'age_range');
   assert.strictEqual(age.answered, 4);
   assert.deepStrictEqual({ a: byId(age).age_20_24, b: byId(age).age_30_34, c: byId(age).age_40_49 }, { a: 3, b: 1, c: 0 });
@@ -113,7 +112,7 @@ test('①撮られたい：3か月以内層 × 年代・地域・愛知県内地
 });
 
 test('①撮影経験は既存設問に無いため集計せず、判定不能として明示する', () => {
-  const data = setup().call('owner').data;
+  const data = setup().call().data;
   const f = funnelOf(data, 'photographed');
   assert.ok(!f.segments[0].crosses.some((c) => /経験/.test(c.label)));
   const ids = data.demandFunnels.unavailable.map((u) => u.id);
@@ -121,7 +120,7 @@ test('①撮影経験は既存設問に無いため集計せず、判定不能�
 });
 
 test('②スタジオ：ファネル件数と、利用意向 / 3か月以内 × 価格・地域・人数・背景・機材のクロス', () => {
-  const f = funnelOf(setup().call('owner').data, 'studio');
+  const f = funnelOf(setup().call().data, 'studio');
   assert.deepStrictEqual(counts(f.stages), [6, 4, 3, 2, 2]);
   assert.deepStrictEqual(f.stages.map((s) => s.prevPct), [null, 66.7, 75, 66.7, 100]);
   const wanted = f.segments.find((s) => s.id === 'studio_wanted');
@@ -137,7 +136,7 @@ test('②スタジオ：ファネル件数と、利用意向 / 3か月以内 × 
 });
 
 test('③照明：ストロボ系／常時光系／両方／常時光のみ／ストロボのみ。複数選択は1人1回だけ数える', () => {
-  const f = funnelOf(setup().call('owner').data, 'lighting');
+  const f = funnelOf(setup().call().data, 'lighting');
   assert.strictEqual(f.breakdownBase.count, 4); // Q23に回答した人（Q20で撮影に興味あり）。R3/R5(対象外=null)は入らない
   const get = (prefix) => f.breakdown.find((x) => x.label.startsWith(prefix));
   assert.strictEqual(get('ストロボ系を使いたい').count, 2); // R1はストロボを2つ選んでも1人
@@ -153,7 +152,7 @@ test('③照明：ストロボ系／常時光系／両方／常時光のみ／�
 });
 
 test('③照明：種別 × 年代・機材経験・サポート需要・3か月以内の機材利用意向', () => {
-  const f = funnelOf(setup().call('owner').data, 'lighting');
+  const f = funnelOf(setup().call().data, 'lighting');
   const strobeAge = byId(cross(f, 'strobe_wanted', 'age_range'));
   assert.deepStrictEqual([strobeAge.age_20_24, strobeAge.age_30_34], [1, 1]);
   const constantAge = byId(cross(f, 'constant_wanted', 'age_range'));
@@ -177,7 +176,7 @@ test('③照明：種別 × 年代・機材経験・サポート需要・3か月
 });
 
 test('④撮りたい人：ファネルと撮影者意向 × 年代・地域・衣装・スタジオ・照明種別・機材経験・サポート', () => {
-  const f = funnelOf(setup().call('owner').data, 'shooter');
+  const f = funnelOf(setup().call().data, 'shooter');
   assert.deepStrictEqual(counts(f.stages), [6, 4, 3, 3, 2, 1]);
   const seg = f.segments[0];
   assert.strictEqual(seg.count, 4);
@@ -190,7 +189,7 @@ test('④撮りたい人：ファネルと撮影者意向 × 年代・地域・�
 });
 
 test('⑤イベント：撮影イベント／少人数撮影会／交流を分離し、少人数撮影会意向 × 年代・地域・衣装・価格・不安', () => {
-  const f = funnelOf(setup().call('owner').data, 'event');
+  const f = funnelOf(setup().call().data, 'event');
   assert.deepStrictEqual(f.parallel.map((p) => p.count), [0, 2, 1]);
   assert.deepStrictEqual(f.parallel[1].parts.map((p) => p.count), [1, 1]); // ぜひやりたい / 条件が合えばやりたい
   assert.strictEqual(f.parallelAny.count, 2); // R2, R4（重複なし）
@@ -264,16 +263,11 @@ test('定義が実在する設問・選択肢・Q27行だけを参照する（�
   assert.deepStrictEqual(plain(ctx.DEMAND_PREDICATES.constant_wanted.anyOf), ['led_video_light', 'rgb_light']);
 });
 
-test('OWNERには需要ファネルを返し、VIEWERのレスポンスには一切含めない', () => {
+test('OWNER dashboard は需要ファネル5種を返す（認証・配信経路の変更後も維持。Issue #363）', () => {
   const { call } = setup();
-  const owner = call('owner');
-  assert.strictEqual(owner.role, 'owner');
-  assert.ok(owner.data.demandFunnels);
-  const viewerRaw = JSON.stringify(call('viewer'));
-  const viewer = JSON.parse(viewerRaw);
-  assert.strictEqual(viewer.role, 'viewer');
-  assert.strictEqual(viewer.data.demandFunnels, undefined);
-  assert.ok(!/demandFunnels|需要ファネル|3か月以内|ストロボ系|常時光/.test(viewerRaw));
+  const data = call().data;
+  assert.ok(!('role' in data));
+  assert.deepStrictEqual(data.demandFunnels.funnels.map((f) => f.id), ['photographed', 'studio', 'lighting', 'shooter', 'event']);
 });
 
 test('設問・schema・Spreadsheet列・Public結果は変更していない', () => {

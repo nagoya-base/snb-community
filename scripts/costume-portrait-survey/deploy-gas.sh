@@ -9,6 +9,12 @@ umask 077
 #   CLASPRC_JSON                       GitHub Environment secret
 #   COSTUME_PORTRAIT_SCRIPT_ID         GitHub Environment secret（対象GASのScript ID）
 #   COSTUME_PORTRAIT_DEPLOYMENT_ID     GitHub Environment secret（既存Web AppのDeployment ID）
+#   COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED  admin のみ必須。「既存 Admin deployment のアクセスを『自分のみ（MYSELF）』へ
+#                                      手動変更済み」の確認（"true" 以外は何も実行せず拒否）。
+# 注意（Issue #363）: `clasp update-deployment` は deployment の version を更新するだけで、Web App のアクセス設定
+# （access / executeAs）は変更しない。旧構成（ANYONE_ANONYMOUS）のまま新しい owner-only 管理画面コードを配備すると、
+# 手動変更までの間、誰でも管理ダッシュボードHTMLと集計（自由記述・センシティブ項目を含む）へ到達できてしまう。
+# そのため admin は「先にアクセスを自分のみへ変更 → その後に配備」の順序を、この確認で fail closed に固定する。
 : "${GITHUB_WORKSPACE:?Repository checkout is required}"
 : "${RUNNER_TEMP:?Runner temporary directory is required}"
 : "${COSTUME_PORTRAIT_TARGET:?COSTUME_PORTRAIT_TARGET (public|admin) is required}"
@@ -20,6 +26,12 @@ case "$COSTUME_PORTRAIT_TARGET" in
   public|admin) ;;
   *) echo 'COSTUME_PORTRAIT_TARGET must be "public" or "admin".' >&2; exit 1 ;;
 esac
+
+# admin: アクセス設定の手動変更が済んでいることの確認。ここで拒否した場合は clasp を一切呼ばない（push / version / deployment 更新なし）。
+if [[ "$COSTUME_PORTRAIT_TARGET" == 'admin' && "${COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED:-}" != 'true' ]]; then
+  echo 'Refusing to deploy admin: confirm that the existing Admin Web App deployment access is already set to "Only myself" (MYSELF) in Apps Script > Manage deployments. Nothing was changed.' >&2
+  exit 1
+fi
 
 prepare="$GITHUB_WORKSPACE/scripts/costume-portrait-survey/prepare-gas.js"
 deploy_root="$(mktemp -d "$RUNNER_TEMP/costume-portrait-$COSTUME_PORTRAIT_TARGET.XXXXXXXX")"

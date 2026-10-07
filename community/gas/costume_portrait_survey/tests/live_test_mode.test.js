@@ -55,7 +55,7 @@ test('test行はAdmin集計とfinalize/公開件数から除外する', () => {
 
   const admin = loadAdmin();
   admin.env.spreadsheet = pub.env.spreadsheet;
-  const dashboard = plain(admin.ctx.getDashboardData(admin.owner()));
+  const dashboard = plain(admin.ctx.getDashboardData());
   assert.strictEqual(dashboard.summary.totalRows, 1);
   assert.strictEqual(dashboard.summary.validRows, 1);
 
@@ -138,7 +138,7 @@ test('免除されたtest回答は duplicate判定・status・Admin集計・fina
 
   const admin = loadAdmin();
   admin.env.spreadsheet = pub.env.spreadsheet;
-  const dashboard = plain(admin.ctx.getDashboardData(admin.owner()));
+  const dashboard = plain(admin.ctx.getDashboardData());
   assert.strictEqual(dashboard.summary.totalRows, 1);
   assert.strictEqual(dashboard.summary.validRows, 1);
 

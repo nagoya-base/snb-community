@@ -101,14 +101,25 @@ test('リポジトリに認証情報・clasp設定が含まれない', () => {
   }
 });
 
-test('admin: dry-run は access=ANYONE_ANONYMOUS・executeAs=USER_DEPLOYING・scopeはspreadsheets+external_requestのみを検証する（Issue #354）', () => {
+test('admin: dry-run は access=MYSELF・executeAs=USER_DEPLOYING・scopeはspreadsheetsのみを検証する（Issue #363: OWNER 1名専用）', () => {
   const verify = job(workflows.admin, 'verify');
-  assert.match(verify, /manifest\.webapp\.access !== 'ANYONE_ANONYMOUS'/);
+  assert.match(verify, /manifest\.webapp\.access !== 'MYSELF'/);
   assert.match(verify, /manifest\.webapp\.executeAs !== 'USER_DEPLOYING'/);
   assert.match(verify, /auth\/spreadsheets'/);
-  assert.match(verify, /auth\/script\.external_request/);
-  assert.ok(!/access !== 'MYSELF'/.test(workflows.admin));
-  // Admin UI（GitHub Pages）の変更でもPR検証が走る
+  assert.ok(!/external_request/.test(verify.replace(/No external_request[^']*/, '')));
+  assert.ok(!/ANYONE_ANONYMOUS/.test(verify));
+  // 旧GitHub Pages Admin（移行案内ページ）の変更でもPR検証が走る。削除済みの admin/ ディレクトリは対象外
   assert.match(workflows.admin, /community\/costume-portrait-survey-admin\.html/);
-  assert.match(workflows.admin, /community\/costume-portrait-survey-admin\/\*\*/);
+  assert.ok(!/costume-portrait-survey-admin\/\*\*/.test(workflows.admin));
+});
+
+test('admin: update-deployment は access を変えないため、既存deploymentを「自分のみ」へ変更済みの確認が無ければ配備しない（fail closed）', () => {
+  assert.match(workflows.admin, /admin_access_set_to_myself:[\s\S]*?required: true[\s\S]*?type: boolean[\s\S]*?default: false/);
+  const deploy = job(workflows.admin, 'deploy');
+  assert.match(deploy, /COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED: \$\{\{ inputs\.admin_access_set_to_myself && 'true' \|\| 'false' \}\}/);
+  // 確認ステップは checkout・clasp 導入・デプロイより前
+  assert.ok(deploy.indexOf('Require the existing deployment to be owner-only') < deploy.indexOf('Check out the reviewed main HEAD'));
+  const script = read('scripts/costume-portrait-survey/deploy-gas.sh');
+  assert.ok(script.indexOf('COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED') < script.indexOf('clasp --auth'));
+  assert.ok(!/admin_access_set_to_myself/.test(workflows.public));
 });

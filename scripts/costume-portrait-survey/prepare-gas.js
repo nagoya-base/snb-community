@@ -19,13 +19,13 @@ const TARGETS = {
   },
   admin: {
     dir: BASE + '/admin',
-    files: ['Aggregate.gs', 'Auth.gs', 'Data.gs', 'IdToken.gs', 'Main.gs', 'SurveyGenerated.gs'],
-    // 旧構成（HTML Service で配信していた Dashboard*.html）。既存プロジェクトに残っていてもよい（push で置き換わり削除される）。
-    legacyFiles: ['Dashboard.html', 'DashboardScript.html', 'DashboardStyles.html'],
-    requiredScopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/script.external_request'],
+    files: ['Aggregate.gs', 'Dashboard.html', 'DashboardScript.html', 'DashboardStyles.html', 'Data.gs', 'Main.gs', 'SurveyGenerated.gs'],
+    // 旧構成（ID token 認証）のファイル。既存プロジェクトに残っていてもよい（push で置き換わり削除される）。
+    legacyFiles: ['Auth.gs', 'IdToken.gs'],
+    requiredScopes: ['https://www.googleapis.com/auth/spreadsheets'],
     // SpreadsheetApp.openById() は spreadsheets scope が必須（readonly では実行時に権限不足。#358）。Admin のコードは読み取り専用（テストで静的検査）。
-    // これ以外のscope（メール送信など）は追加させない。
-    allowedScopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/script.external_request']
+    // これ以外のscope（メール送信・外部通信など）は追加させない。
+    allowedScopes: ['https://www.googleapis.com/auth/spreadsheets']
   }
 };
 // 初回に手動作成したGASプロジェクトに最初から入っている空のスタブ（Code.gs / コード.gs）は上書きしてよい。
@@ -76,13 +76,12 @@ function validateRemote(target, remoteDir) {
   return report;
 }
 
-// Admin Web App: 個人Gmailの OWNER / VIEWER を Google の ID token で識別するため、GitHub Pages のログイン画面から
-// fetch で到達できる必要がある（ANYONE_ANONYMOUS）。認可は doPost で毎回 ID token を検証して行い、未認証にはデータを返さない
-// （Main.gs / IdToken.gs / Auth.gs）。executeAs=USER_DEPLOYING のため Spreadsheet はデプロイ者のみが読み、VIEWER へ共有しない。
-const ADMIN_WEBAPP_ACCESS = 'ANYONE_ANONYMOUS';
+// Admin Web App（Issue #363）: OWNER 1名専用。アクセス制御は Web App 設定そのもの（MYSELF = デプロイ者本人のみ）で行い、
+// 独自の認証コードは持たない。executeAs=USER_DEPLOYING のため Spreadsheet はデプロイ者のみが読み、他ユーザーへ共有しない。
+const ADMIN_WEBAPP_ACCESS = 'MYSELF';
 const ADMIN_WEBAPP_EXECUTE_AS = 'USER_DEPLOYING';
-// 既存Adminは初回手動デプロイの MYSELF（または以前の ANYONE / DOMAIN）からの移行を許す。未知の値は拒否。
-const ADMIN_REMOTE_ACCESS = ['MYSELF', 'DOMAIN', 'ANYONE', ADMIN_WEBAPP_ACCESS];
+// 既存Adminは旧構成（GitHub Pages + ID token 認証）の ANYONE_ANONYMOUS（または以前の ANYONE / DOMAIN）からの移行を許す。未知の値は拒否。
+const ADMIN_REMOTE_ACCESS = ['MYSELF', 'DOMAIN', 'ANYONE', 'ANYONE_ANONYMOUS'];
 
 function validateRemoteManifest(target, manifest) {
   if (!isPlainObject(manifest)) throw new Error('Existing GAS manifest must be a JSON object.');
@@ -98,7 +97,7 @@ function validateRemoteManifest(target, manifest) {
 
 // リポジトリのmanifestが管理するキーはリポジトリ側を正とし、dependencies等はリモートの値をそのまま残す。
 // Public の webapp はリモートの値を残す（公開範囲はCIで変更しない）。
-// Admin の webapp はリポジトリ側（access=ANYONE_ANONYMOUS / executeAs=USER_DEPLOYING）を正とする。
+// Admin の webapp はリポジトリ側（access=MYSELF / executeAs=USER_DEPLOYING）を正とする。
 function stageManifest(target, repoManifest, remoteManifest) {
   const cfg = targetConfig(target);
   if (!isPlainObject(repoManifest)) throw new Error('Repository manifest must be a JSON object.');
@@ -119,7 +118,7 @@ function stageManifest(target, repoManifest, remoteManifest) {
   if (target === 'admin') {
     staged.webapp = JSON.parse(JSON.stringify(repoManifest.webapp || {}));
     if (staged.webapp.access !== ADMIN_WEBAPP_ACCESS || staged.webapp.executeAs !== ADMIN_WEBAPP_EXECUTE_AS) {
-      throw new Error('Admin Web App must be access "ANYONE_ANONYMOUS" (data is returned only after server-side ID token verification) and executeAs "USER_DEPLOYING".');
+      throw new Error('Admin Web App must be access "MYSELF" (owner only) and executeAs "USER_DEPLOYING".');
     }
   }
   return staged;
