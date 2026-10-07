@@ -276,7 +276,7 @@ test('Admin GAS は読み取り専用・OWNER 1名専用の設定で、Public GA
 test('README：OWNER 1名専用構成（MYSELF・google.script.run）・OAuth不要・Spreadsheet非共有・既存デプロイ更新手順が記載されている', () => {
   const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
   for (const word of ['OWNER 1名専用', 'USER_DEPLOYING', 'MYSELF', 'google.script.run', '/exec', 'Google Cloud', 'OAuth Client ID', '不要',
-    'Spreadsheet を他のユーザーへ共有しない', 'Public GAS とは別', 'update-deployment', 'workflow_dispatch', '本番デプロイ後の確認']) {
+    'Spreadsheet を他のユーザーへ共有しない', 'Public GAS とは別', 'update-deployment', 'workflow_dispatch', '本番デプロイ後の確認', 'admin_access_set_to_myself', '変更しない', 'アクセス変更 → 配備']) {
     assert.ok(readme.includes(word), word);
   }
   for (const stale of ['ADMIN_ALLOWED_EMAILS', 'diagBigIntAndRsa', '承認済みの JavaScript 生成元', 'ANYONE_ANONYMOUS`（全員）']) assert.ok(!readme.includes(stale), '旧方式の手順を残さない: ' + stale);

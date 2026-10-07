@@ -89,7 +89,7 @@ class DeployBase:
     REMOTE_MANIFEST = {}
 
     def run_deploy(self, drop=(), remote=None, manifest=None, deployment_id=DEPLOYMENT,
-                   script_id='test-script-id', mock_deployment=DEPLOYMENT, fail=None, target=None):
+                   script_id='test-script-id', mock_deployment=DEPLOYMENT, fail=None, target=None, extra_env=None):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
             (root / 'clasp').write_text(MOCK)
@@ -103,10 +103,13 @@ class DeployBase:
                        COSTUME_PORTRAIT_SCRIPT_ID=script_id,
                        COSTUME_PORTRAIT_DEPLOYMENT_ID=deployment_id,
                        COSTUME_PORTRAIT_SOURCE_SHA='a' * 40,
+                       COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED='true',
                        MOCK_CLASP_LOG=str(log), MOCK_DEPLOYMENT=mock_deployment,
                        MOCK_UPDATED_FILE=str(updated), MOCK_STAGED_FILE=str(staged),
                        MOCK_PULLED=json.dumps(files),
                        MOCK_MANIFEST=json.dumps(manifest if manifest is not None else self.REMOTE_MANIFEST))
+            if extra_env:
+                env.update(extra_env)
             if fail:
                 env[fail] = '1'
             for name in drop:
@@ -259,6 +262,16 @@ class AdminDeployTest(DeployBase, unittest.TestCase):
             result, commands, updated = self.run_deploy(manifest=manifest)
             self.assertEqual(result.returncode, 0, access + result.stderr)
             self.assertEqual(json.loads(self.staged['manifest'])['webapp'], ADMIN_WEBAPP, access)
+
+    def test_admin_deploy_requires_owner_only_confirmation_before_any_clasp_call(self):
+        # update-deployment は access を変更しない。旧 ANYONE_ANONYMOUS のまま owner-only UI を配備しない（Issue #363 レビュー）
+        for value in (None, '', 'false', 'yes', 'TRUE'):
+            env_drop = ('COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED',) if value is None else ()
+            result, commands, updated = self.run_deploy(drop=env_drop, extra_env=None if value is None else {'COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED': value})
+            self.assertNotEqual(result.returncode, 0, repr(value))
+            self.assertEqual(commands, [], repr(value))  # clasp を一切呼ばない（push / version / deployment 更新なし）
+            self.assertFalse(updated, repr(value))
+            self.assertIn('Only myself', result.stderr)
 
     def test_unknown_remote_access_is_rejected(self):
         for access in ('UNKNOWN', ''):

@@ -112,3 +112,14 @@ test('admin: dry-run は access=MYSELF・executeAs=USER_DEPLOYING・scopeはspre
   assert.match(workflows.admin, /community\/costume-portrait-survey-admin\.html/);
   assert.ok(!/costume-portrait-survey-admin\/\*\*/.test(workflows.admin));
 });
+
+test('admin: update-deployment は access を変えないため、既存deploymentを「自分のみ」へ変更済みの確認が無ければ配備しない（fail closed）', () => {
+  assert.match(workflows.admin, /admin_access_set_to_myself:[\s\S]*?required: true[\s\S]*?type: boolean[\s\S]*?default: false/);
+  const deploy = job(workflows.admin, 'deploy');
+  assert.match(deploy, /COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED: \$\{\{ inputs\.admin_access_set_to_myself && 'true' \|\| 'false' \}\}/);
+  // 確認ステップは checkout・clasp 導入・デプロイより前
+  assert.ok(deploy.indexOf('Require the existing deployment to be owner-only') < deploy.indexOf('Check out the reviewed main HEAD'));
+  const script = read('scripts/costume-portrait-survey/deploy-gas.sh');
+  assert.ok(script.indexOf('COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED') < script.indexOf('clasp --auth'));
+  assert.ok(!/admin_access_set_to_myself/.test(workflows.public));
+});

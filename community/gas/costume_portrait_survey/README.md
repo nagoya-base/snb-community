@@ -194,16 +194,24 @@ CI（`prepare-gas.js` / workflow の dry-run）は `access=MYSELF` かつ `execu
 OWNER 向けの集計は従来どおり（需要ファネル5種〔Issue #361 / PR #362〕・3か月以内層のクロス集計・照明/機材・イベント/少人数・自由記述・センシティブ項目を含む）。
 今回の変更は認証・配信経路の簡素化のみで、集計ロジックと分母の定義は変えていない。
 
-### 本番反映の手順（人手）
+### 本番反映の手順（人手。**順序を変えない**）
+
+> ⚠ `clasp update-deployment` は deployment の version を更新するだけで、Web App のアクセス設定（`access` / `executeAs`）を**変更しない**。
+> 現行の本番 Admin は旧構成の `ANYONE_ANONYMOUS` のため、**先にアクセスを「自分のみ」へ変えずに新コードを配備すると、手動変更までの間、
+> 誰でも管理ダッシュボード（自由記述・センシティブ項目を含む）へ到達できてしまう**。必ず「アクセス変更 → 配備」の順で行う。
 
 1. main へマージ（PR の CI が pass していること）。
-2. Actions *Costume portrait survey Admin GAS* を `workflow_dispatch`（`source_sha` = main最新）→ Environment承認。
+2. **【配備の前に】既存 Admin deployment のアクセスを「自分のみ」へ変更する**: Apps Script エディタ →「デプロイ」→「デプロイを管理」→ 既存の Web App deployment を編集 →
+   「次のユーザーとして実行 = 自分」「アクセスできるユーザー = **自分のみ**（`MYSELF`）」→ 保存。`/exec` URL は維持される。
+   （この時点では旧コードが動いているため、GitHub Pages の旧管理画面（未設定のまま）は元から使えず、影響はない。）
+3. Actions *Costume portrait survey Admin GAS* を `workflow_dispatch`（`source_sha` = main最新）。
+   入力 **`admin_access_set_to_myself` を、手順2を済ませた場合のみ ON** にする（OFF のままなら workflow / `deploy-gas.sh` は clasp を一切呼ばずに失敗する＝fail closed）→ Environment承認。
    既存の deployment を `update-deployment` するだけで、新規 deployment は作らない（`/exec` URL は変わらない）。
    旧 `Auth.gs` / `IdToken.gs` は `clasp push` で置き換わり削除される。
-3. **デプロイの管理で Admin Web App の設定を確認**: 「次のユーザーとして実行 = 自分」「アクセスできるユーザー = **自分のみ**（`MYSELF`）」。
-   CI は manifest の `webapp` を更新するが、既存 deployment のアクセス設定が実際に切り替わるかは実機で確認する。
-   「全員」のままなら、デプロイの管理で「自分のみ」へ変更する（`/exec` URL は維持される）。
 4. scope が変わった場合（`script.external_request` の削除）は、Apps Script エディタで一度関数を実行して再承認が必要か確認する。
+
+注: この確認入力は人手の宣言であり、CI が deployment のアクセス設定を機械的に読み取って検証するものではない（clasp は access を取得できない）。
+そのため手順2の実施と、下記「本番デプロイ後の確認」（未ログイン・別アカウントで拒否されること）を必ず行う。
 
 ### 本番デプロイ後の確認（OWNER本人のブラウザ）
 
