@@ -256,6 +256,93 @@
     });
   }
 
+  // ---------- 需要ファネル（OWNERのみ。サーバーが返したときだけタブを作る） ----------
+  function ratioText(value) { return value === null || value === undefined ? '-' : value + '%'; }
+
+  function demandStageRow(stage, i, top) {
+    var row = el('div', 'funnel-stage demand-stage');
+    row.appendChild(el('span', '', (i ? '↓ ' : '') + stage.label));
+    var bar = el('div', 'bar');
+    var fill = document.createElement('i');
+    fill.style.width = (top ? stage.count / top * 100 : 0) + '%';
+    bar.appendChild(fill);
+    row.appendChild(bar);
+    row.appendChild(el('span', 'num', stage.count + '人' + (i ? '（前段階比 ' + ratioText(stage.prevPct) + ' / 全回答者比 ' + ratioText(stage.allPct) + '）' : '')));
+    return row;
+  }
+
+  function demandCrossBlock(c) {
+    var block = el('div', 'demand-cross');
+    block.appendChild(el('h4', '', c.label));
+    block.appendChild(el('p', 'note', '分母＝この設問に回答した ' + c.answered + '人' +
+      (c.notApplicable ? '（分岐対象外・未回答の ' + c.notApplicable + '人は除く）' : '') + '。複数選択は合計が100%を超えます。'));
+    c.options.forEach(function (o) { block.appendChild(barRow(o.label, o.count, c.answered)); });
+    return block;
+  }
+
+  function demandSegment(segment, total) {
+    var details = document.createElement('details');
+    details.appendChild(el('summary', '', segment.label + '：' + segment.count + '人（全回答者比 ' + ratioText(segment.allPct) + '）'));
+    segment.crosses.forEach(function (c) { details.appendChild(demandCrossBlock(c)); });
+    if (!segment.crosses.length) details.appendChild(el('p', 'note', '件数のみ'));
+    return details;
+  }
+
+  function demandTriple(t) {
+    var block = el('div', 'demand-cross');
+    block.appendChild(el('h4', '', t.label));
+    block.appendChild(el('p', 'note', '分母＝3項目すべてに回答した ' + t.included + '人（対象外・未回答 ' + t.notApplicable + '人は除く）。上位のみ表示。'));
+    var wrap = el('div', 'table-wrap');
+    var table = document.createElement('table');
+    var head = document.createElement('tr');
+    t.axisLabels.concat(['人数', '割合']).forEach(function (h) { head.appendChild(el('th', '', h)); });
+    table.appendChild(head);
+    t.rows.forEach(function (r) {
+      var tr = document.createElement('tr');
+      r.labels.forEach(function (l) { tr.appendChild(el('td', '', l)); });
+      tr.appendChild(el('td', '', r.count));
+      tr.appendChild(el('td', '', ratioText(r.pct)));
+      table.appendChild(tr);
+    });
+    wrap.appendChild(table);
+    block.appendChild(wrap);
+    return block;
+  }
+
+  function renderDemand(root) {
+    var d = data.demandFunnels;
+    root.appendChild(el('p', 'note', '内部マーケティング用（OWNERのみ）。有効回答 ' + d.base + '人を母数とし、「3か月以内」はQ27で「ぜひやりたい」「条件が合えばやりたい」。' +
+      '各段階は前の段階をすべて満たした人のみ（累積）。未回答・分岐対象外は「いいえ」として数えません。'));
+    d.funnels.forEach(function (f) {
+      var card = el('div', 'card');
+      card.appendChild(el('h2', '', f.label));
+      if (f.stages) f.stages.forEach(function (stage, i) { card.appendChild(demandStageRow(stage, i, f.stages[0].count)); });
+      if (f.parallel) {
+        card.appendChild(el('p', 'note', '分母＝有効回答者 ' + f.base + '人（Q27「ぜひやりたい」＋「条件が合えばやりたい」）'));
+        f.parallel.forEach(function (p) {
+          card.appendChild(barRow(p.label, p.count, f.base));
+          p.parts.forEach(function (part) { card.appendChild(el('p', 'note', '　内訳 ' + part.label + '：' + part.count + '人')); });
+        });
+        card.appendChild(barRow(f.parallelAny.label, f.parallelAny.count, f.base));
+      }
+      if (f.breakdown) {
+        card.appendChild(el('h3', '', '照明種別の内訳'));
+        card.appendChild(el('p', 'note', '分母＝' + f.breakdownBase.label + ' ' + f.breakdownBase.count + '人。ストロボ系＝モノブロック／クリップオン、常時光系＝LEDビデオライト（白色）／RGBカラーライト。'));
+        f.breakdown.forEach(function (b) { card.appendChild(barRow(b.label, b.count, f.breakdownBase.count)); });
+      }
+      if (f.segments && f.segments.length) {
+        card.appendChild(el('h3', '', '属性・嗜好クロス（タップで展開）'));
+        f.segments.forEach(function (segment) { card.appendChild(demandSegment(segment, f.base)); });
+      }
+      (f.triples || []).forEach(function (t) { card.appendChild(demandTriple(t)); });
+      root.appendChild(card);
+    });
+    var gap = el('div', 'card');
+    gap.appendChild(el('h2', '', '既存データでは判定できない需要（集計しません）'));
+    d.unavailable.forEach(function (u) { gap.appendChild(el('p', 'note', u.label + '：' + u.reason)); });
+    root.appendChild(gap);
+  }
+
   function freeCard(title, items) {
     var card = el('div', 'card');
     card.appendChild(el('h3', '', title + '（' + items.length + '件）'));
@@ -281,6 +368,7 @@
     { key: 'overview', label: '概要', render: renderOverview },
     { key: 'simple', label: '単純集計', render: renderSimple },
     { key: 'funnel', label: 'ファネル', render: renderFunnel, requires: 'funnels' },
+    { key: 'demand', label: '需要ファネル', render: renderDemand, requires: 'demandFunnels' },
     { key: 'cross', label: 'クロス集計', render: renderCross },
     { key: 'free', label: '自由記述', render: renderFree, requires: 'freeText' }
   ];

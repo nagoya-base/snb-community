@@ -36,3 +36,8 @@ select { font:inherit; padding:6px; max-width:100%; }
 .free-item { border-top:1px solid var(--line); padding:8px 0; white-space:pre-wrap; word-break:break-word; }
 .free-item small { display:block; color:var(--muted); }
 .funnel-stage { display:grid; grid-template-columns:minmax(140px,40%) 1fr 110px; gap:8px; align-items:center; padding:4px 0; }
+.demand-cross { margin-top:10px; }
+.demand-cross h4 { margin:8px 0 2px; font-size:.92rem; }
+.demand-stage { grid-template-columns:minmax(140px,38%) 1fr minmax(150px,34%); }
+.card details { border-top:1px solid var(--line); padding:6px 0; }
+.card summary { cursor:pointer; font-weight:600; font-size:.9rem; }
