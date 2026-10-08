@@ -42,11 +42,20 @@ for (const [target, text] of Object.entries(workflows)) {
     assert.match(verify, /set -euo pipefail/);
   });
 
-  test(`${target}: 手動dispatch・mainの最新commit限定・専用Environment・Secretは環境単位`, () => {
-    assert.match(text, /workflow_dispatch:\n {4}inputs:\n {6}source_sha:/);
+  test(`${target}: 手動dispatch・main限定・github.shaでSHA固定（source_sha手入力なし）・専用Environment・Secretは環境単位`, () => {
+    assert.ok(!/source_sha/.test(text.replace(/#.*$/gm, '')), 'source_sha 入力・参照は廃止');
+    assert.ok(!/inputs\.source_sha/.test(text) && !/verify-snb-survey-source-sha/.test(text));
     assert.match(text, /refs\/heads\/main/);
-    assert.match(text, /verify-snb-survey-source-sha\.sh/);
+    const verify = job(text, 'verify');
     const deploy = job(text, 'deploy');
+    // verify（テスト・dry-run）と deploy は同一の github.sha をcheckoutし、PRはPR head SHAのまま
+    assert.match(verify, /ref: \$\{\{ github\.event_name == 'workflow_dispatch' && github\.sha \|\| github\.event\.pull_request\.head\.sha \}\}/);
+    assert.match(deploy, /ref: \$\{\{ github\.sha \}\}/);
+    assert.ok(!/ref: main/.test(text));
+    assert.match(deploy, /COSTUME_PORTRAIT_SOURCE_SHA: \$\{\{ github\.sha \}\}/);
+    // main以外からのdispatchはverifyで失敗し、deployはverifyに依存するため実行されない
+    assert.ok(verify.indexOf("GITHUB_REF\" != 'refs/heads/main'") >= 0);
+    assert.ok(verify.indexOf('refs/heads/main') < verify.indexOf('Check out code under test'));
     assert.match(deploy, new RegExp(`environment: costume-portrait-${target}-production`));
     for (const secret of ['CLASPRC_JSON', 'COSTUME_PORTRAIT_SCRIPT_ID', 'COSTUME_PORTRAIT_DEPLOYMENT_ID']) {
       assert.ok(deploy.includes(`secrets.${secret}`), secret);
@@ -118,7 +127,7 @@ test('admin: update-deployment は access を変えないため、既存deployme
   const deploy = job(workflows.admin, 'deploy');
   assert.match(deploy, /COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED: \$\{\{ inputs\.admin_access_set_to_myself && 'true' \|\| 'false' \}\}/);
   // 確認ステップは checkout・clasp 導入・デプロイより前
-  assert.ok(deploy.indexOf('Require the existing deployment to be owner-only') < deploy.indexOf('Check out the reviewed main HEAD'));
+  assert.ok(deploy.indexOf('Require the existing deployment to be owner-only') < deploy.indexOf('Check out the pinned main HEAD'));
   const script = read('scripts/costume-portrait-survey/deploy-gas.sh');
   assert.ok(script.indexOf('COSTUME_PORTRAIT_ADMIN_OWNER_ONLY_CONFIRMED') < script.indexOf('clasp --auth'));
   assert.ok(!/admin_access_set_to_myself/.test(workflows.public));
