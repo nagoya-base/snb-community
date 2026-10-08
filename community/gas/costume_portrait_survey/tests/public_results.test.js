@@ -467,3 +467,19 @@ test('doGet(results)：途中集計をJSONで返し、Spreadsheet読み取り失
   env.failOpen = true;
   assert.deepStrictEqual(JSON.parse(ctx.doGet({ parameter: { action: 'results' } }).getContent()), { ok: false, error: 'server_error' });
 });
+
+test('既存public設問を誤って tier:basic にしても、29件では公開されない（コード固定の3問のみ）', () => {
+  const { ctx } = loadPublic();
+  seed(ctx, 29);
+  const cfg = ctx.SURVEY_SCHEMA.publicResults;
+  cfg.items.find((i) => i.id === 'costume_interest').tier = 'basic';
+  const r = plain(ctx.readPublicResults_(OPEN)).results;
+  assert.deepStrictEqual(r.items.map((i) => i.id), BASIC_IDS);
+  assert.ok(!JSON.stringify(r).includes('costume_interest'));
+  // assertPublicPayload_ も同様に止める
+  const forged = { status: 'partial', phase: 'collecting', total: 29, min_total: 30, threshold_reached: false, items: [{ id: 'costume_interest', title: 'x', type: 'multi', base: 5, suppressed: false, categories: [] }] };
+  assert.throws(() => ctx.assertPublicPayload_(forged), /not_allowed/);
+  // 30件以上なら従来どおり公開される
+  seed(ctx, 1);
+  assert.ok(plain(ctx.readPublicResults_(OPEN)).results.items.some((i) => i.id === 'costume_interest'));
+});
