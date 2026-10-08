@@ -326,7 +326,7 @@ test('doGet のルーティング：status / results / その他（管理機能�
   assert.strictEqual(empty.results.status, 'partial');
   assert.strictEqual(empty.results.threshold_reached, false);
   assert.strictEqual(empty.results.total, 0);
-  assert.deepStrictEqual(empty.results.items.map((i) => i.id), ['age_range', 'residence', 'aichi_area']);
+  assert.deepStrictEqual(empty.results.items.map((i) => i.id), ['age_range', 'residence']);
   const root = JSON.parse(ctx.doGet({}).getContent());
   assert.strictEqual(root.service, 'costume-portrait-survey');
   for (const action of ['admin', 'dump', 'export', 'rows']) {

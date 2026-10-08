@@ -1,6 +1,6 @@
 /*
  * 公開結果ページ。Public GASの ?action=results だけを表示する（確定済みスナップショット＝最終結果、
- * 未確定＝途中集計）。有効回答30件未満でも、年齢・居住地・愛知県内エリアの基本情報と有効回答数は表示する
+ * 未確定＝途中集計）。有効回答30件未満でも、年代・居住地方ブロックの基本情報と有効回答数は表示する
  * （threshold_reached:false）。30件以上（threshold_reached:true）で主要結果が追加される。「30件未満＝全面非公開」とは
  * 決め打ちせず、APIが返した items をそのまま描画する。
  * 通信失敗・不正なレスポンスは読み込みエラーとして扱い、「30件未満」とは表示しない。自由記述・価格・性的指向などは
@@ -38,8 +38,10 @@
   }
   var BASIC_NOTICE = {
     label: '現在の回答傾向（基本情報）',
-    text: '年齢・居住エリアなどの基本情報のみ先行公開しています。主要なアンケート結果は有効回答30件以上で公開します。'
+    text: '年代・居住地域などの基本情報のみ先行公開しています。主要なアンケート結果は有効回答30件以上で公開します。'
   };
+  // 愛知県内エリアは公開しない。更新前のPublic GASが返しても描画しない（フロント側の二重防御）。
+  var HIDDEN_ITEM_IDS = ['aichi_area'];
   function isBasicOnly(results) { return results.threshold_reached === false; }
   function minTotal(results) { return typeof results.min_total === 'number' ? results.min_total : 30; }
   function showAnswerCta(visible) {
@@ -68,11 +70,12 @@
       head.appendChild(el('p', 'cp-badge', notice.label));
       head.appendChild(el('p', 'cp-lead', notice.text));
       head.appendChild(el('h2', '', '有効回答数：' + results.total + '件'));
-      if (basicOnly) head.appendChild(el('p', 'cp-lead', '有効回答が' + minTotal(results) + '件に届かなかったため、主要なアンケート結果は公開せず、年齢・居住エリアなどの基本情報のみ表示しています。'));
+      if (basicOnly) head.appendChild(el('p', 'cp-lead', '有効回答が' + minTotal(results) + '件に届かなかったため、主要なアンケート結果は公開せず、年代・居住地域などの基本情報のみ表示しています。'));
     }
     head.appendChild(el('p', 'cp-lead', '3件未満のカテゴリは、個人が推測されないよう「非公開」としています。複数選択の設問は、選んだ人の割合のため合計が100%を超えます。'));
     root.appendChild(head);
     results.items.forEach(function (item) {
+      if (HIDDEN_ITEM_IDS.indexOf(item.id) !== -1) return;
       var card = el('div', 'cp-card cp-results-item');
       card.appendChild(el('h3', '', item.title));
       if (item.suppressed) {

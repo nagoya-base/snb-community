@@ -106,10 +106,11 @@ test('新設問は非公開（公開allowlistに入らない）で、既存IDの
   assert.strictEqual(byId.aichi_area.visibility, 'private');
   assert.strictEqual(byId.residence_country.visibility, 'private');
   const publicIds = schema.publicResults.items.map((i) => i.question);
-  // 居住地・愛知県内エリアは設問がprivateのまま、基本属性（tier:basic）としてだけ公開allowlistに入る（Issue #367）。国名は入らない。
+  // 居住地は設問がprivateのまま、基本属性（tier:basic）の地方ブロックとしてだけ公開allowlistに入る（Issue #369）。国名・愛知県内エリアは入らない。
   assert.ok(!publicIds.includes('residence_country'));
+  assert.ok(!publicIds.includes('aichi_area'));
   assert.strictEqual(byId.residence.visibility, 'private');
-  for (const id of ['residence', 'aichi_area']) assert.strictEqual(schema.publicResults.items.find((i) => i.question === id).tier, 'basic');
+  for (const id of ['residence']) assert.strictEqual(schema.publicResults.items.find((i) => i.question === id).tier, 'basic');
   assert.strictEqual(schema.schema_version, '3');
 });
 
@@ -219,7 +220,7 @@ test('Spreadsheet保存列は schema の設問列と一致し、新設問の列�
   assert.deepStrictEqual(plain(header.slice(-3)), ['other_texts', 'client_elapsed_ms', 'notification_status']);
 });
 
-test('公開結果へ国名（residence_country）は混入しない（aichi_area・residenceは基本属性として公開）', () => {
+test('公開結果へ国名（residence_country）は混入しない（residenceは地方ブロックとして公開、aichi_areaは非公開）', () => {
   const { ctx } = loadPublic();
   for (let i = 0; i < 35; i++) {
     const overrides = i % 3 === 0 ? { residence: 'overseas', residence_country: '秘匿国名テスト' }
@@ -229,10 +230,10 @@ test('公開結果へ国名（residence_country）は混入しない（aichi_are
   }
   ctx.finalizeSurvey_(CLOSED);
   const text = JSON.stringify(plain(ctx.readPublicResults_()));
-  // 居住地・愛知県内エリアは基本属性として公開されるが、国名（自由記述）は混入しない
-  for (const forbidden of ['residence_country', '秘匿国名テスト']) assert.ok(!text.includes(forbidden), forbidden);
+  // 居住地は地方ブロックとして公開されるが、国名（自由記述）・愛知県内エリアは混入しない
+  for (const forbidden of ['residence_country', '秘匿国名テスト', 'aichi_area', 'nagoya_city', 'owari']) assert.ok(!text.includes(forbidden), forbidden);
   const ids = plain(ctx.readPublicResults_()).results.items.map((i) => i.id);
-  assert.ok(ids.includes('aichi_area') && ids.includes('residence') && !ids.includes('residence_country'));
+  assert.ok(!ids.includes('aichi_area') && ids.includes('residence') && !ids.includes('residence_country'));
 });
 
 /* ── Admin ── */

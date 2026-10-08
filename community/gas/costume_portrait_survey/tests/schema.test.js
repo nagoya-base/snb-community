@@ -168,12 +168,14 @@ test('ファネル定義・クロス集計プリセットが実在する設問/�
 test('公開結果の対象は allowlist 項目のみで、非公開すべき設問を含まない', () => {
   const privateIds = ['portrait_price', 'rental_price', 'intent_3m', 'sexual_orientation', 'cheer_message', 'free_ideas', 'free_themes', 'travel_range', 'hesitation', 'residence_country'];
   const publicQuestions = schema.publicResults.items.map((i) => i.question);
-  // 設問が private でも公開できるのは、tier:"basic" かつ居住地・愛知県内エリアの2問だけ（コード側の固定allowlistと二重化）
+  // 設問が private でも公開できるのは、tier:"basic" かつ居住地の1問だけ（コード側の固定allowlistと二重化）。aichi_area は公開しない
   for (const item of schema.publicResults.items) {
-    if (item.tier === 'basic' && ['residence', 'aichi_area'].includes(item.question)) assert.strictEqual(byId[item.question].visibility, 'private', item.id);
+    if (item.tier === 'basic' && ['residence'].includes(item.question)) assert.strictEqual(byId[item.question].visibility, 'private', item.id);
     else assert.strictEqual(byId[item.question].visibility, 'public', item.id);
   }
-  assert.deepStrictEqual(schema.publicResults.items.filter((i) => i.tier === 'basic').map((i) => i.question), ['age_range', 'residence', 'aichi_area']);
+  assert.deepStrictEqual(schema.publicResults.items.filter((i) => i.tier === 'basic').map((i) => i.question), ['age_range', 'residence']);
+  assert.ok(!publicQuestions.includes('aichi_area'));
+  assert.strictEqual(schema.publicResults.items.find((i) => i.id === 'residence').groupBy, 'residenceBlocks');
   assert.ok(schema.publicResults.items.every((i) => i.tier === 'basic' || i.tier === 'main'));
   for (const id of privateIds) {
     assert.strictEqual(byId[id].visibility, 'private', id);

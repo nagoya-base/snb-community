@@ -14,7 +14,7 @@ function seed(ctx, n, variant = () => ({})) {
     assert.strictEqual(r.ok, true, JSON.stringify(r));
   }
 }
-const BASIC_IDS = ['age_range', 'residence', 'aichi_area'];
+const BASIC_IDS = ['age_range', 'residence'];
 const MAIN_SAMPLE_IDS = ['costume_interest', 'costume_wear', 'costume_photographed', 'costume_shoot', 'portrait_interest', 'portrait_styles', 'photo_usage', 'backdrop'];
 const ageCycle = ['age_20_24', 'age_30_34', 'age_40_49', 'age_20_24'];
 
@@ -90,7 +90,7 @@ test('allowlist：非公開項目（価格・意向・国名・性的指向・�
     'shooter_interest', 'studio_rental', 'equipment', 'age_confirmed', 'notification']) {
     assert.ok(!text.includes(forbidden), forbidden);
   }
-  const allowedItems = ['age_range', 'residence', 'aichi_area', 'costume_interest', 'uniform_interest', 'workwear_interest', 'suit_interest', 'school_uniform_interest', 'costume_wear', 'costume_photographed', 'costume_shoot', 'portrait_interest',
+  const allowedItems = ['age_range', 'residence', 'costume_interest', 'uniform_interest', 'workwear_interest', 'suit_interest', 'school_uniform_interest', 'costume_wear', 'costume_photographed', 'costume_shoot', 'portrait_interest',
     'portrait_styles', 'photo_usage', 'face_exposure', 'shoot_duration', 'weekdays', 'weekday_time_slots', 'holiday_time_slots', 'photo_count', 'retouch', 'backdrop'];
   assert.deepStrictEqual(body.results.items.map((i) => i.id), allowedItems);
   assert.deepStrictEqual(Object.keys(body.results).sort(), ['items', 'min_total', 'schema_version', 'status', 'survey_version', 'threshold_reached', 'total']);
@@ -268,7 +268,7 @@ test('途中集計：未確定29件は基本属性と件数のみ、30件ちょ�
   assert.strictEqual(r.status, 'partial');
   assert.strictEqual(r.total, 30);
   assert.strictEqual(r.threshold_reached, true);
-  assert.deepStrictEqual(r.items.slice(0, 3).map((i) => i.id), BASIC_IDS);
+  assert.deepStrictEqual(r.items.slice(0, 2).map((i) => i.id), BASIC_IDS);
   assert.ok(r.items.length > BASIC_IDS.length);
 });
 
@@ -359,7 +359,7 @@ test('確定済み30件ちょうどは主要結果も含む最終結果（thresh
   const r = plain(ctx.readPublicResults_(CLOSED)).results;
   assert.strictEqual(r.status, 'final');
   assert.strictEqual(r.threshold_reached, true);
-  assert.deepStrictEqual(r.items.slice(0, 3).map((i) => i.id), BASIC_IDS);
+  assert.deepStrictEqual(r.items.slice(0, 2).map((i) => i.id), BASIC_IDS);
   assert.ok(MAIN_SAMPLE_IDS.every((id) => r.items.some((i) => i.id === id)));
 });
 
@@ -367,48 +367,155 @@ test('確定済み30件ちょうどは主要結果も含む最終結果（thresh
 const item = (results, id) => results.items.find((i) => i.id === id);
 const visible = (it) => it.categories.filter((c) => c.count !== null);
 
-test('29件でも age / residence / aichi_area が返り、主要結果は返らない', () => {
+const BLOCK_IDS = ['region_hokkaido_tohoku', 'region_kanto', 'region_chubu', 'region_kinki', 'region_chugoku', 'region_shikoku', 'region_kyushu_okinawa', 'region_overseas_other'];
+const BLOCK_LABELS = ['北海道・東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄', '海外・その他'];
+const cat = (it, id) => it.categories.find((c) => c.id === id);
+
+test('29件でも age_range と居住地方ブロックだけが返り、主要結果・aichi_area・都道府県は返らない', () => {
   const { ctx } = loadPublic();
-  seed(ctx, 29, (i) => ({ age_range: ['age_20_24', 'age_30_34', 'age_40_49'][i % 3], residence: i < 20 ? 'pref_23' : 'pref_21', aichi_area: i >= 20 ? undefined : i % 2 ? 'nagoya_city' : 'owari' }));
+  seed(ctx, 29, (i) => ({ age_range: ['age_20_24', 'age_30_34', 'age_40_49'][i % 3], residence: i < 20 ? 'pref_23' : 'pref_13', aichi_area: i >= 20 ? undefined : i % 2 ? 'nagoya_city' : 'owari' }));
   const r = plain(ctx.readPublicResults_(OPEN)).results;
   assert.strictEqual(r.total, 29);
   assert.strictEqual(r.threshold_reached, false);
-  assert.deepStrictEqual(r.items.map((i) => i.id), BASIC_IDS);
+  assert.deepStrictEqual(r.items.map((i) => i.id), ['age_range', 'residence']);
   for (const main of MAIN_SAMPLE_IDS) assert.ok(!r.items.some((i) => i.id === main), main);
-  // 年代は粗い区分（18-29 / 30-39 / 40-49 / 50+ / 回答しない）。個別の年代idは出ない
   assert.deepStrictEqual(item(r, 'age_range').categories.map((c) => c.id), ['age_18_29', 'age_30_39', 'age_40_49', 'age_50_plus', 'age_unspecified']);
   assert.ok(!JSON.stringify(r).includes('age_20_24'));
-  // 居住地：愛知県20件・岐阜県9件は公開、他は0件 → 非公開
   const res = item(r, 'residence');
-  assert.strictEqual(res.categories.find((c) => c.id === 'pref_23').count, 20);
-  assert.strictEqual(res.categories.find((c) => c.id === 'pref_21').count, 9);
-  assert.strictEqual(res.categories.find((c) => c.id === 'pref_01').count, null);
-  // 愛知県内エリア：愛知県の回答者20人だけが母数（愛知県外は分岐対象外）
-  const area = item(r, 'aichi_area');
-  assert.strictEqual(area.base, 20);
-  assert.deepStrictEqual(visible(area).map((c) => c.id).sort(), ['nagoya_city', 'owari']);
+  assert.deepStrictEqual(res.categories.map((c) => c.id), BLOCK_IDS);
+  assert.deepStrictEqual(res.categories.map((c) => c.label), BLOCK_LABELS);
+  assert.strictEqual(cat(res, 'region_chubu').count, 20);
+  assert.strictEqual(cat(res, 'region_kanto').count, 9);
+  assert.strictEqual(cat(res, 'region_kinki').count, null);
+  assertNoPrefectureOrAichiArea(r);
 });
 
-test('29件・基本属性でも count<3 は非公開、二次秘匿も維持される（minCell=3）', () => {
+/** 公開payloadに都道府県ID・都道府県名・愛知県内エリアが残っていないこと。 */
+function assertNoPrefectureOrAichiArea(r) {
+  const text = JSON.stringify(r);
+  assert.ok(!/pref_\d/.test(text), 'pref_xx id');
+  assert.ok(!r.items.some((i) => i.id === 'aichi_area'), 'aichi_area item');
+  for (const word of ['aichi_area', 'nagoya_city', 'owari', 'mikawa', 'unknown_other', '愛知県内エリア', '名古屋市内', '尾張', '三河',
+    '都道府県']) assert.ok(!text.includes(word), word);
+  const schema = require('../survey.schema.json');
+  const prefLabels = schema.questions.find((q) => q.id === 'residence').options.filter((o) => o.id.startsWith('pref_')).map((o) => o.label);
+  // 「北海道」は地方ブロック名「北海道・東北」に含まれるため、単独の都道府県名としては pref_ID の不在で担保する。
+  for (const label of prefLabels.filter((l) => l !== '北海道')) assert.ok(!text.includes(label), label);
+}
+
+test('地方ブロック：愛知・岐阜・静岡は中部、東京・神奈川は関東、大阪・京都は近畿に合算される', () => {
   const { ctx } = loadPublic();
-  // 居住地：愛知18 / 岐阜9 / 三重2 → 三重(2件)は非公開、非ゼロの伏せ値が1つだけなので次に小さい公開値(岐阜)も伏せる
-  seed(ctx, 29, (i) => ({ residence: i < 18 ? 'pref_23' : i < 27 ? 'pref_21' : 'pref_24', aichi_area: i >= 18 ? undefined : i % 2 ? 'nagoya_city' : 'owari' }));
+  const prefs = ['pref_23', 'pref_21', 'pref_22', 'pref_13', 'pref_13', 'pref_14', 'pref_27', 'pref_27', 'pref_26'];
+  seed(ctx, 30, (i) => ({ residence: prefs[i % prefs.length] }));
+  const res = item(plain(ctx.readPublicResults_(OPEN)).results, 'residence');
+  // i=0..29 → 各パターン3回ずつ+（30=9*3+3）先頭3件(愛知/岐阜/静岡)が+1
+  assert.strictEqual(cat(res, 'region_chubu').count, 12, '愛知4+岐阜4+静岡4');
+  assert.strictEqual(cat(res, 'region_kanto').count, 9, '東京6+神奈川3');
+  assert.strictEqual(cat(res, 'region_kinki').count, 9, '大阪6+京都3');
+  assert.strictEqual(res.base, 30);
+  assertNoPrefectureOrAichiArea({ items: [res] });
+});
+
+test('地方ブロックのマッピング：全47都道府県+overseas/otherがちょうど1ブロックに属し、期待どおりの割り当て', () => {
+  const schema = require('../survey.schema.json');
+  const blocks = schema.publicResults.residenceBlocks;
+  const optionIds = schema.questions.find((q) => q.id === 'residence').options.map((o) => o.id);
+  assert.deepStrictEqual(blocks.flatMap((b) => b.members).sort(), [...optionIds].sort());
+  assert.strictEqual(new Set(blocks.flatMap((b) => b.members)).size, 49);
+  assert.deepStrictEqual(blocks.map((b) => b.id), BLOCK_IDS);
+  assert.deepStrictEqual(blocks.map((b) => b.label), BLOCK_LABELS);
+  const nameOf = Object.fromEntries(schema.questions.find((q) => q.id === 'residence').options.map((o) => [o.id, o.label.replace(/[都府県]$/, '')]));
+  const expected = {
+    region_hokkaido_tohoku: ['北海道', '青森', '岩手', '宮城', '秋田', '山形', '福島'],
+    region_kanto: ['茨城', '栃木', '群馬', '埼玉', '千葉', '東京', '神奈川'],
+    region_chubu: ['新潟', '富山', '石川', '福井', '山梨', '長野', '岐阜', '静岡', '愛知'],
+    region_kinki: ['三重', '滋賀', '京都', '大阪', '兵庫', '奈良', '和歌山'],
+    region_chugoku: ['鳥取', '島根', '岡山', '広島', '山口'],
+    region_shikoku: ['徳島', '香川', '愛媛', '高知'],
+    region_kyushu_okinawa: ['福岡', '佐賀', '長崎', '熊本', '大分', '宮崎', '鹿児島', '沖縄'],
+    region_overseas_other: ['海外', 'その他']
+  };
+  for (const b of blocks) assert.deepStrictEqual(b.members.map((m) => nameOf[m]).sort(), [...expected[b.id]].sort(), b.id);
+});
+
+test('30件以上でも居住地は地方ブロックのみ（都道府県・愛知県内エリアは出ない）。aichi_areaは30件未満・以上・finalのすべてで非公開', () => {
+  const { ctx } = loadPublic();
+  const variant = (i) => ({ residence: 'pref_23', aichi_area: ['nagoya_city', 'owari', 'mikawa', 'unknown_other'][i % 4] });
+  seed(ctx, 29, variant);
+  const under = plain(ctx.readPublicResults_(OPEN)).results;
+  assert.strictEqual(under.threshold_reached, false);
+  seed(ctx, 11, variant);
+  const over = plain(ctx.readPublicResults_(OPEN)).results;
+  assert.strictEqual(over.threshold_reached, true);
+  ctx.finalizeSurvey_(CLOSED);
+  const fin = plain(ctx.readPublicResults_()).results;
+  assert.strictEqual(fin.status, 'final');
+  for (const r of [under, over, fin]) {
+    assertNoPrefectureOrAichiArea(r);
+    assert.deepStrictEqual(item(r, 'residence').categories.map((c) => c.id), BLOCK_IDS);
+  }
+});
+
+test('aichi_area を schema の tier:basic として追加しても公開されない（コード固定allowlist）。assertPublicPayload_も止める', () => {
+  const { ctx } = loadPublic();
+  seed(ctx, 29, () => ({ residence: 'pref_23', aichi_area: 'nagoya_city' }));
+  ctx.SURVEY_SCHEMA.publicResults.items.push({ id: 'aichi_area', question: 'aichi_area', title: '愛知県内エリア', tier: 'basic' });
   const r = plain(ctx.readPublicResults_(OPEN)).results;
-  const res = item(r, 'residence');
-  assert.strictEqual(res.categories.find((c) => c.id === 'pref_24').count, null);
-  assert.strictEqual(res.categories.find((c) => c.id === 'pref_24').pct, null);
-  assert.strictEqual(res.categories.find((c) => c.id === 'pref_21').count, null, '二次秘匿：次に小さい公開値も伏せる');
-  assert.strictEqual(res.categories.find((c) => c.id === 'pref_23').count, 18);
-  for (const it of r.items) for (const c of it.categories) assert.ok(c.count === null || c.count >= 3, `${it.id}.${c.id}`);
+  assert.deepStrictEqual(r.items.map((i) => i.id), BASIC_IDS);
+  assertNoPrefectureOrAichiArea(r);
+  const forged = { status: 'partial', phase: 'collecting', total: 5, min_total: 30, threshold_reached: false, items: [{ id: 'aichi_area', title: 'x', type: 'single', base: 5, suppressed: false, categories: [] }] };
+  assert.throws(() => ctx.assertPublicPayload_(forged), /not_allowed/);
+  forged.threshold_reached = true;
+  assert.throws(() => ctx.assertPublicPayload_(forged), /not_allowed/);
 });
 
-test('基本属性：愛知県の回答が3件未満なら aichi_area 全体を非公開（base:null）', () => {
+test('許可されていない groupBy は公開しない', () => {
   const { ctx } = loadPublic();
-  seed(ctx, 29, (i) => (i < 2 ? { residence: 'pref_23', aichi_area: 'nagoya_city' } : { residence: 'pref_13' }));
-  const area = item(plain(ctx.readPublicResults_(OPEN)).results, 'aichi_area');
-  assert.strictEqual(area.suppressed, true);
-  assert.strictEqual(area.base, null);
-  assert.deepStrictEqual(area.categories, []);
+  seed(ctx, 29);
+  ctx.SURVEY_SCHEMA.publicResults.items.find((i) => i.id === 'residence').groupBy = 'prefectures';
+  assert.throws(() => ctx.readPublicResults_(OPEN), /not_allowed/);
+});
+
+test('minCell=3：地方ブロック集約後の件数で判定する（都道府県では各2件でも、合算して3件以上なら公開）', () => {
+  const { ctx } = loadPublic();
+  // 愛知2+岐阜2=中部4（公開）/ 東京2+神奈川1=関東3（公開）/ 大阪1+京都1=近畿2・高知1=四国1（非公開が2つ→二次秘匿は発動しない）/ 北海道20
+  const plan = [['pref_23', 2], ['pref_21', 2], ['pref_13', 2], ['pref_14', 1], ['pref_27', 1], ['pref_26', 1], ['pref_39', 1], ['pref_01', 20]];
+  const list = plan.flatMap(([p, n]) => Array(n).fill(p));
+  seed(ctx, list.length, (i) => ({ residence: list[i] }));
+  const res = item(plain(ctx.readPublicResults_(OPEN)).results, 'residence');
+  assert.strictEqual(cat(res, 'region_chubu').count, 4);
+  assert.strictEqual(cat(res, 'region_kanto').count, 3);
+  assert.strictEqual(cat(res, 'region_kinki').count, null);
+  assert.strictEqual(cat(res, 'region_kinki').pct, null);
+  assert.strictEqual(cat(res, 'region_shikoku').count, null);
+  assert.strictEqual(cat(res, 'region_hokkaido_tohoku').count, 20);
+  for (const c of res.categories) assert.ok(c.count === null || c.count >= 3, c.id);
+});
+
+test('二次秘匿（単一選択）：地方ブロックが1つだけ伏せられると、次に小さい公開ブロックも伏せる', () => {
+  const { ctx } = loadPublic();
+  // 近畿2（伏せ・非ゼロ1つだけ）→ 次に小さい公開値の関東3も伏せる。中部4・北海道20は公開のまま
+  const plan = [['pref_27', 2], ['pref_13', 2], ['pref_14', 1], ['pref_23', 4], ['pref_01', 20]];
+  const list = plan.flatMap(([p, n]) => Array(n).fill(p));
+  seed(ctx, list.length, (i) => ({ residence: list[i] }));
+  const res = item(plain(ctx.readPublicResults_(OPEN)).results, 'residence');
+  assert.strictEqual(cat(res, 'region_kinki').count, null);
+  assert.strictEqual(cat(res, 'region_kanto').count, null, '二次秘匿');
+  assert.strictEqual(cat(res, 'region_chubu').count, 4);
+  assert.strictEqual(cat(res, 'region_hokkaido_tohoku').count, 20);
+});
+
+test('二次秘匿は地方ブロック単位：伏せ値が2つ以上なら追加で伏せない／0件ブロックは伏せ値に数えない', () => {
+  const { ctx } = loadPublic();
+  // 近畿1・四国2（2つ伏せ）→ 関東5・中部22は公開のまま
+  const list = [...Array(1).fill('pref_27'), ...Array(2).fill('pref_37'), ...Array(5).fill('pref_13'), ...Array(22).fill('pref_23')];
+  seed(ctx, list.length, (i) => ({ residence: list[i] }));
+  const res = item(plain(ctx.readPublicResults_(OPEN)).results, 'residence');
+  assert.strictEqual(cat(res, 'region_kinki').count, null);
+  assert.strictEqual(cat(res, 'region_shikoku').count, null);
+  assert.strictEqual(cat(res, 'region_kanto').count, 5);
+  assert.strictEqual(cat(res, 'region_chubu').count, 22);
+  assert.strictEqual(cat(res, 'region_kyushu_okinawa').count, null, '0件は非公開（二次秘匿の対象外）');
 });
 
 test('30件未満の公開結果に性的指向・自由記述・価格・参加意向・個票・国名が混入しない', () => {
@@ -425,7 +532,7 @@ test('30件未満の公開結果に性的指向・自由記述・価格・参加
   }
 });
 
-test('allowlist維持：基本属性の公開は固定3問のみ。schemaに tier:basic で追加しても他の private 設問は公開されない', () => {
+test('allowlist維持：基本属性の公開は固定2問のみ。schemaに tier:basic で追加しても他の private 設問は公開されない', () => {
   const { ctx } = loadPublic();
   seed(ctx, 29);
   const cfg = ctx.SURVEY_SCHEMA.publicResults;
@@ -468,7 +575,7 @@ test('doGet(results)：途中集計をJSONで返し、Spreadsheet読み取り失
   assert.deepStrictEqual(JSON.parse(ctx.doGet({ parameter: { action: 'results' } }).getContent()), { ok: false, error: 'server_error' });
 });
 
-test('既存public設問を誤って tier:basic にしても、29件では公開されない（コード固定の3問のみ）', () => {
+test('既存public設問を誤って tier:basic にしても、29件では公開されない（コード固定の2問のみ）', () => {
   const { ctx } = loadPublic();
   seed(ctx, 29);
   const cfg = ctx.SURVEY_SCHEMA.publicResults;

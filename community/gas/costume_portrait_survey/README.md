@@ -130,7 +130,7 @@ UUID形式・schema_version・**未知field（top-level / answers / other_texts 
 
 ## 公開結果（allowlist）と finalize
 
-- `GET ?action=results`（Issue #359 / #367）：公開は2層。**基本属性**（年代・居住地・愛知県内エリア）は有効回答数に関わらず、
+- `GET ?action=results`（Issue #359 / #367）：公開は2層。**基本属性**（年代・居住地方ブロック。Issue #369）は有効回答数に関わらず、
   **本集計**（`publicResults.items` の `tier:"main"`）は有効回答30件以上で追加する。
   | 状態 | 応答 `results` | 表示 |
   |---|---|---|
@@ -145,13 +145,15 @@ UUID形式・schema_version・**未知field（top-level / answers / other_texts 
   結果ページの「アンケートに回答する」CTAは受付中（`phase:"collecting"`）と判明した時だけ表示し、`final`・受付終了後・読み込み失敗では表示しない。
   回答ページには結果ページへの「現在の結果を見る」リンクを常設する。
 - allowlist方式：`schema.publicResults.items` に列挙され、かつ設問が `visibility:"public"` の項目だけを一から組み立てる。
-  例外として、`tier:"basic"` かつ `Results.gs` の `BASIC_PUBLIC_QUESTIONS`（`age_range` / `residence` / `aichi_area`）に**コードで固定**した設問だけは、
+  例外として、`tier:"basic"` かつ `Results.gs` の `BASIC_PUBLIC_QUESTIONS`（`age_range` / `residence`）に**コードで固定**した設問だけは、
   設問が `private` のままでも公開できる（schemaに足しただけでは他の設問は公開されない。denylistへは変更しない）。
   UUID/hash・timestamp・個票・自由記述・Q30・価格・3か月意向・`residence_country`・性的指向は構造上出力されない。
   公開前に `assertPublicPayload_` が key/項目を再検査し、1つでも許可外なら公開を止める（`threshold_reached:false` に基本属性以外の項目があっても止める）。
 - 総回答数は30件未満でも公開する。**カテゴリ別count < 3 は基本属性でも非公開**（0含む。`minCell`）。
   単一選択で1カテゴリだけ伏せると逆算できるため、次に小さい公開値も伏せる（二次秘匿）。年代は4区分+「回答しない・その他」。
-  `aichi_area` は愛知県の回答者だけが母数で、母数が3件未満なら項目ごと非公開。
+  居住地は保存値（`pref_01`〜`pref_47` / `overseas` / `other`）のまま、公開集計時のみ `schema.publicResults.residenceBlocks` の8地方ブロック
+  （北海道・東北 / 関東 / 中部 / 近畿 / 中国 / 四国 / 九州・沖縄 / 海外・その他）へ再集約する。`minCell` と二次秘匿は再集約後のカテゴリに適用する。
+  `aichi_area` は回答データとして保持するが、公開payloadには30件未満・以上・finalのすべてで含めない（`BASIC_PUBLIC_QUESTIONS` 外のため schema に足しても出ない）。
 - 公開GASの再デプロイが必要（公開payloadの形式が変わるため）。フロントのみ先に出すと、更新前GASの `insufficient` 応答には従来の案内文で応答する。
 - `finalizeSurvey()`（Apps Scriptエディタから**締切後に1回**手動実行）：
   `responseRows / validRows / lateRows / unparseableRows / publicTotal / finalizedAt / status:"final"` を算出し、公開payloadを

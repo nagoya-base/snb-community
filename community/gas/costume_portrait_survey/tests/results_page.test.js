@@ -85,23 +85,43 @@ const cta = (document) => document.getElementById('cp-answer-cta');
 const basicItems = [
   { id: 'age_range', title: '年代', type: 'single', base: 18, suppressed: false, categories: [
     { id: 'age_18_29', label: '18〜29歳', count: 10, pct: 55.6 }, { id: 'age_30_39', label: '30〜39歳', count: null, pct: null }] },
-  { id: 'residence', title: '居住地', type: 'single', base: 18, suppressed: false, categories: [{ id: 'pref_23', label: '愛知県', count: 15, pct: 83.3 }] },
-  { id: 'aichi_area', title: '愛知県内エリア', type: 'single', base: null, suppressed: true, categories: [] }];
+  { id: 'residence', title: '居住地域', type: 'single', base: 18, suppressed: false, categories: [
+    { id: 'region_kanto', label: '関東', count: null, pct: null }, { id: 'region_chubu', label: '中部', count: 15, pct: 83.3 }] }];
 const partial30 = (total, phase = 'collecting', extra = {}) => ({ ok: true, results: Object.assign({ status: 'partial', phase, total, min_total: 30, threshold_reached: false, items: basicItems }, extra) });
 
 test('30件未満：基本情報だけを表示し、件数を「XX件 / 30件」で示す。主要結果は出ない', async () => {
   const { document } = await openPage({ page: PAGE, fetch: () => partial30(18) });
   const t = body(document);
   assert.ok(t.includes('現在の回答傾向（基本情報）'));
-  assert.ok(t.includes('年齢・居住エリアなどの基本情報のみ先行公開しています。主要なアンケート結果は有効回答30件以上で公開します。'));
+  assert.ok(t.includes('年代・居住地域などの基本情報のみ先行公開しています。主要なアンケート結果は有効回答30件以上で公開します。'));
   assert.ok(t.includes('現在の有効回答数：18件 / 30件'));
-  assert.deepStrictEqual(Array.from(document.querySelectorAll('#cp-results h3')).map((h) => h.textContent), ['年代', '居住地', '愛知県内エリア']);
+  assert.deepStrictEqual(Array.from(document.querySelectorAll('#cp-results h3')).map((h) => h.textContent), ['年代', '居住地域']);
   assert.ok(t.includes('55.6%'));
   assert.ok(t.includes('83.3%'));
   assert.ok(t.includes('非公開'));
-  assert.ok(t.includes('回答数が少ないため非公開です'));
+  assert.ok(t.includes('3件未満のカテゴリは'));
   assert.ok(!t.includes('途中集計'));
   assert.ok(!t.includes('読み込めませんでした'));
+});
+
+test('結果ページに都道府県の長い一覧や「愛知県内エリア」は表示されない。更新前GASが aichi_area を返しても描画しない', async () => {
+  const { document } = await openPage({ page: PAGE, fetch: () => partial30(18) });
+  const t = body(document);
+  assert.ok(t.includes('関東') && t.includes('中部'));
+  assert.ok(!t.includes('愛知県内エリア'));
+  assert.ok(!t.includes('都道府県'));
+  assert.ok(document.querySelectorAll('#cp-results .cp-bar-row').length <= 8 + 5, '地方ブロック8件+年代の行数を超える長い一覧は出ない');
+  const legacy = Object.assign({}, partial30(18).results, { items: basicItems.concat([{ id: 'aichi_area', title: '愛知県内エリア', type: 'single', base: 5, suppressed: false, categories: [{ id: 'nagoya_city', label: '名古屋市内', count: 5, pct: 100 }] }]) });
+  const old = await openPage({ page: PAGE, fetch: () => ({ ok: true, results: legacy }) });
+  assert.ok(!body(old.document).includes('愛知県内エリア'));
+  assert.ok(!body(old.document).includes('名古屋市内'));
+  assert.deepStrictEqual(Array.from(old.document.querySelectorAll('#cp-results h3')).map((h) => h.textContent), ['年代', '居住地域']);
+});
+
+test('居住地の母数が3件未満（base:null）なら「回答数が少ないため非公開です」と表示する', async () => {
+  const items = [basicItems[0], { id: 'residence', title: '居住地域', type: 'single', base: null, suppressed: true, categories: [] }];
+  const { document } = await openPage({ page: PAGE, fetch: () => partial30(2, 'collecting', { items }) });
+  assert.ok(body(document).includes('回答数が少ないため非公開です'));
 });
 
 test('30件以上・受付中：従来どおり「途中集計」と変動する旨を表示し、基本情報の見出しは出さない', async () => {
@@ -147,6 +167,6 @@ test('読み込み失敗・準備中では回答CTAを表示しない', async ()
 
 test('結果ページ：threshold_reached:false の応答でも items をそのまま描画する（30件未満の全面非公開を決め打ちしない）', async () => {
   const { document } = await openPage({ page: PAGE, fetch: () => partial30(3) });
-  assert.strictEqual(document.querySelectorAll('#cp-results h3').length, 3);
+  assert.strictEqual(document.querySelectorAll('#cp-results h3').length, 2);
   assert.ok(body(document).includes('現在の有効回答数：3件 / 30件'));
 });
