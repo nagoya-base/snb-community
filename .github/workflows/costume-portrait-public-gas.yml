@@ -3,7 +3,7 @@ name: Costume portrait survey Public GAS
 # Issue #334「男性の衣装・ポートレート意識調査」の Public GAS。
 # 既存の fetish 用 workflow / script / Environment / Secret とは独立。
 #  - Pull request: テスト・生成物の差分検査・配備バンドルの dry-run のみ（本番 deployment は更新しない）。
-#  - workflow_dispatch (main 限定・source_sha は main の最新): テスト → deploy ジョブ（Environment 承認）。
+#  - workflow_dispatch (main 限定・デプロイ対象は実行開始時点の main HEAD = github.sha。source_sha の手入力は不要): テスト → deploy ジョブ（Environment 承認）。
 #  - 初回の GAS プロジェクト作成・Web App deployment 作成・OAuth 承認は手動（README 参照）。以降は既存 deployment を更新する。
 
 on:
@@ -17,13 +17,7 @@ on:
       - 'community/costume-portrait-survey-results.html'
       - 'scripts/costume-portrait-survey/**'
       - 'scripts/tests/test_costume_portrait_deploy.py'
-      - 'scripts/verify-snb-survey-source-sha.sh'
   workflow_dispatch:
-    inputs:
-      source_sha:
-        description: Current main HEAD SHA reviewed and merged for deployment (40 lowercase hex characters)
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -37,28 +31,18 @@ jobs:
     name: Validate and dry-run the public GAS bundle
     runs-on: ubuntu-latest
     steps:
-      - name: Check out main for source_sha verification
+      - name: Require dispatch from the main branch (fail closed)
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Require source_sha to be the current main HEAD
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          SOURCE_SHA: ${{ inputs.source_sha }}
         run: |
           set -euo pipefail
           if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
             echo 'Manual deployment must be dispatched from the main branch.' >&2
             exit 1
           fi
-          bash scripts/verify-snb-survey-source-sha.sh
       - name: Check out code under test
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_sha || github.event.pull_request.head.sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
           persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -110,12 +94,12 @@ jobs:
       COSTUME_PORTRAIT_TARGET: public
       COSTUME_PORTRAIT_SCRIPT_ID: ${{ secrets.COSTUME_PORTRAIT_SCRIPT_ID }}
       COSTUME_PORTRAIT_DEPLOYMENT_ID: ${{ secrets.COSTUME_PORTRAIT_DEPLOYMENT_ID }}
-      COSTUME_PORTRAIT_SOURCE_SHA: ${{ inputs.source_sha }}
+      COSTUME_PORTRAIT_SOURCE_SHA: ${{ github.sha }}
     steps:
-      - name: Check out the reviewed main HEAD
+      - name: Check out the pinned main HEAD (github.sha)
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@v4

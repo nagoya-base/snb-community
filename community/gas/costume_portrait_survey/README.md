@@ -212,7 +212,7 @@ OWNER 向けの集計は従来どおり（需要ファネル5種〔Issue #361 / 
 2. **【配備の前に】既存 Admin deployment のアクセスを「自分のみ」へ変更する**: Apps Script エディタ →「デプロイ」→「デプロイを管理」→ 既存の Web App deployment を編集 →
    「次のユーザーとして実行 = 自分」「アクセスできるユーザー = **自分のみ**（`MYSELF`）」→ 保存。`/exec` URL は維持される。
    （この時点では旧コードが動いているため、GitHub Pages の旧管理画面（未設定のまま）は元から使えず、影響はない。）
-3. Actions *Costume portrait survey Admin GAS* を `workflow_dispatch`（`source_sha` = main最新）。
+3. Actions *Costume portrait survey Admin GAS* を `workflow_dispatch`（Branch: `main`。SHA入力は不要で、実行開始時点の main HEAD = `github.sha` を固定してテスト・deployする）。
    入力 **`admin_access_set_to_myself` を、手順2を済ませた場合のみ ON** にする（OFF のままなら workflow / `deploy-gas.sh` は clasp を一切呼ばずに失敗する＝fail closed）→ Environment承認。
    既存の deployment を `update-deployment` するだけで、新規 deployment は作らない（`/exec` URL は変わらない）。
    旧 `Auth.gs` / `IdToken.gs` は `clasp push` で置き換わり削除される。
@@ -284,7 +284,7 @@ python3 -m unittest scripts.tests.test_costume_portrait_deploy -v   # リポジ�
 ## 運用
 
 - **コード更新**: PRで検証（本番は更新されない）→ mainへマージ → Actions の *Costume portrait survey Public GAS* /
-  *Admin GAS* を `workflow_dispatch`（`source_sha` = main最新commit）→ Environment承認 → `deploy-gas.sh`。
+  *Admin GAS* を `workflow_dispatch`（Branch: `main`、SHA入力なし・`github.sha` を固定）→ Environment承認 → `deploy-gas.sh`。
   既存deploymentを `update-deployment` するだけで、新規deploymentは作らず `/exec` URLは変わらない。
   Script Properties・`SPREADSHEET_ID` は変更しない。Public のWeb Appアクセス設定は変更しない（remoteの `webapp` を保持）。
   Admin の `webapp` はリポジトリ側（`MYSELF` / `USER_DEPLOYING`）が正。既存の `ANYONE_ANONYMOUS` 等からの移行は許可し、未知の値・許可外scope（メール送信・外部通信等）は拒否する。
