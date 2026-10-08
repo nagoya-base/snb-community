@@ -95,7 +95,8 @@ test('公開allowlist：Q5の新詳細は公開、fetish_presentationと私的�
   const items = schema.publicResults.items.map((i) => i.question);
   assert.ok(items.includes('suit_interest') && items.includes('school_uniform_interest'));
   assert.ok(!items.includes('fetish_presentation'));
-  for (const id of items) assert.strictEqual(byId[id].visibility, 'public', id);
+  // 本集計（tier:main）の設問はすべて public。private の設問は基本属性（tier:basic）の固定3問だけ公開できる。
+  for (const item of schema.publicResults.items) if (item.tier !== 'basic') assert.strictEqual(byId[item.question].visibility, 'public', item.id);
   for (const [, , , prefix] of BRANCHES) for (const s of ['wear', 'photographed', 'shoot']) assert.ok(!items.includes(prefix + s));
 });
 

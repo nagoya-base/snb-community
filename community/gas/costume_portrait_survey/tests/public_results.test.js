@@ -14,6 +14,8 @@ function seed(ctx, n, variant = () => ({})) {
     assert.strictEqual(r.ok, true, JSON.stringify(r));
   }
 }
+const BASIC_IDS = ['age_range', 'residence', 'aichi_area'];
+const MAIN_SAMPLE_IDS = ['costume_interest', 'costume_wear', 'costume_photographed', 'costume_shoot', 'portrait_interest', 'portrait_styles', 'photo_usage', 'backdrop'];
 const ageCycle = ['age_20_24', 'age_30_34', 'age_40_49', 'age_20_24'];
 
 test('未確定でも30件以上なら途中集計（status:partial）。finalが流用されない', () => {
@@ -32,15 +34,16 @@ test('締切前の finalize は拒否される（未確定の数値を最終結�
   assert.ok(!env.props.has('FINALIZED_AT'));
 });
 
-test('有効回答30件未満は、件数も含め一切公開しない', () => {
-  const { env, ctx } = loadPublic();
+test('確定済みでも29件なら基本属性と件数のみ（最終結果・threshold_reached:false）。主要結果は含まない', () => {
+  const { ctx } = loadPublic();
   seed(ctx, 29);
   const result = plain(ctx.finalizeSurvey_(CLOSED));
   assert.strictEqual(result.stats.validRows, 29);
-  const body = plain(ctx.readPublicResults_());
-  assert.deepStrictEqual(body, { ok: true, results: { status: 'insufficient', schema_version: SV, min_total: 30 } });
-  assert.ok(!JSON.stringify(body).includes('29'));
-  assert.ok(env);
+  const r = plain(ctx.readPublicResults_()).results;
+  assert.strictEqual(r.status, 'final');
+  assert.strictEqual(r.total, 29);
+  assert.strictEqual(r.threshold_reached, false);
+  assert.deepStrictEqual(r.items.map((i) => i.id), BASIC_IDS);
 });
 
 test('30件以上で公開：count<3のカテゴリは抑止、年代は粗い区分、単一選択は二次秘匿', () => {
@@ -76,21 +79,21 @@ test('30件以上で公開：count<3のカテゴリは抑止、年代は粗い�
   assert.strictEqual(backdrop.find((c) => c.id === 'black').count, null);
 });
 
-test('allowlist：非公開項目（価格・意向・地域・性的指向・自由記述等）は構造上出力されない', () => {
+test('allowlist：非公開項目（価格・意向・国名・性的指向・自由記述等）は構造上出力されない', () => {
   const { ctx } = loadPublic();
-  seed(ctx, 35, () => ({ sexual_orientation: 'gay', residence: 'pref_23', cheer_message: '応援してます', free_ideas: 'アイデア', free_themes: 'テーマ', portrait_price: '7000_8999' }));
+  seed(ctx, 35, () => ({ sexual_orientation: 'gay', residence: 'pref_23', aichi_area: 'nagoya_city', cheer_message: '応援してます', free_ideas: 'アイデア', free_themes: 'テーマ', portrait_price: '7000_8999' }));
   ctx.finalizeSurvey_(CLOSED);
   const body = plain(ctx.readPublicResults_());
   const text = JSON.stringify(body);
-  for (const forbidden of ['portrait_price', 'rental_price', 'intent_3m', 'residence', 'sexual_orientation', 'travel_range', 'hesitation',
-    'cheer_message', 'free_ideas', 'free_themes', 'respondent_hash', 'timestamp', 'uuid', 'other_texts', '応援してます', 'アイデア', 'pref_23', 'gay', '7000_8999',
+  for (const forbidden of ['portrait_price', 'rental_price', 'intent_3m', 'residence_country', 'sexual_orientation', 'travel_range', 'hesitation',
+    'cheer_message', 'free_ideas', 'free_themes', 'respondent_hash', 'timestamp', 'uuid', 'other_texts', '応援してます', 'アイデア', 'gay', '7000_8999',
     'shooter_interest', 'studio_rental', 'equipment', 'age_confirmed', 'notification']) {
     assert.ok(!text.includes(forbidden), forbidden);
   }
-  const allowedItems = ['age_range', 'costume_interest', 'uniform_interest', 'workwear_interest', 'suit_interest', 'school_uniform_interest', 'costume_wear', 'costume_photographed', 'costume_shoot', 'portrait_interest',
+  const allowedItems = ['age_range', 'residence', 'aichi_area', 'costume_interest', 'uniform_interest', 'workwear_interest', 'suit_interest', 'school_uniform_interest', 'costume_wear', 'costume_photographed', 'costume_shoot', 'portrait_interest',
     'portrait_styles', 'photo_usage', 'face_exposure', 'shoot_duration', 'weekdays', 'weekday_time_slots', 'holiday_time_slots', 'photo_count', 'retouch', 'backdrop'];
   assert.deepStrictEqual(body.results.items.map((i) => i.id), allowedItems);
-  assert.deepStrictEqual(Object.keys(body.results).sort(), ['items', 'schema_version', 'status', 'survey_version', 'total']);
+  assert.deepStrictEqual(Object.keys(body.results).sort(), ['items', 'min_total', 'schema_version', 'status', 'survey_version', 'threshold_reached', 'total']);
   for (const item of body.results.items) {
     assert.deepStrictEqual(Object.keys(item).sort(), ['base', 'categories', 'id', 'suppressed', 'title', 'type']);
     for (const c of item.categories) assert.deepStrictEqual(Object.keys(c).sort(), ['count', 'id', 'label', 'pct']);
@@ -250,17 +253,23 @@ const addRow = (env, mutate) => {
   sheet.rows.push(row);
 };
 
-test('途中集計：未確定29件は件数・集計とも非公開、30件ちょうどで公開', () => {
+test('途中集計：未確定29件は基本属性と件数のみ、30件ちょうどで主要結果が追加される', () => {
   const { ctx } = loadPublic();
   seed(ctx, 29);
   const body = plain(ctx.readPublicResults_(OPEN));
-  assert.deepStrictEqual(body, { ok: true, results: { status: 'insufficient', schema_version: SV, min_total: 30 } });
-  assert.ok(!JSON.stringify(body).includes('29'));
+  assert.strictEqual(body.results.status, 'partial');
+  assert.strictEqual(body.results.phase, 'collecting');
+  assert.strictEqual(body.results.total, 29);
+  assert.strictEqual(body.results.min_total, 30);
+  assert.strictEqual(body.results.threshold_reached, false);
+  assert.deepStrictEqual(body.results.items.map((i) => i.id), BASIC_IDS);
   seed(ctx, 1);
   const r = plain(ctx.readPublicResults_(OPEN)).results;
   assert.strictEqual(r.status, 'partial');
   assert.strictEqual(r.total, 30);
-  assert.ok(r.items.length > 0);
+  assert.strictEqual(r.threshold_reached, true);
+  assert.deepStrictEqual(r.items.slice(0, 3).map((i) => i.id), BASIC_IDS);
+  assert.ok(r.items.length > BASIC_IDS.length);
 });
 
 test('途中集計：回答追加後の再取得で更新され、確定マーカー・スナップショット・metaを作らない', () => {
@@ -292,7 +301,10 @@ test('途中集計：テスト行・締切後行は30件判定にも入らない
   seed(ctx, 29);
   for (let i = 0; i < 5; i++) addRow(env, (row, header) => { row[header.indexOf('completion_status')] = 'test'; });
   addRow(env, (row, header) => { row[header.indexOf('timestamp')] = new Date('2026-12-05T00:00:00+09:00'); });
-  assert.strictEqual(plain(ctx.readPublicResults_(CLOSED)).results.status, 'insufficient');
+  const r = plain(ctx.readPublicResults_(CLOSED)).results;
+  assert.strictEqual(r.total, 29);
+  assert.strictEqual(r.threshold_reached, false);
+  assert.deepStrictEqual(r.items.map((i) => i.id), BASIC_IDS);
 });
 
 test('途中集計：締切設定が未設定・不正ならエラー（誤った集計を公開しない）', () => {
@@ -310,12 +322,12 @@ test('途中集計：少数カテゴリ秘匿・二次秘匿・allowlistが維�
   seed(ctx, 40, (i) => ({
     portrait_interest: i < 2 ? 'not_at_all' : i < 12 ? 'interested' : 'very_interested',
     backdrop: i < 2 ? ['white', 'fantasy'] : ['white'],
-    sexual_orientation: 'gay', residence: 'pref_23', cheer_message: '応援してます', portrait_price: '7000_8999'
+    sexual_orientation: 'gay', residence: 'pref_23', aichi_area: 'nagoya_city', cheer_message: '応援してます', portrait_price: '7000_8999'
   }));
   const body = plain(ctx.readPublicResults_(OPEN));
   const text = JSON.stringify(body);
-  for (const forbidden of ['portrait_price', 'residence', 'sexual_orientation', 'cheer_message', '応援してます', 'respondent_hash', 'timestamp', 'pref_23', '7000_8999']) assert.ok(!text.includes(forbidden), forbidden);
-  assert.deepStrictEqual(Object.keys(body.results).sort(), ['items', 'phase', 'schema_version', 'status', 'survey_version', 'total']);
+  for (const forbidden of ['portrait_price', 'residence_country', 'sexual_orientation', 'cheer_message', '応援してます', 'respondent_hash', 'timestamp', '7000_8999']) assert.ok(!text.includes(forbidden), forbidden);
+  assert.deepStrictEqual(Object.keys(body.results).sort(), ['items', 'min_total', 'phase', 'schema_version', 'status', 'survey_version', 'threshold_reached', 'total']);
   const backdrop = body.results.items.find((i) => i.id === 'backdrop').categories;
   assert.strictEqual(backdrop.find((c) => c.id === 'fantasy').count, null);
   assert.strictEqual(backdrop.find((c) => c.id === 'white').count, 40);
@@ -340,11 +352,111 @@ test('途中集計→finalize：最終結果へ切り替わり、後続のシー
   assert.strictEqual(JSON.stringify(plain(ctx.readPublicResults_(CLOSED)).results), snapshot);
 });
 
-test('確定済みでも30件未満は非公開を維持', () => {
+test('確定済み30件ちょうどは主要結果も含む最終結果（threshold_reached:true）', () => {
+  const { ctx } = loadPublic();
+  seed(ctx, 30);
+  ctx.finalizeSurvey_(CLOSED);
+  const r = plain(ctx.readPublicResults_(CLOSED)).results;
+  assert.strictEqual(r.status, 'final');
+  assert.strictEqual(r.threshold_reached, true);
+  assert.deepStrictEqual(r.items.slice(0, 3).map((i) => i.id), BASIC_IDS);
+  assert.ok(MAIN_SAMPLE_IDS.every((id) => r.items.some((i) => i.id === id)));
+});
+
+// ── 基本属性の先行公開（Issue #367） ──
+const item = (results, id) => results.items.find((i) => i.id === id);
+const visible = (it) => it.categories.filter((c) => c.count !== null);
+
+test('29件でも age / residence / aichi_area が返り、主要結果は返らない', () => {
+  const { ctx } = loadPublic();
+  seed(ctx, 29, (i) => ({ age_range: ['age_20_24', 'age_30_34', 'age_40_49'][i % 3], residence: i < 20 ? 'pref_23' : 'pref_21', aichi_area: i >= 20 ? undefined : i % 2 ? 'nagoya_city' : 'owari' }));
+  const r = plain(ctx.readPublicResults_(OPEN)).results;
+  assert.strictEqual(r.total, 29);
+  assert.strictEqual(r.threshold_reached, false);
+  assert.deepStrictEqual(r.items.map((i) => i.id), BASIC_IDS);
+  for (const main of MAIN_SAMPLE_IDS) assert.ok(!r.items.some((i) => i.id === main), main);
+  // 年代は粗い区分（18-29 / 30-39 / 40-49 / 50+ / 回答しない）。個別の年代idは出ない
+  assert.deepStrictEqual(item(r, 'age_range').categories.map((c) => c.id), ['age_18_29', 'age_30_39', 'age_40_49', 'age_50_plus', 'age_unspecified']);
+  assert.ok(!JSON.stringify(r).includes('age_20_24'));
+  // 居住地：愛知県20件・岐阜県9件は公開、他は0件 → 非公開
+  const res = item(r, 'residence');
+  assert.strictEqual(res.categories.find((c) => c.id === 'pref_23').count, 20);
+  assert.strictEqual(res.categories.find((c) => c.id === 'pref_21').count, 9);
+  assert.strictEqual(res.categories.find((c) => c.id === 'pref_01').count, null);
+  // 愛知県内エリア：愛知県の回答者20人だけが母数（愛知県外は分岐対象外）
+  const area = item(r, 'aichi_area');
+  assert.strictEqual(area.base, 20);
+  assert.deepStrictEqual(visible(area).map((c) => c.id).sort(), ['nagoya_city', 'owari']);
+});
+
+test('29件・基本属性でも count<3 は非公開、二次秘匿も維持される（minCell=3）', () => {
+  const { ctx } = loadPublic();
+  // 居住地：愛知18 / 岐阜9 / 三重2 → 三重(2件)は非公開、非ゼロの伏せ値が1つだけなので次に小さい公開値(岐阜)も伏せる
+  seed(ctx, 29, (i) => ({ residence: i < 18 ? 'pref_23' : i < 27 ? 'pref_21' : 'pref_24', aichi_area: i >= 18 ? undefined : i % 2 ? 'nagoya_city' : 'owari' }));
+  const r = plain(ctx.readPublicResults_(OPEN)).results;
+  const res = item(r, 'residence');
+  assert.strictEqual(res.categories.find((c) => c.id === 'pref_24').count, null);
+  assert.strictEqual(res.categories.find((c) => c.id === 'pref_24').pct, null);
+  assert.strictEqual(res.categories.find((c) => c.id === 'pref_21').count, null, '二次秘匿：次に小さい公開値も伏せる');
+  assert.strictEqual(res.categories.find((c) => c.id === 'pref_23').count, 18);
+  for (const it of r.items) for (const c of it.categories) assert.ok(c.count === null || c.count >= 3, `${it.id}.${c.id}`);
+});
+
+test('基本属性：愛知県の回答が3件未満なら aichi_area 全体を非公開（base:null）', () => {
+  const { ctx } = loadPublic();
+  seed(ctx, 29, (i) => (i < 2 ? { residence: 'pref_23', aichi_area: 'nagoya_city' } : { residence: 'pref_13' }));
+  const area = item(plain(ctx.readPublicResults_(OPEN)).results, 'aichi_area');
+  assert.strictEqual(area.suppressed, true);
+  assert.strictEqual(area.base, null);
+  assert.deepStrictEqual(area.categories, []);
+});
+
+test('30件未満の公開結果に性的指向・自由記述・価格・参加意向・個票・国名が混入しない', () => {
+  const { ctx } = loadPublic();
+  seed(ctx, 29, () => ({ sexual_orientation: 'gay', residence: 'overseas', residence_country: '秘匿国名テスト', cheer_message: '応援メッセージ秘', free_ideas: '自由案秘', free_themes: '自由テーマ秘', portrait_price: '7000_8999' }));
+  const r = plain(ctx.readPublicResults_(OPEN)).results;
+  const text = JSON.stringify(r);
+  for (const forbidden of ['sexual_orientation', 'gay', 'residence_country', '秘匿国名テスト', '応援メッセージ秘', '自由案秘', '自由テーマ秘', 'portrait_price', '7000_8999',
+    'intent_3m', 'rental_price', 'respondent_hash', 'uuid', 'timestamp', 'other_texts', 'cheer_message', 'free_ideas', 'free_themes']) assert.ok(!text.includes(forbidden), forbidden);
+  assert.deepStrictEqual(Object.keys(r).sort(), ['items', 'min_total', 'phase', 'schema_version', 'status', 'survey_version', 'threshold_reached', 'total']);
+  for (const it of r.items) {
+    assert.deepStrictEqual(Object.keys(it).sort(), ['base', 'categories', 'id', 'suppressed', 'title', 'type']);
+    for (const c of it.categories) assert.deepStrictEqual(Object.keys(c).sort(), ['count', 'id', 'label', 'pct']);
+  }
+});
+
+test('allowlist維持：基本属性の公開は固定3問のみ。schemaに tier:basic で追加しても他の private 設問は公開されない', () => {
   const { ctx } = loadPublic();
   seed(ctx, 29);
-  ctx.finalizeSurvey_(CLOSED);
-  assert.deepStrictEqual(plain(ctx.readPublicResults_(CLOSED)), { ok: true, results: { status: 'insufficient', schema_version: SV, min_total: 30 } });
+  const cfg = ctx.SURVEY_SCHEMA.publicResults;
+  for (const q of ['sexual_orientation', 'residence_country', 'portrait_price', 'cheer_message']) {
+    cfg.items.unshift({ id: q, question: q, title: q, tier: 'basic' });
+  }
+  const r = plain(ctx.readPublicResults_(OPEN)).results;
+  assert.deepStrictEqual(r.items.map((i) => i.id), BASIC_IDS);
+  const forged = { status: 'partial', phase: 'collecting', total: 1, min_total: 30, threshold_reached: false, items: [{ id: 'sexual_orientation', title: 'x', type: 'single', base: 1, suppressed: false, categories: [] }] };
+  assert.throws(() => ctx.assertPublicPayload_(forged), /not_allowed/);
+});
+
+test('assertPublicPayload_：threshold_reached:false の payload に主要結果が混入したら公開を止める', () => {
+  const { ctx } = loadPublic();
+  const base = { status: 'partial', phase: 'collecting', schema_version: SV, survey_version: 'x', total: 5, min_total: 30, items: [] };
+  const mainItem = { id: 'backdrop', title: 'x', type: 'multi', base: 5, suppressed: false, categories: [] };
+  const basicItem = { id: 'residence', title: 'x', type: 'single', base: 5, suppressed: false, categories: [] };
+  assert.doesNotThrow(() => ctx.assertPublicPayload_(Object.assign({}, base, { threshold_reached: false, items: [basicItem] })));
+  assert.throws(() => ctx.assertPublicPayload_(Object.assign({}, base, { threshold_reached: false, items: [basicItem, mainItem] })), /not_allowed/);
+  assert.doesNotThrow(() => ctx.assertPublicPayload_(Object.assign({}, base, { threshold_reached: true, items: [basicItem, mainItem] })));
+});
+
+test('30件以上は基本属性＋主要結果。29→30件の境界で threshold_reached が切り替わる', () => {
+  const { ctx } = loadPublic();
+  seed(ctx, 29);
+  assert.strictEqual(plain(ctx.readPublicResults_(OPEN)).results.threshold_reached, false);
+  seed(ctx, 1);
+  const r = plain(ctx.readPublicResults_(OPEN)).results;
+  assert.strictEqual(r.threshold_reached, true);
+  assert.strictEqual(r.items.length, ctx.SURVEY_SCHEMA.publicResults.items.length);
+  assert.ok(MAIN_SAMPLE_IDS.every((id) => r.items.some((i) => i.id === id)));
 });
 
 test('doGet(results)：途中集計をJSONで返し、Spreadsheet読み取り失敗は server_error（30件未満にしない）', () => {
@@ -354,4 +466,20 @@ test('doGet(results)：途中集計をJSONで返し、Spreadsheet読み取り失
   assert.strictEqual(ok.results.status, 'partial');
   env.failOpen = true;
   assert.deepStrictEqual(JSON.parse(ctx.doGet({ parameter: { action: 'results' } }).getContent()), { ok: false, error: 'server_error' });
+});
+
+test('既存public設問を誤って tier:basic にしても、29件では公開されない（コード固定の3問のみ）', () => {
+  const { ctx } = loadPublic();
+  seed(ctx, 29);
+  const cfg = ctx.SURVEY_SCHEMA.publicResults;
+  cfg.items.find((i) => i.id === 'costume_interest').tier = 'basic';
+  const r = plain(ctx.readPublicResults_(OPEN)).results;
+  assert.deepStrictEqual(r.items.map((i) => i.id), BASIC_IDS);
+  assert.ok(!JSON.stringify(r).includes('costume_interest'));
+  // assertPublicPayload_ も同様に止める
+  const forged = { status: 'partial', phase: 'collecting', total: 29, min_total: 30, threshold_reached: false, items: [{ id: 'costume_interest', title: 'x', type: 'multi', base: 5, suppressed: false, categories: [] }] };
+  assert.throws(() => ctx.assertPublicPayload_(forged), /not_allowed/);
+  // 30件以上なら従来どおり公開される
+  seed(ctx, 1);
+  assert.ok(plain(ctx.readPublicResults_(OPEN)).results.items.some((i) => i.id === 'costume_interest'));
 });

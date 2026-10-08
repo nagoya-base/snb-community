@@ -130,21 +130,29 @@ UUID形式・schema_version・**未知field（top-level / answers / other_texts 
 
 ## 公開結果（allowlist）と finalize
 
-- `GET ?action=results`（Issue #359）：
-  | 状態 | 応答 `results.status` | 表示 |
+- `GET ?action=results`（Issue #359 / #367）：公開は2層。**基本属性**（年代・居住地・愛知県内エリア）は有効回答数に関わらず、
+  **本集計**（`publicResults.items` の `tier:"main"`）は有効回答30件以上で追加する。
+  | 状態 | 応答 `results` | 表示 |
   |---|---|---|
-  | 有効回答30件未満（確定前後とも） | `insufficient`（件数・集計なし） | 「有効回答が30件以上集まると、途中集計を公開します。」 |
-  | 未確定・受付中・30件以上 | `partial` + `phase:"collecting"` | 途中集計 |
-  | 未確定・受付終了後・30件以上 | `partial` + `phase:"closed_pending"` | 受付終了・最終確定待ち |
-  | 確定済み・30件以上 | `final`（確定スナップショット。Spreadsheetは読まない） | 最終結果 |
+  | 未確定・受付中・30件未満 | `status:"partial"` + `phase:"collecting"` + `threshold_reached:false`（`items`＝基本属性のみ、`total`・`min_total:30`） | 「現在の回答傾向（基本情報）」「現在の有効回答数：XX件 / 30件」 |
+  | 未確定・受付中・30件以上 | `partial` + `collecting` + `threshold_reached:true`（基本属性＋本集計） | 途中集計 |
+  | 未確定・受付終了後 | `partial` + `phase:"closed_pending"`（30件未満は基本属性のみ） | 受付終了・最終確定待ち |
+  | 確定済み | `final`（確定スナップショット。Spreadsheetは読まない。30件未満は `threshold_reached:false` で基本属性のみ） | 最終結果 |
+  旧仕様の `status:"insufficient"` はGASからは返さない。フロントは更新前GAS向けの互換としてだけ従来の案内文を残している。
   途中集計は読み取りのみで、確定マーカー・スナップショット・metaは作らない。抽出条件は `collectValidRecords_` を finalize と共有する
   （test行・日時なし/不正・締切後の行を除外）。`SURVEY_CLOSES_AT` が未設定・不正なら途中集計は出さず `{ok:false,error:"survey_close_not_configured"}`。
   フロントは通信失敗・不正レスポンス・`ok:false` を読み込みエラーとして扱い、「30件未満」とは表示しない。
+  結果ページの「アンケートに回答する」CTAは受付中（`phase:"collecting"`）と判明した時だけ表示し、`final`・受付終了後・読み込み失敗では表示しない。
+  回答ページには結果ページへの「現在の結果を見る」リンクを常設する。
 - allowlist方式：`schema.publicResults.items` に列挙され、かつ設問が `visibility:"public"` の項目だけを一から組み立てる。
-  UUID/hash・timestamp・個票・自由記述・Q30・価格・3か月意向・居住地域・性的指向は構造上出力されない。
-  公開前に `assertPublicPayload_` が key/項目を再検査し、1つでも許可外なら公開を止める。
-- 有効回答 **30件未満は件数も含め非公開**（`insufficient`）。30件以上でも **カテゴリ別count < 3 は非公開**（0含む）。
+  例外として、`tier:"basic"` かつ `Results.gs` の `BASIC_PUBLIC_QUESTIONS`（`age_range` / `residence` / `aichi_area`）に**コードで固定**した設問だけは、
+  設問が `private` のままでも公開できる（schemaに足しただけでは他の設問は公開されない。denylistへは変更しない）。
+  UUID/hash・timestamp・個票・自由記述・Q30・価格・3か月意向・`residence_country`・性的指向は構造上出力されない。
+  公開前に `assertPublicPayload_` が key/項目を再検査し、1つでも許可外なら公開を止める（`threshold_reached:false` に基本属性以外の項目があっても止める）。
+- 総回答数は30件未満でも公開する。**カテゴリ別count < 3 は基本属性でも非公開**（0含む。`minCell`）。
   単一選択で1カテゴリだけ伏せると逆算できるため、次に小さい公開値も伏せる（二次秘匿）。年代は4区分+「回答しない・その他」。
+  `aichi_area` は愛知県の回答者だけが母数で、母数が3件未満なら項目ごと非公開。
+- 公開GASの再デプロイが必要（公開payloadの形式が変わるため）。フロントのみ先に出すと、更新前GASの `insufficient` 応答には従来の案内文で応答する。
 - `finalizeSurvey()`（Apps Scriptエディタから**締切後に1回**手動実行）：
   `responseRows / validRows / lateRows / unparseableRows / publicTotal / finalizedAt / status:"final"` を算出し、公開payloadを
   Script Propertiesへチャンク保存（読み戻し検証後に確定マーカー）。以後Spreadsheetを書き換えても公開値は変わらない。

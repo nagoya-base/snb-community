@@ -106,7 +106,10 @@ test('新設問は非公開（公開allowlistに入らない）で、既存IDの
   assert.strictEqual(byId.aichi_area.visibility, 'private');
   assert.strictEqual(byId.residence_country.visibility, 'private');
   const publicIds = schema.publicResults.items.map((i) => i.question);
-  assert.ok(!publicIds.includes('aichi_area') && !publicIds.includes('residence_country') && !publicIds.includes('residence'));
+  // 居住地・愛知県内エリアは設問がprivateのまま、基本属性（tier:basic）としてだけ公開allowlistに入る（Issue #367）。国名は入らない。
+  assert.ok(!publicIds.includes('residence_country'));
+  assert.strictEqual(byId.residence.visibility, 'private');
+  for (const id of ['residence', 'aichi_area']) assert.strictEqual(schema.publicResults.items.find((i) => i.question === id).tier, 'basic');
   assert.strictEqual(schema.schema_version, '3');
 });
 
@@ -216,7 +219,7 @@ test('Spreadsheet保存列は schema の設問列と一致し、新設問の列�
   assert.deepStrictEqual(plain(header.slice(-3)), ['other_texts', 'client_elapsed_ms', 'notification_status']);
 });
 
-test('公開結果へ aichi_area・国名・地域値は混入しない（allowlist）', () => {
+test('公開結果へ国名（residence_country）は混入しない（aichi_area・residenceは基本属性として公開）', () => {
   const { ctx } = loadPublic();
   for (let i = 0; i < 35; i++) {
     const overrides = i % 3 === 0 ? { residence: 'overseas', residence_country: '秘匿国名テスト' }
@@ -226,11 +229,10 @@ test('公開結果へ aichi_area・国名・地域値は混入しない（allowl
   }
   ctx.finalizeSurvey_(CLOSED);
   const text = JSON.stringify(plain(ctx.readPublicResults_()));
-  for (const forbidden of ['aichi_area', 'residence_country', 'residence', '秘匿国名テスト', 'nagoya_city', 'owari', 'mikawa', 'overseas', 'pref_23']) {
-    assert.ok(!text.includes(forbidden), forbidden);
-  }
+  // 居住地・愛知県内エリアは基本属性として公開されるが、国名（自由記述）は混入しない
+  for (const forbidden of ['residence_country', '秘匿国名テスト']) assert.ok(!text.includes(forbidden), forbidden);
   const ids = plain(ctx.readPublicResults_()).results.items.map((i) => i.id);
-  assert.ok(!ids.includes('aichi_area') && !ids.includes('residence_country'));
+  assert.ok(ids.includes('aichi_area') && ids.includes('residence') && !ids.includes('residence_country'));
 });
 
 /* ── Admin ── */

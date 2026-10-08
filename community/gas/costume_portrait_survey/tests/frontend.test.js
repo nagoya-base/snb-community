@@ -460,3 +460,21 @@ test('スマホ向け：viewport・ナビ固定・タップ領域（min-height�
   assert.match(css, /safe-area-inset-bottom/);
   assert.ok(visibleFieldsets);
 });
+
+test('回答ページのヒーロー直下に「現在の結果を見る」リンクがあり、結果ページへ遷移する（Issue #367）', async () => {
+  const { document } = await openPage();
+  const link = document.querySelector('a[href="./costume-portrait-survey-results.html"]');
+  assert.ok(link);
+  assert.strictEqual(link.textContent, '現在の結果を見る');
+  // ヒーロー直下・アンケート本体（#cp-app）の前にある
+  const hero = document.querySelector('.cp-hero');
+  const app = document.getElementById('cp-app');
+  assert.ok(hero.compareDocumentPosition(link) & 4, 'heroより後ろ');
+  assert.ok(link.compareDocumentPosition(app) & 4, '#cp-appより前');
+  assert.ok(!app.contains(link));
+});
+
+test('受付終了表示でも「現在の結果を見る」リンクは残る', async () => {
+  const { document } = await openPage({ search: '?test=closed' });
+  assert.ok(document.querySelector('a[href="./costume-portrait-survey-results.html"]'));
+});
