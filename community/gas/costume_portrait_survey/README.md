@@ -1,6 +1,6 @@
 # 男性の衣装・ポートレート意識調査（Issue #334）
 
-「ユニ・スーツ・衣装で、撮られたい？撮りたい？」— 男性の衣装・ポートレート撮影に関する匿名アンケートの
+「ユニ・スーツ・衣装で、撮ってもらいたい？撮りたい？」— 男性の衣装・ポートレート撮影に関する匿名アンケートの
 Frontend / Public GAS / Admin GAS / テスト / デプロイ一式。
 
 **GAS・Spreadsheet・schema・workflow はすべて本調査専用の新規作成**で、既存 fetish 用
@@ -58,7 +58,7 @@ npm run build:check  # CIと同じ差分検査
 - 条件付き自由記述: `type: text` に `showIf` / `required` / `maxLength` を指定できる（例 `residence_country`＝海外選択時のみ必須）。`multiline: false` で1行入力。非表示になった回答は破棄され、サーバーも `hidden_field` で拒否する。
 - 居住地の細分化: `aichi_area`（愛知県選択時のみ必須）・`residence_country` は `visibility: private`。公開結果へは出さず、Adminで確認する（自由記述はAdminの自由記述一覧、地域は基本情報の集計）。
 - schema_version 2: 曜日/時間帯の分離に伴い、共通の `time_slots` を平日用 `weekday_time_slots`（Q13で「平日」選択時のみ必須）と土日祝用 `holiday_time_slots`（土/日/祝のいずれか選択時のみ必須）へ置き換え、`aichi_area`・`residence_country` を追加（`responses` は `time_slots` 列が2列に、さらに2列増）。回答済みの旧ヘッダーのシートは保存を拒否する（`setupSpreadsheet()` も既存回答入りシートは変更しない）ため、公開前にシートを作り直してから `setupSpreadsheet()` を実行する。
-- schema_version 3: 衣装カテゴリを拡張。トップカテゴリ `school_uniform`（学生服・学校制服）を追加し、`workwear` の表示名を「職業制服・作業服」へ変更（IDは維持）。`uniform`（スポーツ・部活ユニフォーム）/ `suit` / `workwear` のIDは変更しない。枝設問を追加（Q5-3/Q6-A-3/Q6-B-3/Q7-3＝`suit_*`、Q5-4/Q6-A-4/Q6-B-4/Q7-4＝`school_uniform_*`。親でそのカテゴリを選んだ時のみ表示・必須、`priorityFrom` も同様）。`uniform_detail` の `uniform_school_jersey` は `school_uniform_detail.school_jersey` へ移し、`workwear_detail` に `security` / `railway` / `aviation` / `medical_whitecoat` / `factory_workwear` を追加。Q9直後に非公開の `fetish_presentation`（Q9-A）を追加。Q5-3/Q5-4（`suit_interest` / `school_uniform_interest`）は既存Q5-1/Q5-2と同じく公開allowlist対象、Q6-A/Q6-B/Q7の枝と `fetish_presentation` は非公開。Adminはクロス集計を3種追加（撮られたい意向 × スーツ/学生服/見せ方）。`survey_version` は調査回（`2026-10`）なので据え置く。回答済みの旧ヘッダーのシートは保存を拒否するため、公開前にシートを作り直してから `setupSpreadsheet()` を実行する。
+- schema_version 3: 衣装カテゴリを拡張。トップカテゴリ `school_uniform`（学生服・学校制服）を追加し、`workwear` の表示名を「職業制服・作業服」へ変更（IDは維持）。`uniform`（スポーツ・部活ユニフォーム）/ `suit` / `workwear` のIDは変更しない。枝設問を追加（Q5-3/Q6-A-3/Q6-B-3/Q7-3＝`suit_*`、Q5-4/Q6-A-4/Q6-B-4/Q7-4＝`school_uniform_*`。親でそのカテゴリを選んだ時のみ表示・必須、`priorityFrom` も同様）。`uniform_detail` の `uniform_school_jersey` は `school_uniform_detail.school_jersey` へ移し、`workwear_detail` に `security` / `railway` / `aviation` / `medical_whitecoat` / `factory_workwear` を追加。Q9直後に非公開の `fetish_presentation`（Q9-A）を追加。Q5-3/Q5-4（`suit_interest` / `school_uniform_interest`）は既存Q5-1/Q5-2と同じく公開allowlist対象、Q6-A/Q6-B/Q7の枝と `fetish_presentation` は非公開。Adminはクロス集計を3種追加（撮ってもらいたい意向 × スーツ/学生服/見せ方）。`survey_version` は調査回（`2026-10`）なので据え置く。回答済みの旧ヘッダーのシートは保存を拒否するため、公開前にシートを作り直してから `setupSpreadsheet()` を実行する。
 - `priorityFrom`: Q6-A/Q6-B/Q7でQ5の選択を上位表示する（未選択の衣装も「ほかの候補も選ぶ」から選べる）。
 - `funnels` / `funnelFlows`: ファネル判定式。Admin集計・テストが同じ定義を使う（コードにベタ書きしない）。
 - `crosstabs`: Adminの固定クロス集計17種。`publicResults`: 公開allowlist（項目・年代の粗い区分・閾値30/3）。

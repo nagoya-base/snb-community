@@ -95,7 +95,7 @@ test('hero: 見出し・サブタイトルは schema と一致（results はサ�
 
 test('title / description', () => {
   const s = doc(PAGES.survey), r = doc(PAGES.results);
-  assert.strictEqual(s.title, 'ユニ・スーツ・衣装で、撮られたい？撮りたい？｜男性の衣装・ポートレート意識調査｜SNBコミュニティ');
+  assert.strictEqual(s.title, 'ユニ・スーツ・衣装で、撮ってもらいたい？撮りたい？｜男性の衣装・ポートレート意識調査｜SNBコミュニティ');
   assert.strictEqual(r.title, '男性の衣装・ポートレート意識調査｜公開結果｜SNBコミュニティ');
   const d = meta(s, 'meta[name="description"]');
   for (const w of ['スポーツユニフォーム', '学生服・学校制服', 'スーツ', '18歳以上']) assert.ok(d.includes(w), w);

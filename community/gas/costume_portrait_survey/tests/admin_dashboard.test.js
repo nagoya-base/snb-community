@@ -34,7 +34,7 @@ test('初期化：/exec を開くと google.script.run で getDashboardData を1
   assert.ok(page.d.getElementById('tab-simple').querySelectorAll('.card').length > 30);
   assert.ok(page.text('tab-funnel').includes('ポートレート撮影の需要ファネル'));
   const demand = page.text('tab-demand');
-  assert.ok(demand.includes('① 撮られたい人') && demand.includes('分母') && demand.includes('前段階比') && demand.includes('全回答者比'));
+  assert.ok(demand.includes('① 撮ってもらいたい人') && demand.includes('分母') && demand.includes('前段階比') && demand.includes('全回答者比'));
   assert.ok(demand.includes('ストロボのみ') && demand.includes('常時光のみ') && demand.includes('既存データでは判定できない需要'));
   assert.strictEqual(page.d.getElementById('tab-cross').querySelectorAll('table').length, 17);
   assert.strictEqual(page.d.getElementById('tab-cross').querySelectorAll('select').length, 2);

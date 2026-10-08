@@ -459,7 +459,7 @@
 
   function renderIntro(body) {
     var card = el('div', 'cp-card');
-    card.appendChild(el('p', '', 'ユニフォーム、スーツ、ラバー、下着など、みんな実際どんな衣装に興味がある？ 着たい？ 撮られたい？ 撮りたい？'));
+    card.appendChild(el('p', '', 'ユニフォーム、スーツ、ラバー、下着など、みんな実際どんな衣装に興味がある？ 着たい？ 撮ってもらいたい？ 撮りたい？'));
     card.appendChild(el('p', 'cp-lead', '男性の衣装とポートレート撮影についての匿名アンケートです。集計結果の一部は公開し、みんなの傾向を一緒に見られる形にします。今後の撮影企画やスタジオ環境づくりの参考にもします。'));
     card.appendChild(el('p', 'cp-lead', '回答時間の目安：' + schema.estimatedMinutes + '（回答内容により設問数が変わります）。氏名・メールアドレスは聞きません。性的指向は任意です。'));
     body.appendChild(card);

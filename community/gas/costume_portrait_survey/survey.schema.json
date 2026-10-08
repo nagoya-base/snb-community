@@ -2,7 +2,7 @@
   "schema_version": "3",
   "survey_version": "2026-10",
   "survey_id": "costume_portrait_2026",
-  "title": "ユニ・スーツ・衣装で、撮られたい？撮りたい？",
+  "title": "ユニ・スーツ・衣装で、撮ってもらいたい？撮りたい？",
   "subtitle": "男性の衣装・ポートレート意識調査",
   "formalTitle": "男性の衣装・ポートレート撮影に関する意識調査",
   "estimatedMinutes": "約8〜10分",
@@ -278,8 +278,8 @@
     },
     {
       "id": "photographed",
-      "title": "撮られてみたい衣装",
-      "description": "「着たい」と「撮られたい」は別です。その姿を撮られてみたい衣装を選んでください。",
+      "title": "撮ってもらいたい衣装",
+      "description": "「着たい」と「撮ってもらいたい」は別です。その姿を撮ってもらいたい衣装を選んでください。",
       "questions": [
         "costume_photographed",
         "uniform_photographed",
@@ -546,7 +546,7 @@
       "id": "costume_photographed",
       "no": "Q6-B",
       "type": "multi",
-      "label": "自分がその姿を撮られてみたい衣装を選んでください",
+      "label": "自分がその姿を撮ってもらいたい衣装を選んでください",
       "required": true,
       "visibility": "public",
       "optionSet": "costume_category",
@@ -556,7 +556,7 @@
       "id": "uniform_photographed",
       "no": "Q6-B-1",
       "type": "multi",
-      "label": "撮られてみたいスポーツユニフォーム",
+      "label": "撮ってもらいたいスポーツユニフォーム",
       "required": true,
       "visibility": "private",
       "optionSet": "uniform_detail",
@@ -570,7 +570,7 @@
       "id": "workwear_photographed",
       "no": "Q6-B-2",
       "type": "multi",
-      "label": "撮られてみたい職業制服・作業服",
+      "label": "撮ってもらいたい職業制服・作業服",
       "required": true,
       "visibility": "private",
       "optionSet": "workwear_detail",
@@ -584,7 +584,7 @@
       "id": "suit_photographed",
       "no": "Q6-B-3",
       "type": "multi",
-      "label": "自分がその姿を撮られてみたいスーツ・ビジネススタイル",
+      "label": "自分がその姿を撮ってもらいたいスーツ・ビジネススタイル",
       "required": true,
       "visibility": "private",
       "optionSet": "suit_detail",
@@ -598,7 +598,7 @@
       "id": "school_uniform_photographed",
       "no": "Q6-B-4",
       "type": "multi",
-      "label": "自分がその姿を撮られてみたい学生服・学校制服",
+      "label": "自分がその姿を撮ってもらいたい学生服・学校制服",
       "required": true,
       "visibility": "private",
       "optionSet": "school_uniform_detail",
@@ -713,7 +713,7 @@
       "id": "portrait_styles",
       "no": "Q9",
       "type": "multi",
-      "label": "どのような写真を撮られてみたいですか？",
+      "label": "どのような写真を撮ってもらいたいですか？",
       "required": true,
       "visibility": "public",
       "options": [
@@ -2216,7 +2216,7 @@
       ]
     },
     "wants_photographed": {
-      "label": "撮られたい衣装を選択",
+      "label": "撮ってもらいたい衣装を選択",
       "all": [
         "portrait_interest",
         {
@@ -2324,7 +2324,7 @@
     },
     {
       "id": "age_x_portrait_interest",
-      "label": "年代 × 撮られたい意向",
+      "label": "年代 × 撮ってもらいたい意向",
       "row": {
         "question": "age_range"
       },
@@ -2334,7 +2334,7 @@
     },
     {
       "id": "costume_x_photographed",
-      "label": "興味のある衣装 × 撮られたい衣装",
+      "label": "興味のある衣装 × 撮ってもらいたい衣装",
       "row": {
         "question": "costume_interest"
       },
@@ -2364,7 +2364,7 @@
     },
     {
       "id": "interest_x_price",
-      "label": "撮られたい意向 × 希望価格",
+      "label": "撮ってもらいたい意向 × 希望価格",
       "row": {
         "question": "portrait_interest"
       },
@@ -2374,7 +2374,7 @@
     },
     {
       "id": "interest_x_weekday",
-      "label": "撮られたい意向 × 曜日",
+      "label": "撮ってもらいたい意向 × 曜日",
       "row": {
         "question": "portrait_interest"
       },
@@ -2384,7 +2384,7 @@
     },
     {
       "id": "interest_x_weekday_time",
-      "label": "撮られたい意向 × 平日の時間帯",
+      "label": "撮ってもらいたい意向 × 平日の時間帯",
       "row": {
         "question": "portrait_interest"
       },
@@ -2394,7 +2394,7 @@
     },
     {
       "id": "interest_x_holiday_time",
-      "label": "撮られたい意向 × 土日祝の時間帯",
+      "label": "撮ってもらいたい意向 × 土日祝の時間帯",
       "row": {
         "question": "portrait_interest"
       },
@@ -2455,7 +2455,7 @@
     },
     {
       "id": "interest_x_suit_photographed",
-      "label": "撮られたい意向 × 撮られてみたいスーツ・ビジネススタイル",
+      "label": "撮ってもらいたい意向 × 撮ってもらいたいスーツ・ビジネススタイル",
       "row": {
         "question": "portrait_interest"
       },
@@ -2465,7 +2465,7 @@
     },
     {
       "id": "interest_x_school_photographed",
-      "label": "撮られたい意向 × 撮られてみたい学生服・学校制服",
+      "label": "撮ってもらいたい意向 × 撮ってもらいたい学生服・学校制服",
       "row": {
         "question": "portrait_interest"
       },
@@ -2475,7 +2475,7 @@
     },
     {
       "id": "interest_x_fetish_presentation",
-      "label": "撮られたい意向 × 見せ方・シチュエーション",
+      "label": "撮ってもらいたい意向 × 見せ方・シチュエーション",
       "row": {
         "question": "portrait_interest"
       },
@@ -2682,7 +2682,7 @@
       {
         "id": "costume_photographed",
         "question": "costume_photographed",
-        "title": "撮られてみたい衣装",
+        "title": "撮ってもらいたい衣装",
         "tier": "main"
       },
       {
@@ -2700,7 +2700,7 @@
       {
         "id": "portrait_styles",
         "question": "portrait_styles",
-        "title": "撮られてみたい写真",
+        "title": "撮ってもらいたい写真",
         "tier": "main"
       },
       {

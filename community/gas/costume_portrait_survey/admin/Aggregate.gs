@@ -137,11 +137,11 @@ function cross_(axis, label, extra) {
 
 var DEMAND_FUNNELS = [
   {
-    id: 'photographed', label: '① 撮られたい人',
+    id: 'photographed', label: '① 撮ってもらいたい人',
     baseLabel: '有効回答者',
     stages: [
       { label: 'ポートレート興味あり（Q8 とても／やや興味あり）', predicate: 'portrait_interest' },
-      { label: '撮られたい衣装を選択（Q6-B）', predicate: 'wants_photographed' },
+      { label: '撮ってもらいたい衣装を選択（Q6-B）', predicate: 'wants_photographed' },
       { label: '3か月以内に撮ってもらいたい（Q27）', predicate: 'near_term_intent' },
       { label: '5,000円以上を許容（Q18）', predicate: 'price_5000_plus' },
       { label: '7,000円以上を許容（Q18）', predicate: 'price_7000_plus' }
@@ -152,7 +152,7 @@ var DEMAND_FUNNELS = [
       predicate: 'near_term_intent',
       crosses: [
         cross_('age_range', '年代'), cross_('residence', '居住地域', { sparse: true }), cross_('aichi_area', '愛知県内地域'),
-        cross_('costume_photographed', '撮られたい衣装'), cross_('portrait_styles', '撮られたい写真'),
+        cross_('costume_photographed', '撮ってもらいたい衣装'), cross_('portrait_styles', '撮ってもらいたい写真'),
         cross_('shoot_duration', '希望撮影時間'), cross_('weekdays', '曜日'),
         cross_('weekday_time_slots', '時間帯（平日）'), cross_('holiday_time_slots', '時間帯（土日祝）'),
         cross_('portrait_price', 'ポートレート価格'), cross_('hesitation', '撮影への不安・ためらい'),
@@ -255,7 +255,7 @@ var DEMAND_FUNNELS = [
       { id: 'event_meet_people', label: '同じ衣装・撮影趣味の人と交流したい人', predicate: 'near_term_meet_people' }
     ].map(function (seg) {
       seg.crosses = [
-        cross_('age_range', '年代'), cross_('residence', '居住地域', { sparse: true }), cross_('costume_photographed', '撮られたい衣装'),
+        cross_('age_range', '年代'), cross_('residence', '居住地域', { sparse: true }), cross_('costume_photographed', '撮ってもらいたい衣装'),
         cross_('portrait_price', 'ポートレート価格'), cross_('hesitation', '撮影への不安・ためらい')
       ];
       return seg;

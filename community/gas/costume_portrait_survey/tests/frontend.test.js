@@ -5,7 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const { openPage, settle, q, pageTitle, progressText, choose, setText, next, back, advanceToReview, visibleFieldsets } = require('./helpers/dom');
 
-const SECTION_ORDER = ['興味のある衣装', '着てみたい衣装', '撮られてみたい衣装', '撮ってみたい衣装', '撮られることについて', '写真の利用目的', '背景・世界観',
+const SECTION_ORDER = ['興味のある衣装', '着てみたい衣装', '撮ってもらいたい衣装', '撮ってみたい衣装', '撮られることについて', '写真の利用目的', '背景・世界観',
   '撮影時間・曜日・時間帯', '写真枚数・仕上げ', '撮られることへの不安・ためらい', 'ポートレート撮影サービスの価格', '人物を撮影することについて',
   'スタジオ利用・撮影機材', '今後3か月の意向', '基本情報', '自由回答・応援メッセージ'];
 
@@ -150,7 +150,7 @@ test('Q5の選択がQ6-Aで優先表示され、Q5で未選択の衣装も「ほ
   assert.strictEqual(pageTitle(document), '着てみたい衣装', '詳細未選択');
   choose(document, 'uniform_wear', 'uniform_rugby');
   next(document);
-  assert.strictEqual(pageTitle(document), '撮られてみたい衣装');
+  assert.strictEqual(pageTitle(document), '撮ってもらいたい衣装');
   back(document);
   // 戻ると、詳細内の選択済みが開いた状態で保持される
   assert.strictEqual(q(document, 'costume_wear').querySelector('details.cp-more').open, true);
