@@ -28,7 +28,7 @@ test('トップカテゴリ：school_uniform を追加し、uniform / suit / wor
   assert.strictEqual(labels.suit, 'スーツ');
   assert.strictEqual(labels.uniform, 'スポーツユニフォーム');
   assert.deepStrictEqual(['uniform_interest', 'uniform_wear', 'uniform_photographed', 'uniform_shoot'].map((id) => byId[id].label),
-    ['興味のあるスポーツユニフォーム', '着てみたいスポーツユニフォーム', '撮られてみたいスポーツユニフォーム', '撮ってみたいスポーツユニフォーム']);
+    ['興味のあるスポーツユニフォーム', '着てみたいスポーツユニフォーム', '撮ってもらいたいスポーツユニフォーム', '撮ってみたいスポーツユニフォーム']);
   assert.strictEqual(byId.uniform_interest.optionSet, 'uniform_detail');
   assert.ok(!optionIds('uniform_detail').includes('uniform_school_jersey'), '学校ジャージは学生服側へ');
   assert.ok(!optionIds('uniform_detail').some((id) => /gakuran|sailor|blazer/.test(id)), '学生服をuniform_detailへ混ぜない');
@@ -67,7 +67,7 @@ test('枝設問：番号・親の分岐・公開区分・優先表示がuniform/
   for (const [cat] of BRANCHES) {
     assert.strictEqual(byId[cat + '_interest'].label, '興味のある' + wording[cat]);
     assert.strictEqual(byId[cat + '_wear'].label, '自分が着てみたい' + wording[cat]);
-    assert.strictEqual(byId[cat + '_photographed'].label, '自分がその姿を撮られてみたい' + wording[cat]);
+    assert.strictEqual(byId[cat + '_photographed'].label, '自分がその姿を撮ってもらいたい' + wording[cat]);
     assert.strictEqual(byId[cat + '_shoot'].label, '他の人が着ている姿を撮ってみたい' + wording[cat]);
   }
   // 既存のQ5-1/Q5-2等の番号・IDは変更しない
