@@ -4,22 +4,27 @@
  * 「内部データから危険項目を削る」denylistではなく、schema.publicResults.items に列挙され、かつ
  * 設問が visibility:"public" の項目だけを一から組み立てる。UUID・hash・timestamp・個票・自由記述・
  * 価格受容・実利用意向・性的指向・residence_country は、構造上この関数の出力に含まれ得ない。
- * 居住地（residence）・愛知県内エリア（aichi_area）は設問が private のため、BASIC_PUBLIC_QUESTIONS に
- * コードで固定した設問IDで、かつ schema の tier:"basic" 項目に限り公開する（denylistへは変更しない）。
+ * 居住地（residence）は設問が private のため、BASIC_PUBLIC_QUESTIONS にコードで固定した設問IDで、
+ * かつ schema の tier:"basic" 項目に限り、都道府県ではなく地方ブロックへ再集約して公開する（denylistへは変更しない）。
+ * 愛知県内エリア（aichi_area）は回答データとして保持するが、公開payloadには一切含めない（30件未満・以上・final共通）。
  *
- *  - 公開は2層。基本属性（schema の tier:"basic"。年代・居住地・愛知県内エリア）は有効回答数に関わらず
+ *  - 公開は2層。基本属性（schema の tier:"basic"。年代・居住地方ブロック）は有効回答数に関わらず
  *    公開し、本集計（tier:"main"）は有効回答数 >= minTotal(30) になってから追加する（threshold_reached）。
  *    30件未満でも総回答数は公開してよいが、本集計は構造上 items に入らない。
  *  - カテゴリ別countが minCell(3) 未満の値は公開しない（0も含む）。単一選択で1カテゴリだけ
  *    伏せた場合は、合計からの逆算を防ぐため次に小さい公開値も伏せる（二次秘匿）。
- *  - 年代は粗い区分（schema.publicResults.ageGroups）へ再集約する。
+ *  - 年代は粗い区分（schema.publicResults.ageGroups）、居住地は地方ブロック（schema.publicResults.residenceBlocks）へ
+ *    再集約する。minCell と二次秘匿は再集約後のカテゴリに対して適用する。
  */
 var PUBLIC_PAYLOAD_KEYS = ['status', 'schema_version', 'survey_version', 'phase', 'total', 'min_total', 'threshold_reached', 'items'];
 var PUBLIC_ITEM_KEYS = ['id', 'title', 'type', 'base', 'suppressed', 'categories'];
 var PUBLIC_CATEGORY_KEYS = ['id', 'label', 'count', 'pct'];
 
 // 設問が private でも、基本属性として公開してよい設問ID（コード側の固定allowlist。schemaだけでは広げられない）。
-var BASIC_PUBLIC_QUESTIONS = ['age_range', 'residence', 'aichi_area'];
+var BASIC_PUBLIC_QUESTIONS = ['age_range', 'residence'];
+
+// 再集約（groupBy）に使ってよい schema.publicResults のキー。これ以外の groupBy は公開しない。
+var PUBLIC_GROUP_BYS = ['ageGroups', 'residenceBlocks'];
 
 /** 30件未満でも公開してよい基本属性か。schemaの tier:"basic" に加え、コード固定の BASIC_PUBLIC_QUESTIONS に含まれる設問だけ（二重チェック）。 */
 function isBasicItem_(item) {
@@ -41,8 +46,9 @@ function publicItemConfig_(itemId) {
 
 function buildPublicCategories_(item, question, tallyResult) {
   var categories;
-  if (item.groupBy === 'ageGroups') {
-    categories = SURVEY_SCHEMA.publicResults.ageGroups.map(function (group) {
+  if (item.groupBy) {
+    if (PUBLIC_GROUP_BYS.indexOf(item.groupBy) === -1) throw new Error('public_payload_not_allowed:groupBy.' + item.groupBy);
+    categories = SURVEY_SCHEMA.publicResults[item.groupBy].map(function (group) {
       var count = 0;
       group.members.forEach(function (id) { count += tallyResult.counts[id] || 0; });
       return { id: group.id, label: group.label, count: count };

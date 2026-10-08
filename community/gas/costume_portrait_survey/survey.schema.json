@@ -2529,6 +2529,105 @@
         ]
       }
     ],
+    "residenceBlocks": [
+      {
+        "id": "region_hokkaido_tohoku",
+        "label": "北海道・東北",
+        "members": [
+          "pref_01",
+          "pref_02",
+          "pref_03",
+          "pref_04",
+          "pref_05",
+          "pref_06",
+          "pref_07"
+        ]
+      },
+      {
+        "id": "region_kanto",
+        "label": "関東",
+        "members": [
+          "pref_08",
+          "pref_09",
+          "pref_10",
+          "pref_11",
+          "pref_12",
+          "pref_13",
+          "pref_14"
+        ]
+      },
+      {
+        "id": "region_chubu",
+        "label": "中部",
+        "members": [
+          "pref_15",
+          "pref_16",
+          "pref_17",
+          "pref_18",
+          "pref_19",
+          "pref_20",
+          "pref_21",
+          "pref_22",
+          "pref_23"
+        ]
+      },
+      {
+        "id": "region_kinki",
+        "label": "近畿",
+        "members": [
+          "pref_24",
+          "pref_25",
+          "pref_26",
+          "pref_27",
+          "pref_28",
+          "pref_29",
+          "pref_30"
+        ]
+      },
+      {
+        "id": "region_chugoku",
+        "label": "中国",
+        "members": [
+          "pref_31",
+          "pref_32",
+          "pref_33",
+          "pref_34",
+          "pref_35"
+        ]
+      },
+      {
+        "id": "region_shikoku",
+        "label": "四国",
+        "members": [
+          "pref_36",
+          "pref_37",
+          "pref_38",
+          "pref_39"
+        ]
+      },
+      {
+        "id": "region_kyushu_okinawa",
+        "label": "九州・沖縄",
+        "members": [
+          "pref_40",
+          "pref_41",
+          "pref_42",
+          "pref_43",
+          "pref_44",
+          "pref_45",
+          "pref_46",
+          "pref_47"
+        ]
+      },
+      {
+        "id": "region_overseas_other",
+        "label": "海外・その他",
+        "members": [
+          "overseas",
+          "other"
+        ]
+      }
+    ],
     "items": [
       {
         "id": "age_range",
@@ -2540,13 +2639,8 @@
       {
         "id": "residence",
         "question": "residence",
-        "title": "居住地",
-        "tier": "basic"
-      },
-      {
-        "id": "aichi_area",
-        "question": "aichi_area",
-        "title": "愛知県内エリア",
+        "title": "居住地域",
+        "groupBy": "residenceBlocks",
         "tier": "basic"
       },
       {
