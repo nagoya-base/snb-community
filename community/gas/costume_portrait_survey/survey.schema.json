@@ -2534,102 +2534,134 @@
         "id": "age_range",
         "question": "age_range",
         "title": "年代",
-        "groupBy": "ageGroups"
+        "groupBy": "ageGroups",
+        "tier": "basic"
+      },
+      {
+        "id": "residence",
+        "question": "residence",
+        "title": "居住地",
+        "tier": "basic"
+      },
+      {
+        "id": "aichi_area",
+        "question": "aichi_area",
+        "title": "愛知県内エリア",
+        "tier": "basic"
       },
       {
         "id": "costume_interest",
         "question": "costume_interest",
-        "title": "興味のある衣装"
+        "title": "興味のある衣装",
+        "tier": "main"
       },
       {
         "id": "uniform_interest",
         "question": "uniform_interest",
-        "title": "興味のあるスポーツユニフォーム"
+        "title": "興味のあるスポーツユニフォーム",
+        "tier": "main"
       },
       {
         "id": "workwear_interest",
         "question": "workwear_interest",
-        "title": "興味のある職業制服・作業服"
+        "title": "興味のある職業制服・作業服",
+        "tier": "main"
       },
       {
         "id": "suit_interest",
         "question": "suit_interest",
-        "title": "興味のあるスーツ・ビジネススタイル"
+        "title": "興味のあるスーツ・ビジネススタイル",
+        "tier": "main"
       },
       {
         "id": "school_uniform_interest",
         "question": "school_uniform_interest",
-        "title": "興味のある学生服・学校制服"
+        "title": "興味のある学生服・学校制服",
+        "tier": "main"
       },
       {
         "id": "costume_wear",
         "question": "costume_wear",
-        "title": "着てみたい衣装"
+        "title": "着てみたい衣装",
+        "tier": "main"
       },
       {
         "id": "costume_photographed",
         "question": "costume_photographed",
-        "title": "撮られてみたい衣装"
+        "title": "撮られてみたい衣装",
+        "tier": "main"
       },
       {
         "id": "costume_shoot",
         "question": "costume_shoot",
-        "title": "撮ってみたい衣装"
+        "title": "撮ってみたい衣装",
+        "tier": "main"
       },
       {
         "id": "portrait_interest",
         "question": "portrait_interest",
-        "title": "ポートレート撮影への興味"
+        "title": "ポートレート撮影への興味",
+        "tier": "main"
       },
       {
         "id": "portrait_styles",
         "question": "portrait_styles",
-        "title": "撮られてみたい写真"
+        "title": "撮られてみたい写真",
+        "tier": "main"
       },
       {
         "id": "photo_usage",
         "question": "photo_usage",
-        "title": "写真の利用目的"
+        "title": "写真の利用目的",
+        "tier": "main"
       },
       {
         "id": "face_exposure",
         "question": "face_exposure",
-        "title": "顔の写り方の希望"
+        "title": "顔の写り方の希望",
+        "tier": "main"
       },
       {
         "id": "shoot_duration",
         "question": "shoot_duration",
-        "title": "希望する実撮影時間"
+        "title": "希望する実撮影時間",
+        "tier": "main"
       },
       {
         "id": "weekdays",
         "question": "weekdays",
-        "title": "利用しやすい曜日"
+        "title": "利用しやすい曜日",
+        "tier": "main"
       },
       {
         "id": "weekday_time_slots",
         "question": "weekday_time_slots",
-        "title": "平日に利用しやすい時間帯"
+        "title": "平日に利用しやすい時間帯",
+        "tier": "main"
       },
       {
         "id": "holiday_time_slots",
         "question": "holiday_time_slots",
-        "title": "土日祝に利用しやすい時間帯"
+        "title": "土日祝に利用しやすい時間帯",
+        "tier": "main"
       },
       {
         "id": "photo_count",
         "question": "photo_count",
-        "title": "希望する写真枚数"
+        "title": "希望する写真枚数",
+        "tier": "main"
       },
       {
         "id": "retouch",
         "question": "retouch",
-        "title": "写真の仕上げ"
+        "title": "写真の仕上げ",
+        "tier": "main"
       },
       {
         "id": "backdrop",
         "question": "backdrop",
-        "title": "人気の背景・セット"
+        "title": "人気の背景・セット",
+        "tier": "main"
       }
     ]
   }

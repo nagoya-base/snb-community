@@ -286,12 +286,12 @@ test('設問・schema・Spreadsheet列・Public結果は変更していない', 
   assert.ok(!/demand|需要ファネル/.test(page));
 });
 
-test('Public結果payload（途中集計）に需要ファネル・3か月意向・価格・地域が出ない', () => {
+test('Public結果payload（途中集計）に需要ファネル・3か月意向・価格・国名が出ない', () => {
   const respondents = [];
   for (let i = 0; i < 31; i++) respondents.push(Object.assign({}, RESPONDENTS[i % RESPONDENTS.length]));
   const { pub } = setup(respondents);
   const raw = pub.ctx.doGet({ parameter: { action: 'results' } }).getContent();
   const results = JSON.parse(raw);
   assert.strictEqual(results.ok, true);
-  assert.ok(!/demand|funnel|intent_3m|portrait_price|rental_price|residence|aichi_area|equipment_wanted/.test(raw));
+  assert.ok(!/demand|funnel|intent_3m|portrait_price|rental_price|residence_country|equipment_wanted/.test(raw));
 });

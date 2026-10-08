@@ -157,10 +157,11 @@ function readSnapshotJson_(properties) {
 
 /**
  * 公開結果API。
- *  - 確定済み：スナップショットを返すだけ（Spreadsheetは読まない）。status は final / insufficient。
+ *  - 確定済み：スナップショットを返すだけ（Spreadsheetは読まない）。status は final（30件未満は基本属性のみ・threshold_reached:false）。
  *  - 未確定：有効回答から途中集計を都度生成する（読み取りのみ。確定マーカー・スナップショットは作らない）。
- *    30件以上なら status:'partial'（phase: collecting=受付中 / closed_pending=受付終了・最終確定待ち）、
- *    30件未満は status:'insufficient'（件数も返さない）。
+ *    status:'partial'（phase: collecting=受付中 / closed_pending=受付終了・最終確定待ち）。
+ *    30件未満は基本属性（年代・居住地・愛知県内エリア）と総回答数のみ（threshold_reached:false）、
+ *    30件以上は threshold_reached:true で本集計も含める。
  *    締切設定が未設定・不正な場合は、全行がlate扱いの誤った集計を出さないようエラーを返す。
  */
 function readPublicResults_(now) {
