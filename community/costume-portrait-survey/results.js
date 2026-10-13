@@ -42,6 +42,18 @@
   };
   // 愛知県内エリアは公開しない。更新前のPublic GASが返しても描画しない（フロント側の二重防御）。
   var HIDDEN_ITEM_IDS = ['aichi_area'];
+  // 選択肢の並びに意味がある設問（年代・地域・段階尺度・時間・枚数・曜日）は回答数順に並べ替えず、元の順序を維持する。
+  var KEEP_ORDER_ITEM_IDS = ['age_range', 'residence', 'portrait_interest', 'shoot_duration', 'weekdays', 'weekday_time_slots', 'holiday_time_slots', 'photo_count'];
+  // 回答数（count）の降順。同数・非公開（count:null）は元の順序を維持する。元配列は変更しない。
+  function byCountDesc(categories) {
+    return categories.map(function (c, i) { return { c: c, i: i }; })
+      .sort(function (a, b) {
+        var ca = typeof a.c.count === 'number' ? a.c.count : -1;
+        var cb = typeof b.c.count === 'number' ? b.c.count : -1;
+        return (cb - ca) || (a.i - b.i);
+      })
+      .map(function (entry) { return entry.c; });
+  }
   function isBasicOnly(results) { return results.threshold_reached === false; }
   function minTotal(results) { return typeof results.min_total === 'number' ? results.min_total : 30; }
   function showAnswerCta(visible) {
@@ -83,7 +95,8 @@
         root.appendChild(card);
         return;
       }
-      item.categories.forEach(function (c) {
+      var categories = KEEP_ORDER_ITEM_IDS.indexOf(item.id) === -1 ? byCountDesc(item.categories) : item.categories;
+      categories.forEach(function (c) {
         var row = el('div', 'cp-bar-row');
         row.appendChild(el('span', '', c.label));
         var bar = el('div', 'cp-bar');
