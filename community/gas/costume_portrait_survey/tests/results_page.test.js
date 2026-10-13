@@ -170,3 +170,25 @@ test('結果ページ：threshold_reached:false の応答でも items をその�
   assert.strictEqual(document.querySelectorAll('#cp-results h3').length, 2);
   assert.ok(body(document).includes('現在の有効回答数：3件 / 30件'));
 });
+
+const labels = (document, n) => Array.from(document.querySelectorAll('#cp-results .cp-results-item')[n].querySelectorAll('.cp-bar-row > span:first-child')).map((e) => e.textContent);
+const cat = (id, count, base) => ({ id, label: id, count, pct: count === null ? null : Math.round(count / base * 1000) / 10 });
+
+test('選択肢は回答数の降順で表示し、同数・0件・非公開は元の順序を維持する。順序に意味のある設問は並べ替えない', async () => {
+  const results = { status: 'final', total: 40, items: [
+    { id: 'backdrop', title: '背景', type: 'multi', base: 40, suppressed: false, categories: [
+      cat('a', 5, 40), cat('b', 20, 40), cat('c', 5, 40), cat('d', null, 40), cat('e', 12, 40), cat('f', null, 40), cat('g', 20, 40)] },
+    { id: 'retouch', title: '仕上げ', type: 'single', base: 40, suppressed: false, categories: [
+      cat('x', 0, 40), cat('y', 10, 40), cat('z', 30, 40)] },
+    { id: 'photo_count', title: '枚数', type: 'single', base: 40, suppressed: false, categories: [
+      cat('p5', 3, 40), cat('p10', 30, 40), cat('p20', 7, 40)] },
+    { id: 'age_range', title: '年代', type: 'single', base: 40, suppressed: false, categories: [
+      cat('y1', 3, 40), cat('y2', 30, 40), cat('y3', 7, 40)] }] };
+  const { document } = await openPage({ page: PAGE, fetch: () => ({ ok: true, results }) });
+  assert.deepStrictEqual(labels(document, 0), ['b', 'g', 'e', 'a', 'c', 'd', 'f']);
+  assert.deepStrictEqual(labels(document, 1), ['z', 'y', 'x']);
+  assert.deepStrictEqual(labels(document, 2), ['p5', 'p10', 'p20']);
+  assert.deepStrictEqual(labels(document, 3), ['y1', 'y2', 'y3']);
+  // 件数・割合は変更しない
+  assert.ok(document.querySelectorAll('#cp-results .cp-results-item')[1].textContent.includes('75%'));
+});
