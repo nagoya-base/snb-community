@@ -447,6 +447,10 @@ retention 設定状態の確認／finalize preflight／finalize 実行／finaliz
 
 既存の `baseball-uniform-survey-schema.yml` / `baseball-uniform-survey-public-gas.yml` が、`npm run build:check`（`maintenance/SurveyGenerated.gs` の generated drift を含む）と `tests/maintenance_core.test.js` / `tests/maintenance_gas.test.js` を実行します。maintenance は deploy 対象に含めず、Public GAS の bundle・Script ID・Environment・Secret も共有しません。将来 deploy workflow を用意する場合も、PR は dry-run のみ、本番は `workflow_dispatch` + Environment 承認等の明示操作にします。
 
+## 本番前統合・実 Google 環境 E2E（Issue #390）
+
+Public / Admin / maintenance を別 Apps Script project として用意し、`submit_excluded` だけで実環境を確認する手順・Admin / maintenance の手動 deploy 手順・launch go/no-go は [`LAUNCH_READINESS.md`](LAUNCH_READINESS.md) にまとめています。production は Owner の明示判断（受付期間・retention・notification・launch 実行）まで fail closed のままです。
+
 ## 検証とテスト
 
 Node.js 22 以上。依存は jsdom（devDependency。Frontend テスト用）だけです。`npm ci` で導入します。
