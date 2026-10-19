@@ -206,6 +206,32 @@ test('finalize は explicit confirmation が必要で、同内容の再実行は
   assert.equal(env.props.get('FINALIZED_MARKER'), markerBefore);
 });
 
+test('GAS：同一 marker で final_snapshot Sheet が正常/欠損/改変の3ケース（欠損・改変は再実行を成功扱いにしない）', () => {
+  const env = finalizedEnv();
+  const markerBefore = env.props.get('FINALIZED_MARKER');
+  env.events.length = 0;
+  // 正常
+  assert.equal(plain(env.ctx.finalizePreflight()).would, 'noop');
+  assert.equal(plain(env.ctx.finalizeSurvey('x')).status, 'already_finalized');
+  // 改変
+  const sheet = env.sheets.get('final_snapshot');
+  const saved = JSON.stringify(sheet.values);
+  sheet.values[1][1] = 'c:tampered';
+  assert.equal(plain(env.ctx.finalizePreflight()).would, 'inconsistent');
+  assert.throws(() => env.ctx.finalizeSurvey('x'), /final_snapshot_mismatch/);
+  // 欠損（Sheet ごと・中身だけ）
+  sheet.values = [['chunk_index', 'content']];
+  assert.equal(plain(env.ctx.finalizePreflight()).problem, 'final_snapshot_missing');
+  assert.throws(() => env.ctx.finalizeSurvey('x'), /final_snapshot_missing/);
+  env.sheets.delete('final_snapshot');
+  assert.equal(plain(env.ctx.finalizePreflight()).would, 'inconsistent');
+  assert.throws(() => env.ctx.finalizeSurvey('x'), /final_snapshot_missing/);
+  assert.throws(() => env.ctx.getFinalSnapshot(), /snapshot_verify_failed/);
+  assert.equal(env.props.get('FINALIZED_MARKER'), markerBefore, 'marker は書き換えない');
+  assert.deepEqual(env.events.filter((e) => !e.startsWith('lock:')), [], '不整合時は何も書かない');
+  assert.ok(saved.length > 0);
+});
+
 // ── retention / cleanup ──
 
 test('retention 設定状態：リポジトリの設定は未確定で launch_ready=false（production launch blocker のまま）。inventory が見える', () => {

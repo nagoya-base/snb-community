@@ -412,7 +412,7 @@ retention 設定状態の確認／finalize preflight／finalize 実行／finaliz
 - final snapshot は #382 と同じ privacy-safe な JSON です（自由記述・「その他」本文・詳細都道府県・愛知県内地域・`respondent_hash`・UUID・system identifier を含まず、閾値未達の設問・sensitive branch は final でも数値を出しません）。`responses_valid` のような回答の複製 Sheet は**作りません**。
 - final JSON は Script Properties ではなく `final_snapshot` Sheet（40,000 文字ごとのチャンク。各セルは先頭に `c:` を付けて数式・数値として解釈されないようにする）に保存します。Script Properties には marker と小さい metadata だけを置きます。
 - **finalized marker**（Script Property `FINALIZED_MARKER`）: `finalized_at` / `survey_id` / `survey_version` / `schema_version` / `design_version` / `closes_at` / `production_valid_total`（Admin 内部の exact 値）/ `snapshot_digest`（SHA-256）/ `operator`（固定文字列 `nagoya-base`）のみ。個票・自由記述・hash・UUID・salt・token は入れません。許可キー以外を含む marker は `marker_invalid` として扱い、fail closed です。
-- 同じ version + `closes_at` + digest で finalized 済みなら再実行は no-op 成功です。内容が異なる（回答が増えた・`closes_at` が変わった等）ときは自動上書きせず `finalized_conflict` で停止します。**incident 時も marker を手動で書き換えないでください**（原因を調べ、Owner が判断します）。
+- 同じ version + `closes_at` + digest で finalized 済みなら、`final_snapshot` Sheet の存在と SHA-256 一致を確認したうえで再実行は no-op 成功です。保存済み snapshot が欠損・改変されている場合は `final_snapshot_missing` / `final_snapshot_mismatch` で fail closed とし（成功扱いにしない・marker は書き換えない）、preflight も `would: inconsistent` と表示します。内容が異なる（回答が増えた・`closes_at` が変わった等）ときは自動上書きせず `finalized_conflict` で停止します。**incident 時も marker を手動で書き換えないでください**（原因を調べ、Owner が判断します）。
 
 ### storage inventory（回答由来データの保存先）
 

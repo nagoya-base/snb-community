@@ -267,9 +267,17 @@ var SurveyMaintenance = (function (aggregate) {
     };
   }
 
-  function summarizeFinal(computed, existing, would) {
+  /* marker が指す保存済み final snapshot の状態。null（正常）／'final_snapshot_missing'／'final_snapshot_mismatch'。 */
+  function storedSnapshotProblem(ports, marker) {
+    var stored = ports.readFinalSnapshot();
+    if (typeof stored !== 'string' || stored === '') return 'final_snapshot_missing';
+    return ports.sha256(stored) === marker.snapshot_digest ? null : 'final_snapshot_mismatch';
+  }
+
+  function summarizeFinal(computed, existing, would, problem) {
     return {
       would: would,
+      problem: problem || null,
       closes_at: computed.precondition.closes_at,
       production_valid_total: computed.exact_total,
       counts: computed.counts,
@@ -284,7 +292,10 @@ var SurveyMaintenance = (function (aggregate) {
     var existing = parseMarker(ports.loadMarker());
     var computed = computeFinal(ports);
     if (!existing) return summarizeFinal(computed, null, 'finalize');
-    return summarizeFinal(computed, existing, sameIdentity(existing, computed.marker_identity) ? 'noop' : 'conflict');
+    if (!sameIdentity(existing, computed.marker_identity)) return summarizeFinal(computed, existing, 'conflict');
+    // marker が同一でも、保存済み snapshot が欠損・改変されていれば noop と表示しない。
+    var problem = storedSnapshotProblem(ports, existing);
+    return summarizeFinal(computed, existing, problem ? 'inconsistent' : 'noop', problem);
   }
 
   function finalize(ports, confirmation) {
@@ -293,6 +304,9 @@ var SurveyMaintenance = (function (aggregate) {
     if (existing) {
       // 同一内容なら no-op 成功。異なる内容でのfinalized済みは自動上書きせず fail closed。
       if (!sameIdentity(existing, computed.marker_identity)) throw new Error('finalized_conflict');
+      // 保存済み snapshot が欠損・不一致なら成功扱いにせず fail closed（marker は書き換えない）。
+      var problem = storedSnapshotProblem(ports, existing);
+      if (problem) throw new Error(problem);
       return { status: 'already_finalized', noop: true, summary: summarizeFinal(computed, existing, 'noop') };
     }
     if (confirmation !== computed.confirmation_code) throw new Error('confirmation_mismatch');

@@ -218,6 +218,36 @@ test('同内容の再実行は no-op 成功、異なる内容での finalized �
   });
 });
 
+test('同一 marker でも保存済み snapshot を検証する：正常は no-op、欠損・改変は fail closed（preflight も noop と表示しない）', () => {
+  const first = finalizePorts(fixtureRows());
+  maintenance.finalize(first.ports, confirmationOf(first.ports));
+  const { ports, state } = first;
+  const markerBefore = state.marker;
+  const goodSnapshot = state.snapshot;
+
+  // 正常：no-op 成功
+  assert.equal(maintenance.finalizePreflight(ports).would, 'noop');
+  assert.equal(maintenance.finalizePreflight(ports).problem, null);
+  assert.equal(maintenance.finalize(ports, 'x').status, 'already_finalized');
+
+  // 欠損・改変：どちらも成功扱いにせず、何も書かない
+  for (const [stored, problem] of [[null, 'final_snapshot_missing'], ['', 'final_snapshot_missing'], [goodSnapshot.replace('"survey_id"', '"survey_id "'), 'final_snapshot_mismatch'], ['{"tampered":true}', 'final_snapshot_mismatch']]) {
+    state.snapshot = stored;
+    state.calls.length = 0;
+    const preflight = maintenance.finalizePreflight(ports);
+    assert.equal(preflight.would, 'inconsistent', problem);
+    assert.equal(preflight.problem, problem);
+    assert.equal(preflight.confirmation_code, null);
+    assert.throws(() => maintenance.finalize(ports, 'x'), new RegExp('^Error: ' + problem + '$'));
+    assert.ok(!state.calls.includes('saveFinalSnapshot') && !state.calls.includes('saveMarker'));
+    assert.equal(state.marker, markerBefore);
+    const status = maintenance.finalizedStatus(ports);
+    assert.deepEqual([status.state, status.snapshot_verified], ['finalized', false]);
+  }
+  state.snapshot = goodSnapshot;
+  assert.equal(maintenance.finalizePreflight(ports).would, 'noop');
+});
+
 test('不正な marker（余分なキー・形式違い）は fail closed', () => {
   const { ports, state } = finalizePorts(fixtureRows());
   maintenance.finalize(ports, confirmationOf(ports));
