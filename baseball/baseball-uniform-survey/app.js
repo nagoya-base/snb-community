@@ -594,7 +594,9 @@
     if (testMode) app.appendChild(testBanner());
   }
 
+  var INVALID_TEST = 'invalid_test_config';
   var TEST_LABELS = {
+    invalid_test_config: 'TEST MODE（設定エラー）：テスト用URLの設定が正しくありません。回答・送信・計測は行いません。',
     preview_no_submit: 'TEST MODE（プレビュー）：送信しても回答は保存されず、通信もしません。',
     closed_view: 'TEST MODE（終了後表示の確認）：受付終了の表示だけを確認できます。',
     submit_excluded: 'TEST MODE（テスト送信）：サーバーへ送信しますが、本番の集計・公開結果・通知には入りません。'
@@ -608,7 +610,14 @@
     exit.type = 'button';
     exit.addEventListener('click', function () {
       testStore.clear();
-      window.location.href = window.location.pathname + window.location.search;
+      // query の test= も外して開き直す（残すと誤記のまま再び fail closed になる）。
+      var search = '';
+      try {
+        var keep = new URLSearchParams(window.location.search);
+        keep.delete('test');
+        search = keep.toString() ? '?' + keep.toString() : '';
+      } catch (e) { search = ''; }
+      window.location.href = window.location.pathname + search;
     });
     banner.appendChild(exit);
     return banner;
@@ -1015,7 +1024,15 @@
     });
   }
 
+  /* test 指定を検出したのに検証できない：GA4なし・status GETなし・POSTなしで案内だけを表示する（fail closed）。 */
+  function showInvalidTestConfig() {
+    state.finished = true;
+    showMessage('warn', 'テスト用URLの設定が正しくありません',
+      ['テスト用のURLを確認してください。管理者から共有されたURLを、そのままの形で開き直してください。', 'このページでは回答・送信・アクセス解析を行いません。通常の回答は、テスト指定のないURLから開いてください。'], { test: true });
+  }
+
   function start() {
+    if (testMode === INVALID_TEST) { showInvalidTestConfig(); return; }
     if (testMode === 'closed_view') { showClosed(); return; }
     if (testMode === 'preview_no_submit' || testMode === 'submit_excluded') { renderIntro(); return; }
     if (!endpoint) { showPreparing(); return; }

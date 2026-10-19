@@ -6,12 +6,18 @@
  *   #test=closed_view                  client-only。受付終了表示の確認。通信・GA4 なし
  *   #test=submit_excluded&token=...&run=...   serverへtestとして送信（token は server が検証）
  * fragment は読み取り直後に sessionStorage へ移し、URL から取り除く（履歴・共有・GA4 の page_location に残さない）。
+ *
+ * fail closed：test 指定（fragment の test= / 保存済みの test 状態 / query string の test=）を検出したのに検証できない場合は
+ * production へ戻さず mode='invalid_test_config' とする。app.js は GA4 なし・status GET なし・POST なしで
+ * 「テスト用URLの設定が正しくありません」だけを表示する（URL の誤記で本番回答として起動・送信される事故を防ぐ）。
+ * invalid も sessionStorage に残し、リロードしても production に戻らない（「テストを終了」で解除）。
  * token / run は sessionStorage にのみ置き、window・DOM・ログへは出さない。公開するのは mode 名だけ。
  */
 (function () {
   'use strict';
   var STORAGE_KEY = 'snb_baseball_uniform_survey_test_v1';
   var MODES = ['preview_no_submit', 'closed_view', 'submit_excluded'];
+  var INVALID = { mode: 'invalid_test_config' };
   var RUN_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$/;
   var TOKEN_PATTERN = /^[\x21-\x7E]{1,200}$/;
 
@@ -22,8 +28,13 @@
     return 'run_' + Array.prototype.map.call(bytes, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
   }
 
-  /* 検証済みの {mode, token, run} だけを返す。不正なら null（= 通常の production 表示）。 */
+  /* 検証済みの {mode, token, run} を返す。検証できない test 指定は INVALID（production にはしない）。 */
   function normalize(raw) {
+    var value = validate(raw);
+    return value || INVALID;
+  }
+
+  function validate(raw) {
     if (!raw || MODES.indexOf(raw.mode) === -1) return null;
     if (raw.mode !== 'submit_excluded') return { mode: raw.mode };
     if (typeof raw.token !== 'string' || !TOKEN_PATTERN.test(raw.token)) return null;
@@ -37,15 +48,23 @@
     if (hash.length < 2) return null;
     var params;
     try { params = new URLSearchParams(hash.slice(1)); } catch (e) { return null; }
-    if (!params.has('test')) return null;
+    if (!params.has('test') && !params.has('token') && !params.has('run')) return null; // token/run だけでも test 指定の誤記として扱う
     return { mode: params.get('test'), token: params.get('token'), run: params.get('run') };
   }
 
   function load() {
+    var stored;
+    try { stored = window.sessionStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+    if (stored === null || stored === undefined) return null;
     try {
-      var stored = window.sessionStorage.getItem(STORAGE_KEY);
-      return stored ? normalize(JSON.parse(stored)) : null;
-    } catch (e) { return null; }
+      var parsed = JSON.parse(stored);
+      if (parsed && parsed.mode === INVALID.mode) return INVALID;
+      return normalize(parsed);
+    } catch (e) { return INVALID; }
+  }
+
+  function queryHasTest() {
+    try { return new URLSearchParams(window.location.search).has('test'); } catch (e) { return false; }
   }
 
   function save(value) {
@@ -58,16 +77,14 @@
   var fragment = readFragment();
   var current = null;
   if (fragment) {
-    current = normalize(fragment);
+    current = normalize(fragment); // 検証できなければ INVALID。保存して、リロードでも production に戻さない
     save(current);
     // fragment（token を含み得る）を即座にURLから除去する。query string は変更しない。
     try { window.history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) { /* ignore */ }
-    if (!current) {
-      // 不正な指定は黙って production にはしない：保存済みの test も解除し、そのまま通常表示にする。
-      save(null);
-    }
   } else {
     current = load();
+    // query string の test= は無効な経路。無視して production にせず fail closed にする（token は query に置かない）。
+    if (!current && queryHasTest()) current = INVALID;
   }
 
   var memory = current;

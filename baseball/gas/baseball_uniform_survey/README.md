@@ -259,7 +259,7 @@ test mode は **URL fragment**（`#...`）で指定します。query string に�
 
 - `token` は #380 の Script Property `TEST_TOKEN`。Frontend は `sessionStorage` から POST body の `test_token` にだけ載せ、DOM・ログ・GA4・URL・query string には出しません。
 - `run`（`test_run_id`）は `^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$`。省略すると `run_<12桁hex>` を生成します。同じ `test_run_id` では本番と同じ重複抑止が働くため、再度試すときは新しい `run` で開き直します。
-- 不正な指定（未知の mode・token 欠落・不正な `run`）は production にならず通常表示になり、test の保存状態も解除します。`preview_no_submit` / `closed_view` は誰でも開けますが何も保存しません。`submit_excluded` は token を server が検証します。
+- **fail closed**: test 指定（fragment の `test=` / `token=` / `run=`、保存済みの test 状態、query string の `test=`）を検出したのに検証できない場合（未知の mode・token 欠落・不正な `run`・壊れた保存値）は、production に戻りません。GA4 なし・status GET なし・POST なしで「テスト用URLの設定が正しくありません」だけを表示します。URL の誤記で本番回答として起動・送信される事故を防ぐためです。この状態はリロードでも維持され、バナーの「テストを終了」で解除します。`preview_no_submit` / `closed_view` は誰でも開けますが何も保存しません。`submit_excluded` は token を server が検証します。
 - 流入元は `?src=<x|line|website|instagram|email|direct|unknown>`（allowlist のみ）を `source_channel` として送ります。個人別の code は送りません。
 
 ### GA4

@@ -483,18 +483,64 @@ test('submit_excluded：リロードしても sessionStorage から継続し、�
   assert.strictEqual(env.window.sessionStorage.getItem('snb_baseball_uniform_survey_test_v1'), null);
 });
 
-test('submit_excluded：test_run_id が無ければ生成し、token 欠落・不正な指定は production にならず通常表示', async () => {
+test('submit_excluded：test_run_id が無ければ生成する', async () => {
   const gen = await openPage({ hash: `#test=submit_excluded&token=${SECRET}` });
   assert.match(JSON.parse(gen.window.sessionStorage.getItem('snb_baseball_uniform_survey_test_v1')).run, /^run_[0-9a-f]{12}$/);
-  for (const hash of ['#test=submit_excluded', '#test=unknown', '#test=submit_excluded&token=x&run=bad run']) {
-    const env = await openPage({ hash });
-    assert.strictEqual(env.window.SNB_BASEBALL_SURVEY_TEST_MODE, null, hash);
-    assert.strictEqual(env.document.getElementById('bus-test-banner'), null);
+  assert.strictEqual(gen.window.SNB_BASEBALL_SURVEY_TEST_MODE, 'submit_excluded');
+});
+
+test('test 指定の検証失敗は fail closed：GA4なし・status GETなし・POSTなしで設定エラーだけを表示する', async () => {
+  const cases = [
+    ['#test=submit_excluded', {}],
+    ['#test=unknown', {}],
+    ['#test=submit_excluded&token=x&run=bad run', {}],
+    ['#test=submit_excluded&token=&run=r1', {}],
+    ['#token=abc&run=r1', {}],
+    ['', { search: '?test=submit_excluded&token=abc' }],
+    ['', { search: '?test=preview_no_submit' }],
+    ['', { storage: { snb_baseball_uniform_survey_test_v1: '{broken' } }],
+    ['', { storage: { snb_baseball_uniform_survey_test_v1: JSON.stringify({ mode: 'submit_excluded' }) } }]
+  ];
+  for (const [hash, extra] of cases) {
+    const env = await openPage(Object.assign({ hash }, extra));
+    const label = hash + JSON.stringify(extra);
+    assert.strictEqual(env.window.SNB_BASEBALL_SURVEY_TEST_MODE, 'invalid_test_config', label);
+    assert.strictEqual(pageTitle(env.document), 'テスト用URLの設定が正しくありません', label);
+    assert.match(env.document.getElementById('bus-test-banner').textContent, /設定エラー/, label);
+    assert.strictEqual(env.calls.length, 0, `${label}: status GET も POST も行わない`);
+    assert.strictEqual(env.window.dataLayer, undefined, `${label}: GA4 を初期化しない`);
+    assert.strictEqual(env.window.gtag, undefined, label);
+    assert.strictEqual(env.document.getElementById('bus-next'), null, `${label}: 回答を始められない`);
+    assert.strictEqual(env.document.querySelectorAll('fieldset').length, 0, label);
+    assert.ok(!env.window.location.hash && !env.document.documentElement.outerHTML.includes('token=abc'), label);
   }
-  // query string の test 指定は無効（fragment のみ）
-  const q = await openPage({ search: '?test=submit_excluded&token=abc' });
-  assert.strictEqual(q.window.SNB_BASEBALL_SURVEY_TEST_MODE, null);
-  assert.strictEqual(q.window.sessionStorage.length, 0);
+});
+
+test('fail closed はリロードしても production に戻らず、「テストを終了」で解除できる', async () => {
+  const first = await openPage({ hash: '#test=submit_excluded&token=x&run=bad run' });
+  const stored = first.window.sessionStorage.getItem('snb_baseball_uniform_survey_test_v1');
+  assert.ok(stored);
+  // fragment は URL から除去済み。同じタブをリロード（storage は保持）しても設定エラーのまま
+  const reloaded = await openPage({ storage: { snb_baseball_uniform_survey_test_v1: stored } });
+  assert.strictEqual(pageTitle(reloaded.document), 'テスト用URLの設定が正しくありません');
+  assert.strictEqual(reloaded.calls.length, 0);
+  assert.strictEqual(reloaded.window.dataLayer, undefined);
+  reloaded.document.querySelector('.bus-test-exit').click();
+  assert.strictEqual(reloaded.window.sessionStorage.getItem('snb_baseball_uniform_survey_test_v1'), null);
+  // 解除後は通常の production として起動する
+  const normal = await openPage();
+  assert.strictEqual(normal.window.SNB_BASEBALL_SURVEY_TEST_MODE, null);
+  assert.strictEqual(pageTitle(normal.document), '回答の前にご確認ください');
+  assert.ok(normal.window.dataLayer);
+});
+
+test('production 起動の条件：test 指定が一切ないときだけ（?src= など無関係な query は production）', async () => {
+  const env = await openPage({ search: '?src=line' });
+  assert.strictEqual(env.window.SNB_BASEBALL_SURVEY_TEST_MODE, null);
+  assert.ok(env.window.dataLayer);
+  assert.strictEqual(env.calls.length, 1);
+  const frag = await openPage({ hash: '#section-1' });
+  assert.strictEqual(frag.window.SNB_BASEBALL_SURVEY_TEST_MODE, null);
 });
 
 test('submit_excluded：テストの重複は新しい test_run_id を案内し、token 不正は技術語なしで案内', async () => {
