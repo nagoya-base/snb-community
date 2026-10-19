@@ -7,7 +7,7 @@
     "timezone": "Asia/Tokyo"
   },
   "validation": {
-    "minElapsedMs": 30000,
+    "minElapsedMs": 60000,
     "maxElapsedMs": 86400000,
     "payloadMaxBytes": 65536
   },

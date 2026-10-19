@@ -113,7 +113,7 @@ npm run build:check   # 生成物と正本の差分検出（npm test にも含�
 - 受信 payload は sanitize せず `validateAnswers` を最初に通します。hidden / unknown / stale / invalid option は**黙って除去せず拒否**します。保存する回答値は `validateAnswers(...).clean` のみです（受信 payload や sanitize 結果は保存しません）。
 - required は visible のみ、multiple の exclusive、`other` 本文の要否・長さ、`single_dynamic` の source 整合、scale / `notApplicable` は core の判定に従います。
 - **18歳未満**（`age_confirmed` の termination）は回答本文・hash・メタ情報を**一切保存せず**、valid count / 母数 / Admin 通常集計 / respondent meta count のいずれにも含めません（技術ログにはイベント名 `ineligible` だけ）。
-- **最短回答時間**は production のみ検査し、閾値は `survey.config.json` の `validation.minElapsedMs`（現在 30000 ms）から読みます。test（`submit_excluded`）は免除です。**この値は暫定です。本番前に Owner が確定してください。**
+- **最短回答時間**は production のみ検査し、閾値は `survey.config.json` の `validation.minElapsedMs`（現在 60000 ms）から読みます。test（`submit_excluded`）は免除です。60秒は「通常の回答時間」ではなく、明らかに機械的・不可能に近い送信だけを弾く安全弁として確定した値です。90秒以上にすると短い分岐や速い回答者を誤って落とすため上げません。
 
 ### 保存（Spreadsheet）
 
@@ -194,6 +194,8 @@ private な system field です。`x / line / website / instagram / email / dire
 - **Pull request**: `npm run validate` / `npm run build:check` / `npm test` / 配備バンドルの dry-run のみ。secret を使わず、本番 deployment は更新しません。
 - **本番 deploy は `workflow_dispatch` の明示操作のみ**（main 限定、対象は実行時点の `github.sha`）。`verify` → `deploy` の順で、`deploy` は GitHub Environment `baseball-uniform-survey-public-production`（main 限定・承認者あり）の承認を要します。
 - `deploy` は `clasp pull` で既存プロジェクトを検証（別 survey / 手書きコードなら拒否）→ allowlist のファイルを push → version 作成 → **既存 deployment だけ**を更新します。新規 deployment は作らず、Script Properties・Web App のアクセス設定には触れません（`/exec` URL は変わりません）。
+
+**本番 deploy 前の手動準備**（PR・workflow では作成しません）: GitHub Environment `baseball-uniform-survey-public-production`（main 限定・承認者あり）を作り、次の Secrets を登録します。
 
 必要な GitHub Environment Secrets（`baseball-uniform-survey-public-production`）:
 
