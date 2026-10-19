@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 16px; max-width: 880px; line-height: 1.6; }
+    h1 { font-size: 1.2rem; }
+    h2 { font-size: 1rem; margin-top: 1.6rem; }
+    button { margin: 4px 8px 4px 0; padding: 6px 12px; }
+    input { width: 100%; max-width: 420px; padding: 6px; box-sizing: border-box; }
+    pre { background: #f4f4f4; padding: 12px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+    .warn { color: #a40000; }
+  </style>
+</head>
+<body>
+  <h1>名古屋野球ユニ部アンケート｜Maintenance（運営者専用）</h1>
+  <p class="warn">finalize と cleanup は取り消せません。必ず preflight / dry-run の結果を確認してから confirmation_code を貼り付けてください。回答の編集・1件ずつの削除はできません。</p>
+
+  <h2>retention</h2>
+  <button id="retention">retention 設定状態を確認</button>
+
+  <h2>finalize（締切後のみ）</h2>
+  <button id="preflight">finalize preflight</button>
+  <button id="finalized">finalized 状態を確認</button>
+  <button id="snapshot">final snapshot を表示</button>
+  <p><label>confirmation_code（preflight の結果）<br><input id="finalizeCode" autocomplete="off"></label></p>
+  <button id="finalize">finalize を実行</button>
+
+  <h2>cleanup（retention 期限後のみ）</h2>
+  <button id="dryrun">cleanup dry-run</button>
+  <p><label>confirmation_code（dry-run の結果）<br><input id="cleanupCode" autocomplete="off"></label></p>
+  <button id="cleanup">cleanup を実行</button>
+  <p><label>manual_required の storage ID（手動で削除し終えたもの）<br><input id="manualId" autocomplete="off"></label></p>
+  <button id="manual">手動削除の完了を記録</button>
+
+  <h2>結果</h2>
+  <pre id="out" aria-live="polite">（まだ操作していません）</pre>
+
+  <script>
+    var out = document.getElementById('out');
+    function show(value) { out.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2); }
+    function run(name, arg) {
+      show('実行中: ' + name);
+      var runner = google.script.run
+        .withSuccessHandler(function (value) { show(value); })
+        .withFailureHandler(function (error) { show('失敗: ' + (error && error.message ? error.message : error)); });
+      if (arg === undefined) runner[name](); else runner[name](arg);
+    }
+    function value(id) { return document.getElementById(id).value.trim(); }
+    document.getElementById('retention').onclick = function () { run('getRetentionStatus'); };
+    document.getElementById('preflight').onclick = function () { run('finalizePreflight'); };
+    document.getElementById('finalized').onclick = function () { run('getFinalizedStatus'); };
+    document.getElementById('snapshot').onclick = function () { run('getFinalSnapshot'); };
+    document.getElementById('finalize').onclick = function () {
+      if (confirm('finalize を実行します。よろしいですか？')) run('finalizeSurvey', value('finalizeCode'));
+    };
+    document.getElementById('dryrun').onclick = function () { run('cleanupDryRun'); };
+    document.getElementById('cleanup').onclick = function () {
+      if (confirm('cleanup を実行します。対象データは削除され、元に戻せません。よろしいですか？')) run('cleanupExecute', value('cleanupCode'));
+    };
+    document.getElementById('manual').onclick = function () { run('confirmManualCleanup', value('manualId')); };
+  </script>
+</body>
+</html>

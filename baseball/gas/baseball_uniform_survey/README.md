@@ -3,7 +3,7 @@
 親Issue #377 / 本ディレクトリの範囲は Issue #378（schema 正本の配置・参照整合 validation・CI）、Issue #379（専用 survey-core の fork と v2.17 構文対応）、Issue #380（Public GAS・保存・匿名重複抑止・server validation・test mode・受付期間・通知・deploy workflow）です。
 Issue #381 で回答 Frontend（`baseball/baseball-uniform-survey.html` と `baseball/baseball-uniform-survey/`）・route 進捗 UX・test UI・GA4 最小計測・analytics.js の section_view opt-out を追加しました（下記「Frontend」）。
 Issue #382 で Admin 集計・publication 判定・small-cell / complementary suppression・privacy-safe snapshot・公開結果ページを追加しました（下記「Admin と公開結果」）。
-maintenance / retention cleanup / close 後 finalize（#383）は後続Issueで追加します（本ディレクトリでは未着手）。
+Issue #383 で maintenance GAS（retention・close 後 finalize・final snapshot 固定・cleanup）を追加しました（下記「maintenance・retention・finalize・cleanup」）。
 
 ## 正本
 
@@ -366,6 +366,87 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 
 `analyzeSemanticCodes` が schema の `semanticCodes`（障壁）と `reassuranceFor`（安心条件）を使い、code ごとに**回答者単位**で数えます。同じ回答者が同じ code に複数の option（primary と secondary の重複を含む）から該当しても 1 人です（設問ごとに code の集合を作ってから数える）。障壁（`barriers` / `pre_attendance_worries` / `attendance_lapse_reasons` / `activity_stopped_reasons`）と安心条件（`participation_conditions`）を code ごとに並べて比較でき、安心条件が未設計の code も分かります。自由記述の自動分類はしません。この集計は public snapshot には出しません。
 
+## maintenance・retention・finalize・cleanup（Issue #383）
+
+| ファイル | 役割 |
+|---|---|
+| `src/maintenance-core.js` | finalize / retention / cleanup の判断ロジック（副作用なしの ES5。Spreadsheet・Script Properties は ports 経由。`SurveyAggregate` を再利用） |
+| `maintenance/` | 独立した maintenance GAS（`SurveyGenerated.gs` は生成物。`Config / Data / Finalize / Retention / Cleanup / Main .gs`、`Maintenance.html`、`appsscript.json`） |
+| `retention.config.json` | retention 設定の正本（**現在は `unset`**。Owner が `opens_at` / `closes_at` 確定時に設定する） |
+
+maintenance は Public GAS（#380）・Admin GAS（#382）とは**別 project・別 Script ID・別 Script Properties・別 Environment / Secret**です。通常の閲覧・回答受付経路からは呼ばれません（`doPost` なし）。書込み権限が必要な OAuth scope（`spreadsheets`）はこの project だけが持ち、Public / Admin の scope は広げていません。Web App は `executeAs: USER_DEPLOYING` / `access: MYSELF`（運営責任者 1 名）で、公開しません。**本番 deploy はこの Issue では行わず、deploy workflow も用意していません**（CI は build / test のみ）。
+
+### 責務の境界
+
+- production submit の受付可否（`opens_at` / `closes_at`）は **#380 Public GAS が唯一の権威**です。maintenance は第二の受付判定を持ちません。
+- maintenance が `closes_at` を参照するのは、finalize を締切前に実行しないための **precondition** だけです（`closes_at` 未設定 → 拒否／現在時刻が `closes_at` 以前 → 拒否／timezone は `Asia/Tokyo`。`opens_at` / `closes_at` は `survey.config.json` の `reception` を生成物へ取り込んだものです）。
+- 集計・publication 判定・suppression・snapshot 生成・検証は #382 の `classifyRows` / `buildSnapshot` / `validateSnapshot` をそのまま呼びます（別集計・別 suppression は持ちません）。
+
+### 運営操作（maintenance Web App）
+
+retention 設定状態の確認／finalize preflight／finalize 実行／finalized 状態の確認／final snapshot の表示／cleanup dry-run／cleanup 実行／manual_required の完了記録。回答を 1 件ずつ編集・削除する UI はありません。
+
+### launch 前 retention checklist（production launch blocker）
+
+`respondentNotice.retention.status = must_set_before_launch` と `retention.config.json` の `policy_status: unset` のどちらかが残る間は、production launch できません（Public GAS の受付状態も `not_configured` のまま）。このリポジトリは具体的な保持期限を決めていません。
+
+- [ ] **Owner: `nagoya-base`** が、実際の `opens_at` / `closes_at` 確定時（遅くとも production launch 前）に、`retention.config.json` を設定する PR を出す
+  - `policy_status: confirmed`、`policy_version`、`retention_end_date`（`YYYY-MM-DD`。JST のその日の終わりまで保持）**または** `retention_rule`（`{"basis": "closes_at", "days": N}`）のどちらか一方
+  - `keep_final_snapshot`（privacy-safe な final public snapshot を cleanup 後も保持するか）、`cleanup_operator`（実行者）、`verification_method`（実行確認方法）
+  - `inventory_reviewed`: 下記 storage inventory の ID をすべて確認済みとして列挙（inventory が増えたら設定の更新が必要になります）
+  - placeholder（`TBD` / `未定` / 空 / `must_set_before_launch` など）・期限が `closes_at` 以前・両方指定は `invalid` で fail closed です。
+- [ ] 同じ PR（または launch 直前の PR）で `survey.schema.json` の `respondentNotice.retention.status` を `must_set_before_launch` 以外へ変更する（`retention` 設定が `confirmed` かつ schema の status が変更済みのときだけ、maintenance の `launch_ready` が `true` になります）
+- [ ] **親 Issue #377 の Owner checkbox は launch 前の運用作業として手動で更新する**（この実装・maintenance は GitHub Issue 本文を変更しません）
+
+### finalize（close 後に 1 回固定）
+
+運用手順:
+
+1. `closes_at` を過ぎたことを確認し、maintenance で **finalize preflight**（書き込みなし。production valid の exact count・除外内訳・final snapshot の SHA-256 digest・`confirmation_code` を返す）。
+2. 結果を確認し、`confirmation_code` を貼って **finalize を実行**（`FINALIZE:<survey_version>:<digest 先頭 12 文字>`。preflight 後に回答が変わると code が一致せず実行できません）。
+3. **finalized 状態を確認**（marker と保存済み snapshot の digest 照合）し、**final snapshot を表示**して内容を確認する。
+4. 確認後、`baseball/baseball-uniform-survey-results/snapshot.json` を **operator が PR で反映する**。maintenance は GitHub へ自動 commit しません。
+
+処理順（固定）: precondition → responses を read-only で再読込 → `classifyRows`（test / 18歳未満 / invalid / duplicate を除外）→ `buildSnapshot`（`generated_at` は `closes_at` に固定）→ `validateSnapshot` → survey / schema / design version・valid exact count・締切時刻の整合確認 → final snapshot を `final_snapshot` Sheet へ保存 → 読み戻して SHA-256 を照合 → **最後にだけ finalized marker を保存**。途中で例外が出ても marker は保存されません。
+
+- final snapshot は #382 と同じ privacy-safe な JSON です（自由記述・「その他」本文・詳細都道府県・愛知県内地域・`respondent_hash`・UUID・system identifier を含まず、閾値未達の設問・sensitive branch は final でも数値を出しません）。`responses_valid` のような回答の複製 Sheet は**作りません**。
+- final JSON は Script Properties ではなく `final_snapshot` Sheet（40,000 文字ごとのチャンク。各セルは先頭に `c:` を付けて数式・数値として解釈されないようにする）に保存します。Script Properties には marker と小さい metadata だけを置きます。
+- **finalized marker**（Script Property `FINALIZED_MARKER`）: `finalized_at` / `survey_id` / `survey_version` / `schema_version` / `design_version` / `closes_at` / `production_valid_total`（Admin 内部の exact 値）/ `snapshot_digest`（SHA-256）/ `operator`（固定文字列 `nagoya-base`）のみ。個票・自由記述・hash・UUID・salt・token は入れません。許可キー以外を含む marker は `marker_invalid` として扱い、fail closed です。
+- 同じ version + `closes_at` + digest で finalized 済みなら、`final_snapshot` Sheet の存在と SHA-256 一致を確認したうえで再実行は no-op 成功です。保存済み snapshot が欠損・改変されている場合は `final_snapshot_missing` / `final_snapshot_mismatch` で fail closed とし（成功扱いにしない・marker は書き換えない）、preflight も `would: inconsistent` と表示します。内容が異なる（回答が増えた・`closes_at` が変わった等）ときは自動上書きせず `finalized_conflict` で停止します。**incident 時も marker を手動で書き換えないでください**（原因を調べ、Owner が判断します）。
+
+### storage inventory（回答由来データの保存先）
+
+| ID | 内容 | 扱い |
+|---|---|---|
+| `responses_production` | responses Sheet の production 行（raw） | cleanup で削除 |
+| `responses_test` | responses Sheet の test 行（`submit_excluded`。raw） | cleanup で削除（test mode も retention 対象） |
+| `responses_unclassified` | `response_mode` が不明な行（raw） | cleanup で削除 |
+| `responses_valid_sheet` | `responses_valid` 等の派生 Sheet（finalize は生成しない。手動で作られていれば） | cleanup で削除 |
+| `final_snapshot_sheet` | privacy-safe な final public snapshot | `keep_final_snapshot` に従い保持／削除 |
+| `maintenance_script_properties` | `FINALIZED_MARKER` / `MANUAL_CLEANUP_DONE` / `CLEANUP_AUDIT`（件数・日時・digest のみ） | 監査情報として保持 |
+| `cache_service` | CacheService | Public / Admin / maintenance は使用しない（`not_used`。テストで静的に検査） |
+| `admin_script_properties` | Admin GAS の `SNAPSHOT_STATE`（時刻と件数のみ） | **manual_required** |
+| `public_script_properties` | Public GAS の `RESPONDENT_SALT` / `TEST_TOKEN` / `NOTIFICATION_EMAIL`（salt は削除して hash を再識別不能にする） | **manual_required** |
+| `github_pages_snapshot` | GitHub Pages の `snapshot.json`（privacy-safe な公開 snapshot） | `keep_final_snapshot: true` なら保持。`false` なら **manual_required**（PR で削除） |
+| `notification_and_execution_logs` | 通知メール・Apps Script 実行ログ等 | **manual_required** |
+| `admin_export_copies` | Admin export 等のコピー（ダウンロード済みファイル含む） | **manual_required** |
+| `external_tool_copies` | 外部 AI / 外部ツールへ渡した de-identified copy | **manual_required** |
+| `spreadsheet_history_and_backups` | Spreadsheet の変更履歴・ゴミ箱・バックアップ・ダウンロード済みコピー（行削除後も残る） | **manual_required** |
+
+コードから削除できない storage は「削除済み」と扱わず `manual_required` として dry-run に出します。
+
+### cleanup（dry-run → 明示確認 → execute）
+
+1. **cleanup dry-run**: 書き込みなし。retention policy / deadline・期限到達の有無・storage ごとの件数または有無・production / test・raw / derived / privacy-safe snapshot の区別・final snapshot を保持するか削除するか・`manual_required` の完了状態・実行可否（`can_execute` と `blockers`）を返します。**件数と storage 名だけで、回答本文・自由記述・hash は画面にも Logger にも出しません。**
+2. 内容を確認し、`confirmation_code`（`CLEANUP:<policy_version>:<計画の digest 先頭 12 文字>`。dry-run 後に件数・方針が変わると一致しません）を貼って **cleanup を実行**。
+3. execute は、retention 未確定（`retention_policy_not_confirmed`）・期限前（`retention_not_reached`）・`keep_final_snapshot: true` なのに finalize 済みでない（`final_snapshot_required`）・confirmation なし／不一致のとき拒否します。LockService で多重実行を防ぎ、production / test 双方を policy に従って削除し、**削除後に再 scan して残っていれば成功扱いにしません**（`status: failed`）。`responses` のヘッダー行は残し、ヘッダーが schema と一致しないシートは削除しません。
+4. **manual_required の確認**: 結果の `manual_required_pending` を Owner が手動で処理し、処理し終えた storage ID ごとに「手動削除の完了を記録」。全件記録されるまで `status` は `completed` にならず、`completed_manual_required_pending` のままです。
+5. cleanup audit（Script Property `CLEANUP_AUDIT`。直近 5 件・8,000 文字まで）に残すのは `executed_at` / `policy_version` / storage 名ごとの削除件数と成否 / `manual_required` の完了状態だけで、個人情報は含みません。
+
+### CI
+
+既存の `baseball-uniform-survey-schema.yml` / `baseball-uniform-survey-public-gas.yml` が、`npm run build:check`（`maintenance/SurveyGenerated.gs` の generated drift を含む）と `tests/maintenance_core.test.js` / `tests/maintenance_gas.test.js` を実行します。maintenance は deploy 対象に含めず、Public GAS の bundle・Script ID・Environment・Secret も共有しません。将来 deploy workflow を用意する場合も、PR は dry-run のみ、本番は `workflow_dispatch` + Environment 承認等の明示操作にします。
+
 ## 検証とテスト
 
 Node.js 22 以上。依存は jsdom（devDependency。Frontend テスト用）だけです。`npm ci` で導入します。
@@ -398,6 +479,8 @@ npm test           # node --test tests/*.test.js
 `tests/public_submit.test.js` は Public GAS の unit/integration test（Apps Script API は最小フェイク。valid submit・hidden/unknown/stale/invalid option 拒否・18歳未満・hash namespace と canonical 入力・duplicate・concurrent・source_channel・最短回答時間・受付期間・test token・notification・Formula Injection）、`tests/public_build.test.js` は生成物の整合、`tests/frontend.test.js` は Frontend（jsdom。schema 駆動の描画・各 question type・route・低関心 route・進捗・status API 各状態・submit 結果・test mode・token 非漏洩・GA4 許可イベント・analytics.js opt-out と他ページ回帰・a11y・レイアウトの静的検査・Public GAS との payload 整合）、`tests/deploy.test.js` は配備構成と workflow の検査です。
 
 `tests/aggregate.test.js` は Admin 集計と public snapshot の unit test（production/test/invalid の分離・`question_reached`・`minTotal / minTarget / minCell`・sensitive `minTarget 20`・small-cell と complementary suppression・snapshot から小セルを逆算できないこと（総当たりで、公開出力と整合する元の件数をすべて列挙して検証。`minCell=3` で 2・2 の回帰を含む）・ordinal / nominal の並び・zero cell・地域・自由記述/hash/詳細地域の非公開・`publicResultsOrder`・semantic code の重複排除・batch 更新判定）、`tests/admin_gas.test.js` は Admin GAS（read-only・scope・generated drift・自由記述の分離・ヘッダー不一致）、`tests/results_page.test.js` は公開結果ページ（jsdom。snapshot だけを読むこと・2 層・件数表示・sensitive 未達の説明・Frontend の結果リンク）です。入力はすべて架空の fixture（`tests/helpers/fixtures.js`）で、実回答・本番 Spreadsheet には接続しません。
+
+`tests/maintenance_core.test.js` は maintenance の判断ロジック（finalize の precondition・#382 との一致・保存順と marker・idempotent / conflict・retention 設定の fail closed・cleanup の dry-run / confirmation / 再 scan / audit / manual_required）、`tests/maintenance_gas.test.js` は maintenance GAS（fake Spreadsheet 越しの finalize / cleanup・scope・generated drift・責務分離・secret / raw data scan・CI）の検査です。
 
 `tests/schema.test.js` は実 schema に対する検査と v2.17 の回帰（低関心 route の 3 参照、`activity_stopped_reasons`、`adult_context`、`exercise_*`）、
 `tests/validator.test.js` は validator が壊れた schema を検出することの負例テストです。
