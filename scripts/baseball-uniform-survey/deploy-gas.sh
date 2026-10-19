@@ -5,7 +5,7 @@ umask 077
 # Issue #380 / #390：名古屋野球ユニ部アンケート Public / Admin / maintenance GAS を更新する。手動 dispatch のワークフローからのみ実行する（PR では実行しない）。
 # 既存の Web App deployment を「更新」するだけで、deployment を新規作成せず、Script Properties・
 # SPREADSHEET_ID・RESPONDENT_SALT・TEST_TOKEN・Web Appのアクセス設定には触れない（/exec URL は変わらない）。
-# 初回の project 作成・OAuth 承認・Script Properties・最初の Web App deployment 作成は bootstrap として手動（README 参照）。
+# 初回の project 作成・OAuth 承認・Script Properties・最初の Web App deployment 作成は手動。Admin / maintenance の最初のコード push は手動か bootstrap-gas.sh（専用 workflow）で行う（README 参照）。
 #   BASEBALL_UNIFORM_SURVEY_TARGET        public | admin | maintenance（workflow が固定で渡す）
 #   CLASPRC_JSON                          GitHub Environment secret
 #   target 専用の Script ID / Deployment ID（GitHub Environment secret。他 target の名前は受け付けず、設定されていれば拒否）
