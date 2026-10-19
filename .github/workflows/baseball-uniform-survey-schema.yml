@@ -3,7 +3,7 @@ name: Baseball uniform survey schema
 # Issue #378「名古屋野球ユニ部アンケート v2.17 schema正本」の参照整合テスト。
 # schema の parse / 参照整合 validation / v2.17 回帰テストを PR ごとに実行する。
 # 既存 costume portrait survey の workflow / schema / core / tests とは独立。
-# deploy は行わない（Public GAS の deploy workflow は #380 担当）。secret も使わない。
+# deploy は行わない（Public GAS の deploy workflow は baseball-uniform-survey-public-gas.yml）。secret も使わない。
 
 on:
   pull_request:

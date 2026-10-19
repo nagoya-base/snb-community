@@ -1,0 +1,21 @@
+{
+  "config_version": 1,
+  "survey_id": "nagoya_baseball_uniform_club_2026",
+  "reception": {
+    "opens_at": null,
+    "closes_at": null,
+    "timezone": "Asia/Tokyo"
+  },
+  "validation": {
+    "minElapsedMs": 60000,
+    "maxElapsedMs": 86400000,
+    "payloadMaxBytes": 65536
+  },
+  "testRun": {
+    "idPattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$"
+  },
+  "notification": {
+    "enabled": true,
+    "subject": "【名古屋野球ユニ部アンケート】新規回答がありました"
+  }
+}
