@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 公開（Public GAS 接続・受付期間・保持期限の確定）まで検索に載せない。公開時にこの行を削除する（README参照）。 -->
+  <meta name="robots" content="noindex">
+  <title>名古屋野球ユニ部アンケート｜SNBC</title>
+  <meta name="description" content="名古屋野球ユニ部の今後の運営・企画改善のための匿名アンケート。対象は18歳以上、所要時間は5〜12分程度です。">
+  <link rel="canonical" href="https://nagoya-base.github.io/snb-community/baseball/baseball-uniform-survey.html">
+
+  <!-- OGP（画像は公開時に追加） -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="名古屋野球ユニ部アンケート｜SNBC">
+  <meta property="og:description" content="名古屋野球ユニ部の今後の運営・企画改善のための匿名アンケート。対象は18歳以上、所要時間は5〜12分程度です。">
+  <meta property="og:url" content="https://nagoya-base.github.io/snb-community/baseball/baseball-uniform-survey.html">
+  <meta name="twitter:card" content="summary">
+
+  <!-- test mode の判定は GA4 初期化より前（fragment → sessionStorage）。test mode では GA4 を一切初期化しない。 -->
+  <script src="baseball-uniform-survey/test-mode.js"></script>
+  <script>
+    if (!window.SNB_BASEBALL_SURVEY_TEST_MODE) {
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () { window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      window.gtag('config', 'G-H9BD3KFZCR');
+      var snbGtagScript = document.createElement('script');
+      snbGtagScript.async = true;
+      snbGtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-H9BD3KFZCR';
+      document.head.appendChild(snbGtagScript);
+    }
+  </script>
+  <script src="../analytics.js"></script>
+  <link rel="stylesheet" href="baseball-uniform-survey/styles.css">
+</head>
+<!-- data-disable-section-view: アンケートではセクション名・進捗を GA4 へ送らない（analytics.js のページ単位 opt-out）。
+     設問ID・route・回答値を data-* に埋めて自動計測させない。 -->
+<body data-site-section="baseball" data-page-type="survey" data-disable-section-view="true">
+  <a class="bus-skip" href="#bus-main">本文へ移動</a>
+  <div class="bus-wrap">
+    <a class="bus-back" href="./">← 名古屋野球ユニ部のページへ戻る</a>
+    <header class="bus-hero">
+      <p class="bus-eyebrow">名古屋野球ユニ部</p>
+      <h1>名古屋野球ユニ部アンケート</h1>
+    </header>
+    <main id="bus-main" tabindex="-1">
+      <div id="bus-app">
+        <noscript><p class="bus-lead">このアンケートの回答にはJavaScriptが必要です。</p></noscript>
+      </div>
+    </main>
+  </div>
+  <script src="baseball-uniform-survey/config.js"></script>
+  <script src="baseball-uniform-survey/survey.generated.js"></script>
+  <script src="baseball-uniform-survey/app.js"></script>
+</body>
+</html>

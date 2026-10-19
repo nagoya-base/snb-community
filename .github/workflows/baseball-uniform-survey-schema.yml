@@ -11,6 +11,8 @@ on:
     paths:
       - '.github/workflows/baseball-uniform-survey-schema.yml'
       - 'baseball/gas/baseball_uniform_survey/**'
+      - 'baseball/baseball-uniform-survey.html'
+      - 'baseball/baseball-uniform-survey/**'
   workflow_dispatch:
 
 permissions:
@@ -34,6 +36,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install test dependencies (npm ci, lockfile only)
+        working-directory: baseball/gas/baseball_uniform_survey
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Parse and validate survey.schema.json
         working-directory: baseball/gas/baseball_uniform_survey
         run: npm run validate

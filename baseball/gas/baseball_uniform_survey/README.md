@@ -1,7 +1,8 @@
 # 名古屋野球ユニ部アンケート（design v2.17）
 
 親Issue #377 / 本ディレクトリの範囲は Issue #378（schema 正本の配置・参照整合 validation・CI）、Issue #379（専用 survey-core の fork と v2.17 構文対応）、Issue #380（Public GAS・保存・匿名重複抑止・server validation・test mode・受付期間・通知・deploy workflow）です。
-Frontend・Admin・公開結果ページ・maintenance/finalize は後続Issue（#381〜）で追加します。
+Issue #381 で回答 Frontend（`baseball/baseball-uniform-survey.html` と `baseball/baseball-uniform-survey/`）・route 進捗 UX・test UI・GA4 最小計測・analytics.js の section_view opt-out を追加しました（下記「Frontend」）。
+Admin・公開結果ページ（#382）、maintenance/finalize（#383）は後続Issueで追加します。
 
 ## 正本
 
@@ -207,9 +208,78 @@ private な system field です。`x / line / website / instagram / email / dire
 
 salt / test token / 通知先はここには置かず、Apps Script の Script Properties にのみ置きます。
 
+## Frontend（Issue #381）
+
+回答ページは `baseball/baseball-uniform-survey.html`、アセットは `baseball/baseball-uniform-survey/` です（既存 `community/costume-portrait-survey*` は変更しません）。ビルド不要の静的ページで、GitHub Pages から配信されます。
+
+| ファイル | 役割 |
+|---|---|
+| `baseball/baseball-uniform-survey.html` | 回答ページ。`<body data-disable-section-view="true">`、公開前は `noindex` |
+| `baseball/baseball-uniform-survey/app.js` | 描画・route 進捗・Public GAS 連携・test UI・GA4（許可イベントのみ） |
+| `baseball/baseball-uniform-survey/test-mode.js` | test mode 判定（GA4 初期化より前に同期実行） |
+| `baseball/baseball-uniform-survey/config.js` | Public GAS の `/exec` URL（`endpoint`） |
+| `baseball/baseball-uniform-survey/styles.css` | survey 専用スタイル（baseball の配色） |
+| `baseball/baseball-uniform-survey/survey.generated.js` | **生成物（直接編集禁止）**。`SURVEY_SCHEMA` + 専用 core |
+
+### build / test
+
+```bash
+cd baseball/gas/baseball_uniform_survey
+npm ci               # jsdom（lockfile 固定）
+npm run build        # public/SurveyGenerated.gs と baseball/baseball-uniform-survey/survey.generated.js を再生成
+npm run build:check  # 両生成物と正本（schema + config + core）の差分検出（npm test にも含まれ、CI で実行）
+npm test             # schema / core / Public GAS / Frontend(jsdom) / analytics opt-out / deploy
+```
+
+Frontend 用の生成物は schema と core だけを埋め込みます（`survey.config.json`・受付期間・通知設定は含みません）。設問・option・分岐条件は HTML/JS へベタ書きせず、`SurveyCore` が表示・required・検証を判定します。画面の見出し（`SECTION_TITLES`）は UI 文言で、schema の section ID と 1:1 です（欠けるとテストが失敗します）。
+
+### Public GAS URL の設定
+
+GAS の初回デプロイ後、`baseball/baseball-uniform-survey/config.js` の `endpoint` に `/exec` URL を設定します。空の間は「現在準備中です」を表示し、通信しません。受付状態は必ず `GET ?action=status`（`open` / `not_open` / `closed` / `not_configured`）から取得し、Frontend で受付期間を判断しません。`status` に到達できなくても入力画面は出し、最終判断は送信時に server が行います（`survey_not_open` / `survey_closed` / `survey_not_configured` / `duplicate_submission` / `schema_mismatch` / `invalid_request` は回答者向けの文言に変換し、内部のエラーコードは表示しません）。
+
+### 回答の流れ・低関心 route
+
+intro → section ごとのページ → 確認 → 完了。回答は最後にまとめて送信します。hidden になった設問は DOM から取り除き（tab 順にも残りません）、値は直ちに消します。送信前には Frontend だけが `SurveyCore.sanitizeAnswers` を通し、server は受信 payload をそのまま検証します。`age_confirmed` が 18 歳未満の場合は回答を破棄して終了し、server へは何も送りません。
+
+`catchball_interest` が `low_interest` / `not_interested` の人には `uniform_social_interest` を表示し、キャッチボール会の細かな運営条件は省きます。運動頻度・運動の動機（該当者には継続要因）・年代・地域・自由記述は残ります（低関心を分析対象外にしません）。
+
+### 進捗
+
+分母は最長 route ではなく、その回答者の visible route です（「現在 3/8 セクション」「全体の約40%」「残り約4分」）。割合・残り時間は route が確定してから表示し（確定前は「現在 N セクション目」のみ）、表示は単調です（後退しません）。所要時間は「5〜12分程度」で統一しています。`SECONDS_PER_QUESTION`（`app.js`）は残り時間の見積もり用の目安で、実測に応じて調整できます。進捗・section 名・route 名は GA4 へ送りません。
+
+### test mode の使い方
+
+test mode は **URL fragment**（`#...`）で指定します。query string には置きません。fragment は読み取り直後に `sessionStorage` へ移し、URL から取り除きます（履歴・共有 URL・GA4 の page_location に残しません）。同じタブでは再読み込みしても継続し、バナーの「テストを終了」で解除できます。test mode では **GA4 を初期化せず、本番 GA4 へ一切送りません**。
+
+| URL | 動作 |
+|---|---|
+| `.../baseball-uniform-survey.html#test=preview_no_submit` | client-only。入力 → 確認 → 完了画面まで確認できる。通信なし・保存なし |
+| `.../baseball-uniform-survey.html#test=closed_view` | client-only。受付終了の表示だけを確認する。通信なし |
+| `.../baseball-uniform-survey.html#test=submit_excluded&token=<TEST_TOKEN>&run=<test_run_id>` | server へ test として送信（`response_mode=test`。本番 count・通知・公開結果・finalize から除外）。完了画面は「テスト送信を受け付けました（集計対象外）」で、本番の完了と区別できる |
+
+- `token` は #380 の Script Property `TEST_TOKEN`。Frontend は `sessionStorage` から POST body の `test_token` にだけ載せ、DOM・ログ・GA4・URL・query string には出しません。
+- `run`（`test_run_id`）は `^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$`。省略すると `run_<12桁hex>` を生成します。同じ `test_run_id` では本番と同じ重複抑止が働くため、再度試すときは新しい `run` で開き直します。
+- **fail closed**: test 指定（fragment の `test=` / `token=` / `run=`、保存済みの test 状態、query string の `test=`）を検出したのに検証できない場合（未知の mode・token 欠落・不正な `run`・壊れた保存値）は、production に戻りません。GA4 なし・status GET なし・POST なしで「テスト用URLの設定が正しくありません」だけを表示します。URL の誤記で本番回答として起動・送信される事故を防ぐためです。この状態はリロードでも維持され、バナーの「テストを終了」で解除します。`preview_no_submit` / `closed_view` は誰でも開けますが何も保存しません。`submit_excluded` は token を server が検証します。
+- 流入元は `?src=<x|line|website|instagram|email|direct|unknown>`（allowlist のみ）を `source_channel` として送ります。個人別の code は送りません。
+
+### GA4
+
+survey ページで送るのは `form_start` / `form_error`（error type のみ）/ `survey_submit`（server 保存成功後のみ）だけです。`section_view`・設問 ID・section ID・route ID・branch ID・進捗・回答値・年代/地域・自由記述・UUID・hash・test token/run は送りません。`data-section-view` / `data-cta-name` などの自動計測属性も survey に付けません。
+
+共有 `analytics.js` には、ページ単位の opt-out を追加しました。`<body data-disable-section-view="true">` のページでは `trackSectionView` / `track('section_view')` / `data-section-view` の自動計測を行いません（他のイベントと、フラグの無い既存ページの `section_view` は従来どおりです。`tests/frontend.test.js` に回帰テストがあります）。
+
+### 手動確認（ローカル/CI で自動化できない項目）
+
+次は親 #377 の最終確認として残ります（iOS Safari・実 Web App・実 Spreadsheet を伴う E2E）。
+
+1. `config.js` に実 `/exec` URL を設定し、`GET ?action=status` の各状態（受付前・受付中・終了・未設定）の表示を確認する。
+2. `#test=submit_excluded&token=...&run=...` で test 送信 → Spreadsheet に `response_mode=test` と `test_run_id` で保存され、本番 count・通知に入らないことを確認する。
+3. production で 1 件送信 → `response_mode=production` で保存、通知（有効時）、GA4 DebugView に `form_start` / `survey_submit` だけが出る（`section_view` と回答値が出ない）ことを確認する。
+4. iOS Safari と Android Chrome で 390px 幅の表示・キーボード・固定ナビを確認する。
+
 ## 検証とテスト
 
-Node.js 22 以上。依存パッケージはありません。
+Node.js 22 以上。依存は jsdom（devDependency。Frontend テスト用）だけです。`npm ci` で導入します。
 
 ```bash
 cd baseball/gas/baseball_uniform_survey
@@ -236,7 +306,7 @@ npm test           # node --test tests/*.test.js
 
 `tests/core.test.js` は専用 core の unit test です（condition の `all / any` ネスト・`conditionRef`・各演算子と fail-safe、`single_dynamic`、low-interest route、`activity_stopped_reasons` / `adult_context` の2条件、hidden 後の stale 値除去、required は visible のみ、multiple exclusive、other_text、scale + notApplicable、ordinal 順、publication、`targetCount = question_reached`、test mode 分離）。
 
-`tests/public_submit.test.js` は Public GAS の unit/integration test（Apps Script API は最小フェイク。valid submit・hidden/unknown/stale/invalid option 拒否・18歳未満・hash namespace と canonical 入力・duplicate・concurrent・source_channel・最短回答時間・受付期間・test token・notification・Formula Injection）、`tests/public_build.test.js` は生成物の整合、`tests/deploy.test.js` は配備構成と workflow の検査です。
+`tests/public_submit.test.js` は Public GAS の unit/integration test（Apps Script API は最小フェイク。valid submit・hidden/unknown/stale/invalid option 拒否・18歳未満・hash namespace と canonical 入力・duplicate・concurrent・source_channel・最短回答時間・受付期間・test token・notification・Formula Injection）、`tests/public_build.test.js` は生成物の整合、`tests/frontend.test.js` は Frontend（jsdom。schema 駆動の描画・各 question type・route・低関心 route・進捗・status API 各状態・submit 結果・test mode・token 非漏洩・GA4 許可イベント・analytics.js opt-out と他ページ回帰・a11y・レイアウトの静的検査・Public GAS との payload 整合）、`tests/deploy.test.js` は配備構成と workflow の検査です。
 
 `tests/schema.test.js` は実 schema に対する検査と v2.17 の回帰（低関心 route の 3 参照、`activity_stopped_reasons`、`adult_context`、`exercise_*`）、
 `tests/validator.test.js` は validator が壊れた schema を検出することの負例テストです。
