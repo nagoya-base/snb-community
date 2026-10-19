@@ -73,6 +73,21 @@ Script Properties（値は repo / Secrets / ログに出さない）:
 5. Script ID / Deployment ID と clasp credentials をその target 専用の Environment Secrets に登録する。
 6. エディタの「プロジェクトの設定」で scope と Web App 設定が manifest と一致していることを目視確認する。
 
+#### 任意：Admin / maintenance の初回 push を bootstrap workflow で行う
+
+手順 2 の「初回 push」だけは、専用 workflow `baseball-uniform-survey-bootstrap-gas.yml`（手動 `workflow_dispatch`・main 限定）で代替できます。通常の deploy workflow とは Environment・Secret ともに分離されています。
+
+| target | Environment（main 限定・承認者あり） | Secrets |
+|---|---|---|
+| Admin | `baseball-uniform-survey-admin-bootstrap` | `CLASPRC_JSON` / `BASEBALL_UNIFORM_SURVEY_ADMIN_BOOTSTRAP_SCRIPT_ID` |
+| maintenance | `baseball-uniform-survey-maintenance-bootstrap` | `CLASPRC_JSON` / `BASEBALL_UNIFORM_SURVEY_MAINTENANCE_BOOTSTRAP_SCRIPT_ID` |
+
+- 行うのは target 別 allowlist（`TARGETS[target].files` + `appsscript.json`）の `clasp push` **だけ**です。version・deployment の作成／更新、Web App のアクセス設定の変更、Script Properties の設定、関数の実行は行いません（manifest の `webapp` はリポジトリ側の `MYSELF` / `USER_DEPLOYING` で、deployment が無いうちは公開範囲は生じません）。
+- Deployment ID の Secret は使いません。通常 deploy 用の Secret（`*_SCRIPT_ID` / `*_DEPLOYMENT_ID`）が環境にあれば拒否します。
+- 空の初期 project（placeholder の `Code.gs` のみ・versioned deployment なし）にしか push しません。target のファイルが既にある、別 target の project、手書きコードがある、versioned deployment がある場合は拒否するため、**bootstrap 成功後は再実行不要**（再実行しても何も変わりません）です。
+- PR では build / test / bundle dry-run のみ（secret・GAS 接続なし）。auto-merge は使いません。
+- 実行後の手順: OAuth 承認 → Script Properties → 最初の Web App deployment（`MYSELF`）→ 通常 deploy 用の Environment Secrets を登録 → 以降は通常 deploy workflow。
+
 以降の更新は、main で該当 workflow を `workflow_dispatch` し、Environment 承認を経て既存 deployment を更新します（`/exec` URL は変わりません）。**このリポジトリの変更だけでは production deploy は実行されません。**
 
 ## 3. `submit_excluded` E2E

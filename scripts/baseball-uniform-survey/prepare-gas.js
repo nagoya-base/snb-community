@@ -31,7 +31,9 @@ const TARGETS = {
     requiredScopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
     ownerOnly: true,
     scriptIdEnv: 'BASEBALL_UNIFORM_SURVEY_ADMIN_SCRIPT_ID',
-    deploymentIdEnv: 'BASEBALL_UNIFORM_SURVEY_ADMIN_DEPLOYMENT_ID'
+    deploymentIdEnv: 'BASEBALL_UNIFORM_SURVEY_ADMIN_DEPLOYMENT_ID',
+    // 初回 bootstrap（clasp push のみ）専用。通常 deploy 用の Script ID / Deployment ID とは別の Environment Secret。
+    bootstrapScriptIdEnv: 'BASEBALL_UNIFORM_SURVEY_ADMIN_BOOTSTRAP_SCRIPT_ID'
   },
   maintenance: {
     dir: BASE + '/maintenance',
@@ -40,7 +42,8 @@ const TARGETS = {
     requiredScopes: ['https://www.googleapis.com/auth/spreadsheets'],
     ownerOnly: true,
     scriptIdEnv: 'BASEBALL_UNIFORM_SURVEY_MAINTENANCE_SCRIPT_ID',
-    deploymentIdEnv: 'BASEBALL_UNIFORM_SURVEY_MAINTENANCE_DEPLOYMENT_ID'
+    deploymentIdEnv: 'BASEBALL_UNIFORM_SURVEY_MAINTENANCE_DEPLOYMENT_ID',
+    bootstrapScriptIdEnv: 'BASEBALL_UNIFORM_SURVEY_MAINTENANCE_BOOTSTRAP_SCRIPT_ID'
   }
 };
 // 初回に手動作成したGASプロジェクトに最初から入っている空のスタブ（Code.gs / コード.gs）は上書きしてよい。
@@ -88,6 +91,25 @@ function validateRemote(target, remoteDir) {
   return report;
 }
 
+// 初回 bootstrap 用：リモートが「空の初期 project」（placeholder のみ）であることを確認する。
+// 既に target のファイルがある（= bootstrap 済み）場合は拒否し、再実行で上書きさせない。Web App 設定が公開側になっていても拒否する。
+function validateBootstrapRemote(target, remoteDir) {
+  const cfg = targetConfig(target);
+  if (!cfg.bootstrapScriptIdEnv) throw new Error(`The ${target} GAS project has no bootstrap workflow.`);
+  const report = validateRemote(target, remoteDir);
+  if (report.some((r) => r.kind === 'expected')) {
+    throw new Error(`The ${target} GAS project already has deployed files (already bootstrapped); use the regular deploy workflow.`);
+  }
+  const manifest = JSON.parse(fs.readFileSync(path.join(remoteDir, MANIFEST), 'utf8'));
+  if (!isPlainObject(manifest)) throw new Error('Existing GAS manifest must be a JSON object.');
+  const extra = Object.keys(manifest).filter((k) => !MANAGED_KEYS.includes(k) && !PRESERVED_KEYS.includes(k));
+  if (extra.length) throw new Error('Existing GAS manifest has additional settings; review before overwriting.');
+  if (manifest.webapp !== undefined && !isOwnerOnlyWebapp(manifest.webapp)) {
+    throw new Error(`Existing ${target} Web App is not executeAs USER_DEPLOYING and access MYSELF; refusing to bootstrap.`);
+  }
+  return manifest;
+}
+
 function isOwnerOnlyWebapp(webapp) {
   return isPlainObject(webapp) && webapp.executeAs === OWNER_ONLY_WEBAPP.executeAs && webapp.access === OWNER_ONLY_WEBAPP.access;
 }
@@ -107,7 +129,8 @@ function validateRemoteManifest(target, manifest) {
 // リポジトリのmanifestが管理するキーはリポジトリ側を正とし、dependencies はリモートの値をそのまま残す。
 // Public の webapp はリモートの値を残す（公開範囲は CI で変更しない）。リポジトリ側は webapp を定義してはならない。
 // Admin / maintenance の webapp はリポジトリ側（MYSELF / USER_DEPLOYING）を正とし、scope は required と完全一致のみ許可する。
-function stageManifest(target, repoManifest, remoteManifest) {
+// bootstrapRemote（初回 push 時のリモート manifest。検証は validateBootstrapRemote 済み）からは dependencies だけを引き継ぐ。
+function stageManifest(target, repoManifest, remoteManifest, bootstrapRemote) {
   const cfg = targetConfig(target);
   if (!isPlainObject(repoManifest)) throw new Error('Repository manifest must be a JSON object.');
   const scopes = repoManifest.oauthScopes || [];
@@ -128,10 +151,12 @@ function stageManifest(target, repoManifest, remoteManifest) {
       if (Object.prototype.hasOwnProperty.call(remoteManifest, key)) staged[key] = JSON.parse(JSON.stringify(remoteManifest[key]));
     }
   }
+  if (bootstrapRemote && Object.prototype.hasOwnProperty.call(bootstrapRemote, 'dependencies')) staged.dependencies = JSON.parse(JSON.stringify(bootstrapRemote.dependencies));
   return staged;
 }
 
-function prepare(target, repoRoot, outputRoot, scriptId, remoteDir) {
+function prepare(target, repoRoot, outputRoot, scriptId, remoteDir, options) {
+  const bootstrap = Boolean(options && options.bootstrap);
   const cfg = targetConfig(target);
   if (!scriptId || !scriptId.trim() || scriptId !== scriptId.trim() || /\s/.test(scriptId)) {
     throw new Error('A single valid Script ID is required.');
@@ -144,14 +169,17 @@ function prepare(target, repoRoot, outputRoot, scriptId, remoteDir) {
     throw new Error(`Unexpected or missing source files for the baseball uniform survey ${target} GAS bundle.`);
   }
   let remoteManifest;
-  if (remoteDir) {
+  if (remoteDir && bootstrap) {
+    remoteManifest = validateBootstrapRemote(target, remoteDir);
+  } else if (remoteDir) {
     validateRemote(target, remoteDir);
     remoteManifest = JSON.parse(fs.readFileSync(path.join(remoteDir, MANIFEST), 'utf8'));
   }
+  if (bootstrap && !remoteDir) throw new Error('Bootstrap staging requires the pulled remote directory.');
   fs.mkdirSync(outputRoot, { recursive: true });
   for (const name of cfg.files) fs.copyFileSync(path.join(source, name), path.join(outputRoot, name));
   const repoManifest = JSON.parse(fs.readFileSync(path.join(source, MANIFEST), 'utf8'));
-  fs.writeFileSync(path.join(outputRoot, MANIFEST), JSON.stringify(stageManifest(target, repoManifest, remoteManifest), null, 2) + '\n');
+  fs.writeFileSync(path.join(outputRoot, MANIFEST), JSON.stringify(stageManifest(target, repoManifest, bootstrap ? null : remoteManifest, bootstrap ? remoteManifest : null), null, 2) + '\n');
   fs.writeFileSync(path.join(outputRoot, '.clasp.json'), JSON.stringify({ scriptId, rootDir: '.' }) + '\n', { mode: 0o600 });
   return [...cfg.files, MANIFEST];
 }
@@ -165,12 +193,22 @@ if (require.main === module) {
       console.log(`Existing ${target} GAS files after clasp pull (${report.length}):`);
       for (const r of report) console.log('  ' + JSON.stringify(r.name) + ' kind=' + r.kind);
       validateRemoteManifest(target, JSON.parse(fs.readFileSync(path.join(a, MANIFEST), 'utf8')));
+    } else if (mode === 'validate-bootstrap-remote') {
+      // validate-bootstrap-remote <admin|maintenance> <remoteDir>
+      validateBootstrapRemote(target, a);
+      console.log(`Existing ${target} GAS project is an empty initial project.`);
+    } else if (mode === 'stage-bootstrap') {
+      // stage-bootstrap <admin|maintenance> <repoRoot> <outputRoot> <remoteDir>   (Script ID は bootstrapScriptIdEnv)
+      const cfg = targetConfig(target);
+      if (!cfg.bootstrapScriptIdEnv) throw new Error(`The ${target} GAS project has no bootstrap workflow.`);
+      const files = prepare(target, a, b, process.env[cfg.bootstrapScriptIdEnv], c, { bootstrap: true });
+      console.log(`Prepared ${files.length} ${target} GAS files for the initial bootstrap push (including the manifest).`);
     } else if (mode === 'stage') {
       // stage <target> <repoRoot> <outputRoot> [remoteDir]   (Script ID は target 専用の環境変数 TARGETS[target].scriptIdEnv)
       const files = prepare(target, a, b, process.env[targetConfig(target).scriptIdEnv], c);
       console.log(`Prepared ${files.length} ${target} GAS files (including the manifest).`);
     } else {
-      throw new Error('Usage: prepare-gas.js validate-remote <public|admin|maintenance> <remoteDir> | stage <public|admin|maintenance> <repoRoot> <outputRoot> [remoteDir]');
+      throw new Error('Usage: prepare-gas.js validate-remote <public|admin|maintenance> <remoteDir> | stage <public|admin|maintenance> <repoRoot> <outputRoot> [remoteDir] | validate-bootstrap-remote <admin|maintenance> <remoteDir> | stage-bootstrap <admin|maintenance> <repoRoot> <outputRoot> <remoteDir>');
     }
   } catch (error) {
     console.error(error.message);
@@ -178,4 +216,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { prepare, validateRemote, validateRemoteManifest, stageManifest, normalizeRemoteName, targetConfig, TARGETS, OWNER_ONLY_WEBAPP, MANIFEST, BASE };
+module.exports = { prepare, validateRemote, validateBootstrapRemote, validateRemoteManifest, stageManifest, normalizeRemoteName, targetConfig, TARGETS, OWNER_ONLY_WEBAPP, MANIFEST, BASE };
