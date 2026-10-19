@@ -6,7 +6,7 @@ name: Baseball uniform survey maintenance GAS
 #  - workflow_dispatch (main 限定・デプロイ対象は実行開始時点の main HEAD = github.sha): テスト → deploy ジョブ（Environment 承認）。
 #    production deploy は明示操作でのみ実行される（push / schedule では動かない）。
 #  - update-deployment は Web App のアクセス設定を変更しないため、dispatch 入力 webapp_access_set_to_myself（既存 deployment が「自分のみ」であることを確認済み）が true でなければ配備しない。
-#  - 初回の GAS プロジェクト作成・OAuth 承認・Script Properties 設定・最初の Web App deployment 作成は bootstrap として手動（README / LAUNCH_READINESS 参照）。以降は既存 deployment を更新する。
+#  - 初回の GAS プロジェクト作成・OAuth 承認・Script Properties 設定・最初の Web App deployment 作成は手動。最初のコード push は手動、または専用 bootstrap workflow（baseball-uniform-survey-bootstrap-gas.yml）のどちらでも可（README / LAUNCH_READINESS 参照）。以降は既存 deployment を更新する。
 
 on:
   pull_request:

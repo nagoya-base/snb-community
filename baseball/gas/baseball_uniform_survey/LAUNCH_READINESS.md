@@ -40,12 +40,15 @@ Script Properties（値は repo / Secrets / ログに出さない）:
 
 ### 方式（Public / Admin / maintenance 共通）
 
-3 project とも、**PR は build / test / bundle dry-run のみ**、**本番 deploy は main からの `workflow_dispatch` + 専用 GitHub Environment 承認で、既存 Web App deployment を更新する**方式です。次だけは bootstrap として**手動**で行い、workflow は作成しません。
+3 project とも、**PR は build / test / bundle dry-run のみ**、**本番 deploy は main からの `workflow_dispatch` + 専用 GitHub Environment 承認で、既存 Web App deployment を更新する**方式です。初回 bootstrap は次のとおり整理します。
 
-1. Apps Script project の初回作成（Public / Admin / maintenance は**必ず別 project**）
-2. OAuth 承認
-3. Script Properties の設定
-4. 最初の Web App deployment の作成
+1. Apps Script project の作成自体は**手動**（Public / Admin / maintenance は**必ず別 project**）
+2. Admin / maintenance の**最初のコード push**は、(a) 手動で行う方法、(b) 専用 bootstrap workflow `baseball-uniform-survey-bootstrap-gas.yml` を使う方法のどちらでも可。bootstrap workflow が行うのは初回の allowlist `clasp push` のみ
+3. OAuth 承認は**手動**
+4. Script Properties の設定は**手動**
+5. 最初の Web App deployment の作成は**手動**
+
+bootstrap 成功後は bootstrap workflow を再利用せず、通常 deploy workflow へ移行します。Public は bootstrap workflow の対象外（初回 push も手動）です。
 
 | target | workflow | Environment | Secrets（`CLASPRC_JSON` に加えて） | bundle allowlist |
 |---|---|---|---|---|
@@ -64,14 +67,29 @@ Script Properties（値は repo / Secrets / ログに出さない）:
 - Admin / maintenance は、リポジトリ側 manifest もリモートの manifest も `executeAs: USER_DEPLOYING` / `access: MYSELF` でなければ配備しません。`update-deployment` は access を変更しないため、dispatch 入力 `webapp_access_set_to_myself` を確認済みの `true` にしないと、checkout / clasp より前に失敗します。
 - 上記は `tests/deploy.test.js` / `tests/deploy_isolation.test.js` が検査します（実 Google へは接続しません）。
 
-### 初回 bootstrap（手動。各 project 共通）
+### 初回 bootstrap（project 作成・OAuth・Script Properties・最初の deployment は手動。各 project 共通）
 
 1. Apps Script で **新しい別 project** を作る（他の target の project を流用しない）。
-2. 初回だけ、リポジトリの該当ディレクトリ（`public/` / `admin/` / `maintenance/`）のファイルだけを貼る／push し、`appsscript.json` の `oauthScopes` と `webapp` が上表・下記どおりであることを確認する。別ディレクトリのファイルを混ぜない。
+2. 初回だけ、リポジトリの該当ディレクトリ（`public/` / `admin/` / `maintenance/`）のファイルだけを貼る／push し（Admin / maintenance は下記の bootstrap workflow でも可。Public は手動のみ）、`appsscript.json` の `oauthScopes` と `webapp` が上表・下記どおりであることを確認する。別ディレクトリのファイルを混ぜない。
 3. OAuth 承認と Script Properties の設定（Admin / maintenance は `RESPONSES_SPREADSHEET_ID` だけ。Public は README の手順）。
 4. Web App の最初の deployment を作る。Admin / maintenance は `executeAs: USER_DEPLOYING` / `access: MYSELF`、Public は README のとおり。
 5. Script ID / Deployment ID と clasp credentials をその target 専用の Environment Secrets に登録する。
 6. エディタの「プロジェクトの設定」で scope と Web App 設定が manifest と一致していることを目視確認する。
+
+#### Admin / maintenance の最初のコード push を bootstrap workflow で行う（任意。手動 push でも可。Public は対象外）
+
+手順 2 の「初回 push」だけは、専用 workflow `baseball-uniform-survey-bootstrap-gas.yml`（手動 `workflow_dispatch`・main 限定）で代替できます。通常の deploy workflow とは Environment・Secret ともに分離されています。
+
+| target | Environment（main 限定・承認者あり） | Secrets |
+|---|---|---|
+| Admin | `baseball-uniform-survey-admin-bootstrap` | `CLASPRC_JSON` / `BASEBALL_UNIFORM_SURVEY_ADMIN_BOOTSTRAP_SCRIPT_ID` |
+| maintenance | `baseball-uniform-survey-maintenance-bootstrap` | `CLASPRC_JSON` / `BASEBALL_UNIFORM_SURVEY_MAINTENANCE_BOOTSTRAP_SCRIPT_ID` |
+
+- 行うのは target 別 allowlist（`TARGETS[target].files` + `appsscript.json`）の `clasp push` **だけ**です。version・deployment の作成／更新、Web App のアクセス設定の変更、Script Properties の設定、関数の実行は行いません（manifest の `webapp` はリポジトリ側の `MYSELF` / `USER_DEPLOYING` で、deployment が無いうちは公開範囲は生じません）。
+- Deployment ID の Secret は使いません。通常 deploy 用の Secret（`*_SCRIPT_ID` / `*_DEPLOYMENT_ID`）が環境にあれば拒否します。
+- 空の初期 project（placeholder の `Code.gs` のみ・versioned deployment なし）にしか push しません。target のファイルが既にある、別 target の project、手書きコードがある、versioned deployment がある場合は拒否するため、**bootstrap 成功後は再実行不要**（再実行しても何も変わりません）です。
+- PR では build / test / bundle dry-run のみ（secret・GAS 接続なし）。auto-merge は使いません。
+- 実行後の手順: OAuth 承認 → Script Properties → 最初の Web App deployment（`MYSELF`）→ 通常 deploy 用の Environment Secrets を登録 → 以降は通常 deploy workflow。
 
 以降の更新は、main で該当 workflow を `workflow_dispatch` し、Environment 承認を経て既存 deployment を更新します（`/exec` URL は変わりません）。**このリポジトリの変更だけでは production deploy は実行されません。**
 
