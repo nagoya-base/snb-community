@@ -58,7 +58,7 @@ condition の評価規則:
 | multiple | `applyMultipleSelection`（exclusive の排他制御）/ `otherTextInfo`（「その他」本文の要否・上限） |
 | scale / ordinal | `getScale`（points / notApplicable / orderedIds / allIds）/ `ordinalOrder`（`orderedIds` と、尺度外の `independentIds`） |
 | publication | `getPublication` / `isPublic` / `publicQuestionIds` / `denominatorOf` / `countQuestionReached` |
-| stale 値 | `findStaleValues`（`hidden` / `option_unavailable` / `other_text_stale`）/ `sanitizeAnswers`（変化がなくなるまで除去） |
+| stale 値 | `findStaleValues`（`hidden` / `option_unavailable` / `other_text_stale`）/ `sanitizeAnswers`（変化がなくなるまで除去。Frontend の送信前処理用で、server では使わない） |
 | 検証 | `validateAnswers(schema, answers, otherTexts)`（required は visible のみ、hidden の値は `hidden_field`）/ `findTermination` |
 | test mode | `getTestMode` / `isProductionResponseMode` |
 
@@ -69,7 +69,10 @@ test mode の正本は `response_mode + test_run_id` です。`preview_no_submit
 ### #380 / #381 での再利用前提
 
 - 本ファイルは `module.exports`（Node.js）とグローバル `SurveyCore`（ブラウザ・Apps Script）の両方で使える ES5 です。schema は引数で受け取るため、Public GAS / Frontend / Admin へ**同一内容で配布**する生成・build は #380 以降で追加します（本 Issue では行いません）。
-- server validation は `sanitizeAnswers` 後の payload を `validateAnswers` に通す想定です。Frontend は hidden になった設問の旧値を送信前に `sanitizeAnswers` で除去します。
+- 責務分離（`sanitizeAnswers` は Frontend 専用、server は受信 payload をそのまま検証）:
+  - **Frontend**: 送信前に `sanitizeAnswers` を通し、hidden になった設問の旧値・候補外になった dynamic の旧値・不要な other 本文を除去してから送る。
+  - **Server / Public GAS**: 受信 payload に `sanitizeAnswers` を通さず、**まず受信したままを `validateAnswers`** に渡す。hidden / unknown / stale（`hidden_field` / `unknown_field` / `invalid_option` / `other_text_unexpected` 等）は黙って消さず**拒否**する。sanitize で先に消すと、本来拒否すべき不正 payload を受理してしまう。
+  - **保存**: 検証に通った `validateAnswers(...).clean` だけを保存する（受信 payload や sanitize 結果を直接保存しない）。
 - 本 Issue の範囲外（#380 以降）: respondent hash の canonical serialization、最短回答時間の server 検証、test token（URL fragment → sessionStorage → POST body）の検証、保存、Public GAS endpoint、Frontend UI、Admin、public snapshot、Spreadsheet、deploy。
 
 ## 検証とテスト
