@@ -161,7 +161,7 @@ test('Admin の画面・コードから respondent_hash を返さない（Admin 
   assert.ok(!/(console|Logger)\.(log|error)\([^)]*(answers|row|hash)/i.test(sources().map((s) => s.code).join('\n')));
 });
 
-test('CI：既存の baseball survey workflow が #382 の paths と Admin / snapshot / 結果ページのテストを実行し、Admin は deploy 対象にしない', () => {
+test('CI：既存の baseball survey workflow が #382 の paths と Admin / snapshot / 結果ページのテストを実行し、Admin は専用 workflow・専用 bundle で deploy する（Public の bundle には含めない）', () => {
   const repo = path.join(ROOT, '..', '..', '..');
   const publicWorkflow = fs.readFileSync(path.join(repo, '.github/workflows/baseball-uniform-survey-public-gas.yml'), 'utf8');
   const schemaWorkflow = fs.readFileSync(path.join(repo, '.github/workflows/baseball-uniform-survey-schema.yml'), 'utf8');
@@ -171,7 +171,7 @@ test('CI：既存の baseball survey workflow が #382 の paths と Admin / sna
   });
   assert.match(publicWorkflow, /tests\/aggregate\.test\.js tests\/admin_gas\.test\.js tests\/results_page\.test\.js/);
   const prepare = require(path.join(repo, 'scripts', 'baseball-uniform-survey', 'prepare-gas.js'));
-  assert.ok(prepare.FILES.every((f) => !/Dashboard|Snapshot|FreeText|admin/i.test(f)), 'Public GAS の bundle に Admin を含めない');
+  assert.ok(prepare.TARGETS.public.files.every((f) => !/Dashboard|Snapshot|FreeText|admin/i.test(f)), 'Public GAS の bundle に Admin を含めない');
   assert.ok(!/SNAPSHOT_STATE|RESPONSES_SPREADSHEET_ID/.test(publicWorkflow));
 });
 

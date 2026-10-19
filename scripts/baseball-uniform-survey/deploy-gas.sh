@@ -2,23 +2,56 @@
 set -euo pipefail
 umask 077
 
-# Issue #380：名古屋野球ユニ部アンケート Public GAS を更新する。手動 dispatch のワークフローからのみ実行する（PR では実行しない）。
+# Issue #380 / #390：名古屋野球ユニ部アンケート Public / Admin / maintenance GAS を更新する。手動 dispatch のワークフローからのみ実行する（PR では実行しない）。
 # 既存の Web App deployment を「更新」するだけで、deployment を新規作成せず、Script Properties・
 # SPREADSHEET_ID・RESPONDENT_SALT・TEST_TOKEN・Web Appのアクセス設定には触れない（/exec URL は変わらない）。
+# 初回の project 作成・OAuth 承認・Script Properties・最初の Web App deployment 作成は bootstrap として手動（README 参照）。
+#   BASEBALL_UNIFORM_SURVEY_TARGET        public | admin | maintenance（workflow が固定で渡す）
 #   CLASPRC_JSON                          GitHub Environment secret
-#   BASEBALL_UNIFORM_SURVEY_SCRIPT_ID     GitHub Environment secret（対象GASのScript ID）
-#   BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID GitHub Environment secret（既存Web AppのDeployment ID）
+#   target 専用の Script ID / Deployment ID（GitHub Environment secret。他 target の名前は受け付けず、設定されていれば拒否）
+#     public       BASEBALL_UNIFORM_SURVEY_SCRIPT_ID             / BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID
+#     admin        BASEBALL_UNIFORM_SURVEY_ADMIN_SCRIPT_ID       / BASEBALL_UNIFORM_SURVEY_ADMIN_DEPLOYMENT_ID
+#     maintenance  BASEBALL_UNIFORM_SURVEY_MAINTENANCE_SCRIPT_ID / BASEBALL_UNIFORM_SURVEY_MAINTENANCE_DEPLOYMENT_ID
 #   BASEBALL_UNIFORM_SURVEY_SOURCE_SHA    配備するmain HEAD（ワークフローが github.sha を渡す）
+#   BASEBALL_UNIFORM_SURVEY_OWNER_ONLY_CONFIRMED  admin / maintenance のみ必須。「既存 deployment のアクセスを『自分のみ（MYSELF）』へ
+#                                      確認済み」（"true" 以外は clasp を一切呼ばず拒否）。update-deployment は access を変更しないため。
 # 受付期間（opens_at / closes_at）は survey.config.json（生成物に埋め込み済み）が正本で、このスクリプトは設定しない。
 : "${GITHUB_WORKSPACE:?Repository checkout is required}"
 : "${RUNNER_TEMP:?Runner temporary directory is required}"
+: "${BASEBALL_UNIFORM_SURVEY_TARGET:?BASEBALL_UNIFORM_SURVEY_TARGET (public|admin|maintenance) is required}"
 : "${CLASPRC_JSON:?CLASPRC_JSON secret is required}"
-: "${BASEBALL_UNIFORM_SURVEY_SCRIPT_ID:?BASEBALL_UNIFORM_SURVEY_SCRIPT_ID secret is required}"
-: "${BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID:?BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID secret is required}"
 : "${BASEBALL_UNIFORM_SURVEY_SOURCE_SHA:?Reviewed main SHA is required}"
 
+target="$BASEBALL_UNIFORM_SURVEY_TARGET"
+case "$target" in
+  public)      script_id_var=BASEBALL_UNIFORM_SURVEY_SCRIPT_ID;             deployment_id_var=BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID ;;
+  admin)       script_id_var=BASEBALL_UNIFORM_SURVEY_ADMIN_SCRIPT_ID;       deployment_id_var=BASEBALL_UNIFORM_SURVEY_ADMIN_DEPLOYMENT_ID ;;
+  maintenance) script_id_var=BASEBALL_UNIFORM_SURVEY_MAINTENANCE_SCRIPT_ID; deployment_id_var=BASEBALL_UNIFORM_SURVEY_MAINTENANCE_DEPLOYMENT_ID ;;
+  *) echo 'BASEBALL_UNIFORM_SURVEY_TARGET must be "public", "admin" or "maintenance".' >&2; exit 1 ;;
+esac
+# 別 target 用の Script ID / Deployment ID が環境に混ざっていたら、別 project へ push しないよう何もせず拒否する。
+for var in BASEBALL_UNIFORM_SURVEY_SCRIPT_ID BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID \
+           BASEBALL_UNIFORM_SURVEY_ADMIN_SCRIPT_ID BASEBALL_UNIFORM_SURVEY_ADMIN_DEPLOYMENT_ID \
+           BASEBALL_UNIFORM_SURVEY_MAINTENANCE_SCRIPT_ID BASEBALL_UNIFORM_SURVEY_MAINTENANCE_DEPLOYMENT_ID; do
+  if [[ "$var" != "$script_id_var" && "$var" != "$deployment_id_var" && -n "${!var:-}" ]]; then
+    echo "Refusing to deploy $target: an ID that belongs to another GAS project is present in the environment. Nothing was changed." >&2
+    exit 1
+  fi
+done
+script_id="${!script_id_var:-}"
+deployment_id="${!deployment_id_var:-}"
+[[ -n "$script_id" ]] || { echo "Script ID secret for $target is required." >&2; exit 1; }
+[[ -n "$deployment_id" ]] || { echo "Deployment ID secret for $target is required." >&2; exit 1; }
+export BASEBALL_UNIFORM_SURVEY_GAS_SCRIPT_ID="$script_id" BASEBALL_UNIFORM_SURVEY_GAS_DEPLOYMENT_ID="$deployment_id"
+
+# admin / maintenance: アクセス設定が MYSELF であることの確認。ここで拒否した場合は clasp を一切呼ばない。
+if [[ "$target" != 'public' && "${BASEBALL_UNIFORM_SURVEY_OWNER_ONLY_CONFIRMED:-}" != 'true' ]]; then
+  echo "Refusing to deploy $target: confirm that the existing Web App deployment access is already \"Only myself\" (MYSELF). Nothing was changed." >&2
+  exit 1
+fi
+
 prepare="$GITHUB_WORKSPACE/scripts/baseball-uniform-survey/prepare-gas.js"
-deploy_root="$(mktemp -d "$RUNNER_TEMP/baseball-uniform-survey.XXXXXXXX")"
+deploy_root="$(mktemp -d "$RUNNER_TEMP/baseball-uniform-survey-$target.XXXXXXXX")"
 trap 'rm -rf "$deploy_root"' EXIT
 auth_file="$deploy_root/.clasprc.json"
 remote_dir="$deploy_root/remote"
@@ -36,7 +69,7 @@ if (!auth || typeof auth !== 'object' || !Object.keys(auth).length) {
 }
 fs.writeFileSync(process.env.AUTH_FILE, process.env.CLASPRC_JSON, { mode: 0o600 });
 fs.writeFileSync(process.env.REMOTE_DIR + '/.clasp.json',
-  JSON.stringify({ scriptId: process.env.BASEBALL_UNIFORM_SURVEY_SCRIPT_ID, rootDir: '.' }), { mode: 0o600 });
+  JSON.stringify({ scriptId: process.env.BASEBALL_UNIFORM_SURVEY_GAS_SCRIPT_ID, rootDir: '.' }), { mode: 0o600 });
 NODE
 
 cd "$remote_dir"
@@ -49,7 +82,7 @@ DEPLOYMENTS="$deploy_root/deployments-before.json" node <<'NODE'
 const fs = require('fs');
 const deployments = JSON.parse(fs.readFileSync(process.env.DEPLOYMENTS, 'utf8'));
 if (!Array.isArray(deployments) ||
-    !deployments.some(item => item.deploymentId === process.env.BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID)) {
+    !deployments.some(item => item.deploymentId === process.env.BASEBALL_UNIFORM_SURVEY_GAS_DEPLOYMENT_ID)) {
   throw new Error('Deployment ID is not part of this existing GAS project.');
 }
 NODE
@@ -59,13 +92,13 @@ if ! clasp --auth "$auth_file" pull >"$deploy_root/pull.log" 2>&1; then
   echo 'Cannot pull existing GAS project; refusing to push.' >&2
   exit 1
 fi
-if ! node "$prepare" validate-remote "$remote_dir"; then
+if ! node "$prepare" validate-remote "$target" "$remote_dir"; then
   echo 'Existing project does not match the expected GAS project; refusing to replace it.' >&2
   exit 1
 fi
 
 # 3) allowlist のファイルと、リモートの webapp 設定を保った manifest をステージングして push。
-if ! node "$prepare" stage "$GITHUB_WORKSPACE" "$project_dir" "$remote_dir"; then
+if ! node "$prepare" stage "$target" "$GITHUB_WORKSPACE" "$project_dir" "$remote_dir"; then
   echo 'Failed to prepare the GAS bundle.' >&2
   exit 1
 fi
@@ -74,14 +107,14 @@ if ! clasp --auth "$auth_file" show-file-status >"$deploy_root/status.log" 2>&1;
   echo 'Cannot determine clasp push file status.' >&2
   exit 1
 fi
-echo "Pushing reviewed files to the existing baseball uniform survey GAS project."
+echo "Pushing reviewed files to the existing baseball uniform survey $target GAS project."
 if ! clasp --auth "$auth_file" push --force >"$deploy_root/push.log" 2>&1; then
   echo 'clasp push failed. No version or deployment update was attempted.' >&2
   exit 1
 fi
 
 # 4) 新しい version を作り、既存 deployment だけをその version に更新する（新規 deployment は作らない）。
-if ! clasp --auth "$auth_file" --json create-version "baseball-uniform-survey public main ${BASEBALL_UNIFORM_SURVEY_SOURCE_SHA}" \
+if ! clasp --auth "$auth_file" --json create-version "baseball-uniform-survey $target main ${BASEBALL_UNIFORM_SURVEY_SOURCE_SHA}" \
     >"$deploy_root/version.json" 2>"$deploy_root/version.log"; then
   echo 'Creating a GAS version failed. The existing Web App deployment was not updated.' >&2
   exit 1
@@ -94,8 +127,8 @@ process.stdout.write(String(version));
 NODE
 )"
 
-if ! clasp --auth "$auth_file" --json update-deployment "$BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID" \
-    --versionNumber "$version_number" --description "baseball-uniform-survey public main ${BASEBALL_UNIFORM_SURVEY_SOURCE_SHA}" \
+if ! clasp --auth "$auth_file" --json update-deployment "$deployment_id" \
+    --versionNumber "$version_number" --description "baseball-uniform-survey $target main ${BASEBALL_UNIFORM_SURVEY_SOURCE_SHA}" \
     >"$deploy_root/update.json" 2>"$deploy_root/update.log"; then
   echo 'Updating the existing Web App deployment failed.' >&2
   exit 1
@@ -103,7 +136,7 @@ fi
 UPDATE_FILE="$deploy_root/update.json" VERSION="$version_number" node <<'NODE'
 const fs = require('fs');
 const result = JSON.parse(fs.readFileSync(process.env.UPDATE_FILE, 'utf8'));
-if (result.deploymentId !== process.env.BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID ||
+if (result.deploymentId !== process.env.BASEBALL_UNIFORM_SURVEY_GAS_DEPLOYMENT_ID ||
     result.versionNumber !== Number(process.env.VERSION)) {
   throw new Error('Updated deployment ID or version differs from the requested existing deployment.');
 }
@@ -121,7 +154,7 @@ const fs = require('fs');
 const deployments = JSON.parse(fs.readFileSync(process.env.DEPLOYMENTS, 'utf8'));
 if (!Array.isArray(deployments)) process.exit(2);
 const matches = deployments.some(item =>
-  item.deploymentId === process.env.BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID &&
+  item.deploymentId === process.env.BASEBALL_UNIFORM_SURVEY_GAS_DEPLOYMENT_ID &&
   item.versionNumber === Number(process.env.VERSION));
 process.exit(matches ? 0 : 1);
 NODE
@@ -142,4 +175,4 @@ if [[ "$verification_ok" -ne 1 ]]; then
   exit 1
 fi
 
-echo "Existing baseball uniform survey Web App deployment now references version $version_number."
+echo "Existing baseball uniform survey $target Web App deployment now references version $version_number."
