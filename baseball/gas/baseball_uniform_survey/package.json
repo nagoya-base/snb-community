@@ -1,9 +1,11 @@
 {
   "name": "snb-baseball-uniform-survey",
   "private": true,
-  "description": "名古屋野球ユニ部アンケート design v2.17（Issue #377 / #378 / #379）。schema正本の参照整合テストと専用survey-core。",
+  "description": "名古屋野球ユニ部アンケート design v2.17（Issue #377 / #378 / #379 / #380）。schema正本の参照整合テスト・専用survey-core・Public GAS。",
   "scripts": {
     "validate": "node tools/validate-schema.js",
-    "test": "node --test \"tests/*.test.js\""
+    "build": "node tools/build-public-gas.js",
+    "build:check": "node tools/build-public-gas.js --check",
+    "test": "npm run build:check && node --test \"tests/*.test.js\""
   }
 }

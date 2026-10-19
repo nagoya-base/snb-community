@@ -1,0 +1,8 @@
+{
+  "name": "snb-baseball-uniform-survey-deploy-tools",
+  "private": true,
+  "description": "Issue #380 の Public GAS デプロイ用ツール（clasp を lockfile で固定し、CI では npm ci で導入する）。",
+  "devDependencies": {
+    "@google/clasp": "3.4.1"
+  }
+}
