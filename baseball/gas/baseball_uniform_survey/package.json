@@ -7,5 +7,8 @@
     "build": "node tools/build-public-gas.js",
     "build:check": "node tools/build-public-gas.js --check",
     "test": "npm run build:check && node --test \"tests/*.test.js\""
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
   }
 }

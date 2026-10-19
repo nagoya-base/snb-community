@@ -1,6 +1,7 @@
 name: Baseball uniform survey Public GAS
 
-# Issue #380「名古屋野球ユニ部アンケート Public GAS」のCI / デプロイ。
+# Issue #380「名古屋野球ユニ部アンケート Public GAS」/ #381「Frontend」のCI / デプロイ。
+# Frontend（baseball/baseball-uniform-survey*）は GitHub Pages から配信されるため、この workflow では deploy しない（GAS のみ deploy 対象）。
 # 他の survey（fetish / costume portrait）の workflow / script / Environment / Secret とは独立。
 #  - Pull request: テスト・生成物の差分検査・配備バンドルの dry-run のみ（本番 deployment は更新しない。secret も使わない）。
 #  - workflow_dispatch (main 限定・デプロイ対象は実行開始時点の main HEAD = github.sha): テスト → deploy ジョブ（Environment 承認）。
@@ -14,6 +15,9 @@ on:
     paths:
       - '.github/workflows/baseball-uniform-survey-public-gas.yml'
       - 'baseball/gas/baseball_uniform_survey/**'
+      - 'baseball/baseball-uniform-survey.html'
+      - 'baseball/baseball-uniform-survey/**'
+      - 'analytics.js'
       - 'scripts/baseball-uniform-survey/**'
   workflow_dispatch:
 
@@ -46,13 +50,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install test dependencies (npm ci, lockfile only)
+        working-directory: baseball/gas/baseball_uniform_survey
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Validate survey.schema.json
         working-directory: baseball/gas/baseball_uniform_survey
         run: npm run validate
-      - name: Check the generated Public GAS file against schema, config and core
+      - name: Check the generated Public GAS / Frontend files against schema, config and core
         working-directory: baseball/gas/baseball_uniform_survey
         run: npm run build:check
-      - name: Run survey tests (schema, core, Public GAS, deploy scripts)
+      - name: Run survey tests (schema, core, Public GAS, Frontend, analytics opt-out, deploy scripts)
         working-directory: baseball/gas/baseball_uniform_survey
         run: npm test
       - name: Validate the allowlisted public bundle without GAS access (dry-run)

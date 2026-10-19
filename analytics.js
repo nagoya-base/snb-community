@@ -14,6 +14,10 @@
  * 同一の瞬間に起きるため、両方を送ると1件の申込を二重に計上することになる。
  * 架空の完了イベントは作らない。
  *
+ * ページ単位の section_view 抑止: <body data-disable-section-view="true"> を付けたページでは、
+ * trackSectionView / track('section_view') / data-section-view の自動計測をすべて行わない
+ * （アンケート等、セクション名・進捗を GA4 へ送りたくないページ用。他ページの計測には影響しない）。
+ *
  * data-cta-name / data-outbound-channel / data-section-view / data-faq-id を
  * 持つ要素は、ページ側で個別にスクリプトを書かなくても自動的に計測される
  * （DOMContentLoaded後にイベント委譲・IntersectionObserverを一括設定する）。
@@ -48,8 +52,15 @@
     return context;
   }
 
+  /* <body data-disable-section-view="true"> のページでは section_view を一切送らない。 */
+  function isSectionViewDisabled() {
+    var body = document.body;
+    return !!body && body.getAttribute('data-disable-section-view') === 'true';
+  }
+
   function track(eventName, params) {
     if (!eventName || !isTrackableEnvironment()) return;
+    if (eventName === 'section_view' && isSectionViewDisabled()) return;
 
     var payload = pageContext();
     if (params) {
@@ -127,7 +138,7 @@
 
     /* セクション到達（同一セクションにつき1回）。 */
     trackSectionView: function (sectionId) {
-      if (!sectionId || sectionViewFired[sectionId]) return;
+      if (!sectionId || sectionViewFired[sectionId] || isSectionViewDisabled()) return;
       sectionViewFired[sectionId] = true;
       track('section_view', { section_id: sectionId });
     }
@@ -161,7 +172,7 @@
       });
     });
 
-    if ('IntersectionObserver' in window) {
+    if ('IntersectionObserver' in window && !isSectionViewDisabled()) {
       var sectionObserver = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (!entry.isIntersecting) return;

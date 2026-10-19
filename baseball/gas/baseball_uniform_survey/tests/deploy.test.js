@@ -66,7 +66,7 @@ test('workflow：PRはテスト・dry-runのみで、production deployは手動d
   const verify = job(workflow, 'verify');
   const deploy = job(workflow, 'deploy');
   assert.ok(!/secrets\./.test(verify) && !/deploy-gas\.sh/.test(verify) && !/CLASPRC/.test(verify) && !/environment:/.test(verify), 'verify に secret / deploy を置かない');
-  for (const step of ['npm run validate', 'npm run build:check', 'npm test', 'dry-run']) assert.ok(verify.includes(step), step);
+  for (const step of ['npm ci --ignore-scripts', 'npm run validate', 'npm run build:check', 'npm test', 'dry-run']) assert.ok(verify.includes(step), step);
   assert.match(deploy, /if: github\.event_name == 'workflow_dispatch'/);
   assert.match(deploy, /needs: verify/);
   assert.match(deploy, /environment: baseball-uniform-survey-public-production/);
