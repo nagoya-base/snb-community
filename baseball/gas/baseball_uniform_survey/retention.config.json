@@ -1,0 +1,12 @@
+{
+  "config_version": 1,
+  "owner": "nagoya-base",
+  "policy_status": "unset",
+  "policy_version": null,
+  "retention_end_date": null,
+  "retention_rule": null,
+  "keep_final_snapshot": null,
+  "cleanup_operator": null,
+  "verification_method": null,
+  "inventory_reviewed": []
+}

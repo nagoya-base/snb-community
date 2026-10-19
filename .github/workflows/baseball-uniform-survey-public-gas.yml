@@ -67,7 +67,7 @@ jobs:
         run: npm test
       - name: Run Admin aggregation / publication / snapshot / results page tests (fixtures only, no real responses or Spreadsheet)
         working-directory: baseball/gas/baseball_uniform_survey
-        run: node --test tests/aggregate.test.js tests/admin_gas.test.js tests/results_page.test.js
+        run: node --test tests/aggregate.test.js tests/admin_gas.test.js tests/results_page.test.js tests/maintenance_core.test.js tests/maintenance_gas.test.js
       - name: Validate the allowlisted public bundle without GAS access (dry-run)
         run: |
           set -euo pipefail
