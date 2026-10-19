@@ -170,7 +170,7 @@ test('testModes.activation: preview_no_submit / closed_view は client-only、su
 });
 
 test('公開 repo 上の注意: survey ディレクトリに実データ・secret を置かない', () => {
-  const allowed = new Set(['.json', '.js', '.md', '.gs']);
+  const allowed = new Set(['.json', '.js', '.md', '.gs', '.html']); // .html は Admin GAS の Dashboard.html（Issue #382）
   const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const p = path.join(dir, e.name);
     if (e.name === 'node_modules') return [];
@@ -182,7 +182,8 @@ test('公開 repo 上の注意: survey ディレクトリに実データ・secre
   const secretLike = /(?:salt|secret|token)\s*["']?\s*[:=]\s*["'][A-Za-z0-9+/_-]{16,}/i;
   assert.ok(!secretLike.test(raw), 'secret らしき値');
   // Public GAS（Issue #380）と config にも secret / salt / token の実値を置かない（Script Properties のみ）。
-  for (const file of walk(path.join(SURVEY_DIR, 'public')).concat(path.join(SURVEY_DIR, 'survey.config.json'))) {
+  // Admin GAS（Issue #382）にも置かない。
+  for (const file of walk(path.join(SURVEY_DIR, 'public')).concat(walk(path.join(SURVEY_DIR, 'admin')), path.join(SURVEY_DIR, 'survey.config.json'))) {
     assert.ok(!secretLike.test(fs.readFileSync(file, 'utf8')), `secret らしき値: ${path.relative(SURVEY_DIR, file)}`);
   }
 });

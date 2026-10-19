@@ -423,6 +423,20 @@ test('通信失敗・server_error は入力を保持して再送できる', asyn
 
 // ── test mode ──
 
+test('結果ページ連携（#382）：本番の完了画面だけが、存在する公開結果ページへリンクする（test mode では出さない）', async () => {
+  const REPO = path.join(__dirname, '..', '..', '..', '..');
+  const prod = await submitRoute(ROUTES.attendee);
+  const link = prod.document.querySelector('#bus-app a[href="baseball-uniform-survey-results.html"]');
+  assert.ok(link, '公開結果へのリンク');
+  assert.strictEqual(link.textContent, '公開結果のページへ');
+  assert.ok(fs.existsSync(path.join(REPO, 'baseball', link.getAttribute('href'))), 'リンク先のページが存在する');
+  const preview = await openPage({ hash: '#test=preview_no_submit' });
+  await walkToReview(preview, ROUTES.low_interest);
+  click(preview.document, 'bus-next');
+  await settle();
+  assert.strictEqual(preview.document.querySelector('#bus-app a[href*="results"]'), null);
+});
+
 test('preview_no_submit：入力→確認→完了まで確認でき、通信・GA4 を一切行わない', async () => {
   const env = await openPage({ hash: '#test=preview_no_submit' });
   assert.match(env.document.getElementById('bus-test-banner').textContent, /プレビュー/);

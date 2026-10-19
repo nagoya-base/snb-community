@@ -2,7 +2,8 @@
 
 親Issue #377 / 本ディレクトリの範囲は Issue #378（schema 正本の配置・参照整合 validation・CI）、Issue #379（専用 survey-core の fork と v2.17 構文対応）、Issue #380（Public GAS・保存・匿名重複抑止・server validation・test mode・受付期間・通知・deploy workflow）です。
 Issue #381 で回答 Frontend（`baseball/baseball-uniform-survey.html` と `baseball/baseball-uniform-survey/`）・route 進捗 UX・test UI・GA4 最小計測・analytics.js の section_view opt-out を追加しました（下記「Frontend」）。
-Admin・公開結果ページ（#382）、maintenance/finalize（#383）は後続Issueで追加します。
+Issue #382 で Admin 集計・publication 判定・small-cell / complementary suppression・privacy-safe snapshot・公開結果ページを追加しました（下記「Admin と公開結果」）。
+maintenance / retention cleanup / close 後 finalize（#383）は後続Issueで追加します（本ディレクトリでは未着手）。
 
 ## 正本
 
@@ -277,6 +278,94 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 3. production で 1 件送信 → `response_mode=production` で保存、通知（有効時）、GA4 DebugView に `form_start` / `survey_submit` だけが出る（`section_view` と回答値が出ない）ことを確認する。
 4. iOS Safari と Android Chrome で 390px 幅の表示・キーボード・固定ナビを確認する。
 
+## Admin と公開結果（Issue #382）
+
+| ファイル | 役割 |
+|---|---|
+| `src/survey-aggregate.js` | 集計・publication 判定・suppression・snapshot 生成・検証・semantic code 集計（副作用なしの ES5。`SurveyCore` を使う） |
+| `admin/` | 独立した **read-only** Admin GAS（`SurveyGenerated.gs` は生成物。`Config / Data / Snapshot / FreeText / Main .gs`、`Dashboard.html`、`appsscript.json`） |
+| `baseball/baseball-uniform-survey-results.html` と `baseball/baseball-uniform-survey-results/` | 公開結果ページ（`results.js` / `results.css` / `snapshot.json`） |
+| `tools/build-initial-snapshot.js` | 回答 0 件の初期 `snapshot.json`（全項目非公開）を作る。実データには触れない |
+
+設問ID・option・分岐・公開閾値は Admin / aggregate にベタ書きしません。`question.publication` が公開判定の**唯一の正本**です（`publicRegionAggregation.publication` は地域ブロック用）。`npm run build` は `admin/SurveyGenerated.gs`（schema + 専用 core + aggregate。受付設定・通知設定・salt/token は含めない）も生成し、`build:check` が差分を検出します。
+
+### Admin GAS（read-only）
+
+- OAuth scope は `spreadsheets.readonly` のみ。Web App は `executeAs: USER_DEPLOYING` / `access: MYSELF`（運営責任者 1 名）。Public GAS の bundle・deploy workflow には含めません（**本番 deploy はこの Issue では行いません**）。
+- Script Property `RESPONSES_SPREADSHEET_ID`（#380 の responses Spreadsheet。値はリポジトリに置かない）を手動で設定します。`responses` シートのヘッダーが schema と完全一致しなければ読みません。
+- 回答の編集・削除・手動書き換えの UI / endpoint はありません。唯一の書き込みは自分自身の Script Property `SNAPSHOT_STATE`（最後に公開した snapshot の生成時刻と件数）です。
+- 画面: production valid total ／ test 除外件数と除外内訳 ／ 設問ごとの `targetCount` と `minTotal / minTarget / minCell` の達成・未達 ／ 抑止後の public preview ／ 障壁と安心条件の比較 ／ snapshot 生成。自由記述は別タブ「自由記述（運営者のみ）」で明示的に読み込んだときだけ取得します（`FreeText.gs`。`Snapshot.gs` と `buildSnapshot` は呼びません）。個票・`respondent_hash` は返しません。
+
+### 集計対象（production 有効回答）
+
+`classifyRows` が行を次のように分けます。標準集計・public snapshot に入るのは `production_valid` だけです。
+
+| 区分 | 条件 |
+|---|---|
+| `test_excluded` | `response_mode = test`（invalid でも test として数える。通常集計・snapshot・件数に影響しない） |
+| `excluded.unknown_response_mode` | `production` / `test` 以外・空（fail-closed） |
+| `excluded.incomplete` / `version_mismatch` | `completion_status != complete` ／ survey・schema・design version が schema と不一致 |
+| `excluded.ineligible` / `schema_invalid` / `malformed` | 18歳未満（`termination`）／ `validateAnswers` 失敗／ `other_texts` が壊れている |
+| `excluded.missing_hash` / `duplicate` | `respondent_hash` が空／ 同一 hash（最初の 1 件だけ採用。hash は重複除去の内部用途のみ） |
+
+自由記述（text 設問）は valid record の `answers` から `free_text` へ分離され、「その他」本文は `other_texts` に残ります。`buildSnapshot` は `answers` だけを読みます。
+
+### denominator と publication 閾値
+
+- `targetCount` は schema の `denominator: question_reached` で、**その設問に実際に到達した有効回答者数**（`SurveyCore.countQuestionReached` と同じ概念。回答済み人数ではありません）。
+- 判定は `evaluatePublication`：`production valid total >= minTotal` かつ `targetCount >= minTarget` で `published`。未達は `insufficient`、`sensitiveBranch: true` の設問は `sensitive_withheld`（参加経験者評価など。**未達のまま調査が終わっても仕様違反ではない**）。`sensitiveBranch` の `minTarget` は schema が緩んでも 20 を下回りません（`SENSITIVE_BRANCH_MIN_TARGET`）。
+- 基準値: early_factual `minTotal 10 / minTarget 10 / minCell 3`、bias_sensitive `30 / 10 / 3`、sensitive branch `30 / 20 / 3`（いずれも schema の値を参照）。
+- 閾値未達の項目の snapshot には `targetCount: null`・`cells: []` だけを出し、0 件表示や推測できる数値を出しません。
+
+### suppression 方式
+
+1. **small-cell**: `0 < count < minCell` のセルは値を出さない。
+2. **complementary**: 単一選択・scale・地域（partition）は、小セルがあれば「最小の公開セル」も（データに依らずちょうど 1 つ）隠す。そのうえで、公開出力（公開セル・隠した合計・隠しうるセルの位置）と整合する元の件数が、どの隠しセルについても 2 通り以上あること（`ambiguityHolds`）を確認する。**合計が `minCell` 以上・2 セル以上というだけでは足りません**（`minCell=3` で小セルが 2・2 なら合計 4 から 2+2 に確定する）。確認できない並びは何も公開せず `suppressed_all` にする。多選択はセルの合計が `targetCount` と一致しないため補完は不要。
+3. **ordinal** は目盛りを保つため、隠したセルも位置だけ残し `count: null, suppressed: true`。**nominal** は隠したセル・ゼロセルを出力から除く（隠したのかゼロなのか区別させない）。ゼロを `0` として出すのは `showZeroCells: true` のときだけ。
+4. 並び: ordinal は schema の順（scale は min..max のあと尺度外の `cannot_rate`）。nominal は `sort: count_desc`、同数は schema の option 順（`tieBreak`）。
+5. **地域**: 詳細都道府県・愛知県内地域は private。`publicRegionAggregation` のブロックだけを出し、少数ブロックと最小の公開ブロック 1 つを「その他の地域」にまとめ、2 通り以上の元の件数が整合することを同じ規則で確認する。公開ブロックが残らない・確認できない場合は `suppressed_all`。
+
+`validateSnapshot` が上記の不変条件（公開出力から隠したセルの元値が一意に決まらないこと、隠した合計 `targetCount − 公開セルの合計` が 0 または `minCell` 以上、ordinal の隠しセルが 2 つ以上、`minCell` 未満の値がない、順序、publicResultsOrder、schema version、private 情報の混入）を検査します。Admin は snapshot 生成時に必ずこれを通します。
+
+### public snapshot schema（`snapshot.json`）
+
+```text
+{
+  snapshot_version, survey_id, survey_version, schema_version, design_version,
+  generated_at,
+  response_status: { state: 'collecting' | 'counting', label },   // 10件未満は「回答受付中」、以上は「N件以上」
+  production_valid_total: null | 10の倍数(切り下げ),                 // 正確な件数は出さない
+  representativeness_notice, sections: [{id, label}],            // 現在の回答状況 / アンケート結果
+  questions: [{ id, label, section, tier, type, ordinal,
+                state: published | insufficient | sensitive_withheld | suppressed_all,
+                targetCount: number | null,                      // published のときだけ
+                cells: [{id, label, count | null, suppressed?, independent?, merged?}],
+                hasSuppressedCells }]                            // publicResultsOrder の順
+}
+```
+
+`generated_at` 以外に時刻・識別子は含みません。`region_blocks` は地方ブロック集計の疑似 question id です。
+
+**public に絶対出さないもの**: 自由記述（feedback / support_message）・「その他」本文・個別回答・詳細都道府県・愛知県内地域・`respondent_hash`・UUID・個別 timestamp・`source_channel` その他 system field・private 設問の ID。
+
+### snapshot の batch 更新（submit ごとに更新しない）
+
+公開結果ページは Spreadsheet も Public GAS も読まず、`baseball/baseball-uniform-survey-results/snapshot.json` だけを読みます。**回答の送信では何も更新されません**（Public GAS は変更していません）。公開手順:
+
+1. Admin の「snapshot」タブで「snapshot を生成」。更新判定（`decideSnapshotUpdate`）が「更新してよい」のときだけ進める。
+2. 生成された JSON を `baseball/baseball-uniform-survey-results/snapshot.json` として PR で commit する（cache が切り替わるのはこのときだけ）。
+3. 公開後に「公開した snapshot として記録」を押す（`SNAPSHOT_STATE` に生成時刻と件数を記録）。
+
+更新判定は `publicationPolicy.snapshotUpdate` に従い、原則 1 日 1 回、または件数増分が `countTriggerIncrement` 以上のとき。どちらも増分が `minCell`（および `minimumBatchIncrement`）以上でなければ更新しません（連続する snapshot の差分から少数の回答が推測されるのを防ぐため）。時刻トリガーによる自動更新・自動 commit は今回は作っていません。
+
+### 公開結果ページ
+
+`baseball/baseball-uniform-survey-results.html`（公開前は `noindex`。回答ページと同時に外す）。「現在の回答状況」「アンケート結果」の 2 層で、SNS/Web 等で募った任意回答で一般人口を代表しないこと・小さい集計群は非表示にすること・自由記述と詳細地域は公開しないことを明記します。設問ごとの対象者数も回答件数と同様に 10 人単位に切り下げて表示します（各セルの人数は正確に表示します。割合は正確な `targetCount` から計算します）。sensitive branch が閾値に達していない項目は、空白やエラーではなく「この項目は、十分な回答数が集まった場合のみ公開します。」を表示します。GA4 は読み込みません。Frontend（#381）の完了画面は `RESULTS_URL = 'baseball-uniform-survey-results.html'` でこのページへリンクします（test mode の完了画面には出しません）。
+
+### semantic code 集計（Admin 分析のみ）
+
+`analyzeSemanticCodes` が schema の `semanticCodes`（障壁）と `reassuranceFor`（安心条件）を使い、code ごとに**回答者単位**で数えます。同じ回答者が同じ code に複数の option（primary と secondary の重複を含む）から該当しても 1 人です（設問ごとに code の集合を作ってから数える）。障壁（`barriers` / `pre_attendance_worries` / `attendance_lapse_reasons` / `activity_stopped_reasons`）と安心条件（`participation_conditions`）を code ごとに並べて比較でき、安心条件が未設計の code も分かります。自由記述の自動分類はしません。この集計は public snapshot には出しません。
+
 ## 検証とテスト
 
 Node.js 22 以上。依存は jsdom（devDependency。Frontend テスト用）だけです。`npm ci` で導入します。
@@ -308,10 +397,12 @@ npm test           # node --test tests/*.test.js
 
 `tests/public_submit.test.js` は Public GAS の unit/integration test（Apps Script API は最小フェイク。valid submit・hidden/unknown/stale/invalid option 拒否・18歳未満・hash namespace と canonical 入力・duplicate・concurrent・source_channel・最短回答時間・受付期間・test token・notification・Formula Injection）、`tests/public_build.test.js` は生成物の整合、`tests/frontend.test.js` は Frontend（jsdom。schema 駆動の描画・各 question type・route・低関心 route・進捗・status API 各状態・submit 結果・test mode・token 非漏洩・GA4 許可イベント・analytics.js opt-out と他ページ回帰・a11y・レイアウトの静的検査・Public GAS との payload 整合）、`tests/deploy.test.js` は配備構成と workflow の検査です。
 
+`tests/aggregate.test.js` は Admin 集計と public snapshot の unit test（production/test/invalid の分離・`question_reached`・`minTotal / minTarget / minCell`・sensitive `minTarget 20`・small-cell と complementary suppression・snapshot から小セルを逆算できないこと（総当たりで、公開出力と整合する元の件数をすべて列挙して検証。`minCell=3` で 2・2 の回帰を含む）・ordinal / nominal の並び・zero cell・地域・自由記述/hash/詳細地域の非公開・`publicResultsOrder`・semantic code の重複排除・batch 更新判定）、`tests/admin_gas.test.js` は Admin GAS（read-only・scope・generated drift・自由記述の分離・ヘッダー不一致）、`tests/results_page.test.js` は公開結果ページ（jsdom。snapshot だけを読むこと・2 層・件数表示・sensitive 未達の説明・Frontend の結果リンク）です。入力はすべて架空の fixture（`tests/helpers/fixtures.js`）で、実回答・本番 Spreadsheet には接続しません。
+
 `tests/schema.test.js` は実 schema に対する検査と v2.17 の回帰（低関心 route の 3 参照、`activity_stopped_reasons`、`adult_context`、`exercise_*`）、
 `tests/validator.test.js` は validator が壊れた schema を検出することの負例テストです。
 
-CI: `.github/workflows/baseball-uniform-survey-schema.yml`（schema の参照整合）と `.github/workflows/baseball-uniform-survey-public-gas.yml`（Public GAS）が PR ごとに上記を実行します（PR では deploy・secret は使いません）。
+CI: `.github/workflows/baseball-uniform-survey-schema.yml`（schema の参照整合）と `.github/workflows/baseball-uniform-survey-public-gas.yml`（Public GAS。#382 の Admin / snapshot / 結果ページのテストも実行）が PR ごとに上記を実行します（PR では deploy・secret は使わず、実回答・本番 Spreadsheet にも接続しません）。
 
 ## 公開 repo 上の注意
 

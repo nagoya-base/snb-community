@@ -1,7 +1,8 @@
 name: Baseball uniform survey Public GAS
 
-# Issue #380「名古屋野球ユニ部アンケート Public GAS」/ #381「Frontend」のCI / デプロイ。
-# Frontend（baseball/baseball-uniform-survey*）は GitHub Pages から配信されるため、この workflow では deploy しない（GAS のみ deploy 対象）。
+# Issue #380「名古屋野球ユニ部アンケート Public GAS」/ #381「Frontend」/ #382「Admin集計・段階公開snapshot・公開結果ページ」のCI / デプロイ。
+# Frontend（baseball/baseball-uniform-survey*）と公開結果ページ（baseball/baseball-uniform-survey-results*）は GitHub Pages から配信されるため、この workflow では deploy しない（Public GAS のみ deploy 対象）。
+# Admin GAS（baseball/gas/baseball_uniform_survey/admin/）は #382 では build / test のみ。本番 deploy は行わない（Public GAS の bundle にも含めない）。
 # 他の survey（fetish / costume portrait）の workflow / script / Environment / Secret とは独立。
 #  - Pull request: テスト・生成物の差分検査・配備バンドルの dry-run のみ（本番 deployment は更新しない。secret も使わない）。
 #  - workflow_dispatch (main 限定・デプロイ対象は実行開始時点の main HEAD = github.sha): テスト → deploy ジョブ（Environment 承認）。
@@ -17,6 +18,8 @@ on:
       - 'baseball/gas/baseball_uniform_survey/**'
       - 'baseball/baseball-uniform-survey.html'
       - 'baseball/baseball-uniform-survey/**'
+      - 'baseball/baseball-uniform-survey-results.html'
+      - 'baseball/baseball-uniform-survey-results/**'
       - 'analytics.js'
       - 'scripts/baseball-uniform-survey/**'
   workflow_dispatch:
@@ -62,6 +65,9 @@ jobs:
       - name: Run survey tests (schema, core, Public GAS, Frontend, analytics opt-out, deploy scripts)
         working-directory: baseball/gas/baseball_uniform_survey
         run: npm test
+      - name: Run Admin aggregation / publication / snapshot / results page tests (fixtures only, no real responses or Spreadsheet)
+        working-directory: baseball/gas/baseball_uniform_survey
+        run: node --test tests/aggregate.test.js tests/admin_gas.test.js tests/results_page.test.js
       - name: Validate the allowlisted public bundle without GAS access (dry-run)
         run: |
           set -euo pipefail
