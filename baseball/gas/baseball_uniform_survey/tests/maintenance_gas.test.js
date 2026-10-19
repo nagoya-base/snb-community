@@ -62,8 +62,8 @@ test('manifest：OAuth scope は spreadsheets のみ、Web App は本人のみ�
   assert.deepEqual(admin.oauthScopes, ['https://www.googleapis.com/auth/spreadsheets.readonly']);
   const prepare = require(path.join(REPO, 'scripts', 'baseball-uniform-survey', 'prepare-gas.js'));
   const publicManifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'public', 'appsscript.json'), 'utf8'));
-  assert.deepEqual([...publicManifest.oauthScopes].sort(), [...prepare.REQUIRED_SCOPES].sort());
-  assert.ok(prepare.FILES.every((f) => !/maintenance|Finalize|Cleanup|Retention/i.test(f)), 'Public GAS の bundle に maintenance を含めない');
+  assert.deepEqual([...publicManifest.oauthScopes].sort(), [...prepare.TARGETS.public.requiredScopes].sort());
+  assert.ok(prepare.TARGETS.public.files.every((f) => !/maintenance|Finalize|Cleanup|Retention/i.test(f)), 'Public GAS の bundle に maintenance を含めない');
 });
 
 test('公開 endpoint を持たない：doPost・回答受付・回答の編集/削除 UI がなく、操作は運営者専用の関数だけ', () => {
@@ -390,21 +390,17 @@ test('リポジトリに実データ・secret・本番 Spreadsheet ID・実メ�
   assert.ok(!names.some((n) => /\.(csv|tsv|xlsx|json)$/i.test(n) && n !== 'appsscript.json'), '回答 export を置かない');
 });
 
-test('CI：既存 baseball survey workflow が maintenance のテストを実行し、maintenance の本番 deploy は行わない', () => {
+test('CI：既存 baseball survey workflow が maintenance のテストを実行し、maintenance の本番 deploy は専用 workflow・専用 bundle で行う', () => {
   const publicWorkflow = fs.readFileSync(path.join(REPO, '.github/workflows/baseball-uniform-survey-public-gas.yml'), 'utf8');
   const schemaWorkflow = fs.readFileSync(path.join(REPO, '.github/workflows/baseball-uniform-survey-schema.yml'), 'utf8');
   assert.match(publicWorkflow, /tests\/maintenance_core\.test\.js tests\/maintenance_gas\.test\.js/);
   assert.match(publicWorkflow, /npm run build:check/);
   assert.match(schemaWorkflow, /'baseball\/gas\/baseball_uniform_survey\/\*\*'/);
   assert.match(publicWorkflow, /'baseball\/gas\/baseball_uniform_survey\/\*\*'/);
-  const workflows = fs.readdirSync(path.join(REPO, '.github/workflows')).filter((f) => /baseball-uniform-survey/.test(f));
-  workflows.forEach((f) => {
-    const text = fs.readFileSync(path.join(REPO, '.github/workflows', f), 'utf8');
-    assert.ok(!/maintenance\//.test(text.replace(/baseball\/gas\/baseball_uniform_survey\/\*\*/g, '')), `${f}: maintenance を deploy 対象にしない`);
-  });
-  assert.ok(!workflows.some((f) => /maintenance/.test(f)), 'maintenance 用の deploy workflow を持たない（本番 deploy はこの Issue の対象外）');
-  const deployScript = fs.readFileSync(path.join(REPO, 'scripts/baseball-uniform-survey/deploy-gas.sh'), 'utf8');
-  assert.ok(!/maintenance/i.test(deployScript), 'Public GAS の Script ID / Environment / Secret を maintenance と共有しない');
+  // Public workflow は maintenance を deploy しない（専用 workflow / Environment / Secret は deploy_isolation.test.js が検査）。
+  assert.ok(!/maintenance\//.test(publicWorkflow.replace(/^\s*#.*$/gm, '').replace(/baseball\/gas\/baseball_uniform_survey\/\*\*/g, '')), 'Public workflow は maintenance を deploy 対象にしない');
+  assert.ok(!/baseball-uniform-survey-maintenance-production|MAINTENANCE_/.test(publicWorkflow), 'Public workflow は maintenance の Environment / Secret を共有しない');
+  assert.ok(fs.existsSync(path.join(REPO, '.github/workflows/baseball-uniform-survey-maintenance-gas.yml')));
 });
 
 test('Public GAS（#380）と Admin（#382）の受付・集計ロジックは #383 で変更されず、maintenance 側は #382 の関数を再利用している', () => {

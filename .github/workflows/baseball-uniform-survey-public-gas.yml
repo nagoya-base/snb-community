@@ -2,7 +2,7 @@ name: Baseball uniform survey Public GAS
 
 # Issue #380「名古屋野球ユニ部アンケート Public GAS」/ #381「Frontend」/ #382「Admin集計・段階公開snapshot・公開結果ページ」のCI / デプロイ。
 # Frontend（baseball/baseball-uniform-survey*）と公開結果ページ（baseball/baseball-uniform-survey-results*）は GitHub Pages から配信されるため、この workflow では deploy しない（Public GAS のみ deploy 対象）。
-# Admin GAS（baseball/gas/baseball_uniform_survey/admin/）は #382 では build / test のみ。本番 deploy は行わない（Public GAS の bundle にも含めない）。
+# Admin GAS（admin/）・maintenance GAS（maintenance/）は別 project のため、専用 workflow（baseball-uniform-survey-admin-gas.yml / -maintenance-gas.yml）・専用 allowlist・専用 Environment / Secret で deploy する（#390）。この workflow の bundle には含めない。
 # 他の survey（fetish / costume portrait）の workflow / script / Environment / Secret とは独立。
 #  - Pull request: テスト・生成物の差分検査・配備バンドルの dry-run のみ（本番 deployment は更新しない。secret も使わない）。
 #  - workflow_dispatch (main 限定・デプロイ対象は実行開始時点の main HEAD = github.sha): テスト → deploy ジョブ（Environment 承認）。
@@ -72,19 +72,19 @@ jobs:
         run: |
           set -euo pipefail
           bundle="$(mktemp -d "$RUNNER_TEMP/baseball-uniform-survey-dry-run.XXXXXXXX")/out"
-          BASEBALL_UNIFORM_SURVEY_SCRIPT_ID='dry-run-only' node scripts/baseball-uniform-survey/prepare-gas.js stage "$GITHUB_WORKSPACE" "$bundle"
+          BASEBALL_UNIFORM_SURVEY_SCRIPT_ID='dry-run-only' node scripts/baseball-uniform-survey/prepare-gas.js stage public "$GITHUB_WORKSPACE" "$bundle"
           BUNDLE="$bundle" node <<'NODE'
           const fs = require('fs');
           const path = require('path');
-          const { FILES, REQUIRED_SCOPES } = require('./scripts/baseball-uniform-survey/prepare-gas');
+          const { TARGETS } = require('./scripts/baseball-uniform-survey/prepare-gas');
           const config = JSON.parse(fs.readFileSync(path.join(process.env.BUNDLE, '.clasp.json')));
           const actual = fs.readdirSync(process.env.BUNDLE).filter(n => !n.startsWith('.')).sort();
-          const expected = [...FILES, 'appsscript.json'].sort();
+          const expected = [...TARGETS.public.files, 'appsscript.json'].sort();
           if (config.scriptId !== 'dry-run-only' || config.rootDir !== '.' || JSON.stringify(actual) !== JSON.stringify(expected)) {
             throw new Error('Unexpected clasp rootDir or staged files.');
           }
           const manifest = JSON.parse(fs.readFileSync(path.join(process.env.BUNDLE, 'appsscript.json')));
-          if (JSON.stringify([...manifest.oauthScopes].sort()) !== JSON.stringify([...REQUIRED_SCOPES].sort())) {
+          if (JSON.stringify([...manifest.oauthScopes].sort()) !== JSON.stringify([...TARGETS.public.requiredScopes].sort())) {
             throw new Error('Unexpected OAuth scopes.');
           }
           if (manifest.webapp !== undefined) throw new Error('The public bundle must not define Web App settings.');
@@ -102,6 +102,7 @@ jobs:
       CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
       BASEBALL_UNIFORM_SURVEY_SCRIPT_ID: ${{ secrets.BASEBALL_UNIFORM_SURVEY_SCRIPT_ID }}
       BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID: ${{ secrets.BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID }}
+      BASEBALL_UNIFORM_SURVEY_TARGET: public
       BASEBALL_UNIFORM_SURVEY_SOURCE_SHA: ${{ github.sha }}
     steps:
       - name: Check out the pinned main HEAD (github.sha)

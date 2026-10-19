@@ -38,20 +38,42 @@ Script Properties（値は repo / Secrets / ログに出さない）:
 
 ## 2. deploy 準備
 
-### Public（既存 workflow）
+### 方式（Public / Admin / maintenance 共通）
 
-- GitHub Environment `baseball-uniform-survey-public-production`（main 限定・承認者あり）に Secrets `CLASPRC_JSON` / `BASEBALL_UNIFORM_SURVEY_SCRIPT_ID` / `BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID` が登録済みであること。
-- production deploy は `workflow_dispatch` + main のみ。PR push では dry-run だけで secret を使わないこと（`tests/deploy.test.js` が検査）。
+3 project とも、**PR は build / test / bundle dry-run のみ**、**本番 deploy は main からの `workflow_dispatch` + 専用 GitHub Environment 承認で、既存 Web App deployment を更新する**方式です。次だけは bootstrap として**手動**で行い、workflow は作成しません。
 
-### Admin / maintenance（手動 deploy。workflow は新設しない）
+1. Apps Script project の初回作成（Public / Admin / maintenance は**必ず別 project**）
+2. OAuth 承認
+3. Script Properties の設定
+4. 最初の Web App deployment の作成
 
-各 project で次を守ります。
+| target | workflow | Environment | Secrets（`CLASPRC_JSON` に加えて） | bundle allowlist |
+|---|---|---|---|---|
+| Public | `baseball-uniform-survey-public-gas.yml` | `baseball-uniform-survey-public-production` | `BASEBALL_UNIFORM_SURVEY_SCRIPT_ID` / `BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID` | `public/` の 10 ファイル |
+| Admin | `baseball-uniform-survey-admin-gas.yml` | `baseball-uniform-survey-admin-production` | `BASEBALL_UNIFORM_SURVEY_ADMIN_SCRIPT_ID` / `BASEBALL_UNIFORM_SURVEY_ADMIN_DEPLOYMENT_ID` | `admin/` の 7 ファイル |
+| maintenance | `baseball-uniform-survey-maintenance-gas.yml` | `baseball-uniform-survey-maintenance-production` | `BASEBALL_UNIFORM_SURVEY_MAINTENANCE_SCRIPT_ID` / `BASEBALL_UNIFORM_SURVEY_MAINTENANCE_DEPLOYMENT_ID` | `maintenance/` の 8 ファイル |
 
-1. Apps Script で **新しい別 project** を作る（Public の project を流用しない）。
-2. リポジトリの該当ディレクトリ（`admin/` または `maintenance/`）のファイルだけを貼る／push する。`appsscript.json` を含め、`oauthScopes` と `webapp` が上表どおりであることを確認する。別ディレクトリのファイルを混ぜない。
-3. Web App を `executeAs: USER_DEPLOYING` / `access: MYSELF` で deploy する。
-4. Script Property `RESPONSES_SPREADSHEET_ID` だけを設定する。
-5. deploy 後、エディタの「プロジェクトの設定」で scope と Web App 設定が manifest と一致していることを目視確認する。
+各 Environment は main 限定・承認者ありで作り、その target 専用の Secrets だけを登録します（Script ID / Deployment ID / clasp credentials の実値はリポジトリ・Issue・ログに書かない）。
+
+### 他 project へ push されないための仕組み
+
+- allowlist は `scripts/baseball-uniform-survey/prepare-gas.js` の `TARGETS`。target ごとに source ディレクトリ・ファイル・OAuth scope・Script ID / Deployment ID の環境変数名が分かれており、workflow は自分の target を固定で渡します。
+- push 前に `clasp pull` したリモートも同じ allowlist で検証し、別 target のファイル（例: Admin の project に `Finalize.gs`）・手書きコード・ディレクトリがあれば上書きせず拒否します。
+- `deploy-gas.sh` は、他 target の Script ID / Deployment ID が環境に存在すれば clasp を呼ぶ前に拒否します。
+- Admin は `spreadsheets.readonly`、maintenance は `spreadsheets` と scope が完全一致のときだけ stage します（Admin に書込み scope は入れられません）。
+- Admin / maintenance は、リポジトリ側 manifest もリモートの manifest も `executeAs: USER_DEPLOYING` / `access: MYSELF` でなければ配備しません。`update-deployment` は access を変更しないため、dispatch 入力 `webapp_access_set_to_myself` を確認済みの `true` にしないと、checkout / clasp より前に失敗します。
+- 上記は `tests/deploy.test.js` / `tests/deploy_isolation.test.js` が検査します（実 Google へは接続しません）。
+
+### 初回 bootstrap（手動。各 project 共通）
+
+1. Apps Script で **新しい別 project** を作る（他の target の project を流用しない）。
+2. 初回だけ、リポジトリの該当ディレクトリ（`public/` / `admin/` / `maintenance/`）のファイルだけを貼る／push し、`appsscript.json` の `oauthScopes` と `webapp` が上表・下記どおりであることを確認する。別ディレクトリのファイルを混ぜない。
+3. OAuth 承認と Script Properties の設定（Admin / maintenance は `RESPONSES_SPREADSHEET_ID` だけ。Public は README の手順）。
+4. Web App の最初の deployment を作る。Admin / maintenance は `executeAs: USER_DEPLOYING` / `access: MYSELF`、Public は README のとおり。
+5. Script ID / Deployment ID と clasp credentials をその target 専用の Environment Secrets に登録する。
+6. エディタの「プロジェクトの設定」で scope と Web App 設定が manifest と一致していることを目視確認する。
+
+以降の更新は、main で該当 workflow を `workflow_dispatch` し、Environment 承認を経て既存 deployment を更新します（`/exec` URL は変わりません）。**このリポジトリの変更だけでは production deploy は実行されません。**
 
 ## 3. `submit_excluded` E2E
 
@@ -130,6 +152,7 @@ DebugView / Network で、survey page が送るのは次だけであること。
 ## 9. launch go/no-go
 
 - [ ] Public / Admin / maintenance が別 project
+- [ ] 3 target の専用 Environment（main 限定・承認者あり）と専用 Secrets（Script ID / Deployment ID / `CLASPRC_JSON`）を登録済み（bootstrap 後）
 - [ ] 新規 responses Spreadsheet
 - [ ] secrets / properties 設定済み（`TEST_TOKEN` / `RESPONDENT_SALT` / Spreadsheet ID / 通知メール / clasp credentials は repo 非公開）
 - [ ] **Owner が notification 有効 / 無効を明示確認**（`notification.enabled` の値は Owner 確認後に更新。それまで変更しない）

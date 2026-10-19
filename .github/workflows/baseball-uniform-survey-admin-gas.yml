@@ -1,0 +1,130 @@
+name: Baseball uniform survey Admin GAS
+
+# Issue #390「名古屋野球ユニ部アンケート 本番前統合」の Admin GAS（集計・段階公開snapshot。spreadsheets.readonly）。
+# Public GAS / 他方の管理用 GAS / 他 survey（fetish / costume portrait）の workflow・script・Environment・Secret・bundle allowlist とは独立。
+#  - Pull request: テスト・生成物の差分検査・配備バンドル（Admin 専用 allowlist）の dry-run のみ（本番 deployment は更新しない。secret も使わない）。
+#  - workflow_dispatch (main 限定・デプロイ対象は実行開始時点の main HEAD = github.sha): テスト → deploy ジョブ（Environment 承認）。
+#    production deploy は明示操作でのみ実行される（push / schedule では動かない）。
+#  - update-deployment は Web App のアクセス設定を変更しないため、dispatch 入力 webapp_access_set_to_myself（既存 deployment が「自分のみ」であることを確認済み）が true でなければ配備しない。
+#  - 初回の GAS プロジェクト作成・OAuth 承認・Script Properties 設定・最初の Web App deployment 作成は bootstrap として手動（README / LAUNCH_READINESS 参照）。以降は既存 deployment を更新する。
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/baseball-uniform-survey-admin-gas.yml'
+      - 'baseball/gas/baseball_uniform_survey/**'
+      - 'scripts/baseball-uniform-survey/**'
+  workflow_dispatch:
+    inputs:
+      webapp_access_set_to_myself:
+        description: 'REQUIRED: I confirmed the EXISTING Admin Web App deployment is "Execute as: Me" / access "Only myself" (MYSELF) in Apps Script > Manage deployments, BEFORE this deploy (update-deployment does not change access)'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: baseball-uniform-survey-admin-gas-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Validate and dry-run the admin GAS bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require dispatch from the main branch (fail closed)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != 'refs/heads/main' ]]; then
+            echo 'Manual deployment must be dispatched from the main branch.' >&2
+            exit 1
+          fi
+      - name: Check out code under test
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test dependencies (npm ci, lockfile only)
+        working-directory: baseball/gas/baseball_uniform_survey
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Validate survey.schema.json
+        working-directory: baseball/gas/baseball_uniform_survey
+        run: npm run validate
+      - name: Check the generated GAS / Frontend files against schema, config and core
+        working-directory: baseball/gas/baseball_uniform_survey
+        run: npm run build:check
+      - name: Run survey tests (schema, core, GAS, Frontend, deploy scripts and workflow isolation)
+        working-directory: baseball/gas/baseball_uniform_survey
+        run: npm test
+      - name: Validate the allowlisted admin bundle without GAS access (dry-run)
+        run: |
+          set -euo pipefail
+          bundle="$(mktemp -d "$RUNNER_TEMP/baseball-uniform-survey-admin-dry-run.XXXXXXXX")/out"
+          BASEBALL_UNIFORM_SURVEY_ADMIN_SCRIPT_ID='dry-run-only' node scripts/baseball-uniform-survey/prepare-gas.js stage admin "$GITHUB_WORKSPACE" "$bundle"
+          BUNDLE="$bundle" node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const { TARGETS, OWNER_ONLY_WEBAPP } = require('./scripts/baseball-uniform-survey/prepare-gas');
+          const target = TARGETS.admin;
+          const config = JSON.parse(fs.readFileSync(path.join(process.env.BUNDLE, '.clasp.json')));
+          const actual = fs.readdirSync(process.env.BUNDLE).filter(n => !n.startsWith('.')).sort();
+          const expected = [...target.files, 'appsscript.json'].sort();
+          if (config.scriptId !== 'dry-run-only' || config.rootDir !== '.' || JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error('Unexpected clasp rootDir or staged files.');
+          }
+          const manifest = JSON.parse(fs.readFileSync(path.join(process.env.BUNDLE, 'appsscript.json')));
+          if (JSON.stringify([...manifest.oauthScopes].sort()) !== JSON.stringify([...target.requiredScopes].sort())) {
+            throw new Error('Unexpected OAuth scopes.');
+          }
+          if (!manifest.webapp || manifest.webapp.access !== OWNER_ONLY_WEBAPP.access || manifest.webapp.executeAs !== OWNER_ONLY_WEBAPP.executeAs) {
+            throw new Error('The admin Web App must be access MYSELF and executeAs USER_DEPLOYING.');
+          }
+          console.log('Dry-run bundle contains only the approved admin GAS files.');
+          NODE
+
+  deploy:
+    name: Update the existing admin Web App deployment
+    if: github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    # 手動作成する GitHub Environment。main 限定・承認者あり・この GAS 専用の Secret をここに登録する（README 参照）。
+    environment: baseball-uniform-survey-admin-production
+    env:
+      CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+      BASEBALL_UNIFORM_SURVEY_TARGET: admin
+      BASEBALL_UNIFORM_SURVEY_ADMIN_SCRIPT_ID: ${{ secrets.BASEBALL_UNIFORM_SURVEY_ADMIN_SCRIPT_ID }}
+      BASEBALL_UNIFORM_SURVEY_ADMIN_DEPLOYMENT_ID: ${{ secrets.BASEBALL_UNIFORM_SURVEY_ADMIN_DEPLOYMENT_ID }}
+      BASEBALL_UNIFORM_SURVEY_SOURCE_SHA: ${{ github.sha }}
+      BASEBALL_UNIFORM_SURVEY_OWNER_ONLY_CONFIRMED: ${{ inputs.webapp_access_set_to_myself && 'true' || 'false' }}
+    steps:
+      - name: Require the existing deployment to be owner-only before deploying (fail closed)
+        run: |
+          if [[ "$BASEBALL_UNIFORM_SURVEY_OWNER_ONLY_CONFIRMED" != 'true' ]]; then
+            echo 'Set the webapp_access_set_to_myself input only after confirming the existing Admin deployment is "Only myself" (MYSELF). Nothing was deployed.' >&2
+            exit 1
+          fi
+      - name: Check out the pinned main HEAD (github.sha)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned clasp (npm ci, lockfile only)
+        working-directory: scripts/baseball-uniform-survey
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Put the pinned clasp on PATH
+        run: echo "$GITHUB_WORKSPACE/scripts/baseball-uniform-survey/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Push files, create version and update only the existing deployment
+        shell: bash
+        run: bash scripts/baseball-uniform-survey/deploy-gas.sh

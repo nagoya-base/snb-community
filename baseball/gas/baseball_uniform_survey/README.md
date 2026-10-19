@@ -191,7 +191,15 @@ private な system field です。`x / line / website / instagram / email / dire
 
 ### Deploy workflow
 
-`.github/workflows/baseball-uniform-survey-public-gas.yml`（他 survey の workflow / Environment / Secret とは独立）。
+target ごとに専用 workflow・専用 bundle allowlist・専用 Environment / Script ID / Deployment ID を持ちます（他 survey の workflow / Environment / Secret とは独立）。一覧と bootstrap 手順は [`LAUNCH_READINESS.md`](LAUNCH_READINESS.md) の「2. deploy 準備」を参照してください。
+
+| target | workflow |
+|---|---|
+| Public | `.github/workflows/baseball-uniform-survey-public-gas.yml` |
+| Admin | `.github/workflows/baseball-uniform-survey-admin-gas.yml` |
+| maintenance | `.github/workflows/baseball-uniform-survey-maintenance-gas.yml` |
+
+以下は Public の説明です（Admin / maintenance も同じ流れで、加えて `webapp_access_set_to_myself` の確認入力が必須）。
 
 - **Pull request**: `npm run validate` / `npm run build:check` / `npm test` / 配備バンドルの dry-run のみ。secret を使わず、本番 deployment は更新しません。
 - **本番 deploy は `workflow_dispatch` の明示操作のみ**（main 限定、対象は実行時点の `github.sha`）。`verify` → `deploy` の順で、`deploy` は GitHub Environment `baseball-uniform-survey-public-production`（main 限定・承認者あり）の承認を要します。
@@ -291,7 +299,7 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 
 ### Admin GAS（read-only）
 
-- OAuth scope は `spreadsheets.readonly` のみ。Web App は `executeAs: USER_DEPLOYING` / `access: MYSELF`（運営責任者 1 名）。Public GAS の bundle・deploy workflow には含めません（**本番 deploy はこの Issue では行いません**）。
+- OAuth scope は `spreadsheets.readonly` のみ。Web App は `executeAs: USER_DEPLOYING` / `access: MYSELF`（運営責任者 1 名）。Public GAS の bundle には含めず、専用 workflow `baseball-uniform-survey-admin-gas.yml`（Environment `baseball-uniform-survey-admin-production`、専用 Script ID / Deployment ID）で既存 deployment を更新します。初回の project 作成・OAuth 承認・Script Properties・最初の Web App deployment は手動 bootstrap です。
 - Script Property `RESPONSES_SPREADSHEET_ID`（#380 の responses Spreadsheet。値はリポジトリに置かない）を手動で設定します。`responses` シートのヘッダーが schema と完全一致しなければ読みません。
 - 回答の編集・削除・手動書き換えの UI / endpoint はありません。唯一の書き込みは自分自身の Script Property `SNAPSHOT_STATE`（最後に公開した snapshot の生成時刻と件数）です。
 - 画面: production valid total ／ test 除外件数と除外内訳 ／ 設問ごとの `targetCount` と `minTotal / minTarget / minCell` の達成・未達 ／ 抑止後の public preview ／ 障壁と安心条件の比較 ／ snapshot 生成。自由記述は別タブ「自由記述（運営者のみ）」で明示的に読み込んだときだけ取得します（`FreeText.gs`。`Snapshot.gs` と `buildSnapshot` は呼びません）。個票・`respondent_hash` は返しません。
@@ -374,7 +382,7 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 | `maintenance/` | 独立した maintenance GAS（`SurveyGenerated.gs` は生成物。`Config / Data / Finalize / Retention / Cleanup / Main .gs`、`Maintenance.html`、`appsscript.json`） |
 | `retention.config.json` | retention 設定の正本（**現在は `unset`**。Owner が `opens_at` / `closes_at` 確定時に設定する） |
 
-maintenance は Public GAS（#380）・Admin GAS（#382）とは**別 project・別 Script ID・別 Script Properties・別 Environment / Secret**です。通常の閲覧・回答受付経路からは呼ばれません（`doPost` なし）。書込み権限が必要な OAuth scope（`spreadsheets`）はこの project だけが持ち、Public / Admin の scope は広げていません。Web App は `executeAs: USER_DEPLOYING` / `access: MYSELF`（運営責任者 1 名）で、公開しません。**本番 deploy はこの Issue では行わず、deploy workflow も用意していません**（CI は build / test のみ）。
+maintenance は Public GAS（#380）・Admin GAS（#382）とは**別 project・別 Script ID・別 Script Properties・別 Environment / Secret**です。通常の閲覧・回答受付経路からは呼ばれません（`doPost` なし）。書込み権限が必要な OAuth scope（`spreadsheets`）はこの project だけが持ち、Public / Admin の scope は広げていません。Web App は `executeAs: USER_DEPLOYING` / `access: MYSELF`（運営責任者 1 名）で、公開しません。本番 deploy は専用 workflow `baseball-uniform-survey-maintenance-gas.yml`（Environment `baseball-uniform-survey-maintenance-production`、専用 Script ID / Deployment ID）で、main からの `workflow_dispatch` + Environment 承認でのみ既存 deployment を更新します。初回の project 作成・OAuth 承認・Script Properties・最初の Web App deployment は手動 bootstrap です。
 
 ### 責務の境界
 
@@ -445,11 +453,11 @@ retention 設定状態の確認／finalize preflight／finalize 実行／finaliz
 
 ### CI
 
-既存の `baseball-uniform-survey-schema.yml` / `baseball-uniform-survey-public-gas.yml` が、`npm run build:check`（`maintenance/SurveyGenerated.gs` の generated drift を含む）と `tests/maintenance_core.test.js` / `tests/maintenance_gas.test.js` を実行します。maintenance は deploy 対象に含めず、Public GAS の bundle・Script ID・Environment・Secret も共有しません。将来 deploy workflow を用意する場合も、PR は dry-run のみ、本番は `workflow_dispatch` + Environment 承認等の明示操作にします。
+既存の `baseball-uniform-survey-schema.yml` / `baseball-uniform-survey-public-gas.yml` が、`npm run build:check`（`maintenance/SurveyGenerated.gs` の generated drift を含む）と `tests/maintenance_core.test.js` / `tests/maintenance_gas.test.js` を実行します。maintenance は専用 workflow で deploy し、Public GAS の bundle・Script ID・Environment・Secret は共有しません。PR は build / test / bundle dry-run のみ、本番は `workflow_dispatch` + Environment 承認の明示操作です。
 
 ## 本番前統合・実 Google 環境 E2E（Issue #390）
 
-Public / Admin / maintenance を別 Apps Script project として用意し、`submit_excluded` だけで実環境を確認する手順・Admin / maintenance の手動 deploy 手順・launch go/no-go は [`LAUNCH_READINESS.md`](LAUNCH_READINESS.md) にまとめています。production は Owner の明示判断（受付期間・retention・notification・launch 実行）まで fail closed のままです。
+Public / Admin / maintenance を別 Apps Script project として用意し、`submit_excluded` だけで実環境を確認する手順・Admin / maintenance の deploy 方式（bootstrap のみ手動）・launch go/no-go は [`LAUNCH_READINESS.md`](LAUNCH_READINESS.md) にまとめています。production は Owner の明示判断（受付期間・retention・notification・launch 実行）まで fail closed のままです。
 
 ## 検証とテスト
 

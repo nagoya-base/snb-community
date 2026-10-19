@@ -23,27 +23,27 @@ function job(text, name) {
 }
 
 test('配備対象ファイルは public/ の .gs と完全一致し、他survey/テスト/schemaの正本を含まない', () => {
-  const present = fs.readdirSync(path.join(REPO, prepareGas.DIR)).filter((n) => /\.(gs|html)$/.test(n)).sort();
-  assert.deepStrictEqual(present, [...prepareGas.FILES].sort());
+  const present = fs.readdirSync(path.join(REPO, prepareGas.TARGETS.public.dir)).filter((n) => /\.(gs|html)$/.test(n)).sort();
+  assert.deepStrictEqual(present, [...prepareGas.TARGETS.public.files].sort());
   const out = path.join(tmp(), 'out');
-  const files = prepareGas.prepare(REPO, out, 'script-id');
+  const files = prepareGas.prepare('public', REPO, out, 'script-id');
   assert.deepStrictEqual(fs.readdirSync(out).filter((n) => !n.startsWith('.')).sort(), [...files].sort());
   assert.deepStrictEqual(JSON.parse(fs.readFileSync(path.join(out, '.clasp.json'), 'utf8')), { scriptId: 'script-id', rootDir: '.' });
-  assert.throws(() => prepareGas.prepare(REPO, out, 'script-id'), /must be empty/);
-  assert.throws(() => prepareGas.prepare(REPO, path.join(tmp(), 'o'), ' bad id'), /valid Script ID/);
+  assert.throws(() => prepareGas.prepare('public', REPO, out, 'script-id'), /must be empty/);
+  assert.throws(() => prepareGas.prepare('public', REPO, path.join(tmp(), 'o'), ' bad id'), /valid Script ID/);
 });
 
 test('manifest：scopeはspreadsheetsとsend_mailのみ、webappは定義せずリモートの値を保持', () => {
   const repoManifest = JSON.parse(read('baseball/gas/baseball_uniform_survey/public/appsscript.json'));
-  assert.deepStrictEqual([...repoManifest.oauthScopes].sort(), [...prepareGas.REQUIRED_SCOPES].sort());
+  assert.deepStrictEqual([...repoManifest.oauthScopes].sort(), [...prepareGas.TARGETS.public.requiredScopes].sort());
   assert.strictEqual(repoManifest.webapp, undefined);
   const remote = { timeZone: 'Asia/Tokyo', webapp: { access: 'ANYONE_ANONYMOUS', executeAs: 'USER_DEPLOYING' }, dependencies: {} };
-  const staged = prepareGas.stageManifest(repoManifest, remote);
+  const staged = prepareGas.stageManifest('public', repoManifest, remote);
   assert.deepStrictEqual(staged.webapp, remote.webapp);
-  assert.throws(() => prepareGas.stageManifest(Object.assign({}, repoManifest, { webapp: {} }), null), /must not define/);
-  assert.throws(() => prepareGas.stageManifest(Object.assign({}, repoManifest, { oauthScopes: [...repoManifest.oauthScopes, 'https://www.googleapis.com/auth/drive'] }), null), /not allowed/);
-  assert.throws(() => prepareGas.stageManifest(Object.assign({}, repoManifest, { oauthScopes: [] }), null), /missing a required/);
-  assert.throws(() => prepareGas.stageManifest(repoManifest, { timeZone: 'Asia/Tokyo', extra: 1 }), /additional settings/);
+  assert.throws(() => prepareGas.stageManifest('public', Object.assign({}, repoManifest, { webapp: {} }), null), /must not define Web App/);
+  assert.throws(() => prepareGas.stageManifest('public', Object.assign({}, repoManifest, { oauthScopes: [...repoManifest.oauthScopes, 'https://www.googleapis.com/auth/drive'] }), null), /not allowed/);
+  assert.throws(() => prepareGas.stageManifest('public', Object.assign({}, repoManifest, { oauthScopes: [] }), null), /missing a required/);
+  assert.throws(() => prepareGas.stageManifest('public', repoManifest, { timeZone: 'Asia/Tokyo', extra: 1 }), /additional settings/);
 });
 
 test('リモートが別survey/手書きコードのプロジェクトなら上書きを拒否し、空の初期プロジェクトは許可', () => {
@@ -51,13 +51,13 @@ test('リモートが別survey/手書きコードのプロジェクトなら上�
   fs.writeFileSync(path.join(remote, 'appsscript.json'), '{}');
   fs.writeFileSync(path.join(remote, 'Code.gs'), 'function myFunction() {}\n');
   fs.writeFileSync(path.join(remote, 'Main.js'), '// pulled');
-  assert.deepStrictEqual(prepareGas.validateRemote(remote).map((r) => r.kind).sort(), ['expected', 'manifest', 'placeholder']);
+  assert.deepStrictEqual(prepareGas.validateRemote('public', remote).map((r) => r.kind).sort(), ['expected', 'manifest', 'placeholder']);
   fs.writeFileSync(path.join(remote, 'Finalize.gs'), '// 別surveyのファイル');
-  assert.throws(() => prepareGas.validateRemote(remote), /refusing to replace/);
+  assert.throws(() => prepareGas.validateRemote('public', remote), /refusing to replace/);
   const handwritten = tmp();
   fs.writeFileSync(path.join(handwritten, 'appsscript.json'), '{}');
   fs.writeFileSync(path.join(handwritten, 'Code.gs'), 'function doGet() { return 1; }');
-  assert.throws(() => prepareGas.validateRemote(handwritten), /refusing to replace/);
+  assert.throws(() => prepareGas.validateRemote('public', handwritten), /refusing to replace/);
 });
 
 test('workflow：PRはテスト・dry-runのみで、production deployは手動dispatch・main限定・Environment承認', () => {
