@@ -3,7 +3,8 @@
 
 // survey.schema.json（正本）+ survey.config.json（受付期間・最短回答時間・通知設定の正本）+ src/survey-core.js から
 // 生成物を作る。生成物は直接編集しない。
-// Public GAS（public/SurveyGenerated.gs）と Frontend（baseball/baseball-uniform-survey/survey.generated.js）の2つを生成する。
+// Public GAS（public/SurveyGenerated.gs）・Frontend（baseball/baseball-uniform-survey/survey.generated.js）・
+// Admin GAS（admin/SurveyGenerated.gs。schema + 専用 core + src/survey-aggregate.js。受付設定・通知設定は含めない）の3つを生成する。
 // `--check` は生成物との差分を検出して非0終了する（CIで実行）。
 const fs = require('fs');
 const path = require('path');
@@ -12,9 +13,30 @@ const ROOT = path.join(__dirname, '..');
 const SCHEMA_PATH = path.join(ROOT, 'survey.schema.json');
 const CONFIG_PATH = path.join(ROOT, 'survey.config.json');
 const CORE_PATH = path.join(ROOT, 'src', 'survey-core.js');
+const AGGREGATE_PATH = path.join(ROOT, 'src', 'survey-aggregate.js');
 const TARGET = path.join(ROOT, 'public', 'SurveyGenerated.gs');
+const ADMIN_TARGET = path.join(ROOT, 'admin', 'SurveyGenerated.gs');
 // Frontend 用生成物（schema + 専用 core。server 専用の config は含めない）。GitHub Pages から公開される。
 const FRONTEND_TARGET = path.join(ROOT, '..', '..', 'baseball-uniform-survey', 'survey.generated.js');
+
+function renderAdmin() {
+  const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  const core = fs.readFileSync(CORE_PATH, 'utf8');
+  const aggregate = fs.readFileSync(AGGREGATE_PATH, 'utf8');
+  return [
+    '/*',
+    ' * AUTO-GENERATED (Admin GAS) — DO NOT EDIT.',
+    ' * 正本: baseball/gas/baseball_uniform_survey/survey.schema.json, src/survey-core.js, src/survey-aggregate.js',
+    ' * 再生成: (baseball/gas/baseball_uniform_survey で) npm run build',
+    ' * CIは `npm run build:check` で生成物との差分を検出する。',
+    ' */',
+    'var SURVEY_SCHEMA = ' + JSON.stringify(schema) + ';',
+    '',
+    core,
+    '',
+    aggregate
+  ].join('\n');
+}
 
 function renderFrontend() {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
@@ -54,7 +76,8 @@ function main(argv) {
   const check = argv.includes('--check');
   const targets = [
     { file: TARGET, content: render() },
-    { file: FRONTEND_TARGET, content: renderFrontend() }
+    { file: FRONTEND_TARGET, content: renderFrontend() },
+    { file: ADMIN_TARGET, content: renderAdmin() }
   ];
   let drift = 0;
   for (const target of targets) {
@@ -79,4 +102,4 @@ function main(argv) {
 }
 
 if (require.main === module) process.exitCode = main(process.argv.slice(2));
-module.exports = { render, renderFrontend, TARGET, FRONTEND_TARGET, SCHEMA_PATH, CONFIG_PATH, CORE_PATH };
+module.exports = { render, renderFrontend, renderAdmin, TARGET, FRONTEND_TARGET, ADMIN_TARGET, SCHEMA_PATH, CONFIG_PATH, CORE_PATH, AGGREGATE_PATH };

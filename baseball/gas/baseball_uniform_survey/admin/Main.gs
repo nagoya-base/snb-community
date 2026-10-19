@@ -1,0 +1,37 @@
+/**
+ * Admin Web App（運営責任者1名専用。Issue #382）。
+ *
+ * アクセス制御は Apps Script の Web App 設定（appsscript.json）に一本化している:
+ *   executeAs: USER_DEPLOYING / access: MYSELF
+ * responses Spreadsheet は読み取り専用。回答の編集・削除・手動書き換えの UI は持たない。
+ *
+ *   GET /exec                       : Dashboard.html
+ *   google.script.run.getAdminSummary()   : production 件数・除外件数・設問別 targetCount と公開条件・public preview・障壁/安心条件の比較
+ *   google.script.run.getSnapshot()       : privacy-safe snapshot（JSON）と更新判定
+ *   google.script.run.confirmSnapshotPublished(generatedAt, exactTotal) : 公開済み snapshot の記録（Script Property のみ）
+ *   google.script.run.getFreeText()       : 自由記述（運営者のみ。個票・集計とは別の操作）
+ * Logger / console に回答内容・hash を出さない。
+ */
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('Dashboard')
+    .setTitle('名古屋野球ユニ部アンケート｜Admin')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
+}
+
+function getAdminSummary() {
+  var now = new Date();
+  return SurveyAggregate.buildAdminSummary(SURVEY_SCHEMA, classifyResponses_(), { now: now, previousSnapshot: getSnapshotState_() });
+}
+
+function getSnapshot() {
+  return buildSnapshotResult_(new Date());
+}
+
+function confirmSnapshotPublished(generatedAt, exactTotal) {
+  return recordSnapshotPublished_(generatedAt, exactTotal);
+}
+
+function getFreeText() {
+  return listFreeText_();
+}

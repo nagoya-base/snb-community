@@ -13,6 +13,8 @@ on:
       - 'baseball/gas/baseball_uniform_survey/**'
       - 'baseball/baseball-uniform-survey.html'
       - 'baseball/baseball-uniform-survey/**'
+      - 'baseball/baseball-uniform-survey-results.html'
+      - 'baseball/baseball-uniform-survey-results/**'
   workflow_dispatch:
 
 permissions:

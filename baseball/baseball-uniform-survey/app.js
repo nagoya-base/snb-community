@@ -20,7 +20,7 @@
   var core = SurveyCore;
   var FORM_NAME = 'baseball_uniform_survey';
   var UUID_KEY = 'snb_baseball_uniform_survey_uuid_v1';
-  var RESULTS_URL = null; // 公開結果ページは #382。作成されるまでリンクを出さない。
+  var RESULTS_URL = 'baseball-uniform-survey-results.html'; // 公開結果ページ（#382）。ページが存在することは tests/results_page.test.js が検証する。
 
   /* 見積もり表示用の定数（回答時間の目安。schema の estimatedMinutes と整合させる）。 */
   var SECONDS_PER_QUESTION = 15;

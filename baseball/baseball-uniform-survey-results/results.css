@@ -1,0 +1,47 @@
+/* 名古屋野球ユニ部アンケート 公開結果ページ（Issue #382）。baseball の配色（芝の緑）。 */
+:root {
+  --bur-ink: #1c1a17;
+  --bur-muted: #5f574d;
+  --bur-line: #ddd8cf;
+  --bur-paper: #f5f2ec;
+  --bur-card: #ffffff;
+  --bur-accent: #3a7d44;
+  --bur-accent-dark: #2c5f35;
+  --bur-accent-pale: #eaf3e7;
+  --bur-bar: #e4dfd7;
+  --bur-note: #664d03;
+  --bur-note-pale: #fff3cd;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; color: var(--bur-ink); background: var(--bur-paper);
+  font-family: 'Hiragino Sans', 'Noto Sans JP', 'Meiryo', system-ui, sans-serif; font-size: 16px; line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.bur-skip { position: absolute; left: -9999px; top: 0; background: #fff; padding: 8px 12px; z-index: 100; }
+.bur-skip:focus { left: 8px; top: 8px; }
+.bur-wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px 80px; }
+.bur-back { display: inline-block; margin: 4px 0 12px; color: var(--bur-muted); font-size: .88rem; min-height: 24px; }
+.bur-hero h1 { font-size: 1.5rem; line-height: 1.4; margin: 0 0 12px; }
+.bur-eyebrow { margin: 0; color: var(--bur-accent-dark); font-weight: 700; font-size: .9rem; }
+#bur-main:focus { outline: none; }
+.bur-notice { background: var(--bur-note-pale); color: var(--bur-note); border-radius: 10px; padding: 12px 16px; margin: 0 0 20px; font-size: .9rem; }
+.bur-notice h2 { font-size: .95rem; margin: 0 0 4px; }
+.bur-notice ul { margin: 0; padding-left: 1.2em; }
+.bur-lead { color: var(--bur-muted); }
+.bur-layer { margin: 0 0 32px; }
+.bur-layer > h2 { font-size: 1.2rem; margin: 0 0 12px; border-left: 5px solid var(--bur-accent); padding-left: 10px; }
+.bur-status { background: var(--bur-accent-pale); border-radius: 10px; padding: 12px 16px; margin: 0 0 14px; font-weight: 700; }
+.bur-card { background: var(--bur-card); border: 1px solid var(--bur-line); border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; min-width: 0; }
+.bur-card h3 { font-size: 1rem; line-height: 1.55; margin: 0 0 8px; }
+.bur-base { margin: 0 0 8px; color: var(--bur-muted); font-size: .84rem; }
+.bur-msg { margin: 0; padding: 10px 12px; background: var(--bur-paper); border-radius: 8px; color: var(--bur-muted); font-size: .92rem; }
+.bur-cells { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.bur-cell-head { display: flex; justify-content: space-between; gap: 12px; font-size: .92rem; }
+.bur-cell-count { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--bur-muted); }
+.bur-bar { height: 10px; background: var(--bur-bar); border-radius: 5px; overflow: hidden; margin-top: 4px; }
+.bur-bar i { display: block; height: 100%; background: var(--bur-accent); }
+.bur-cell-hidden .bur-cell-count { font-style: italic; }
+.bur-hidden-note { margin: 10px 0 0; font-size: .82rem; color: var(--bur-muted); }
+.bur-error { color: #b3261e; }
