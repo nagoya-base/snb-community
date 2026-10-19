@@ -1,6 +1,6 @@
 # 本番前統合・実 Google 環境 E2E・launch readiness 手順（Issue #390）
 
-親 Issue #377。この文書は **手順とチェックリストだけ**を持ちます。Script ID / Deployment ID / Spreadsheet ID / salt / token / 実メールアドレス / 実 `/exec` URL はここにもリポジトリにも書きません。
+親 Issue #377。この文書は **手順とチェックリストだけ**を持ちます。次の値はここにもリポジトリにも書きません（commit 禁止）: `TEST_TOKEN`、`RESPONDENT_SALT`、Spreadsheet ID、通知メール（実メールアドレス）、clasp credentials（`CLASPRC_JSON`）、Script ID、Deployment ID。公開 Web App の `/exec` URL 自体は secret として扱いません（下記「Frontend の endpoint」）。
 
 **この段階では production を開けません。** 実 Google 環境の確認は `submit_excluded` だけで行い、production は fail closed のままにします。
 
@@ -34,7 +34,7 @@ Script Properties（値は repo / Secrets / ログに出さない）:
 | Admin | `RESPONSES_SPREADSHEET_ID` |
 | maintenance | `RESPONSES_SPREADSHEET_ID`（Public の salt / token / 通知先は設定しない・参照しない） |
 
-> Issue #390 本文は Public の Property を `RESPONSES_SPREADSHEET_ID` と書いていますが、実装（`public/Config.gs`）は `SPREADSHEET_ID` です。コードに合わせて上表のとおり設定してください。
+**確定事項**: Spreadsheet ID の Script Property 名は **Public = `SPREADSHEET_ID` / Admin・maintenance = `RESPONSES_SPREADSHEET_ID`**（実装の `public/Config.gs` / `admin/Config.gs` / `maintenance/Config.gs` どおり）。Issue #390 本文の Public 側の記載（`RESPONSES_SPREADSHEET_ID`）はこの確定事項で読み替えます。コード側の rename はしません。
 
 ## 2. deploy 準備
 
@@ -55,7 +55,11 @@ Script Properties（値は repo / Secrets / ログに出さない）:
 
 ## 3. `submit_excluded` E2E
 
-Frontend の `config.js` の `endpoint` は空のままコミットし、確認時はローカルまたは一時的な配信物でのみ実 `/exec` URL を設定します（`/exec` URL に Deployment ID が含まれるため repo に入れない）。
+### Frontend の endpoint
+
+- **E2E 中**: `config.js` の `endpoint` は空のままにし、ローカル override（手元の未コミット変更など）で `/exec` URL を設定する。E2E 用の endpoint 値をこのブランチ・手順書 PR へ commit しない。
+- **production launch PR**: `config.js` に公開 Web App の `/exec` URL を設定する。この URL 自体は secret として扱わない（公開ページから参照される値のため）。ただし Script ID / Deployment ID 単体や clasp credentials は引き続き commit しない。
+
 
 URL: `…/baseball-uniform-survey.html#test=submit_excluded&token=<TEST_TOKEN>&run=<test_run_id>`
 
@@ -127,7 +131,9 @@ DebugView / Network で、survey page が送るのは次だけであること。
 
 - [ ] Public / Admin / maintenance が別 project
 - [ ] 新規 responses Spreadsheet
-- [ ] secrets / properties 設定済み（repo 非公開）
+- [ ] secrets / properties 設定済み（`TEST_TOKEN` / `RESPONDENT_SALT` / Spreadsheet ID / 通知メール / clasp credentials は repo 非公開）
+- [ ] **Owner が notification 有効 / 無効を明示確認**（`notification.enabled` の値は Owner 確認後に更新。それまで変更しない）
+- [ ] production launch PR で `config.js` の `endpoint` に公開 Web App URL を設定
 - [ ] `submit_excluded` E2E 成功
 - [ ] invalid test が production へ fallback しない
 - [ ] production fail closed 確認済み
