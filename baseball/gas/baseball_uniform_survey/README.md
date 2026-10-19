@@ -320,12 +320,12 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 ### suppression 方式
 
 1. **small-cell**: `0 < count < minCell` のセルは値を出さない。
-2. **complementary**: 単一選択・scale・地域（partition）は `targetCount` と他セルから逆算できるため、隠したセルの合計が `minCell` 以上かつ 2 セル以上になるまで、残りの最小の非ゼロセルも隠す。多選択はセルの合計が `targetCount` と一致しないため補完は不要。
+2. **complementary**: 単一選択・scale・地域（partition）は、小セルがあれば「最小の公開セル」も（データに依らずちょうど 1 つ）隠す。そのうえで、公開出力（公開セル・隠した合計・隠しうるセルの位置）と整合する元の件数が、どの隠しセルについても 2 通り以上あること（`ambiguityHolds`）を確認する。**合計が `minCell` 以上・2 セル以上というだけでは足りません**（`minCell=3` で小セルが 2・2 なら合計 4 から 2+2 に確定する）。確認できない並びは何も公開せず `suppressed_all` にする。多選択はセルの合計が `targetCount` と一致しないため補完は不要。
 3. **ordinal** は目盛りを保つため、隠したセルも位置だけ残し `count: null, suppressed: true`。**nominal** は隠したセル・ゼロセルを出力から除く（隠したのかゼロなのか区別させない）。ゼロを `0` として出すのは `showZeroCells: true` のときだけ。
 4. 並び: ordinal は schema の順（scale は min..max のあと尺度外の `cannot_rate`）。nominal は `sort: count_desc`、同数は schema の option 順（`tieBreak`）。
-5. **地域**: 詳細都道府県・愛知県内地域は private。`publicRegionAggregation` のブロックだけを出し、少数ブロックは「その他の地域」にまとめる。まとめた先が `minCell` 未満・1 ブロックだけなら最小の公開ブロックも取り込む。公開ブロックが残らなければ `suppressed_all`。
+5. **地域**: 詳細都道府県・愛知県内地域は private。`publicRegionAggregation` のブロックだけを出し、少数ブロックと最小の公開ブロック 1 つを「その他の地域」にまとめ、2 通り以上の元の件数が整合することを同じ規則で確認する。公開ブロックが残らない・確認できない場合は `suppressed_all`。
 
-`validateSnapshot` が上記の不変条件（隠した合計 `targetCount − 公開セルの合計` が 0 または `minCell` 以上、ordinal の隠しセルが 2 つ以上、`minCell` 未満の値がない、順序、publicResultsOrder、schema version、private 情報の混入）を検査します。Admin は snapshot 生成時に必ずこれを通します。
+`validateSnapshot` が上記の不変条件（公開出力から隠したセルの元値が一意に決まらないこと、隠した合計 `targetCount − 公開セルの合計` が 0 または `minCell` 以上、ordinal の隠しセルが 2 つ以上、`minCell` 未満の値がない、順序、publicResultsOrder、schema version、private 情報の混入）を検査します。Admin は snapshot 生成時に必ずこれを通します。
 
 ### public snapshot schema（`snapshot.json`）
 
@@ -397,7 +397,7 @@ npm test           # node --test tests/*.test.js
 
 `tests/public_submit.test.js` は Public GAS の unit/integration test（Apps Script API は最小フェイク。valid submit・hidden/unknown/stale/invalid option 拒否・18歳未満・hash namespace と canonical 入力・duplicate・concurrent・source_channel・最短回答時間・受付期間・test token・notification・Formula Injection）、`tests/public_build.test.js` は生成物の整合、`tests/frontend.test.js` は Frontend（jsdom。schema 駆動の描画・各 question type・route・低関心 route・進捗・status API 各状態・submit 結果・test mode・token 非漏洩・GA4 許可イベント・analytics.js opt-out と他ページ回帰・a11y・レイアウトの静的検査・Public GAS との payload 整合）、`tests/deploy.test.js` は配備構成と workflow の検査です。
 
-`tests/aggregate.test.js` は Admin 集計と public snapshot の unit test（production/test/invalid の分離・`question_reached`・`minTotal / minTarget / minCell`・sensitive `minTarget 20`・small-cell と complementary suppression・snapshot から小セルを逆算できないこと（ランダム分布の property test を含む）・ordinal / nominal の並び・zero cell・地域・自由記述/hash/詳細地域の非公開・`publicResultsOrder`・semantic code の重複排除・batch 更新判定）、`tests/admin_gas.test.js` は Admin GAS（read-only・scope・generated drift・自由記述の分離・ヘッダー不一致）、`tests/results_page.test.js` は公開結果ページ（jsdom。snapshot だけを読むこと・2 層・件数表示・sensitive 未達の説明・Frontend の結果リンク）です。入力はすべて架空の fixture（`tests/helpers/fixtures.js`）で、実回答・本番 Spreadsheet には接続しません。
+`tests/aggregate.test.js` は Admin 集計と public snapshot の unit test（production/test/invalid の分離・`question_reached`・`minTotal / minTarget / minCell`・sensitive `minTarget 20`・small-cell と complementary suppression・snapshot から小セルを逆算できないこと（総当たりで、公開出力と整合する元の件数をすべて列挙して検証。`minCell=3` で 2・2 の回帰を含む）・ordinal / nominal の並び・zero cell・地域・自由記述/hash/詳細地域の非公開・`publicResultsOrder`・semantic code の重複排除・batch 更新判定）、`tests/admin_gas.test.js` は Admin GAS（read-only・scope・generated drift・自由記述の分離・ヘッダー不一致）、`tests/results_page.test.js` は公開結果ページ（jsdom。snapshot だけを読むこと・2 層・件数表示・sensitive 未達の説明・Frontend の結果リンク）です。入力はすべて架空の fixture（`tests/helpers/fixtures.js`）で、実回答・本番 Spreadsheet には接続しません。
 
 `tests/schema.test.js` は実 schema に対する検査と v2.17 の回帰（低関心 route の 3 参照、`activity_stopped_reasons`、`adult_context`、`exercise_*`）、
 `tests/validator.test.js` は validator が壊れた schema を検出することの負例テストです。

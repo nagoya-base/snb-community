@@ -252,10 +252,93 @@ var SurveyAggregate = (function (core) {
   /* ── small-cell / complementary suppression ── */
 
   /*
+   * complementary suppression の計画（partition 用）。
+   *  - 小セル（0 < count < minCell）を隠す。小セルがあれば、さらに「最小の公開セル」をちょうど 1 つ隠す
+   *    （同数なら schema の後ろ）。件数はデータに依らない固定規則なので、公開された出力から攻撃者が逆算に使える。
+   *  - そのうえで、公開された出力（公開セル・隠した合計 S・隠しうるセルの位置）と整合する「元の件数」が、
+   *    どの隠しセルについても 2 通り以上あることを確認する（ambiguityHolds）。確認できなければ ok:false。
+   *    合計だけでは足りない（minCell=3 で小セルが 2・2 なら、合計 4 から 2+2 に確定する）。
+   * 返り値: {hiddenIds, ok}。小セルが無ければ何も隠さず ok:true。
+   */
+  function planPartitionHiding(defs, counts, minCell, ordered) {
+    var hiddenIds = {};
+    var smallSum = 0;
+    var smalls = 0;
+    defs.forEach(function (d) {
+      var c = counts[d.id];
+      if (c > 0 && c < minCell) { hiddenIds[d.id] = true; smallSum += c; smalls++; }
+    });
+    if (smalls === 0) return { hiddenIds: hiddenIds, ok: true };
+
+    var extra = null;
+    defs.forEach(function (d, index) {
+      var c = counts[d.id];
+      if (c <= 0 || hasOwn(hiddenIds, d.id)) return;
+      if (!extra || c < extra.count || (c === extra.count && index > extra.index)) extra = { id: d.id, count: c, index: index };
+    });
+    if (!extra) return { hiddenIds: hiddenIds, ok: false };
+    hiddenIds[extra.id] = true;
+
+    var vmin = null;
+    var maxTiedIndex = -1;
+    defs.forEach(function (d, index) {
+      var c = counts[d.id];
+      if (c <= 0 || hasOwn(hiddenIds, d.id)) return;
+      if (vmin === null || c < vmin) { vmin = c; maxTiedIndex = index; } else if (c === vmin) maxTiedIndex = index;
+    });
+    if (vmin === null) return { hiddenIds: hiddenIds, ok: false }; // 公開できるセルが残らない
+    // 攻撃者から見て値が分からないセル（ordinal は隠した位置だけ。nominal は公開セル以外すべて＝ゼロ・隠したセルを区別できない）。
+    var unknown = [];
+    defs.forEach(function (d, index) {
+      var isVisible = counts[d.id] > 0 && !hasOwn(hiddenIds, d.id);
+      if (ordered ? hasOwn(hiddenIds, d.id) : !isVisible) unknown.push(index);
+    });
+    var sum = smallSum + extra.count;
+    return { hiddenIds: hiddenIds, ok: ambiguityHolds(unknown, sum, minCell, vmin, maxTiedIndex, ordered) };
+  }
+
+  /*
+   * 公開出力と整合する元の件数（世界）を、隠したセルごとに数え上げずに区間で判定する。
+   * 整合する世界 = 未知セル unknown の値で、合計が sum、ちょうど 1 セルが「追加で隠した最小の公開セル」（minCell 以上
+   * vmin 未満。vmin と同数なら schema の後ろのセルだけ許される）、残りが小セル（ordinal は 1..minCell-1、nominal は 0..minCell-1 で
+   * 少なくとも 1 つは小セル）。どの未知セルについても取りうる値が 2 通り以上あれば、小セルの元値は一意に確定しない。
+   */
+  function ambiguityHolds(unknown, sum, minCell, vmin, maxTiedIndex, ordered) {
+    var n = unknown.length - 1;
+    var lo0 = ordered ? 1 : 0;
+    var smallMax = minCell - 1;
+    for (var u = 0; u < unknown.length; u++) {
+      var cell = unknown[u];
+      var feasible = 0;
+      // i が追加で隠したセルの場合
+      var upperSelf = cell > maxTiedIndex ? vmin : vmin - 1;
+      if (n >= 1) {
+        var loA = Math.max(n * lo0, 1);
+        var hiA = n * smallMax;
+        for (var x = minCell; x <= upperSelf && feasible < 2; x++) if (sum - x >= loA && sum - x <= hiA) feasible++;
+      }
+      // i が小セル（または nominal のゼロ）の場合：追加で隠したセルは別の未知セル j
+      var hasLater = unknown.some(function (j) { return j !== cell && j > maxTiedIndex; });
+      var upperExtra = hasLater ? vmin : vmin - 1;
+      if (n >= 1 && upperExtra >= minCell) {
+        for (var y = lo0; y <= smallMax && feasible < 2; y++) {
+          var loB = minCell + (n - 1) * lo0 + (!ordered && y === 0 ? 1 : 0);
+          var hiB = upperExtra + (n - 1) * smallMax;
+          if (!ordered && y === 0 && n - 1 < 1) continue; // 小セルが 1 つも無くなる
+          if (sum - y >= loB && sum - y <= hiB) feasible++;
+        }
+      }
+      if (feasible < 2) return false;
+    }
+    return true;
+  }
+
+  /*
    * セルの抑止。
    *  1. 0 < count < minCell のセルは値を出さない（small-cell suppression）。
    *  2. partition（単一選択・scale・地域）では targetCount と他セルから隠したセルが逆算できてしまうため、
-   *     隠したセルの合計が minCell 以上かつ 2 セル以上になるまで、残りの最小の非ゼロセルも隠す（complementary suppression）。
+   *     planPartitionHiding で最小の公開セルも 1 つ隠し、隠したセルの元値が一意に決まらないことを確認する。
+   *     確認できなければ何も公開しない（visibleNonzero:0 → suppressed_all）。
    *     多選択はセルの合計が targetCount と一致しないため補完は不要。
    * ordered:true（ordinal）は目盛りを保つため、隠したセルも位置だけ残し count:null で返す。
    * ordered:false（nominal）は隠したセル・ゼロセルを出力から除く（隠したのかゼロなのかも区別させない）。
@@ -265,27 +348,14 @@ var SurveyAggregate = (function (core) {
   function suppressCells(defs, counts, options) {
     var minCell = options.minCell;
     var hiddenIds = {};
-    var hiddenSum = 0;
-    var hiddenCount = 0;
-    defs.forEach(function (d) {
-      var c = counts[d.id];
-      if (c > 0 && c < minCell) { hiddenIds[d.id] = true; hiddenSum += c; hiddenCount++; }
-    });
-    if (options.partition && hiddenCount > 0) {
-      while (hiddenCount < 2 || hiddenSum < minCell) {
-        var pick = null;
-        defs.forEach(function (d, index) {
-          var c = counts[d.id];
-          if (c <= 0 || hasOwn(hiddenIds, d.id)) return;
-          // 最小の非ゼロセル。同数なら schema 順の後ろ（結果が安定する）。
-          if (!pick || c < pick.count || (c === pick.count && index > pick.index)) pick = { id: d.id, count: c, index: index };
-        });
-        if (!pick) break;
-        hiddenIds[pick.id] = true;
-        hiddenSum += pick.count;
-        hiddenCount++;
-      }
+    if (options.partition) {
+      var plan = planPartitionHiding(defs, counts, minCell, options.ordered);
+      if (!plan.ok) return { cells: [], hidden: Object.keys(plan.hiddenIds).length, visibleNonzero: 0 };
+      hiddenIds = plan.hiddenIds;
+    } else {
+      defs.forEach(function (d) { var c = counts[d.id]; if (c > 0 && c < minCell) hiddenIds[d.id] = true; });
     }
+    var hiddenCount = Object.keys(hiddenIds).length;
 
     var visibleNonzero = 0;
     defs.forEach(function (d) { if (counts[d.id] > 0 && !hasOwn(hiddenIds, d.id)) visibleNonzero++; });
@@ -337,35 +407,29 @@ var SurveyAggregate = (function (core) {
 
   /*
    * 地域ブロックの公開用セル。小さいブロックは「その他の地域」へまとめる。
-   * まとめた先が minCell 未満、または 1 ブロックだけだと逆算できてしまうため、最小の公開ブロックも取り込む。
-   * 公開ブロックが残らない場合は suppressed_all。
+   * 単一選択と同じ planPartitionHiding を使い、まとめた先（小ブロック + 最小の公開ブロック 1 つ）が
+   * 一意に逆算できないことを確認する。確認できない・公開ブロックが残らない場合は suppressed_all。
    */
   function regionCells(schema, table, publication, thresholds) {
     var cfg = regionConfig(schema);
-    var minCell = thresholds.minCell;
+    var plan = planPartitionHiding(table.defs, table.counts, thresholds.minCell, false);
+    var mergedSum = 0;
+    var mergedBlocks = 0;
     var named = [];
-    var merged = { sum: 0, blocks: 0 };
     table.defs.forEach(function (d, index) {
       var c = table.counts[d.id];
       if (c <= 0) return;
-      if (c < minCell) { merged.sum += c; merged.blocks++; } else named.push({ def: d, count: c, index: index });
+      if (hasOwn(plan.hiddenIds, d.id)) { mergedSum += c; mergedBlocks++; } else named.push({ def: d, count: c, index: index });
     });
-    while (merged.blocks > 0 && (merged.sum < minCell || merged.blocks < 2) && named.length > 0) {
-      var smallest = 0;
-      named.forEach(function (n, i) { if (n.count < named[smallest].count || (n.count === named[smallest].count && n.index > named[smallest].index)) smallest = i; });
-      merged.sum += named[smallest].count;
-      merged.blocks++;
-      named.splice(smallest, 1);
-    }
-    if (named.length === 0) return { cells: [], hasSuppressed: merged.blocks > 0 };
+    if (!plan.ok || named.length === 0) return { cells: [], hasSuppressed: mergedBlocks > 0 };
     if (publication.sort === 'count_desc') {
       named.sort(function (a, b) { return b.count !== a.count ? b.count - a.count : a.index - b.index; });
     }
     var cells = named.map(function (n) { return { id: n.def.id, label: n.def.label, count: n.count }; });
-    if (merged.blocks > 0) {
-      cells.push({ id: 'other_regions', label: cfg.privacy && cfg.privacy.mergedLabel ? cfg.privacy.mergedLabel : 'その他の地域', count: merged.sum, merged: true });
+    if (mergedBlocks > 0) {
+      cells.push({ id: 'other_regions', label: cfg.privacy && cfg.privacy.mergedLabel ? cfg.privacy.mergedLabel : 'その他の地域', count: mergedSum, merged: true });
     }
-    return { cells: cells, hasSuppressed: merged.blocks > 0 };
+    return { cells: cells, hasSuppressed: mergedBlocks > 0 };
   }
 
   /* ── 回答件数表示 ── */
@@ -641,6 +705,27 @@ var SurveyAggregate = (function (core) {
           bad(tag + 'ordinal で隠したセルが 1 つだけで、小セルを逆算できます');
         }
       }
+      // 公開出力だけから、隠したセルの元値が一意に決まらないこと（合計だけでなく取りうる世界の数で確認する）。
+      if (partition && t) {
+        var defsForCheck = entry.kind === 'region' ? tallyRegion(schema, []).defs : cellDefinitions(schema, entry.question);
+        var ordered = entry.kind === 'question' && entry.publication.ordinal === true;
+        var shownCount = {};
+        q.cells.forEach(function (c) { if (typeof c.count === 'number' && c.count > 0) shownCount[c.id] = c.count; });
+        var vmin = null;
+        var maxTied = -1;
+        var unknown = [];
+        defsForCheck.forEach(function (d, index) {
+          if (hasOwn(shownCount, d.id)) {
+            if (vmin === null || shownCount[d.id] < vmin) { vmin = shownCount[d.id]; maxTied = index; } else if (shownCount[d.id] === vmin) maxTied = index;
+          } else if (!ordered || q.cells.some(function (c) { return c.id === d.id && c.count === null; })) {
+            unknown.push(index);
+          }
+        });
+        var hiddenTotal = q.targetCount - visibleSum;
+        if (hiddenTotal > 0 && (vmin === null || !ambiguityHolds(unknown, hiddenTotal, t.minCell, vmin, maxTied, ordered))) {
+          bad(tag + '公開された出力から、隠した小セルの元値を一意に逆算できます');
+        }
+      }
       if (entry.kind === 'question' && entry.publication.ordinal !== true && entry.publication.sort === 'count_desc') {
         for (var i = 1; i < q.cells.length; i++) {
           if (q.cells[i].count > q.cells[i - 1].count) bad(tag + 'nominal が件数降順になっていません');
@@ -807,6 +892,8 @@ var SurveyAggregate = (function (core) {
     effectiveThresholds: effectiveThresholds,
     evaluatePublication: evaluatePublication,
     suppressCells: suppressCells,
+    planPartitionHiding: planPartitionHiding,
+    regionCells: regionCells,
     liveCountDisplay: liveCountDisplay,
     publicEntries: publicEntries,
     buildSnapshot: buildSnapshot,

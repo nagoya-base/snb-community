@@ -159,16 +159,17 @@ test('small-cell suppression：minCell 未満は値を出さない（多選択�
   assert.ok(!/"count":2[,}]/.test(JSON.stringify(res)));
 });
 
-test('complementary suppression：単一選択は隠した合計が minCell 以上・2 セル以上になるまで追加で隠す', () => {
+test('complementary suppression：単一選択は小セルのほかに最小の公開セルも 1 つ隠し、逆算できないときは公開しない', () => {
   const opts = { minCell: 3, partition: true, ordered: false, showZeroCells: false };
   // 1 セルだけ隠すと total − 他セルで 2 が逆算できるため、最小の公開セル(8)も隠す。
   assert.deepEqual(shown(aggregate.suppressCells(defsOf(3), countsOf([20, 8, 2]), opts)), ['c0=20']);
-  // 2 セルが小さく合計が minCell 以上なら追加は不要。
-  assert.deepEqual(shown(aggregate.suppressCells(defsOf(4), countsOf([10, 10, 2, 2]), opts)), ['c0=10', 'c1=10']);
-  // 合計 2 → 追加で隠す。
-  assert.deepEqual(shown(aggregate.suppressCells(defsOf(4), countsOf([30, 2, 0, 0]), opts)), []);
-  const none = aggregate.suppressCells(defsOf(4), countsOf([30, 2, 0, 0]), opts);
-  assert.equal(none.visibleNonzero, 0);
+  // 小セルが 2 つ（合計 4 ≥ minCell）でも、小セルだけを隠すと 2+2 に確定してしまうので、最小の公開セルも隠す。
+  assert.deepEqual(shown(aggregate.suppressCells(defsOf(4), countsOf([10, 10, 2, 2]), opts)), ['c0=10']);
+  // 公開できるセルが残らない／隠した元値が一意に決まる並びは何も公開しない。
+  assert.equal(aggregate.suppressCells(defsOf(4), countsOf([30, 2, 0, 0]), opts).visibleNonzero, 0);
+  assert.equal(aggregate.suppressCells(defsOf(3), countsOf([20, 2, 2]), opts).visibleNonzero, 0);
+  // 小セルが無ければ何も隠さない。
+  assert.deepEqual(shown(aggregate.suppressCells(defsOf(3), countsOf([20, 8, 5]), opts)), ['c0=20', 'c1=8', 'c2=5']);
 });
 
 test('ordinal の目盛りは保つ：隠したセルは位置だけ残し count:null（値なし）', () => {
@@ -207,21 +208,7 @@ test('実 snapshot で complementary suppression が効き、隠したセルを 
   assert.deepEqual(aggregate.validateSnapshot(schema, snapshotOf(valid)), []);
 });
 
-// snapshot（公開情報）だけから、隠したセルの値を一意に決められるか。
-function reconstructable(entrySchema, snapshotQuestion) {
-  const t = aggregate.effectiveThresholds(schema, entrySchema.publication);
-  const visible = snapshotQuestion.cells.filter((c) => typeof c.count === 'number');
-  const hiddenSum = snapshotQuestion.targetCount - visible.reduce((n, c) => n + c.count, 0);
-  if (hiddenSum === 0) return false;
-  const q = entrySchema.question;
-  const defs = aggregate.cellDefinitions(schema, q);
-  const shownIds = visible.filter((c) => !(c.count === 0 && !entrySchema.publication.showZeroCells)).map((c) => c.id);
-  const unknownCells = defs.filter((d) => !shownIds.includes(d.id)).length; // 公開側から見て値が分からないセル
-  // 隠した合計が 1 セルに確定する、または小セル(<minCell)そのものの合計が見える場合は逆算可能。
-  return unknownCells < 2 || hiddenSum < t.minCell;
-}
-
-test('snapshot から小セルを逆算できない（単一選択・scale を、ランダムな分布 300 通りで検査）', () => {
+test('snapshot の不変条件（validateSnapshot）が、ランダムな分布 300 通りで成り立つ', () => {
   const rand = lcg(20261019);
   const singles = aggregate.publicEntries(schema).filter((e) => e.kind === 'question' && ['single', 'scale', 'single_dynamic'].includes(e.question.type));
   let checked = 0;
@@ -251,11 +238,102 @@ test('snapshot から小セルを逆算できない（単一選択・scale を�
       const q = entryOf(snapshot, entry.id);
       if (q.state !== 'published') return;
       checked++;
-      assert.equal(reconstructable(entry, q), false, `seed ${seed} ${entry.id}`);
       q.cells.forEach((c) => { if (typeof c.count === 'number' && c.count > 0) assert.ok(c.count >= aggregate.effectiveThresholds(schema, entry.publication).minCell); });
     });
   }
   assert.ok(checked > 500, 'published な設問を十分に検査した: ' + checked);
+});
+
+function* compositions(n, total) {
+  if (n === 1) { yield [total]; return; }
+  for (let i = 0; i <= total; i++) for (const rest of compositions(n - 1, total - i)) yield [i].concat(rest);
+}
+
+test('回帰：minCell=3 で ordinal の小セルが 2・2 のとき、両方を隠しても 2+2 に確定しない', () => {
+  const opts = { minCell: 3, partition: true, ordered: true, showZeroCells: true };
+  const res = aggregate.suppressCells(defsOf(5), countsOf([20, 10, 2, 2, 0]), opts);
+  // 小セル 2 つに加えて最小の公開セル(10)も隠すので、隠した合計 14 は (2,2,10) 以外にも (1,2,11) (1,1,12) などに分かれる。
+  assert.deepEqual(res.cells.map((c) => c.count), [20, null, null, null, 0]);
+  // 同じ並びを実 schema の ordinal 設問（baseball_experience）で。
+  const valid = validFrom([
+    { count: 20, overrides: { baseball_experience: 'team' } },
+    { count: 2, overrides: { baseball_experience: 'grass_baseball' } },
+    { count: 2, overrides: { baseball_experience: 'catchball_only' } },
+    { count: 10, overrides: { baseball_experience: 'class_play' } }
+  ]);
+  const snapshot = snapshotOf(valid);
+  const q = entryOf(snapshot, 'baseball_experience');
+  assert.equal(q.state, 'published');
+  assert.deepEqual(Object.fromEntries(q.cells.map((c) => [c.id, c.count])), { team: 20, grass_baseball: null, catchball_only: null, class_play: null, none: 0 });
+  assert.deepEqual(aggregate.validateSnapshot(schema, snapshot), []);
+});
+
+// 独立検証：総当たりで、公開出力と整合する元の件数ベクトルをすべて列挙し、小セルの値が一意に決まらないことを確認する。
+test('総当たり検証：公開された出力と整合する元の件数が複数あり、どの小セルの値も一意に決まらない', () => {
+  let published = 0;
+  for (const minCell of [3, 4]) {
+    for (const ordered of [true, false]) {
+      for (const n of [3, 4, 5]) {
+        for (let total = 3; total <= (n === 5 ? 14 : 18); total++) {
+          const groups = new Map();
+          for (const vector of compositions(n, total)) {
+            const res = aggregate.suppressCells(defsOf(n), countsOf(vector), { minCell, partition: true, ordered, showZeroCells: ordered });
+            const key = JSON.stringify([res.cells, res.visibleNonzero]);
+            if (!groups.has(key)) groups.set(key, { visibleNonzero: res.visibleNonzero, vectors: [] });
+            groups.get(key).vectors.push(vector);
+          }
+          groups.forEach((group) => {
+            if (group.visibleNonzero === 0) return; // 何も公開しない出力は逆算の対象外
+            published++;
+            group.vectors.forEach((vector) => vector.forEach((value, i) => {
+              if (value > 0 && value < minCell) {
+                const candidates = new Set(group.vectors.map((v) => v[i]));
+                assert.ok(candidates.size >= 2, `一意に確定: minCell=${minCell} ordered=${ordered} ${JSON.stringify(vector)}`);
+              }
+            }));
+          });
+        }
+      }
+    }
+  }
+  assert.ok(published > 1000, '公開される出力を十分に検査した: ' + published);
+});
+
+test('総当たり検証（地域）：「その他の地域」でも小ブロックの元値が一意に決まらない', () => {
+  const blocks = ['b0', 'b1', 'b2', 'b3', 'b4'].map((id) => ({ id, label: id, prefectureOptionIds: [] }));
+  const region = clone(schema);
+  region.publicRegionAggregation.blocks = blocks;
+  const defs = blocks.map((b) => ({ id: b.id, label: b.label, independent: false }));
+  let published = 0;
+  for (let total = 3; total <= 16; total++) {
+    const groups = new Map();
+    for (const vector of compositions(5, total)) {
+      const counts = Object.fromEntries(vector.map((v, i) => ['b' + i, v]));
+      const res = aggregate.regionCells(region, { defs, counts, targetCount: total }, { sort: 'count_desc' }, { minCell: 3 });
+      const key = JSON.stringify(res.cells);
+      if (!groups.has(key)) groups.set(key, { cells: res.cells, vectors: [] });
+      groups.get(key).vectors.push(vector);
+    }
+    groups.forEach((group) => {
+      if (group.cells.length === 0) return;
+      published++;
+      group.vectors.forEach((vector) => vector.forEach((value, i) => {
+        if (value > 0 && value < 3) assert.ok(new Set(group.vectors.map((v) => v[i])).size >= 2, `一意に確定: ${JSON.stringify(vector)}`);
+      }));
+    });
+  }
+  assert.ok(published > 200, String(published));
+});
+
+test('地域の回帰：小ブロックが 2・2 でも、その他の地域の合計から 2+2 に確定しない', () => {
+  const q = regionOf([prefSpec(PREF.tokyo, 20), prefSpec(PREF.aichi, 10), prefSpec(PREF.osaka, 2), prefSpec(PREF.hokkaido, 2)]);
+  assert.equal(q.state, 'published');
+  assert.deepEqual(q.cells.map((c) => [c.label, c.count]), [['関東', 20], ['その他の地域', 14]]); // 東海 10 も取り込む
+  // 取り込んだ結果、公開できるブロックが残らないなら公開しない（小ブロック 2・2 + 公開ブロック 1 つだけ）。
+  const only = regionOf([prefSpec(PREF.osaka, 2), prefSpec(PREF.hokkaido, 2), prefSpec(PREF.tokyo, 20)]);
+  assert.equal(only.state, 'suppressed_all');
+  assert.equal(only.targetCount, null);
+  assert.deepEqual(only.cells, []);
 });
 
 test('validateSnapshot は小セルの公開・逆算可能な抑止不足・順序違反を検出する', () => {
@@ -311,7 +389,8 @@ test('地域は地方ブロックだけを公開し、小さいブロックは�
   const q = regionOf([prefSpec(PREF.tokyo, 12), prefSpec(PREF.aichi, 9), prefSpec(PREF.osaka, 2), prefSpec(PREF.hokkaido, 2), prefSpec('prefer_not_to_say', 1)]);
   assert.equal(q.state, 'published');
   assert.equal(q.targetCount, 25); // 回答しない を除く
-  assert.deepEqual(q.cells.map((c) => [c.label, c.count]), [['関東', 12], ['東海', 9], ['その他の地域', 4]]);
+  // 小ブロック（関西 2・北海道 2）だけをまとめると合計 4 から 2+2 に確定するため、最小の公開ブロック（東海 9）も取り込む。
+  assert.deepEqual(q.cells.map((c) => [c.label, c.count]), [['関東', 12], ['その他の地域', 13]]);
 });
 
 test('地域の補完秘匿：まとめた先が 1 ブロックだけ・minCell 未満なら、最小の公開ブロックも取り込む', () => {
