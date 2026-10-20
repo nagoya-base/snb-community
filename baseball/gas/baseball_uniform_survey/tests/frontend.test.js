@@ -759,11 +759,11 @@ test('responsive：390px / 1440px で横スクロールしない構造（CSS / v
 test('回答者向け説明：目的・18歳以上・5〜12分・非公開範囲・匿名性・参加申込ではない。保持期間は短い1文で示す', async () => {
   const env = await openPage();
   const text = bodyText(env.document);
-  for (const phrase of ['今後の運営・企画', '18歳以上', '5〜12分', '個別の回答は公開しません', '自由記述', '詳細な居住地域は公開しません', '修正・削除することは原則できません', '参加申込ではありません', '回答受付終了後1年間を保持期間とし']) {
+  for (const phrase of ['今後の運営・企画', '18歳以上', '5〜12分', '個別の回答は公開しません', '自由記述', '詳細な居住地域も載せません', '修正・削除することは原則できません', '参加申込ではありません', '回答受付の終了後1年間保管します', '10件未満では正確な回答数を表示しません', '30件以上を目安に', '少人数の項目は', '最終結果は、回答受付の終了後に確定します', '重複回答を抑える仕組み', '完全に保証するものではありません']) {
     assert.ok(text.includes(phrase), phrase);
   }
   assert.ok(text.includes('個人単位の情報を含まない集計結果は、その後も保管・公開する場合があります'), '集計結果は保持・公開しうる');
-  assert.ok(!/自動|すべてのデータ|cleanup|confirmation_code|retention|dry-run/i.test(text), '自動削除・全データ削除とは書かない／内部手順は出さない');
+  assert.ok(!/自動|すべてのデータ|cleanup|confirmation_code|retention|dry-run|snapshot|スナップショット|minTotal|minCell|hash|ハッシュ|stable/i.test(text), '自動削除・全データ削除とは書かない／内部手順は出さない');
   assert.ok(!/GA4|アクセス解析|Analytics/i.test(text), '技術的な GA4 の説明は回答者向け画面に出さない（計測の制限仕様は実装で守る）');
   assert.match(fs.readFileSync(path.join(D.REPO, D.PAGE), 'utf8'), /<meta name="robots" content="noindex">/);
 });

@@ -781,12 +781,14 @@
     card.appendChild(noteList([
       t('intro.note.eligibility'),
       t('intro.note.time', { min: schema.respondentNotice.estimatedMinutes.min, max: schema.respondentNotice.estimatedMinutes.max }),
+      t('intro.note.notEntry'),
+      t('intro.note.partial'),
       t('intro.note.publication'),
       t('intro.note.admin'),
       t('intro.note.anonymity'),
       t('intro.note.retention'),
-      t('intro.note.partial'),
-      t('intro.note.notEntry'),
+      t('intro.note.rollout'),
+      t('intro.note.smallGroups'),
       t('intro.note.representativeness')
     ]));
     card.appendChild(el('p', 'bus-help', t('intro.contact')));
