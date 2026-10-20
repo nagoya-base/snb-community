@@ -62,9 +62,9 @@ test('Frontend の JS/HTML に設問ID・option ID・分岐条件をベタ書き
   schema.questions.forEach((q) => { ids.add(q.id); (q.options || []).forEach((o) => ids.add(o.id)); });
   const hard = [...ids].filter((id) => id.length >= 7 && !['baseball', 'attended', 'overseas', 'ineligible', 'eligibility', 'website'].includes(id));
   for (const id of hard) assert.ok(!stripped.includes(`'${id}'`) && !stripped.includes(`"${id}"`), `ベタ書き: ${id}`);
-  // section 見出しは schema の全 section を網羅している（欠けると画面見出しが空になる）
-  const titles = fs.readFileSync(path.join(dir, 'app.js'), 'utf8');
-  new Set(schema.questions.map((q) => q.section)).forEach((section) => assert.match(titles, new RegExp(`\\b${section}:\\s*'`), section));
+  // section 見出しは i18n/ja.json にあり、schema の全 section を網羅している（欠けると画面見出しが空になる）
+  const ja = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'i18n', 'ja.json'), 'utf8'));
+  new Set(schema.questions.map((q) => q.section)).forEach((section) => assert.ok(typeof ja.sections[section] === 'string' && ja.sections[section], section));
 });
 
 test('生成物 survey.generated.js は schema + core と一致し、server 専用 config を含まない', () => {

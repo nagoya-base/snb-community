@@ -37,7 +37,7 @@ test('production の有効回答が保存され、system fields と stable ID �
   assert.strictEqual(cell(env, 'age_confirmed'), 'yes');
   assert.strictEqual(cell(env, 'survey_version'), '2026-10');
   assert.strictEqual(cell(env, 'schema_version'), '1');
-  assert.strictEqual(cell(env, 'design_version'), '2.17');
+  assert.strictEqual(cell(env, 'design_version'), '2.18');
   assert.strictEqual(cell(env, 'response_mode'), 'production');
   assert.strictEqual(cell(env, 'test_run_id'), '');
   assert.strictEqual(cell(env, 'completion_status'), 'complete');
