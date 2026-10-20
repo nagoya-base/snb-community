@@ -27,6 +27,9 @@ const FRONTEND_TARGET = path.join(ROOT, '..', '..', 'baseball-uniform-survey', '
 // Frontend 専用の表示辞書（i18n/*.json から生成。Public/Admin/maintenance GAS には含めない。保存値は変わらない）。
 const FRONTEND_I18N_TARGET = path.join(ROOT, '..', '..', 'baseball-uniform-survey', 'i18n.generated.js');
 
+// 結果ページ専用の翻訳生成物（回答ページと同じ i18n/*.json が正本）。
+const RESULTS_I18N_TARGET = path.join(ROOT, '..', '..', 'baseball-uniform-survey-results', 'results-i18n.generated.js');
+
 function renderAdmin() {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const core = fs.readFileSync(CORE_PATH, 'utf8');
@@ -91,14 +94,24 @@ function renderFrontend() {
 }
 
 // 辞書に欠落・不明key・意味の上書きがあれば生成しない（翻訳漏れを fallback で隠さない）。
-function renderFrontendI18n() {
+function loadValidatedDicts() {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const dicts = i18n.loadDicts();
   const problems = i18n.validate(schema, dicts);
   if (problems.length) {
     throw new Error('i18n 辞書が不完全です（' + problems.length + '件）:\n' + problems.slice(0, 20).map((p) => '  ' + p.locale + ' ' + p.code + ' ' + p.key).join('\n'));
   }
-  return i18n.renderFrontend(dicts);
+  return { schema, dicts };
+}
+
+function renderFrontendI18n() {
+  return i18n.renderFrontend(loadValidatedDicts().dicts);
+}
+
+// 結果ページ用の翻訳（同じ i18n/*.json から、結果ページが使う分だけを取り出す）。
+function renderResultsI18n() {
+  const loaded = loadValidatedDicts();
+  return i18n.renderResults(loaded.dicts, loaded.schema);
 }
 
 function render() {
@@ -125,6 +138,7 @@ function main(argv) {
     { file: TARGET, content: render() },
     { file: FRONTEND_TARGET, content: renderFrontend() },
     { file: FRONTEND_I18N_TARGET, content: renderFrontendI18n() },
+    { file: RESULTS_I18N_TARGET, content: renderResultsI18n() },
     { file: ADMIN_TARGET, content: renderAdmin() },
     { file: MAINTENANCE_TARGET, content: renderMaintenance() }
   ];
@@ -152,7 +166,7 @@ function main(argv) {
 
 if (require.main === module) process.exitCode = main(process.argv.slice(2));
 module.exports = {
-  render, renderFrontend, renderFrontendI18n, renderAdmin, renderMaintenance,
+  render, renderFrontend, renderFrontendI18n, renderResultsI18n, RESULTS_I18N_TARGET, renderAdmin, renderMaintenance,
   TARGET, FRONTEND_TARGET, FRONTEND_I18N_TARGET, ADMIN_TARGET, MAINTENANCE_TARGET,
   SCHEMA_PATH, CONFIG_PATH, CORE_PATH, AGGREGATE_PATH, MAINTENANCE_CORE_PATH, RETENTION_PATH
 };

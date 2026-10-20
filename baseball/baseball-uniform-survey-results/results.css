@@ -23,6 +23,15 @@ body {
 .bur-skip:focus { left: 8px; top: 8px; }
 .bur-wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px 80px; }
 .bur-back { display: inline-block; margin: 4px 0 12px; color: var(--bur-muted); font-size: .88rem; min-height: 24px; }
+.bur-lang { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; font-size: .88rem; }
+.bur-lang-label { color: var(--bur-muted); }
+.bur-lang-select { min-height: 44px; max-width: 60%; padding: 6px 10px; border: 1px solid var(--bur-line); border-radius: 8px; background: #fff; color: inherit; font: inherit; }
+.bur-lang-select:focus-visible { outline: 3px solid var(--bur-accent); outline-offset: 2px; }
+/* 言語ごとの日本語以外の字形（<html lang> に連動。端末にあるフォントへフォールバック） */
+html:lang(en) body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Hiragino Sans', sans-serif; }
+html:lang(ko) body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif; }
+html:lang(zh-Hans) body { font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif; }
+html:lang(zh-Hant) body { font-family: 'PingFang TC', 'Microsoft JhengHei', 'Noto Sans TC', system-ui, sans-serif; }
 .bur-hero h1 { font-size: 1.5rem; line-height: 1.4; margin: 0 0 12px; }
 .bur-eyebrow { margin: 0; color: var(--bur-accent-dark); font-weight: 700; font-size: .9rem; }
 .bur-hero-image { display: block; margin: 0 0 14px; }

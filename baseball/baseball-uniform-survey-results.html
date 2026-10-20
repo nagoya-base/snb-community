@@ -24,33 +24,43 @@
   <link rel="stylesheet" href="baseball-uniform-survey-results/results.css">
 </head>
 <body data-site-section="baseball" data-page-type="survey-results">
-  <a class="bur-skip" href="#bur-main">本文へ移動</a>
+  <a class="bur-skip" href="#bur-main" data-i18n="page.skip">本文へ移動</a>
   <div class="bur-wrap">
-    <a class="bur-back" href="./">← 名古屋野球ユニ部のページへ戻る</a>
+    <!-- 言語選択（results.js が描画）。回答ページと同じ localStorage キーを共有し、URL・GA4 には載せない。 -->
+    <div class="bur-lang" id="bur-lang"></div>
+    <a class="bur-back" href="./" data-i18n="page.back">← 名古屋野球ユニ部のページへ戻る</a>
     <header class="bur-hero">
       <picture class="bur-hero-image">
         <source srcset="../images/baseball/catchball/survey-hero.webp" type="image/webp">
-        <img src="../images/baseball/catchball/survey-ogp.jpg" width="1200" height="630" alt="野球部じゃなくても、野球ユニは好きだ。野球ユニ・スポーツウェアについてのアンケート">
+        <img src="../images/baseball/catchball/survey-ogp.jpg" width="1200" height="630" data-i18n-alt="results.heroAlt" alt="野球部じゃなくても、野球ユニは好きだ。野球ユニ・スポーツウェアについてのアンケート">
       </picture>
-      <p class="bur-eyebrow">名古屋野球ユニ部</p>
-      <h1>名古屋野球ユニ部アンケート 結果</h1>
-      <a class="bur-answer-cta" href="baseball-uniform-survey.html">アンケートに回答する</a>
+      <p class="bur-eyebrow" data-i18n="page.eyebrow">名古屋野球ユニ部</p>
+      <h1 data-i18n="results.heading">名古屋野球ユニ部アンケート 結果</h1>
+      <a class="bur-answer-cta" href="baseball-uniform-survey.html" data-i18n="results.answerCta">アンケートに回答する</a>
     </header>
     <section class="bur-notice" aria-labelledby="bur-notice-title">
-      <h2 id="bur-notice-title">この結果の見方</h2>
+      <h2 id="bur-notice-title" data-i18n="results.notice.title">この結果の見方</h2>
       <ul>
-        <li>SNS・Web等で募った任意回答の集計です。一般人口全体を代表する統計ではありません。</li>
-        <li>回答数の少ない小さな集計群は、個人が推測されないよう非表示にしています。非表示の項目があっても、ほかの数値から復元はできません。</li>
-        <li>自由記述・詳細な居住地域（都道府県・愛知県内の地域）・回答を区別する記号は公開しません。</li>
-        <li>この結果は、回答の集まり具合に合わせてまとめて更新します（回答のたびには更新しません）。</li>
+        <li data-i18n="results.notice.voluntary">SNS・Web等で募った任意回答の集計です。一般人口全体を代表する統計ではありません。</li>
+        <li data-i18n="results.notice.smallGroups">回答数の少ない小さな集計群は、個人が推測されないよう非表示にしています。非表示の項目があっても、ほかの数値から復元はできません。</li>
+        <li data-i18n="results.notice.unpublished">自由記述・詳細な居住地域（都道府県・愛知県内の地域）・回答を区別する記号は公開しません。</li>
+        <li data-i18n="results.notice.batch">この結果は、回答の集まり具合に合わせてまとめて更新します（回答のたびには更新しません）。</li>
       </ul>
     </section>
     <main id="bur-main" tabindex="-1">
       <div id="bur-app" aria-live="polite">
-        <noscript><p class="bur-lead">結果の表示にはJavaScriptが必要です。</p></noscript>
+        <noscript>
+          <p class="bur-lead" lang="ja">結果の表示にはJavaScriptが必要です。</p>
+          <p class="bur-lead" lang="en">JavaScript is required to view the results.</p>
+          <p class="bur-lead" lang="ko">결과를 보려면 JavaScript가 필요합니다.</p>
+          <p class="bur-lead" lang="zh-Hans">查看结果需要启用JavaScript。</p>
+          <p class="bur-lead" lang="zh-Hant">查看結果需要啟用JavaScript。</p>
+        </noscript>
       </div>
     </main>
   </div>
+  <script src="baseball-uniform-survey-results/results-i18n.generated.js"></script>
+  <script src="baseball-uniform-survey/locale.js"></script>
   <script src="baseball-uniform-survey-results/results.js"></script>
 </body>
 </html>

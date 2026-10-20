@@ -295,7 +295,7 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 |---|---|
 | `src/survey-aggregate.js` | 集計・publication 判定・suppression・snapshot 生成・検証・semantic code 集計（副作用なしの ES5。`SurveyCore` を使う） |
 | `admin/` | 独立した **read-only** Admin GAS（`SurveyGenerated.gs` は生成物。`Config / Data / Snapshot / FreeText / Main .gs`、`Dashboard.html`、`appsscript.json`） |
-| `baseball/baseball-uniform-survey-results.html` と `baseball/baseball-uniform-survey-results/` | 公開結果ページ（`results.js` / `results.css` / `snapshot.json`） |
+| `baseball/baseball-uniform-survey-results.html` と `baseball/baseball-uniform-survey-results/` | 公開結果ページ（`results.js` / `results.css` / `snapshot.json` / 生成物 `results-i18n.generated.js`） |
 | `tools/build-initial-snapshot.js` | 回答 0 件の初期 `snapshot.json`（全項目非公開）を作る。実データには触れない |
 
 設問ID・option・分岐・公開閾値は Admin / aggregate にベタ書きしません。`question.publication` が公開判定の**唯一の正本**です（`publicRegionAggregation.publication` は地域ブロック用）。`npm run build` は `admin/SurveyGenerated.gs`（schema + 専用 core + aggregate。受付設定・通知設定・salt/token は含めない）も生成し、`build:check` が差分を検出します。
@@ -461,7 +461,7 @@ retention 設定状態の確認／finalize preflight／finalize 実行／finaliz
 
 ## 多言語対応（Issue #398）
 
-回答者向け Frontend を ja / en / ko / zh-Hans / zh-Hant の5言語に対応しました。Admin・公開結果ページは日本語のままです（別 Issue）。**表示文言だけ**を切り替え、保存・集計・分岐は変わりません。
+回答者向け Frontend を ja / en / ko / zh-Hans / zh-Hant の5言語に対応しました。Admin は日本語のままです。公開結果ページも同じ5言語に対応しています（Issue #414。下記「公開結果ページの5言語対応」）。**表示文言だけ**を切り替え、保存・集計・分岐は変わりません。
 
 ### 構成
 
@@ -498,6 +498,21 @@ retention 設定状態の確認／finalize preflight／finalize 実行／finaliz
 - 実行時: 翻訳が欠けても画面を壊さず、選択言語 → ja（schema）の順で表示します。**これは事故時の安全策で、翻訳漏れを許容するものではありません。**
 - CI（`npm test`）: `tests/i18n.test.js` が 5言語の存在、全 question.id の label、全 option.id の label と option ID 集合の完全一致、helpText・anchors・section・milestone・UI 共通文言の全言語分、unknown key / typo key / 空文字 / placeholder 欠け / 日本語の翻訳漏れ、簡体・繁体の混在、Frontend が参照する ui key と辞書の過不足を検査し、1 件でもあれば失敗します。`tests/frontend_i18n.test.js`（初期言語・切替・保持・test mode・GA4・a11y）、`tests/public_i18n.test.js`（server は stable ID のみ受理）も同様です。
 - 実 Google での確認は `LAUNCH_READINESS.md` の 3A。
+
+
+### 公開結果ページの5言語対応（Issue #414）
+
+結果ページ（`baseball-uniform-survey-results.html`）も ja / en / ko / zh-Hans / zh-Hant に対応しています。**表示文言だけ**を切り替え、snapshot の値・公開状態（published のみ表示）・件数・割合・small-cell suppression・公開閾値は変わりません。
+
+| 項目 | 内容 |
+|---|---|
+| 翻訳の正本 | 回答ページと同じ `i18n/*.json`。設問・選択肢は `question.id` / option ID（結果の `cell.id`）で引くため、結果ページ側で二重管理しません。`single_dynamic`（`top_uniform` / `main_barrier`）は source 設問の option を、scale は `anchors` / `notApplicable` を使います |
+| 結果ページ専用の文言 | `i18n/*.json` の `ui` に `results.` 接頭辞で置きます（見出し・CTA・見方・回答数・対象者数・非表示注記・エラー・地域ブロック名・その他の地域）。「本文へ移動」「戻る」eyebrow「言語」は回答ページと同じ key を再利用します |
+| 生成物 | `baseball/baseball-uniform-survey-results/results-i18n.generated.js`（**直接編集禁止**）。`npm run build` で `i18n/*.json` から結果ページが使う分だけを生成し、`build:check` が差分を検出します。`results.*` は回答ページの `i18n.generated.js` には含めません |
+| 言語選択 | `baseball/baseball-uniform-survey/locale.js` を回答ページと共有します。localStorage キー `snb_baseball_uniform_survey_locale_v1`、初期言語は「保存済みの選択 → ブラウザ言語 → ja」。URL（query / hash）・GA4 には言語を載せません。相互リンクでも言語が維持されます |
+| fallback | 翻訳が欠けた設問・選択肢・地域名は snapshot の日本語 label、固定 UI は ja へ。辞書自体が読めなくても描画は壊れません（欠落は CI が失敗させます） |
+| SEO / OGP | canonical・og:url・OGP 画像は言語で変えません。`<html lang>`・`<title>`・`description` だけ現在の言語に合わせます |
+| テスト | `tests/results_i18n.test.js`（5言語の固定 UI と設問/選択肢、state・件数・割合・suppression の不変、翻訳欠落 fallback、URL に locale が付かないこと、回答ページとの相互遷移、モバイル幅の静的検査） |
 
 ## 本番前統合・実 Google 環境 E2E（Issue #390）
 

@@ -7,6 +7,7 @@ const path = require('path');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const { schema, core, aggregate, clone, validFrom, snapshotOf, entryOf } = require('./helpers/fixtures');
 const { renderInitial, SNAPSHOT_PATH } = require('../tools/build-initial-snapshot');
+const { openResults } = require('./helpers/results');
 
 const REPO = path.join(__dirname, '..', '..', '..', '..');
 const SITE = 'https://nagoya-base.github.io/snb-community/';
@@ -15,31 +16,6 @@ const read = (p) => fs.readFileSync(path.join(REPO, p), 'utf8');
 const resultsJs = read('baseball/baseball-uniform-survey-results/results.js');
 const INTERESTED = { club_awareness: 'aware_not_attended', catchball_interest: 'very_interested' };
 const ATTENDEE = { club_awareness: 'attended', last_attended: 'within_3m' };
-
-const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
-
-/** snapshot を fetch の応答として結果ページを開く。fetch した URL を calls に残す。 */
-async function openResults(snapshot, fetchImpl) {
-  const calls = [];
-  const errors = [];
-  const virtualConsole = new VirtualConsole();
-  virtualConsole.on('jsdomError', (e) => errors.push(e));
-  const dom = new JSDOM(read(PAGE).replace(/<script src="[^"]*results\.js"><\/script>/, ''), {
-    url: SITE + PAGE,
-    runScripts: 'outside-only',
-    pretendToBeVisual: true,
-    virtualConsole
-  });
-  const { window } = dom;
-  window.fetch = (url) => {
-    calls.push(String(url));
-    if (fetchImpl) return fetchImpl(url);
-    return Promise.resolve({ ok: true, json: () => Promise.resolve(JSON.parse(JSON.stringify(snapshot))) });
-  };
-  window.eval(resultsJs);
-  for (let i = 0; i < 6; i++) await tick();
-  return { window, document: window.document, calls, errors, text: () => window.document.getElementById('bur-app').textContent };
-}
 
 const ten = () => validFrom([{ count: 10 }]);
 const rich = () => validFrom([
@@ -188,7 +164,7 @@ test('Frontend の RESULTS_URL は存在する結果ページを指し、本番�
 
 test('結果ページ資産に実回答・Spreadsheet export・secret を置かない', () => {
   const dir = path.join(REPO, 'baseball', 'baseball-uniform-survey-results');
-  assert.deepEqual(fs.readdirSync(dir).sort(), ['results.css', 'results.js', 'snapshot.json']);
+  assert.deepEqual(fs.readdirSync(dir).sort(), ['results-i18n.generated.js', 'results.css', 'results.js', 'snapshot.json']);
   const all = fs.readdirSync(dir).map((f) => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n') + read(PAGE);
   assert.ok(!/RESPONDENT_SALT|TEST_TOKEN|NOTIFICATION_EMAIL|SPREADSHEET_ID|RESPONSES_SPREADSHEET_ID|@[a-z0-9-]+\.(com|jp)/i.test(all));
   assert.ok(!/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(all));

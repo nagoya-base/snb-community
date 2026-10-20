@@ -1,15 +1,75 @@
 /*
- * 名古屋野球ユニ部アンケート 公開結果ページ（Issue #382）。
+ * 名古屋野球ユニ部アンケート 公開結果ページ（Issue #382 / 5言語対応 #414）。
  *
  * Spreadsheet・Public GAS には接続しない。読むのは privacy-safe snapshot（snapshot.json）だけで、
  * snapshot は Admin が batch で生成して commit したもの。回答の送信ごとに更新されることはない。
- * 設問・option の文言は snapshot に含まれる（schema 由来）ので、ここにはベタ書きしない。
  * DOM へは textContent だけで書く（innerHTML は使わない）。
+ *
+ * 多言語化（Issue #414）: ja / en / ko / zh-Hans / zh-Hant。
+ *  - 表示文言だけを切り替える。件数・割合・state・targetCount・suppression など snapshot の値と公開判定は言語で変わらない。
+ *  - 固定 UI・設問ラベル・選択肢ラベルは results-i18n.generated.js（回答ページと同じ i18n/*.json から生成）を
+ *    question.id / option.id（cell.id）で引く。日本語は snapshot の label（schema 由来）を使い、翻訳が欠けた場合も日本語へ fallback する。
+ *  - 選択言語の保存・初期言語の決定は回答ページと共有（locale.js）。URL・GA4 には載せない。
  */
 var SurveyResultsView = (function () {
   'use strict';
 
   var SNAPSHOT_URL = 'baseball-uniform-survey-results/snapshot.json';
+
+  var I18N = (typeof SURVEY_RESULTS_I18N !== 'undefined' && SURVEY_RESULTS_I18N) || { default: 'ja', locales: ['ja'], dynamicSources: {}, dicts: { ja: { ui: {}, questions: {} } } };
+  var DEFAULT_LOCALE = I18N.default || 'ja';
+  var locale = DEFAULT_LOCALE;
+
+  function isSupported(value) { return typeof value === 'string' && I18N.locales.indexOf(value) !== -1; }
+  function dictOf(code) { return I18N.dicts[code] || null; }
+  function fillParams(text, params) {
+    return String(text).replace(/\{([A-Za-z0-9_]+)\}/g, function (match, name) {
+      return params && params[name] !== undefined && params[name] !== null ? String(params[name]) : match;
+    });
+  }
+  function uiValue(code, key) {
+    var dict = dictOf(code);
+    var value = dict && dict.ui && dict.ui[key];
+    return typeof value === 'string' && value !== '' ? value : null;
+  }
+  /* UI 文言：選択言語 → ja → key 名（辞書の欠落は CI が検出する。実行時は画面を壊さないためだけの安全策）。 */
+  function t(key, params) {
+    var value = uiValue(locale, key);
+    if (value === null) value = uiValue(DEFAULT_LOCALE, key);
+    return fillParams(value === null ? key : value, params);
+  }
+  function hasUi(key) { return uiValue(locale, key) !== null || uiValue(DEFAULT_LOCALE, key) !== null; }
+
+  /* 設問由来の文言：日本語は snapshot の label（schema 由来）。他言語は question.id / option.id（cell.id）で引き、無ければ snapshot（ja）。 */
+  function qEntry(questionId) {
+    var dict = locale !== DEFAULT_LOCALE && dictOf(locale);
+    return dict && dict.questions && dict.questions[questionId] || null;
+  }
+  function questionLabel(question) {
+    if (question.type === 'region') return hasUi('results.region.label') && locale !== DEFAULT_LOCALE ? t('results.region.label') : question.label;
+    var entry = qEntry(question.id);
+    return entry && entry.label || question.label;
+  }
+  function cellLabel(question, cell) {
+    if (locale === DEFAULT_LOCALE) return cell.label;
+    if (question.type === 'region') {
+      var regionKey = 'results.region.' + cell.id;
+      return uiValue(locale, regionKey) !== null ? t(regionKey) : cell.label;
+    }
+    // single_dynamic の候補は source 設問の option ID なので、source 設問の翻訳を使う。
+    var sources = I18N.dynamicSources || {};
+    var entry = qEntry(Object.prototype.hasOwnProperty.call(sources, question.id) ? sources[question.id] : question.id);
+    if (!entry) return cell.label;
+    var own = Object.prototype.hasOwnProperty;
+    if (entry.options && own.call(entry.options, cell.id) && entry.options[cell.id]) return entry.options[cell.id];
+    if (entry.anchors && own.call(entry.anchors, cell.id) && entry.anchors[cell.id]) return entry.anchors[cell.id];
+    if (cell.independent && entry.notApplicable) return entry.notApplicable;
+    return cell.label;
+  }
+  function sectionLabel(section) {
+    var key = 'results.section.' + section.id;
+    return uiValue(locale, key) !== null ? t(key) : section.label;
+  }
 
   function el(doc, tag, text, cls) {
     var node = doc.createElement(tag);
@@ -33,19 +93,20 @@ var SurveyResultsView = (function () {
     question.cells.forEach(function (cell) {
       var item = el(doc, 'li');
       var head = el(doc, 'div', null, 'bur-cell-head');
-      head.appendChild(el(doc, 'span', cell.label));
+      head.appendChild(el(doc, 'span', cellLabel(question, cell)));
       if (typeof cell.count === 'number') {
-        head.appendChild(el(doc, 'span', cell.count + '人（' + percent(cell.count, question.targetCount) + '%）', 'bur-cell-count'));
+        var pct = percent(cell.count, question.targetCount);
+        head.appendChild(el(doc, 'span', t('results.cell.count', { count: cell.count, percent: pct }), 'bur-cell-count'));
         item.appendChild(head);
         var bar = el(doc, 'div', null, 'bur-bar');
         var fill = doc.createElement('i');
-        fill.style.width = percent(cell.count, question.targetCount) + '%';
+        fill.style.width = pct + '%';
         bar.appendChild(fill);
         item.appendChild(bar);
       } else {
         // ordinal の目盛りは保つが、値は出さない。
         item.className = 'bur-cell-hidden';
-        head.appendChild(el(doc, 'span', '非公開（少数）', 'bur-cell-count'));
+        head.appendChild(el(doc, 'span', t('results.cell.hidden'), 'bur-cell-count'));
         item.appendChild(head);
       }
       list.appendChild(item);
@@ -61,11 +122,11 @@ var SurveyResultsView = (function () {
   function renderQuestion(doc, question) {
     var card = el(doc, 'article', null, 'bur-card');
     card.setAttribute('data-state', 'published');
-    card.appendChild(el(doc, 'h3', question.label));
-    card.appendChild(el(doc, 'p', 'この設問の対象の回答者：' + roundedBase(question.targetCount) + '人以上（割合はこの対象者に対するものです）', 'bur-base'));
+    card.appendChild(el(doc, 'h3', questionLabel(question)));
+    card.appendChild(el(doc, 'p', t('results.base', { count: roundedBase(question.targetCount) }), 'bur-base'));
     card.appendChild(renderCells(doc, question));
     if (question.hasSuppressedCells) {
-      card.appendChild(el(doc, 'p', '回答の少ない一部の集計群は、個人が推測されないよう非表示にしています。', 'bur-hidden-note'));
+      card.appendChild(el(doc, 'p', t('results.hiddenNote'), 'bur-hidden-note'));
     }
     return card;
   }
@@ -76,7 +137,7 @@ var SurveyResultsView = (function () {
     var doc = root.ownerDocument;
     root.textContent = '';
     if (!snapshot || !Array.isArray(snapshot.questions) || !Array.isArray(snapshot.sections)) {
-      root.appendChild(el(doc, 'p', '結果を読み込めませんでした。時間をおいて、もう一度開いてください。', 'bur-lead bur-error'));
+      root.appendChild(el(doc, 'p', t('results.error'), 'bur-lead bur-error'));
       return;
     }
     snapshot.sections.forEach(function (section) {
@@ -85,33 +146,93 @@ var SurveyResultsView = (function () {
       if (!published.length && !hasStatus) return;
       var layer = el(doc, 'section', null, 'bur-layer');
       layer.setAttribute('data-section', section.id);
-      layer.appendChild(el(doc, 'h2', section.label));
+      layer.appendChild(el(doc, 'h2', sectionLabel(section)));
       if (hasStatus) {
         var status = snapshot.response_status;
         var text = status.state === 'counting' && typeof snapshot.production_valid_total === 'number'
-          ? '回答数：' + snapshot.production_valid_total + '件以上'
-          : '回答受付中';
+          ? t('results.status.counting', { count: snapshot.production_valid_total })
+          : t('results.status.collecting');
         layer.appendChild(el(doc, 'p', text, 'bur-status'));
       }
       published.forEach(function (question) { layer.appendChild(renderQuestion(doc, question)); });
       root.appendChild(layer);
     });
     if (snapshot.representativeness_notice) {
-      root.appendChild(el(doc, 'p', snapshot.representativeness_notice, 'bur-lead'));
+      root.appendChild(el(doc, 'p', t('results.representativeness'), 'bur-lead'));
     }
+  }
+
+  /* ── 言語選択（回答ページと同じ localStorage キー。URL・GA4 には載せない） ── */
+  var current = null; // {root, snapshot|null}。言語切替で再取得せず、読み込み済みの snapshot を描き直す。
+  var langSelect = null;
+  var langLabel = null;
+
+  function buildLangSelector(doc) {
+    var host = doc.getElementById('bur-lang');
+    if (!host || host.firstChild) return;
+    langLabel = el(doc, 'label', null, 'bur-lang-label');
+    langLabel.setAttribute('for', 'bur-lang-select');
+    langSelect = doc.createElement('select');
+    langSelect.id = 'bur-lang-select';
+    langSelect.className = 'bur-lang-select';
+    I18N.locales.forEach(function (code) {
+      var option = doc.createElement('option');
+      option.value = code;
+      option.setAttribute('lang', code);
+      option.textContent = SurveyLocale.NAMES[code] || code;
+      langSelect.appendChild(option);
+    });
+    langSelect.addEventListener('change', function () { setLocale(langSelect.value); });
+    host.appendChild(langLabel);
+    host.appendChild(langSelect);
+  }
+
+  /* <html lang>・title・description・静的 HTML の文言（data-i18n / data-i18n-alt）・言語選択を現在の言語へ合わせる。canonical・OGP は言語で変えない。 */
+  function applyDocumentLocale(doc) {
+    doc.documentElement.setAttribute('lang', locale);
+    doc.title = t('results.page.title');
+    var meta = doc.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute('content', t('results.page.metaDescription'));
+    Array.prototype.forEach.call(doc.querySelectorAll('[data-i18n]'), function (node) {
+      node.textContent = t(node.getAttribute('data-i18n'));
+    });
+    Array.prototype.forEach.call(doc.querySelectorAll('[data-i18n-alt]'), function (node) {
+      node.setAttribute('alt', t(node.getAttribute('data-i18n-alt')));
+    });
+    if (langLabel) langLabel.textContent = t('lang.label');
+    if (langSelect) langSelect.value = locale;
+  }
+
+  function setLocale(next) {
+    if (!isSupported(next) || next === locale) { if (langSelect) langSelect.value = locale; return; }
+    locale = next;
+    SurveyLocale.store(window, next);
+    if (current) {
+      applyDocumentLocale(current.root.ownerDocument);
+      render(current.root, current.snapshot);
+    }
+    if (langSelect) langSelect.focus(); // 切替操作を続けられるよう、フォーカスは言語選択に残す
+  }
+
+  function show(root, snapshot) {
+    current = { root: root, snapshot: snapshot };
+    render(root, snapshot);
   }
 
   function load(win) {
     var doc = win.document;
     var root = doc.getElementById('bur-app');
     if (!root) return Promise.resolve();
+    locale = SurveyLocale.initial(win, I18N.locales);
+    buildLangSelector(doc);
+    applyDocumentLocale(doc);
     return win.fetch(SNAPSHOT_URL)
       .then(function (response) {
         if (!response.ok) throw new Error('snapshot_unavailable');
         return response.json();
       })
-      .then(function (snapshot) { render(root, snapshot); })
-      .catch(function () { render(root, null); });
+      .then(function (snapshot) { show(root, snapshot); })
+      .catch(function () { show(root, null); });
   }
 
   if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof window.fetch === 'function' && !window.SNB_BASEBALL_RESULTS_NO_AUTOLOAD) {
