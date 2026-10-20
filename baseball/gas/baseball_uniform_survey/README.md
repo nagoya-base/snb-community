@@ -324,7 +324,7 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 
 version の比較は保存仕様（文字列）に合わせた厳密比較です。文字列は完全一致のみ、数値は `String(n)` が schema の値と一致する場合のみ許容します（Sheets が `"1"` / `"2.18"` を数値化した場合）。真偽値・前後に空白のある文字列などの型変換は**同一視せず** `version_mismatch` として除外します（fail-closed）。**唯一の例外**として、`survey_version` に限り、schema 側が `YYYY-MM` で、実値が有限の数値かつ期待月の月初に対応する Sheets 日付シリアル値と完全一致する場合は、Sheets が `2026-10` を日付化した既存行として互換認識し有効扱いにします（`legacy_date_serial_accepted` に件数のみ表示。セル値は書き換えません）。別月のシリアル値・近い数値・非月初・boolean・空白付き文字列は従来どおり不一致、`schema_version` / `design_version` へは広げません。`2.18` と `2.1` / `2.17` / `2.180`（文字列）は別 version です。
 
-画面表示は同じなのに `version_mismatch` になる場合は、Admin の `getVersionDiagnostics()`（Dashboard の除外内訳にも自動表示）で原因を確認します。**読み取りのみ**で、既存行の削除・上書き・並べ替えはしません。
+画面表示は同じなのに `version_mismatch` になる場合は、Admin の `getVersionDiagnostics()`（Dashboard 上部「診断の詳細」にも自動表示）で原因を確認します。**読み取りのみ**で、既存行の削除・上書き・並べ替えはしません。
 
 - 返すのは、schema 側の期待 version、対象行数・不一致行数、field 別（survey / schema / design）の不一致件数、Sheets API（`UNFORMATTED_VALUE`）が返した値の**型と分類**（`string_other` / `date_serial_of_expected_month` / `number_other` / `empty` など）、表示値（`FORMATTED_VALUE`、version 列 B:D のみ）が期待どおりかどうか、だけです。
 - `display_equal_api_differs_rows > 0` なら、画面表示ではなく API が返す型・値が原因（Sheets の自動型変換）です。`date_serial_of_expected_month` は `2026-10` が月初の日付に変換されたことを示します。
@@ -578,3 +578,12 @@ GitHub Pages は repository 全体を公開対象にします。このディレ�
 - salt / token / secret（server-side の Script Properties 等にのみ置く）
 
 テストの入力は schema をメモリ上で書き換えた架空データだけです。
+
+### Admin Dashboard の構成（Issue #426）
+
+Admin は「結果閲覧が主役・公開判定は補助」の read-only 画面です（スマホ前提・横スクロールなし）。
+
+- タブ: **集計結果**（デフォルト）／公開判定／障壁と安心条件／snapshot／自由記述（運営者のみ）。
+- 集計結果は設問ごとの縦カード。選択肢別の件数・割合を表示し、公開閾値に届かない設問も内部集計は隠しません（割合の分母は「その設問に回答した人」。multiple は合計100%になりません）。
+- 一般公開の可否は 1 行の補助表示。`minTotal / minTarget / minCell / Tier / question_id` はカード内の折りたたみ、または公開判定タブ（definition list）にあります。
+- Public の公開判定・suppression・snapshot 仕様は変更していません（`getAdminSummary()` に `type` / `answeredCount` を追加しただけ）。

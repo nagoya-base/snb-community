@@ -958,15 +958,18 @@ var SurveyAggregate = (function (core) {
       return {
         id: entry.id,
         label: entry.label,
+        type: entry.kind === 'region' ? 'region' : entry.question.type,
         tier: entry.publication.tier,
         sensitiveBranch: entry.publication.sensitiveBranch === true,
         denominator: entry.kind === 'region' ? (schema.publicRegionAggregation.denominator || 'question_reached') : (core.denominatorOf(schema, entry.id) || 'question_reached'),
         targetCount: table.targetCount,
+        answeredCount: table.answeredCount,
         thresholds: t,
         totalMet: evaluation.totalMet,
         targetMet: evaluation.targetMet,
         publicState: publicEntry.state,
         hasSuppressedCells: publicEntry.hasSuppressedCells,
+        /* Admin 内部の exact な集計。公開閾値・suppression とは無関係に常に返す（公開側は publicPreview / buildPublicEntry を通る）。 */
         tally: table.defs.map(function (d) { return { id: d.id, label: d.label, count: table.counts[d.id] }; })
       };
     });
