@@ -628,7 +628,7 @@ test('version（#422）：日付化・真偽値・空白付きなど、型変換
   const ok = answersFor({});
   const serial = sheetsSerial(2026, 10);
   assert.equal(serial, 46296);
-  const variants = [serial, true, ' 2026-10 ', '2026-10\n', new Date(Date.UTC(2026, 9, 1)).toISOString(), [], {}, NaN, Infinity];
+  const variants = [serial - 1, serial + 1, serial + 0.5, serial + 31, serial - 365, 2026, 202610, 1, 0, true, false, ' 2026-10 ', '2026-10\n', new Date(Date.UTC(2026, 9, 1)).toISOString(), [], {}, NaN, Infinity];
   const { counts, valid } = classify(variants.map((v) => rowFor(ok, { survey_version: v })));
   assert.equal(valid.length, 0);
   assert.equal(counts.excluded.version_mismatch, variants.length);
@@ -637,21 +637,31 @@ test('version（#422）：日付化・真偽値・空白付きなど、型変換
   assert.equal(aggregate.versionMatches('1', 1), true);
   assert.equal(aggregate.versionMatches('2.18', 2.18), true);
   assert.equal(aggregate.versionMatches('2.18', '2.18 '), false);
-  assert.equal(aggregate.versionMatches('2026-10', serial), false);
+  assert.equal(aggregate.versionMatches('2026-10', serial), false, 'field 未指定では互換認識しない');
+  assert.equal(aggregate.versionMatches('2026-10', serial, 'schema_version'), false);
+  assert.equal(aggregate.versionMatches('2026-10', serial, 'design_version'), false);
+  assert.equal(aggregate.versionMatches('2026-10', serial, 'survey_version'), true);
+  assert.equal(aggregate.versionMatches('2026-10', serial - 1, 'survey_version'), false);
+  assert.equal(aggregate.versionMatches('2026-11', serial, 'survey_version'), false);
+  assert.equal(aggregate.versionMatches('1', 1, 'survey_version'), true, '数値化の既存許容（String(n)）は維持');
+  assert.equal(aggregate.versionMatches('v1', serial, 'survey_version'), false, 'schema 側が YYYY-MM 以外なら互換認識しない');
+  assert.equal(aggregate.versionMatches('2026-10', true, 'survey_version'), false);
+  assert.equal(aggregate.versionMatches('2026-10', ' 2026-10', 'survey_version'), false);
 });
 
-test('version 診断（#422）：Sheets が survey_version を日付化したケースを、値を出さずに原因として特定できる', () => {
+test('version 診断（#422）：Sheets が survey_version を日付化したケースは互換認識し、別月は値を出さずに原因を特定できる', () => {
   const ok = answersFor({ feedback: 'SECRET-FREE-TEXT' });
   const converted = rowFor(ok, { survey_version: sheetsSerial(2026, 10) });
-  const rows = [rowFor(ok), converted, rowFor(ok, { survey_version: sheetsSerial(2026, 10) }), rowFor(ok, { response_mode: 'test', test_run_id: 'r', survey_version: 1 }), rowFor(ok, { completion_status: 'partial', survey_version: 1 })];
+  const rows = [rowFor(ok), converted, rowFor(ok, { survey_version: sheetsSerial(2026, 11) }), rowFor(ok, { response_mode: 'test', test_run_id: 'r', survey_version: 1 }), rowFor(ok, { completion_status: 'partial', survey_version: 1 })];
   const display = rows.map((row, i) => ({ survey_version: i === 3 || i === 4 ? '1' : '2026-10', schema_version: '1', design_version: '2.18' }));
   const d = aggregate.diagnoseVersions(schema, rows, display);
   assert.deepEqual(d.expected, { survey_version: '2026-10', schema_version: '1', design_version: '2.18' });
   assert.equal(d.rows_checked, 3, 'test / incomplete は classifyRows と同じく version 比較の対象外');
-  assert.equal(d.mismatch_rows, 2);
-  assert.deepEqual(d.mismatch_by_field, { survey_version: 2, schema_version: 0, design_version: 0 });
-  assert.equal(d.display_equal_api_differs_rows, 2, '表示は一致しているのに API の値が違う（= 表示ではなく API が返した型・値が原因）');
-  assert.deepEqual(d.observed.survey_version, [{ api_type: 'number', shape: 'date_serial_of_expected_month', display_matches_expected: true, count: 2 }]);
+  assert.equal(d.mismatch_rows, 1);
+  assert.equal(d.legacy_date_serial_accepted_rows, 1, '期待月の月初シリアルは互換認識（mismatch ではなく件数のみ）');
+  assert.deepEqual(d.mismatch_by_field, { survey_version: 1, schema_version: 0, design_version: 0 });
+  assert.equal(d.display_equal_api_differs_rows, 1, '表示は一致しているのに API の値が違う（= 表示ではなく API が返した型・値が原因）');
+  assert.deepEqual(d.observed.survey_version, [{ api_type: 'number', shape: 'date_serial_other', display_matches_expected: true, count: 1 }]);
   assert.deepEqual(d.observed.schema_version, []);
   assert.deepEqual(d.observed.design_version, []);
   // 診断件数は classifyRows と一致する。
@@ -683,5 +693,22 @@ test('version 診断（#422）：回答本文・自由記述・hash・timestamp�
   const out = JSON.stringify(aggregate.diagnoseVersions(schema, rows, rows.map(() => ({ survey_version: '2026-10', schema_version: '1', design_version: '2.18' }))));
   ['SECRET-FREE-TEXT', 'SECRET-OTHER-TEXT', 'weird-SECRET-VALUE', '2026-11-10 12:00', 'unknown'].forEach((s) => assert.ok(!out.includes(s), s));
   rows.forEach((r) => assert.ok(!out.includes(r.respondent_hash)));
-  assert.deepEqual(Object.keys(JSON.parse(out)).sort(), ['display_equal_api_differs_rows', 'expected', 'mismatch_by_field', 'mismatch_rows', 'observed', 'rows_checked']);
+  assert.deepEqual(Object.keys(JSON.parse(out)).sort(), ['display_equal_api_differs_rows', 'expected', 'legacy_date_serial_accepted_rows', 'mismatch_by_field', 'mismatch_rows', 'observed', 'rows_checked']);
+});
+
+test('version（#422）：survey_version の月初日付シリアル値だけ production_valid（互換認識として数える）。schema/design へは広げない', () => {
+  const ok = answersFor({});
+  const serial = sheetsSerial(2026, 10);
+  const { counts, valid } = classify([
+    rowFor(ok),
+    rowFor(ok, { survey_version: serial }),
+    rowFor(ok, { survey_version: serial, schema_version: 1, design_version: 2.18 }),
+    rowFor(ok, { schema_version: serial }),
+    rowFor(ok, { design_version: serial }),
+    rowFor(ok, { survey_version: sheetsSerial(2026, 11) })
+  ]);
+  assert.equal(valid.length, 3);
+  assert.equal(counts.legacy_date_serial_accepted, 2);
+  assert.equal(counts.excluded.version_mismatch, 3);
+  assert.deepEqual(counts.version_mismatch_fields, { survey_version: 1, schema_version: 1, design_version: 1 });
 });

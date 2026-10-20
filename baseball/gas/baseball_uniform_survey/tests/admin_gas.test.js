@@ -283,22 +283,34 @@ const convertedRows = (count = 6) => {
   return { shown, raw };
 };
 
-test('version 診断（#422）：表示は 2026-10 のまま API が日付シリアル値を返す 6 件を version_mismatch として数え、field 別・型別に原因を特定できる', () => {
+test('version 診断（#422）：表示は 2026-10 のまま API が月初日付シリアル値を返す 6 件は互換認識され production_valid、件数だけ legacy_date_serial_accepted で確認できる', () => {
   const { shown, raw } = convertedRows(6);
   const env = createAdminEnv(raw, { displayRows: shown });
   const summary = plain(env.ctx.getAdminSummary());
-  assert.equal(summary.excluded.version_mismatch, 6);
-  assert.deepEqual(summary.version_mismatch_fields, { survey_version: 6, schema_version: 0, design_version: 0 });
-  assert.equal(summary.production_valid_total, 20, '日付化された行は fail-closed のまま除外（自動採用しない）');
+  assert.equal(summary.excluded.version_mismatch, 0);
+  assert.deepEqual(summary.version_mismatch_fields, { survey_version: 0, schema_version: 0, design_version: 0 });
+  assert.equal(summary.legacy_date_serial_accepted, 6);
+  assert.equal(summary.production_valid_total, 26, '月初シリアルの既存行は互換認識して有効扱い');
   const d = plain(env.ctx.getVersionDiagnostics());
   assert.equal(d.status, 'ok');
   assert.deepEqual(d.expected, { survey_version: '2026-10', schema_version: '1', design_version: '2.18' });
   assert.equal(d.rows_checked, 26);
-  assert.equal(d.mismatch_rows, 6);
-  assert.deepEqual(d.mismatch_by_field, { survey_version: 6, schema_version: 0, design_version: 0 });
-  assert.equal(d.display_equal_api_differs_rows, 6);
-  assert.deepEqual(d.observed.survey_version, [{ api_type: 'number', shape: 'date_serial_of_expected_month', display_matches_expected: true, count: 6 }]);
-  assert.deepEqual([d.observed.schema_version, d.observed.design_version], [[], []]);
+  assert.equal(d.mismatch_rows, 0);
+  assert.equal(d.legacy_date_serial_accepted_rows, 6);
+  assert.deepEqual(d.observed.survey_version, []);
+});
+
+test('version 診断（#422）：別月の日付シリアル値は version_mismatch のまま除外され、診断で date_serial_other と分かる', () => {
+  const { shown, raw } = convertedRows(3);
+  const other = Math.round((Date.UTC(2026, 10, 1) - Date.UTC(1899, 11, 30)) / 86400000);
+  const rows = raw.map((r) => (r.survey_version === SERIAL_2026_10 ? Object.assign({}, r, { survey_version: other }) : r));
+  const env = createAdminEnv(rows, { displayRows: shown });
+  const summary = plain(env.ctx.getAdminSummary());
+  assert.equal(summary.excluded.version_mismatch, 3);
+  assert.equal(summary.legacy_date_serial_accepted, 0);
+  assert.equal(summary.production_valid_total, 20);
+  const d = plain(env.ctx.getVersionDiagnostics());
+  assert.deepEqual(d.observed.survey_version, [{ api_type: 'number', shape: 'date_serial_other', display_matches_expected: true, count: 3 }]);
 });
 
 test('version 診断（#422）：read-only で、version 列（B:D）以外の表示値を読まない。Sheets の書き込み API を呼ばない', () => {
@@ -314,11 +326,11 @@ test('version 診断（#422）：read-only で、version 列（B:D）以外の�
 test('version 診断（#422）：回答本文・自由記述・hash・timestamp・source_channel・Spreadsheet ID を出力しない（Admin summary の内訳も同様）', () => {
   const { shown, raw } = convertedRows(3);
   const env = createAdminEnv(raw, { displayRows: shown });
-  const outputs = JSON.stringify(env.ctx.getVersionDiagnostics()) + JSON.stringify(plain(env.ctx.getAdminSummary()).version_mismatch_fields);
+  const outputs = JSON.stringify(env.ctx.getVersionDiagnostics()) + JSON.stringify(plain(env.ctx.getAdminSummary()).version_mismatch_fields) + JSON.stringify(plain(env.ctx.getAdminSummary()).legacy_date_serial_accepted);
   ['ADMIN-ONLY-TEXT', 'responses-sheet-id', '2026-11-10 12:00', 'unknown', 'sent'].forEach((s) => assert.ok(!outputs.includes(s), s));
   raw.forEach((r) => assert.ok(!outputs.includes(r.respondent_hash)));
   const d = plain(env.ctx.getVersionDiagnostics());
-  assert.deepEqual(Object.keys(d).sort(), ['display_equal_api_differs_rows', 'expected', 'mismatch_by_field', 'mismatch_rows', 'observed', 'rows_checked', 'status']);
+  assert.deepEqual(Object.keys(d).sort(), ['display_equal_api_differs_rows', 'expected', 'legacy_date_serial_accepted_rows', 'mismatch_by_field', 'mismatch_rows', 'observed', 'rows_checked', 'status']);
 });
 
 test('version 診断（#422）：本当に異なる version は mismatch のまま、表示値も違うと分かる（Sheets の型変換が原因ではない）', () => {
@@ -362,5 +374,6 @@ test('Dashboard（#422）：version_mismatch があれば内訳と診断を text
   const html = fs.readFileSync(path.join(adminDir, 'Dashboard.html'), 'utf8');
   assert.match(html, /getVersionDiagnostics/);
   assert.match(html, /version_mismatch_fields/);
+  assert.match(html, /legacy_date_serial_accepted/);
   assert.ok(!/innerHTML/.test(html));
 });

@@ -322,7 +322,7 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 
 #### version_mismatch の診断（#422）
 
-version の比較は保存仕様（文字列）に合わせた厳密比較です。文字列は完全一致のみ、数値は `String(n)` が schema の値と一致する場合のみ許容します（Sheets が `"1"` / `"2.18"` を数値化した場合）。日付シリアル値・真偽値・前後に空白のある文字列などの型変換は**同一視せず** `version_mismatch` として除外します（fail-closed）。`2.18` と `2.1` / `2.17` / `2.180`（文字列）は別 version です。
+version の比較は保存仕様（文字列）に合わせた厳密比較です。文字列は完全一致のみ、数値は `String(n)` が schema の値と一致する場合のみ許容します（Sheets が `"1"` / `"2.18"` を数値化した場合）。真偽値・前後に空白のある文字列などの型変換は**同一視せず** `version_mismatch` として除外します（fail-closed）。**唯一の例外**として、`survey_version` に限り、schema 側が `YYYY-MM` で、実値が有限の数値かつ期待月の月初に対応する Sheets 日付シリアル値と完全一致する場合は、Sheets が `2026-10` を日付化した既存行として互換認識し有効扱いにします（`legacy_date_serial_accepted` に件数のみ表示。セル値は書き換えません）。別月のシリアル値・近い数値・非月初・boolean・空白付き文字列は従来どおり不一致、`schema_version` / `design_version` へは広げません。`2.18` と `2.1` / `2.17` / `2.180`（文字列）は別 version です。
 
 画面表示は同じなのに `version_mismatch` になる場合は、Admin の `getVersionDiagnostics()`（Dashboard の除外内訳にも自動表示）で原因を確認します。**読み取りのみ**で、既存行の削除・上書き・並べ替えはしません。
 

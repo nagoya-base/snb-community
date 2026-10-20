@@ -806,18 +806,33 @@ var SurveyAggregate = (function (core) {
 
   /*
    * 保存仕様では version は文字列。Sheets が "1" / "2.18" を数値へ自動変換した場合に限り、
-   * 数値を文字列表現（String(n)）で比較して許容する。それ以外の型変換（日付シリアル・真偽値・前後空白付き文字列など）は
-   * 同一視しない（fail-closed）。型が変わった値を曖昧に採用しないため、診断（diagnoseVersions）で原因を確定してから Owner が判断する。
+   * 数値を文字列表現（String(n)）で比較して許容する。それ以外の型変換（真偽値・前後空白付き文字列など）は
+   * 同一視しない（fail-closed）。
+   * 例外（#422 Owner 判断）: survey_version だけは、schema 側が YYYY-MM で、actual が有限 number かつ
+   * 期待月の月初の日付シリアル値と完全一致する場合に限り、Sheets が "2026-10" を日付化した既存行として一致扱いにする。
+   * schema_version / design_version には広げない。
    */
-  function versionMatches(expected, actual) {
+  function isLegacyDateSerial(expected, actual, field) {
+    if (field !== 'survey_version' || typeof actual !== 'number' || !isFinite(actual)) return false;
+    var serial = monthStartSerial(expected);
+    return serial !== null && actual === serial;
+  }
+
+  function versionMatches(expected, actual, field) {
     if (typeof actual === 'string') return actual === expected;
-    if (typeof actual === 'number') return isFinite(actual) && String(actual) === expected;
+    if (typeof actual === 'number') return isFinite(actual) && (String(actual) === expected || isLegacyDateSerial(expected, actual, field));
     return false;
+  }
+
+  /* 文字列/数値の通常一致ではなく、月初日付シリアルの互換認識で一致した field か。 */
+  function isLegacyAccepted(schema, row, field) {
+    var expected = str(schema[field]);
+    return isLegacyDateSerial(expected, row[field], field) && String(row[field]) !== expected;
   }
 
   /* 不一致の version field 名の配列（一致なら空）。classifyRows と diagnoseVersions が同じ判定を使う。 */
   function mismatchedVersionFields(schema, row) {
-    return VERSION_FIELDS.filter(function (field) { return !versionMatches(str(schema[field]), row[field]); });
+    return VERSION_FIELDS.filter(function (field) { return !versionMatches(str(schema[field]), row[field], field); });
   }
 
   /* classifyRows が version 比較へ進める行（production かつ complete）。診断も同じ条件で対象行を決める。 */
@@ -873,6 +888,7 @@ var SurveyAggregate = (function (core) {
       rows_checked: 0,
       mismatch_rows: 0,
       mismatch_by_field: emptyVersionFieldCounts(),
+      legacy_date_serial_accepted_rows: 0,
       display_equal_api_differs_rows: display ? 0 : null,
       observed: {}
     };
@@ -883,7 +899,10 @@ var SurveyAggregate = (function (core) {
       if (!reachesVersionCheck(row)) return;
       result.rows_checked++;
       var fields = mismatchedVersionFields(schema, row);
-      if (!fields.length) return;
+      if (!fields.length) {
+        if (isLegacyAccepted(schema, row, 'survey_version')) result.legacy_date_serial_accepted_rows++;
+        return;
+      }
       result.mismatch_rows++;
       var displayEqual = false;
       fields.forEach(function (field) {
@@ -918,7 +937,7 @@ var SurveyAggregate = (function (core) {
    * respondent_hash は重複除去のためだけに使い、public へは出さない。
    */
   function classifyRows(schema, rows) {
-    var counts = { rows: 0, production_valid: 0, test_excluded: 0, excluded: emptyExcluded(), version_mismatch_fields: emptyVersionFieldCounts() };
+    var counts = { rows: 0, production_valid: 0, test_excluded: 0, excluded: emptyExcluded(), version_mismatch_fields: emptyVersionFieldCounts(), legacy_date_serial_accepted: 0 };
     var valid = [];
     var seen = {};
     var textIds = core.getQuestions(schema).filter(function (q) { return q.type === 'text'; }).map(function (q) { return q.id; });
@@ -936,6 +955,7 @@ var SurveyAggregate = (function (core) {
         mismatched.forEach(function (field) { counts.version_mismatch_fields[field]++; });
         return;
       }
+      if (isLegacyAccepted(schema, row, 'survey_version')) counts.legacy_date_serial_accepted++;
       var parsed = rowToAnswers(schema, row);
       if (!parsed) { counts.excluded.malformed++; return; }
       if (core.findTermination(schema, parsed.answers)) { counts.excluded.ineligible++; return; }
@@ -1676,6 +1696,7 @@ var SurveyAggregate = (function (core) {
       test_excluded: classification.counts.test_excluded,
       excluded: classification.counts.excluded,
       version_mismatch_fields: classification.counts.version_mismatch_fields || emptyVersionFieldCounts(),
+      legacy_date_serial_accepted: classification.counts.legacy_date_serial_accepted || 0,
       rows: classification.counts.rows,
       questions: questions,
       semantic: analyzeSemanticCodes(schema, valid),
