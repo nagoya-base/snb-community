@@ -11,14 +11,6 @@ var SurveyResultsView = (function () {
 
   var SNAPSHOT_URL = 'baseball-uniform-survey-results/snapshot.json';
 
-  /* 項目が非公開のときの説明（state は snapshot の publish state）。未知の state も安全側（非公開）に倒す。 */
-  var MESSAGES = {
-    insufficient: 'この項目は、回答数がまだ十分でないため公開していません。',
-    sensitive_withheld: 'この項目は、十分な回答数が集まった場合のみ公開します。',
-    suppressed_all: 'この項目は、回答が少数の集計群に分かれているため、個人が推測されないよう非表示にしています。'
-  };
-  var FALLBACK_MESSAGE = MESSAGES.insufficient;
-
   function el(doc, tag, text, cls) {
     var node = doc.createElement(tag);
     if (text !== undefined && text !== null) node.textContent = String(text);
@@ -61,24 +53,25 @@ var SurveyResultsView = (function () {
     return list;
   }
 
+  /* 段階公開：snapshot 上で published の設問だけをカードにする。未公開（insufficient / sensitive_withheld / suppressed_all・未知の state）は存在自体を見せない。 */
+  function isPublished(question) {
+    return !!question && question.state === 'published' && Array.isArray(question.cells) && typeof question.targetCount === 'number';
+  }
+
   function renderQuestion(doc, question) {
     var card = el(doc, 'article', null, 'bur-card');
-    card.setAttribute('data-state', String(question.state));
+    card.setAttribute('data-state', 'published');
     card.appendChild(el(doc, 'h3', question.label));
-    if (question.state === 'published' && Array.isArray(question.cells) && typeof question.targetCount === 'number') {
-      card.appendChild(el(doc, 'p', 'この設問の対象の回答者：' + roundedBase(question.targetCount) + '人以上（割合はこの対象者に対するものです）', 'bur-base'));
-      card.appendChild(renderCells(doc, question));
-      if (question.hasSuppressedCells) {
-        card.appendChild(el(doc, 'p', '回答の少ない一部の集計群は、個人が推測されないよう非表示にしています。', 'bur-hidden-note'));
-      }
-    } else {
-      var message = Object.prototype.hasOwnProperty.call(MESSAGES, question.state) ? MESSAGES[question.state] : FALLBACK_MESSAGE;
-      card.appendChild(el(doc, 'p', message, 'bur-msg'));
+    card.appendChild(el(doc, 'p', 'この設問の対象の回答者：' + roundedBase(question.targetCount) + '人以上（割合はこの対象者に対するものです）', 'bur-base'));
+    card.appendChild(renderCells(doc, question));
+    if (question.hasSuppressedCells) {
+      card.appendChild(el(doc, 'p', '回答の少ない一部の集計群は、個人が推測されないよう非表示にしています。', 'bur-hidden-note'));
     }
     return card;
   }
 
-  /* snapshot を root へ描画する。2 層：現在の回答状況 / アンケート結果。順序は snapshot.questions（= schema の publicResultsOrder）のまま。 */
+  /* snapshot を root へ描画する。2 層：現在の回答状況 / アンケート結果。順序は snapshot.questions（= schema の publicResultsOrder）のまま。
+   * 公開設問が 1 件もないセクションは見出しごと出さない。ただし「現在の回答状況」は回答数表示（既存の公開ルール）を持つため、その表示がある間は残す。 */
   function render(root, snapshot) {
     var doc = root.ownerDocument;
     root.textContent = '';
@@ -87,19 +80,20 @@ var SurveyResultsView = (function () {
       return;
     }
     snapshot.sections.forEach(function (section) {
+      var published = snapshot.questions.filter(function (question) { return question.section === section.id && isPublished(question); });
+      var hasStatus = section.id === 'response_status' && !!snapshot.response_status;
+      if (!published.length && !hasStatus) return;
       var layer = el(doc, 'section', null, 'bur-layer');
       layer.setAttribute('data-section', section.id);
       layer.appendChild(el(doc, 'h2', section.label));
-      if (section.id === 'response_status' && snapshot.response_status) {
+      if (hasStatus) {
         var status = snapshot.response_status;
         var text = status.state === 'counting' && typeof snapshot.production_valid_total === 'number'
           ? '回答数：' + snapshot.production_valid_total + '件以上'
           : '回答受付中';
         layer.appendChild(el(doc, 'p', text, 'bur-status'));
       }
-      snapshot.questions.forEach(function (question) {
-        if (question.section === section.id) layer.appendChild(renderQuestion(doc, question));
-      });
+      published.forEach(function (question) { layer.appendChild(renderQuestion(doc, question)); });
       root.appendChild(layer);
     });
     if (snapshot.representativeness_notice) {
@@ -124,5 +118,5 @@ var SurveyResultsView = (function () {
     load(window);
   }
 
-  return { render: render, load: load, SNAPSHOT_URL: SNAPSHOT_URL, MESSAGES: MESSAGES };
+  return { render: render, load: load, SNAPSHOT_URL: SNAPSHOT_URL };
 })();

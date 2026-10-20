@@ -214,7 +214,7 @@ test('静的 HTML の data-i18n 文言は ja 辞書と一致し、noscript は5�
   let m;
   let count = 0;
   while ((m = re.exec(html))) { count += 1; assert.strictEqual(m[3], dicts.ja.ui[m[2]], m[2]); }
-  assert.strictEqual(count, 4);
+  assert.strictEqual(count, 5);
   ['ja', 'en', 'ko', 'zh-Hans', 'zh-Hant'].forEach((lang) => assert.match(html, new RegExp(`<noscript>[\\s\\S]*lang="${lang}"[\\s\\S]*</noscript>`)));
   assert.match(html, /<html lang="ja">/);
   assert.ok(html.indexOf('i18n.generated.js') < html.indexOf('baseball-uniform-survey/app.js'), '辞書は app.js より先に読み込む');
