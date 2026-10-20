@@ -171,9 +171,6 @@ var SurveyResultsView = (function () {
       published.forEach(function (question) { layer.appendChild(renderQuestion(doc, question)); });
       root.appendChild(layer);
     });
-    if (snapshot.representativeness_notice) {
-      root.appendChild(el(doc, 'p', t('results.representativeness'), 'bur-lead'));
-    }
   }
 
   /* ── 言語選択（回答ページと同じ localStorage キー。URL・GA4 には載せない） ── */

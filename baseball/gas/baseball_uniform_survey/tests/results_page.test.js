@@ -32,13 +32,15 @@ test('結果ページは snapshot.json だけを読み、Spreadsheet・Public GA
   assert.ok(!/POST|XMLHttpRequest|sendBeacon|localStorage|sessionStorage|document\.cookie|innerHTML|insertAdjacentHTML|eval\(/.test(resultsJs.replace(/\/\*[\s\S]*?\*\//g, '')), 'DOM は textContent だけで書く');
 });
 
-test('ページは「任意回答で代表性なし」「小さい集計群は非表示」「自由記述・詳細地域は非公開」を明記する', () => {
+test('「この結果の見方」は2項目：任意回答で代表性なし／少人数の項目は非表示・統合、自由記述・詳しい地域は非公開、まとめて更新（Issue #417）', () => {
   const html = read(PAGE);
-  const text = new JSDOM(html).window.document.body.textContent;
-  assert.match(text, /SNS・Web等で募った任意回答/);
-  assert.match(text, /一般人口全体を代表する統計ではありません/);
-  assert.match(text, /小さな集計群は[^。]*非表示/);
-  assert.match(text, /自由記述・詳細な居住地域[^。]*公開しません/);
+  const doc = new JSDOM(html).window.document;
+  const items = Array.from(doc.querySelectorAll('.bur-notice li')).map((li) => li.textContent);
+  assert.deepEqual(items, [
+    'SNS・Web等で募った任意回答の集計で、一般人口全体を代表する統計ではありません。',
+    '個人が推測されないよう少人数の項目は非表示・統合し、自由記述や詳しい居住地域は公開しません。結果は回答の集まり具合に応じてまとめて更新します。'
+  ]);
+  assert.equal((doc.body.textContent.match(/一般人口全体を代表する統計ではありません/g) || []).length, 1, '代表性の注意は重複させない');
   assert.match(html, /<meta name="robots" content="noindex">/);
 });
 

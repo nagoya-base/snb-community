@@ -108,13 +108,12 @@ test('生成物の中身：ja 以外は 固定UI・公開設問の label / optio
   });
 });
 
-test('ja の固定UI・地域名・representativeness は、静的HTML・snapshot（schema 由来）と同じ文言（日本語の正本が二つにならない）', () => {
+test('ja の固定UI・地域名は、静的HTML・snapshot（schema 由来）と同じ文言（日本語の正本が二つにならない）', () => {
   const doc = new JSDOM(read(PAGE)).window.document;
   doc.querySelectorAll('[data-i18n]').forEach((node) => assert.equal(node.textContent, dicts.ja.ui[node.getAttribute('data-i18n')], node.getAttribute('data-i18n')));
   assert.equal(doc.querySelector('img[data-i18n-alt]').getAttribute('alt'), dicts.ja.ui['results.heroAlt']);
   assert.equal(doc.title, dicts.ja.ui['results.page.title']);
   assert.equal(doc.querySelector('meta[name="description"]').getAttribute('content'), dicts.ja.ui['results.page.metaDescription']);
-  assert.equal(dicts.ja.ui['results.representativeness'], schema.publicationPolicy.ui.representativenessNotice);
   assert.equal(dicts.ja.ui['results.region.label'], schema.publicRegionAggregation.publicLabel);
   assert.equal(dicts.ja.ui['results.region.other_regions'], schema.publicRegionAggregation.privacy.mergedLabel);
   schema.publicRegionAggregation.blocks.forEach((b) => assert.equal(dicts.ja.ui['results.region.' + b.id], b.label));
@@ -164,7 +163,7 @@ test('5言語すべてで固定UI（本文へ移動・戻る・eyebrow・H1・CT
     assert.equal(doc.querySelector('h1').textContent, ui(locale, 'results.heading'));
     assert.equal(doc.querySelector('.bur-answer-cta').textContent, ui(locale, 'results.answerCta'));
     assert.equal(doc.getElementById('bur-notice-title').textContent, ui(locale, 'results.notice.title'));
-    assert.deepEqual(Array.from(doc.querySelectorAll('.bur-notice li')).map((li) => li.textContent), ['voluntary', 'smallGroups', 'unpublished', 'batch'].map((k) => ui(locale, 'results.notice.' + k)));
+    assert.deepEqual(Array.from(doc.querySelectorAll('.bur-notice li')).map((li) => li.textContent), ['voluntary', 'privacy'].map((k) => ui(locale, 'results.notice.' + k)));
     assert.equal(doc.querySelector('.bur-hero img').getAttribute('alt'), ui(locale, 'results.heroAlt'));
     assert.equal(doc.title, ui(locale, 'results.page.title'));
     assert.equal(doc.querySelector('meta[name="description"]').getAttribute('content'), ui(locale, 'results.page.metaDescription'));
@@ -172,7 +171,8 @@ test('5言語すべてで固定UI（本文へ移動・戻る・eyebrow・H1・CT
     assert.equal(doc.querySelector('.bur-status').textContent, ui(locale, 'results.status.counting', { count: snapshot.production_valid_total }));
     cardsOf(env).forEach((card, i) => assert.equal(card.querySelector('.bur-base').textContent, ui(locale, 'results.base', { count: Math.floor(published[i].targetCount / 10) * 10 })));
     assert.ok(doc.querySelector('.bur-hidden-note') === null || doc.querySelector('.bur-hidden-note').textContent === ui(locale, 'results.hiddenNote'));
-    assert.equal(doc.querySelector('#bur-app > p.bur-lead').textContent, ui(locale, 'results.representativeness'));
+    // 代表性の注意は「この結果の見方」の1か所だけ（結果一覧の末尾に再掲しない）。
+    assert.equal(doc.querySelector('#bur-app > p.bur-lead'), null);
     if (locale !== 'ja') {
       // 言語名の選択肢と noscript（5言語併記）を除く、表示されるすべての文言に日本語が残らない。
       const leaves = Array.from(doc.querySelector('.bur-wrap').querySelectorAll('*')).filter((e) => e.children.length === 0 && !e.closest('.bur-lang') && !e.closest('noscript')).map((e) => e.textContent);

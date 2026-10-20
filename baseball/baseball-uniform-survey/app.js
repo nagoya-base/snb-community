@@ -742,19 +742,13 @@
     card.appendChild(heading(t('intro.title')));
     card.appendChild(el('p', 'bus-lead', t('intro.lead')));
     card.appendChild(noteList([
-      t('intro.note.eligibility'),
-      t('intro.note.time', { min: schema.respondentNotice.estimatedMinutes.min, max: schema.respondentNotice.estimatedMinutes.max }),
-      t('intro.note.notEntry'),
+      t('intro.note.eligibility', { min: schema.respondentNotice.estimatedMinutes.min, max: schema.respondentNotice.estimatedMinutes.max }),
       t('intro.note.partial'),
       t('intro.note.publication'),
       t('intro.note.admin'),
-      t('intro.note.anonymity'),
-      t('intro.note.retention'),
-      t('intro.note.rollout'),
-      t('intro.note.smallGroups'),
-      t('intro.note.representativeness'),
-      t('intro.note.duplicates')
+      t('intro.note.retention')
     ]));
+    card.appendChild(el('p', 'bus-help', t('intro.note.notEntry')));
     card.appendChild(el('p', 'bus-help', t('intro.contact')));
     app.appendChild(card);
     app.appendChild(navBar(null, t('common.start'), function () {
