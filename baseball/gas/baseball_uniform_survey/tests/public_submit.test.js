@@ -659,3 +659,87 @@ test('doPost / doGet はJSONを返し、例外は server_error に丸める', ()
   assert.strictEqual(JSON.parse(ctx.doGet({ parameter: {} }).getContent()).service, 'baseball-uniform-survey');
   assert.strictEqual(JSON.parse(ctx.doGet({ parameter: { action: 'results' } }).getContent()).status, undefined, '公開結果はこのGASの責務ではない');
 });
+
+// ── system field の保存型（Issue #422） ──
+// Sheets は書式が自動のセルへ setValues した文字列を型変換する（'2026-10' → 日付、'1' / '2.18' → 数値）。
+// fake の autoConvert でその挙動を再現し、新規保存の version 等が文字列のまま残ることを確認する。
+
+const TEXT_SYSTEM_FIELDS = ['survey_version', 'schema_version', 'design_version', 'response_mode', 'completion_status', 'test_run_id', 'respondent_hash', 'notification_status'];
+const SERIAL_2026_10 = Math.round((Date.UTC(2026, 9, 1) - Date.UTC(1899, 11, 30)) / 86400000);
+
+test('system field（#422）：fake が Sheets の自動型変換を再現する（書式未設定セルへ "2026-10" を書くと日付シリアル値になる）', () => {
+  const { env } = loadPublic({ setup: false });
+  const sheet = env.spreadsheet.insertSheet('responses');
+  sheet.autoConvert = true;
+  sheet.getRange(1, 1, 1, 3).setValues([['2026-10', '1', '2.18']]);
+  assert.deepStrictEqual(sheet.rows[0], [SERIAL_2026_10, 1, 2.18]);
+  sheet.getRange(2, 1, 1, 3).setNumberFormat('@').setValues([['2026-10', '1', '2.18']]);
+  assert.deepStrictEqual(sheet.rows[1], ['2026-10', '1', '2.18']);
+});
+
+test('system field（#422）：新規 Spreadsheet では version 等の system field を文字列書式にし、timestamp / client_elapsed_ms / source_channel は変えない', () => {
+  const { env, ctx } = loadPublic({ setup: false });
+  ctx.setupSpreadsheet();
+  const sheet = env.spreadsheet.getSheetByName('responses');
+  const head = sheet.rows[0];
+  TEXT_SYSTEM_FIELDS.forEach((name) => assert.strictEqual(sheet.formats[head.indexOf(name) + 1], '@', name));
+  ['timestamp', 'client_elapsed_ms', 'source_channel', 'feedback'].forEach((name) => assert.strictEqual(sheet.formats[head.indexOf(name) + 1], undefined, name));
+  assert.deepStrictEqual(plain(ctx.textFormatColumns_()).slice(0, TEXT_SYSTEM_FIELDS.length), TEXT_SYSTEM_FIELDS);
+});
+
+test('system field（#422）：新規保存で version 系 system field が意図した文字列として保存される（Sheets の自動型変換下でも）', () => {
+  const { env, ctx } = loadPublic();
+  env.spreadsheet.getSheetByName('responses').autoConvert = true;
+  assert.deepStrictEqual(submit(ctx, validPayload(ctx)), { ok: true, status: 'accepted' });
+  assert.strictEqual(cell(env, 'survey_version'), '2026-10');
+  assert.strictEqual(cell(env, 'schema_version'), '1');
+  assert.strictEqual(cell(env, 'design_version'), '2.18');
+  assert.strictEqual(cell(env, 'response_mode'), 'production');
+  assert.strictEqual(cell(env, 'completion_status'), 'complete');
+  assert.strictEqual(typeof cell(env, 'respondent_hash'), 'string');
+  assert.strictEqual(typeof cell(env, 'notification_status'), 'string');
+  // 現行の意図：数値 / 日時として扱う field はそのまま。
+  assert.strictEqual(cell(env, 'client_elapsed_ms'), 90000);
+  assert.ok(cell(env, 'timestamp') instanceof Date);
+});
+
+test('system field（#422）：test 回答の test_run_id も文字列のまま（数字だけの run id でも数値化しない）', () => {
+  const { env, ctx } = loadPublic();
+  env.spreadsheet.getSheetByName('responses').autoConvert = true;
+  assert.strictEqual(submit(ctx, validPayload(ctx, {}, {}, testExtra('123456'))).ok, true);
+  assert.strictEqual(cell(env, 'response_mode'), 'test');
+  assert.strictEqual(cell(env, 'test_run_id'), '123456');
+});
+
+test('system field（#422）：列書式が未設定の既存 Spreadsheet でも、新規行の version は文字列で保存され、既存行は書き換えない', () => {
+  const { env, ctx } = loadPublic({ setup: false });
+  const sheet = env.spreadsheet.insertSheet('responses');
+  const head = ctx.responseHeader_();
+  sheet.getRange(1, 1, 1, head.length).setValues([head]);
+  sheet.autoConvert = true;
+  // 既存行（旧実装で保存され、書式が自動のため version が日付化されている状態）。
+  const legacy = head.map(() => '');
+  legacy[head.indexOf('survey_version')] = SERIAL_2026_10;
+  legacy[head.indexOf('schema_version')] = 1;
+  legacy[head.indexOf('design_version')] = 2.18;
+  legacy[head.indexOf('response_mode')] = 'production';
+  sheet.rows.push(legacy.slice());
+  const legacyFormats = Object.assign({}, sheet.cellFormats);
+  assert.deepStrictEqual(legacyFormats, {}, '既存行には書式が付いていない前提');
+
+  assert.strictEqual(submit(ctx, validPayload(ctx)).ok, true);
+  assert.strictEqual(sheet.rows.length, 3);
+  assert.deepStrictEqual(sheet.rows[1], legacy, '既存行（日付化済みの 6 件相当）を自動修復・書き換えしない');
+  const line = sheet.rows[2];
+  assert.strictEqual(line[head.indexOf('survey_version')], '2026-10');
+  assert.strictEqual(line[head.indexOf('schema_version')], '1');
+  assert.strictEqual(line[head.indexOf('design_version')], '2.18');
+  // 書式を変えたのは書き込んだ行（3 行目）だけ。
+  Object.keys(sheet.cellFormats).forEach((key) => assert.strictEqual(key.split(':')[0], '3', `書式を変えたセル ${key}`));
+});
+
+test('system field（#422）：TEXT_SYSTEM_FIELDS は persistenceSchema.systemFields の部分集合（schema に無い別名列を作らない）', () => {
+  const { ctx } = loadPublic();
+  const fields = schema.persistenceSchema.systemFields;
+  ctx.TEXT_SYSTEM_FIELDS.forEach((name) => assert.ok(fields.includes(name), name));
+});

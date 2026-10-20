@@ -120,7 +120,7 @@ npm run build:check   # 生成物と正本の差分検出（npm test にも含�
 ### 保存（Spreadsheet）
 
 - 列は `survey.schema.json` の `persistenceSchema.systemFields`（`timestamp` / `survey_version` / `schema_version` / `design_version` / `response_mode` / `test_run_id` / `respondent_hash` / `completion_status` / `source_channel` / `client_elapsed_ms` / `notification_status`）を**唯一の正本**とし、続けて全設問 ID（schema 順）と `other_texts`（JSON）です。`created_at` など schema に無い別名列は Public GAS 側で増やしません。列の追加が必要なら先に schema（#378）を更新します。
-- 単一選択・scale は stable ID（scale は文字列 `"1"`〜`"5"` / `cannot_rate`）、複数選択は `|a|b|` 形式です。`respondent_hash` と選択肢列は Sheets の自動数値変換を避けるため書式を文字列にします（`setupSpreadsheet()` が設定）。
+- 単一選択・scale は stable ID（scale は文字列 `"1"`〜`"5"` / `cannot_rate`）、複数選択は `|a|b|` 形式です。`respondent_hash`・選択肢列と、version 系 system field（`survey_version` / `schema_version` / `design_version`）・`response_mode`・`completion_status`・`test_run_id`・`notification_status` は、Sheets の自動型変換（`2026-10` → 日付、`1` / `2.18` → 数値、指数表記など）を避けるため書式を文字列にします。`setupSpreadsheet()` が新規シートの列書式を設定するのに加え、保存のたびに**これから書く行**の該当列も文字列書式にします（列書式が未設定の既存シートでも新規回答は文字列で残る。既存行のセル・値・書式は変更しません）。`timestamp`（日時）・`client_elapsed_ms`（数値）・`source_channel`（allowlist の固定語）は現行の型のままです（#422）。
 - `responses` シートのヘッダーが schema と完全一致しない場合は**書き込みを拒否**します（既存 survey の Sheet への誤書き込み防止）。
 - **Formula Injection 対策**: `=` `+` `-` `@` と制御文字で始まる文字列は先頭に `'` を付けて保存します。
 - 保存は `LockService`（ScriptLock）内で「重複判定 + append」を一体で行います。ロックを取得できなかった同時 submit は保存せず `server_error`（再試行可）を返します。
@@ -316,9 +316,20 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 |---|---|
 | `test_excluded` | `response_mode = test`（invalid でも test として数える。通常集計・snapshot・件数に影響しない） |
 | `excluded.unknown_response_mode` | `production` / `test` 以外・空（fail-closed） |
-| `excluded.incomplete` / `version_mismatch` | `completion_status != complete` ／ survey・schema・design version が schema と不一致 |
+| `excluded.incomplete` / `version_mismatch` | `completion_status != complete` ／ survey・schema・design version が schema と不一致（比較規則と診断は下の「version_mismatch の診断」） |
 | `excluded.ineligible` / `schema_invalid` / `malformed` | 18歳未満（`termination`）／ `validateAnswers` 失敗／ `other_texts` が壊れている |
 | `excluded.missing_hash` / `duplicate` | `respondent_hash` が空／ 同一 hash（最初の 1 件だけ採用。hash は重複除去の内部用途のみ） |
+
+#### version_mismatch の診断（#422）
+
+version の比較は保存仕様（文字列）に合わせた厳密比較です。文字列は完全一致のみ、数値は `String(n)` が schema の値と一致する場合のみ許容します（Sheets が `"1"` / `"2.18"` を数値化した場合）。日付シリアル値・真偽値・前後に空白のある文字列などの型変換は**同一視せず** `version_mismatch` として除外します（fail-closed）。`2.18` と `2.1` / `2.17` / `2.180`（文字列）は別 version です。
+
+画面表示は同じなのに `version_mismatch` になる場合は、Admin の `getVersionDiagnostics()`（Dashboard の除外内訳にも自動表示）で原因を確認します。**読み取りのみ**で、既存行の削除・上書き・並べ替えはしません。
+
+- 返すのは、schema 側の期待 version、対象行数・不一致行数、field 別（survey / schema / design）の不一致件数、Sheets API（`UNFORMATTED_VALUE`）が返した値の**型と分類**（`string_other` / `date_serial_of_expected_month` / `number_other` / `empty` など）、表示値（`FORMATTED_VALUE`、version 列 B:D のみ）が期待どおりかどうか、だけです。
+- `display_equal_api_differs_rows > 0` なら、画面表示ではなく API が返す型・値が原因（Sheets の自動型変換）です。`date_serial_of_expected_month` は `2026-10` が月初の日付に変換されたことを示します。
+- 回答本文・自由記述・`respondent_hash`・timestamp・`source_channel`・Spreadsheet ID は出力しません。
+- 既存の不一致行を採用するか・どう直すかは、原因確定後に Owner が判断します（自動 migration・自動修復はしません）。
 
 自由記述（text 設問）は valid record の `answers` から `free_text` へ分離され、「その他」本文は `other_texts` に残ります。`buildSnapshot` は `answers` だけを読みます。
 

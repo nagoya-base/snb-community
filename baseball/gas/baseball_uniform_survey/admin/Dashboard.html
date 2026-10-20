@@ -101,6 +101,28 @@
         t += ' / 期待列より右の非空データ: ' + (d.extraNonEmptyDataColumns ? 'あり' : 'なし');
         return t;
       }
+      var SHAPE_TEXT = {
+        date_serial_of_expected_month: '期待 version の月初の日付シリアル値（Sheets が日付へ自動変換）',
+        date_serial_other: '別の日付シリアル値',
+        number_other: '数値（期待 version と不一致）',
+        string_whitespace_variant: '前後に空白のある文字列',
+        string_other: '別の文字列',
+        empty: '空',
+        boolean: '真偽値',
+        other: 'その他の型'
+      };
+      /* 件数・型・分類だけを文章にする（個別行の値・識別子は診断が返さない）。 */
+      function versionDiagText(d) {
+        if (!d || d.status !== 'ok') return 'version 診断を実行できませんでした（' + (d && d.status ? d.status : '不明') + '）。';
+        var t = '診断（読み取りのみ）: 期待 survey ' + d.expected.survey_version + ' / schema ' + d.expected.schema_version + ' / design ' + d.expected.design_version +
+          '。対象 ' + d.rows_checked + ' 行中 不一致 ' + d.mismatch_rows + ' 行。表示値は期待どおりなのに API の値が異なる行: ' + (d.display_equal_api_differs_rows === null ? '不明' : d.display_equal_api_differs_rows) + ' 行。';
+        ['survey_version', 'schema_version', 'design_version'].forEach(function (field) {
+          (d.observed[field] || []).forEach(function (g) {
+            t += ' [' + field + ' ' + g.count + ' 件: API 型 ' + g.api_type + '・' + (SHAPE_TEXT[g.shape] || g.shape) + '・表示値は期待と' + (g.display_matches_expected === null ? '不明' : g.display_matches_expected ? '一致' : '不一致') + ']';
+          });
+        });
+        return t;
+      }
       function fail(error) {
         var code = errorCode(error);
         var base = code ? ERROR_TEXT[code] + '（' + code + '）' : '読み込めませんでした（' + (error && error.message ? error.message : '不明なエラー') + '）。Script Property と responses シートの列構成を確認してください。';
@@ -126,6 +148,14 @@
         totals.appendChild(el('p', 'test 回答（通常集計から除外）: ' + s.test_excluded + ' 件 ／ 全行数: ' + s.rows));
         var ex = Object.keys(s.excluded).filter(function (k) { return s.excluded[k] > 0; }).map(function (k) { return k + ': ' + s.excluded[k]; });
         totals.appendChild(el('p', '除外（production だが有効でないもの）: ' + (ex.length ? ex.join(' / ') : 'なし')));
+        if (s.excluded.version_mismatch > 0) {
+          var vf = s.version_mismatch_fields || {};
+          totals.appendChild(el('p', 'version_mismatch の内訳: survey_version ' + (vf.survey_version || 0) + ' / schema_version ' + (vf.schema_version || 0) + ' / design_version ' + (vf.design_version || 0) + '（1 行が複数 field で不一致なら重複して数えます）', 'note'));
+          var diag = el('p', 'version 診断を読み込み中…', 'note');
+          diag.id = 'versionDiag';
+          totals.appendChild(diag);
+          google.script.run.withSuccessHandler(function (d) { diag.textContent = versionDiagText(d); }).withFailureHandler(function () { diag.textContent = 'version 診断を読み込めませんでした。'; }).getVersionDiagnostics();
+        }
         totals.appendChild(el('p', 'snapshot 更新判定: ' + (s.snapshotDecision.update ? '更新可' : '更新不要') + '（' + s.snapshotDecision.reason + '、増分 ' + s.snapshotDecision.increment + '）'));
 
         var table = $('questions');
