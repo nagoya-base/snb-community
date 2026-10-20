@@ -747,3 +747,110 @@ test('回答者向け画面（5言語）に GA4 / アクセス解析の技術的
   await start(env);
   assert.deepStrictEqual(plain(env.events().map((e) => e.name)), ['form_start']);
 });
+
+// ── ヒーロー画像（言語別・結果ページと同じ方式）。OGP / Twitter 画像は固定 ──
+
+const HERO = {
+  ja: ['survey-hero.webp', 'survey-ogp.jpg'],
+  en: ['survey-hero-en.webp', 'survey-hero-en.webp'],
+  ko: ['survey-hero-ko.webp', 'survey-hero-ko.webp'],
+  'zh-Hans': ['survey-hero-zh-hans.webp', 'survey-hero-zh-hans.webp'],
+  'zh-Hant': ['survey-hero-zh-hant.webp', 'survey-hero-zh-hant.webp']
+};
+const IMG_DIR = '../images/baseball/catchball/';
+const heroOf = (env) => ({
+  srcset: env.document.querySelector('.bus-hero source').getAttribute('srcset'),
+  src: env.document.querySelector('.bus-hero img').getAttribute('src'),
+  alt: env.document.querySelector('.bus-hero img').getAttribute('alt')
+});
+const metaImages = (env) => Array.from(env.document.querySelectorAll('meta[property="og:image"], meta[property^="og:image:"], meta[name="twitter:image"], meta[name="twitter:card"], meta[property="og:url"], link[rel="canonical"]')).map((m) => m.outerHTML);
+const heroError = (env) => env.document.querySelector('.bus-hero img').dispatchEvent(new env.window.Event('error'));
+
+test('ヒーロー画像：5言語で <source srcset> / <img src> / alt が再読み込みなしで切り替わり、実ファイルが存在する。alt は辞書（results.heroAlt）が正本', async () => {
+  const env = await openPage({ languages: ['ja-JP'] });
+  assert.deepStrictEqual(plain(heroOf(env)), { srcset: IMG_DIR + 'survey-hero.webp', src: IMG_DIR + 'survey-ogp.jpg', alt: ui('ja', 'results.heroAlt') });
+  const callsBefore = env.calls.length;
+  const seen = new Set();
+  for (const locale of ['en', 'ko', 'zh-Hans', 'zh-Hant', 'ja']) {
+    await setLang(env, locale);
+    const hero = heroOf(env);
+    assert.deepStrictEqual(plain(hero), { srcset: IMG_DIR + HERO[locale][0], src: IMG_DIR + HERO[locale][1], alt: ui(locale, 'results.heroAlt') }, locale);
+    [hero.srcset, hero.src].forEach((u) => assert.ok(fs.existsSync(path.join(D.REPO, 'baseball', u)), u));
+    seen.add(hero.srcset);
+  }
+  assert.strictEqual(seen.size, 5, '5言語で画像URLがすべて異なる');
+  assert.strictEqual(env.calls.length, callsBefore, '言語切替で通信は発生しない');
+  assert.strictEqual(env.document.querySelectorAll('.bus-hero img').length, 1);
+  assert.deepStrictEqual(env.errors, []);
+});
+
+test('ヒーロー画像：初期言語（browser locale）・保存済みの言語に合わせて最初から正しい画像になる', async () => {
+  for (const [languages, locale] of [[['ja-JP'], 'ja'], [['fr-FR'], 'ja'], [['en-US'], 'en'], [['ko-KR'], 'ko'], [['zh-CN'], 'zh-Hans'], [['zh-TW'], 'zh-Hant']]) {
+    const env = await openPage({ languages });
+    assert.deepStrictEqual(plain(heroOf(env)), { srcset: IMG_DIR + HERO[locale][0], src: IMG_DIR + HERO[locale][1], alt: ui(locale, 'results.heroAlt') }, locale);
+  }
+  const saved = await openPage({ languages: ['ja-JP'], local: { [LOCALE_KEY]: 'ko' } });
+  assert.strictEqual(heroOf(saved).src, IMG_DIR + HERO.ko[1]);
+  assert.strictEqual(heroOf(saved).alt, ui('ko', 'results.heroAlt'));
+});
+
+test('ヒーロー画像：言語切替で入力途中の回答・page が失われず、ヒーローも追従する', async () => {
+  const env = await openPage({ languages: ['ja-JP'] });
+  await start(env);
+  answer(env, 'age_confirmed', 'yes');
+  await next(env);
+  answer(env, 'favorite_uniforms', ['baseball', 'other'], 'ヒーロー切替中の入力');
+  for (const code of ['en', 'zh-Hant', 'ja']) {
+    await setLang(env, code);
+    assert.strictEqual(heroOf(env).srcset, IMG_DIR + HERO[code][0], code);
+    assert.strictEqual(pageTitle(env.document), section(code, 'uniform'));
+    const fav = fieldset(env.document, 'favorite_uniforms');
+    assert.deepStrictEqual(plain(Array.from(fav.querySelectorAll('input[type=checkbox]:checked')).map((i) => i.value)), ['baseball', 'other']);
+    assert.strictEqual(fav.querySelector('.bus-other input').value, 'ヒーロー切替中の入力');
+  }
+  assert.strictEqual(posts(env).length, 0);
+});
+
+test('ヒーロー画像：言語別画像の読み込みに失敗したら ja へ fallback し、その言語は再試行しない。alt は選択言語のまま', async () => {
+  const env = await openPage({ languages: ['en-US'] });
+  assert.strictEqual(heroOf(env).srcset, IMG_DIR + HERO.en[0]);
+  heroError(env);
+  assert.deepStrictEqual(plain(heroOf(env)), { srcset: IMG_DIR + HERO.ja[0], src: IMG_DIR + HERO.ja[1], alt: ui('en', 'results.heroAlt') });
+  await setLang(env, 'ko');
+  assert.strictEqual(heroOf(env).srcset, IMG_DIR + HERO.ko[0], '他言語の画像は引き続き使える');
+  await setLang(env, 'en');
+  assert.strictEqual(heroOf(env).srcset, IMG_DIR + HERO.ja[0], '失敗した言語へ戻っても再試行しない');
+  assert.strictEqual(heroOf(env).alt, ui('en', 'results.heroAlt'));
+  heroError(env);
+  await setLang(env, 'ja');
+  heroError(env); // ja が失敗しても書き換えを繰り返さない
+  assert.strictEqual(heroOf(env).src, IMG_DIR + HERO.ja[1]);
+  assert.deepStrictEqual(env.errors, []);
+});
+
+test('OGP / Twitter Card / canonical / og:url は固定（survey-ogp.jpg）で、言語切替・fallback でも JS は書き換えない', async () => {
+  const env = await openPage({ languages: ['ja-JP'] });
+  const before = metaImages(env);
+  assert.ok(before.some((m) => m.includes('property="og:image"') && m.includes('/images/baseball/catchball/survey-ogp.jpg')));
+  assert.ok(before.some((m) => m.includes('name="twitter:image"') && m.includes('/images/baseball/catchball/survey-ogp.jpg')));
+  for (const locale of LOCALES) {
+    await setLang(env, locale);
+    assert.deepStrictEqual(metaImages(env), before, locale);
+  }
+  heroError(env);
+  assert.deepStrictEqual(metaImages(env), before);
+  const js = fs.readFileSync(path.join(D.REPO, 'baseball/baseball-uniform-survey/app.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(!/og:image|twitter:image|og:url|canonical|meta\[property/.test(js), 'app.js は OGP / canonical を触らない');
+  assert.ok(!/og:image"[^>]*survey-hero|twitter:image"[^>]*survey-hero/.test(fs.readFileSync(path.join(D.REPO, D.PAGE), 'utf8')));
+});
+
+test('ヒーロー画像：URL・GA4・回答 payload に言語や画像情報を載せず、モバイル幅でも横スクロールしない構造（img は幅100%・height:auto）', async () => {
+  const env = await openPage({ languages: ['en-US'] });
+  const url = env.window.location.href;
+  await setLang(env, 'ko');
+  heroError(env);
+  assert.strictEqual(env.window.location.href, url);
+  assert.deepStrictEqual(plain(env.events()), []);
+  const css = fs.readFileSync(path.join(D.REPO, 'baseball/baseball-uniform-survey/styles.css'), 'utf8');
+  assert.match(css, /\.bus-hero-image img\s*\{[^}]*width:\s*100%;\s*height:\s*auto/);
+});
