@@ -300,29 +300,40 @@ test('maintenance は submit 受付判定を持たない（doPost / survey_close
 
 // ── retention policy ──
 
-test('retention 未確定は launch blocker：リポジトリの設定は unset で、schema も must_set_before_launch のまま', () => {
+test('リポジトリの retention 設定は confirmed：closes_at から 365 日を期限とし、schema も確定済みで launch_ready=true', () => {
   const committed = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'retention.config.json'), 'utf8'));
+  const reception = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'survey.config.json'), 'utf8')).reception;
+  const closes = Date.parse(reception.closes_at);
   assert.equal(committed.owner, 'nagoya-base');
-  assert.equal(committed.policy_status, 'unset');
-  const policy = maintenance.evaluateRetentionPolicy(committed, schema, CLOSES.getTime(), AFTER_CLOSE);
-  assert.equal(policy.status, 'unset');
-  assert.equal(policy.confirmed, false);
-  assert.equal(policy.launch_ready, false);
-  assert.equal(policy.deadline, null);
-  assert.equal(schema.respondentNotice.retention.status, 'must_set_before_launch');
-  // closes_at 未設定（現状のリポジトリ設定）でも unset のまま。
+  assert.equal(committed.policy_status, 'confirmed');
+  assert.equal(committed.policy_version, '2026-10-v1');
+  assert.equal(committed.retention_end_date, null);
+  assert.deepEqual(committed.retention_rule, { basis: 'closes_at', days: 365 });
+  assert.equal(committed.keep_final_snapshot, true);
+  assert.equal(committed.cleanup_operator, 'nagoya-base');
+  assert.deepEqual([...committed.inventory_reviewed].sort(), [...maintenance.inventoryIds()].sort());
+  assert.equal(schema.respondentNotice.retention.status, 'confirmed');
+  const policy = maintenance.evaluateRetentionPolicy(committed, schema, closes, AFTER_CLOSE);
+  assert.deepEqual(policy.problems, []);
+  assert.equal(policy.status, 'confirmed');
+  assert.equal(policy.launch_ready, true);
+  assert.equal(policy.deadline, '2027-11-30T23:59:00+09:00');
+  assert.equal(policy.deadline_reached, false, '締切直後は cleanup 期限前');
+  // 未確定（unset）や closes_at 未設定は従来どおり fail closed。
+  const unset = Object.assign({}, committed, { policy_status: 'unset' });
+  assert.equal(maintenance.evaluateRetentionPolicy(unset, schema, closes, AFTER_CLOSE).launch_ready, false);
   assert.equal(maintenance.evaluateRetentionPolicy(committed, schema, null, AFTER_CLOSE).launch_ready, false);
 });
 
 test('retention が confirmed でも、schema の status が must_set_before_launch のままなら launch_ready にならない', () => {
   const closes = CLOSES.getTime();
-  const policy = maintenance.evaluateRetentionPolicy(confirmedRetention(), schema, closes, AFTER_CLOSE);
+  const blocked = JSON.parse(JSON.stringify(schema));
+  blocked.respondentNotice.retention.status = 'must_set_before_launch';
+  const policy = maintenance.evaluateRetentionPolicy(confirmedRetention(), blocked, closes, AFTER_CLOSE);
   assert.equal(policy.status, 'confirmed');
   assert.equal(policy.launch_ready, false);
-  const relaxed = JSON.parse(JSON.stringify(schema));
-  relaxed.respondentNotice.retention.status = 'set';
-  assert.equal(maintenance.evaluateRetentionPolicy(confirmedRetention(), relaxed, closes, AFTER_CLOSE).launch_ready, true);
-  assert.equal(maintenance.evaluateRetentionPolicy(confirmedRetention({ policy_status: 'unset' }), relaxed, closes, AFTER_CLOSE).launch_ready, false);
+  assert.equal(maintenance.evaluateRetentionPolicy(confirmedRetention(), schema, closes, AFTER_CLOSE).launch_ready, true);
+  assert.equal(maintenance.evaluateRetentionPolicy(confirmedRetention({ policy_status: 'unset' }), schema, closes, AFTER_CLOSE).launch_ready, false);
 });
 
 test('retention 設定の不備・placeholder は fail closed（invalid / unset）', () => {

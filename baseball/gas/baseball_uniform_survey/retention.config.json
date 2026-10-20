@@ -1,12 +1,30 @@
 {
   "config_version": 1,
   "owner": "nagoya-base",
-  "policy_status": "unset",
-  "policy_version": null,
+  "policy_status": "confirmed",
+  "policy_version": "2026-10-v1",
   "retention_end_date": null,
-  "retention_rule": null,
-  "keep_final_snapshot": null,
-  "cleanup_operator": null,
-  "verification_method": null,
-  "inventory_reviewed": []
+  "retention_rule": {
+    "basis": "closes_at",
+    "days": 365
+  },
+  "keep_final_snapshot": true,
+  "cleanup_operator": "nagoya-base",
+  "verification_method": "maintenance の手順に従う: cleanup dry-run → confirmation_code 確認 → execute → 再scan → manual_required 確認 → CLEANUP_AUDIT 確認",
+  "inventory_reviewed": [
+    "responses_production",
+    "responses_test",
+    "responses_unclassified",
+    "responses_valid_sheet",
+    "final_snapshot_sheet",
+    "maintenance_script_properties",
+    "cache_service",
+    "admin_script_properties",
+    "public_script_properties",
+    "github_pages_snapshot",
+    "notification_and_execution_logs",
+    "admin_export_copies",
+    "external_tool_copies",
+    "spreadsheet_history_and_backups"
+  ]
 }

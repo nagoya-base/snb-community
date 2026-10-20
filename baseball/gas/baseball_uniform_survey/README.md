@@ -16,7 +16,7 @@ Issue #383 で maintenance GAS（retention・close 後 finalize・final snapshot
 - 長期離脱の判定は文章で再定義せず、`conditions.lapsed_attendee` を唯一の正本とします。
 - 公開設定は各 question の `publication` object のみを正本とします。
 - `testModes.activation`: `preview_no_submit` / `closed_view` は回答を server へ送らない client-only preview（submit 用 test token 検証は不要）。`submit_excluded` のみ server へ送信し、server が test token を検証して mode を確定します。
-- `respondentNotice.retention.status` は `must_set_before_launch` のままです。保持期限は未確定で、本番公開前に Owner（nagoya-base）が確定します（launch blocker）。
+- `respondentNotice.retention.status` は `confirmed`（`retention.config.json` と整合。保持期限の数値は schema には書かず `retention.config.json` が正本。Owner 確定: `closes_at` から 365 日）です。
 
 既存の `community/gas/costume_portrait_survey/` の schema / core / tests は変更しません。
 Public GAS 用の生成物 `public/SurveyGenerated.gs` は schema + `survey.config.json` + `src/survey-core.js` から生成します（直接編集しません。後述）。
@@ -384,7 +384,7 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 |---|---|
 | `src/maintenance-core.js` | finalize / retention / cleanup の判断ロジック（副作用なしの ES5。Spreadsheet・Script Properties は ports 経由。`SurveyAggregate` を再利用） |
 | `maintenance/` | 独立した maintenance GAS（`SurveyGenerated.gs` は生成物。`Config / Data / Finalize / Retention / Cleanup / Main .gs`、`Maintenance.html`、`appsscript.json`） |
-| `retention.config.json` | retention 設定の正本（**現在は `unset`**。Owner が `opens_at` / `closes_at` 確定時に設定する） |
+| `retention.config.json` | retention 設定の正本（`confirmed` / `policy_version: 2026-10-v1` / `retention_rule: closes_at + 365日` / `keep_final_snapshot: true`） |
 
 maintenance は Public GAS（#380）・Admin GAS（#382）とは**別 project・別 Script ID・別 Script Properties・別 Environment / Secret**です。通常の閲覧・回答受付経路からは呼ばれません（`doPost` なし）。書込み権限が必要な OAuth scope（`spreadsheets`）はこの project だけが持ち、Public / Admin の scope は広げていません。Web App は `executeAs: USER_DEPLOYING` / `access: MYSELF`（運営責任者 1 名）で、公開しません。本番 deploy は専用 workflow `baseball-uniform-survey-maintenance-gas.yml`（Environment `baseball-uniform-survey-maintenance-production`、専用 Script ID / Deployment ID）で、main からの `workflow_dispatch` + Environment 承認でのみ既存 deployment を更新します。初回の project 作成・OAuth 承認・Script Properties・最初の Web App deployment は手動 bootstrap です。
 
@@ -400,7 +400,7 @@ retention 設定状態の確認／finalize preflight／finalize 実行／finaliz
 
 ### launch 前 retention checklist（production launch blocker）
 
-`respondentNotice.retention.status = must_set_before_launch` と `retention.config.json` の `policy_status: unset` のどちらかが残る間は、production launch できません（Public GAS の受付状態も `not_configured` のまま）。このリポジトリは具体的な保持期限を決めていません。
+`respondentNotice.retention.status = must_set_before_launch` と `retention.config.json` の `policy_status: unset` のどちらかが残る間は、production launch できません（Public GAS の受付状態も `not_configured` のまま）。2026-10 の launch で `retention.config.json` を `confirmed`（`closes_at` + 365 日）、schema の status を `confirmed` に確定しました。以下のチェックリストは確定時の手順です（設定を変える場合も同じ条件が適用されます）。
 
 - [ ] **Owner: `nagoya-base`** が、実際の `opens_at` / `closes_at` 確定時（遅くとも production launch 前）に、`retention.config.json` を設定する PR を出す
   - `policy_status: confirmed`、`policy_version`、`retention_end_date`（`YYYY-MM-DD`。JST のその日の終わりまで保持）**または** `retention_rule`（`{"basis": "closes_at", "days": N}`）のどちらか一方

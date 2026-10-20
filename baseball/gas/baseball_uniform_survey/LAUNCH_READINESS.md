@@ -141,7 +141,7 @@ E2E で作った test row は retention 対象です。launch 前に必要なら
 | `GET <exec>?action=status` | `not_configured`（受付可能状態を返さない） |
 | production POST を直接送る | `survey_not_configured` 等で拒否され、保存されない |
 | Frontend から誤って production 送信 | 保存されない |
-| `retention.config.json` / schema の retention status | `unset` / `must_set_before_launch` のまま |
+| `retention.config.json` / schema の retention status | 2026-10 launch 時点で `confirmed` / `confirmed` に確定済み（確定前の fail closed 確認は、これらを未確定へ戻した状態で行う） |
 
 **確認のために暫定日付を入れない**（fail open になるため）。
 
