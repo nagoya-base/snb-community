@@ -1149,7 +1149,38 @@
     host.appendChild(langSelect);
   }
 
-  /* <html lang>・title・description・静的 HTML の文言（data-i18n）・言語選択を現在の言語へ合わせる。 */
+  /* ヒーロー画像（結果ページと同じ方式）。ja 以外の画像が読み込めなければ ja へ fallback し、その言語はページ滞在中に再試行しない。alt は選択言語のまま。 */
+  var HERO_BASE = '../images/baseball/catchball/';
+  var HERO_JA = { webp: HERO_BASE + 'survey-hero.webp', img: HERO_BASE + 'survey-ogp.jpg' };
+  var HERO_IMAGES = {
+    ja: HERO_JA,
+    en: { webp: HERO_BASE + 'survey-hero-en.webp', img: HERO_BASE + 'survey-hero-en.webp' },
+    ko: { webp: HERO_BASE + 'survey-hero-ko.webp', img: HERO_BASE + 'survey-hero-ko.webp' },
+    'zh-Hans': { webp: HERO_BASE + 'survey-hero-zh-hans.webp', img: HERO_BASE + 'survey-hero-zh-hans.webp' },
+    'zh-Hant': { webp: HERO_BASE + 'survey-hero-zh-hant.webp', img: HERO_BASE + 'survey-hero-zh-hant.webp' }
+  };
+  var brokenHero = {};
+  function heroFor(code) {
+    return !brokenHero[code] && Object.prototype.hasOwnProperty.call(HERO_IMAGES, code) ? HERO_IMAGES[code] : HERO_JA;
+  }
+  function applyHero() {
+    var img = document.querySelector('.bus-hero img');
+    if (!img) return;
+    var source = document.querySelector('.bus-hero source');
+    var hero = heroFor(locale);
+    if (source) source.setAttribute('srcset', hero.webp);
+    img.setAttribute('src', hero.img);
+    if (!img.getAttribute('data-hero-fallback')) {
+      img.setAttribute('data-hero-fallback', '1');
+      img.addEventListener('error', function () {
+        if (locale === DEFAULT_LOCALE || brokenHero[locale]) return;
+        brokenHero[locale] = true;
+        applyHero();
+      });
+    }
+  }
+
+  /* <html lang>・title・description・静的 HTML の文言（data-i18n / data-i18n-alt）・ヒーロー・言語選択を現在の言語へ合わせる。canonical・OGP は言語で変えない。 */
   function applyDocumentLocale() {
     document.documentElement.setAttribute('lang', locale);
     document.title = t('page.title');
@@ -1158,6 +1189,10 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-i18n]'), function (node) {
       node.textContent = t(node.getAttribute('data-i18n'));
     });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-i18n-alt]'), function (node) {
+      node.setAttribute('alt', t(node.getAttribute('data-i18n-alt')));
+    });
+    applyHero();
     if (langLabel) langLabel.textContent = t('lang.label');
     if (langSelect) langSelect.value = locale;
   }

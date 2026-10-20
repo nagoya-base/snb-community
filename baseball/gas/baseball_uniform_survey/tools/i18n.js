@@ -209,6 +209,8 @@ function countTargets(schema, dicts) {
 // 結果ページ専用の UI 文言は ui の `results.` 接頭辞に置く（回答ページには配らない）。固定 UI のうち共通のもの（本文へ移動・戻るリンク・eyebrow・言語ラベル）は回答ページと同じ key を再利用する。
 const RESULTS_UI_PREFIX = 'results.';
 const RESULTS_SHARED_UI_KEYS = ['page.skip', 'page.back', 'page.eyebrow', 'lang.label'];
+// 逆に、結果ページ側の key のうち回答ページも使うもの（ヒーロー画像の alt。文言は1か所＝結果ページ側の key を正本とし、別 key を作らない）。
+const FRONTEND_SHARED_RESULTS_KEYS = ['results.heroAlt'];
 
 function pick(source, keys) {
   const out = {};
@@ -222,7 +224,7 @@ function renderFrontend(dicts) {
   LOCALES.forEach((locale) => {
     const dict = dicts[locale];
     const ui = {};
-    Object.keys(dict.ui).forEach((k) => { if (k.indexOf(RESULTS_UI_PREFIX) !== 0) ui[k] = dict.ui[k]; });
+    Object.keys(dict.ui).forEach((k) => { if (k.indexOf(RESULTS_UI_PREFIX) !== 0 || FRONTEND_SHARED_RESULTS_KEYS.indexOf(k) !== -1) ui[k] = dict.ui[k]; });
     out.dicts[locale] = Object.assign({}, dict, { ui });
   });
   return [
@@ -284,4 +286,4 @@ function renderResults(dicts, schema) {
   ].join('\n');
 }
 
-module.exports = { LOCALES, DEFAULT_LOCALE, I18N_DIR, loadDicts, jaContent, validate, countTargets, renderFrontend, renderResults, resultsQuestionIds, RESULTS_UI_PREFIX, RESULTS_SHARED_UI_KEYS, sectionIds, placeholders, milestoneKey };
+module.exports = { LOCALES, DEFAULT_LOCALE, I18N_DIR, loadDicts, jaContent, validate, countTargets, renderFrontend, renderResults, resultsQuestionIds, RESULTS_UI_PREFIX, RESULTS_SHARED_UI_KEYS, FRONTEND_SHARED_RESULTS_KEYS, sectionIds, placeholders, milestoneKey };
