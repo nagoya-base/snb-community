@@ -13,10 +13,14 @@
  *   store が空（初回）のときだけ、現在の production valid 回答から initial snapshot を 1 回生成する。
  * - 更新の契機は「production 回答の保存後」と「results の取得時」。どちらも更新判定を通ったときだけ書く。
  */
-var SNAPSHOT_STORE_SHEET = SnapshotStore.SHEET_NAME;
 var SNAPSHOT_REFRESH_LOCK_WAIT_MS = 10000;
 // Sheets が日付化した version 列を、Admin（Sheets API の UNFORMATTED_VALUE）と同じ日付シリアル値へ揃える。
 var SHEETS_EPOCH_SERIAL = 25569;
+
+/* Apps Script のファイル評価順に依存しないよう、SnapshotStore は関数実行時に参照する。 */
+function snapshotStoreSheetName_() {
+  return SnapshotStore.SHEET_NAME;
+}
 
 function sha256Hex_(text) {
   return SnapshotStore.bytesToHex(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8));
@@ -25,8 +29,9 @@ function sha256Hex_(text) {
 /** public_snapshot シート。create=true のときだけ作る（読み出しでは作らない）。 */
 function getSnapshotSheet_(create) {
   var spreadsheet = openSpreadsheet_();
-  var sheet = spreadsheet.getSheetByName(SNAPSHOT_STORE_SHEET);
-  if (!sheet && create) sheet = spreadsheet.insertSheet(SNAPSHOT_STORE_SHEET);
+  var sheetName = snapshotStoreSheetName_();
+  var sheet = spreadsheet.getSheetByName(sheetName);
+  if (!sheet && create) sheet = spreadsheet.insertSheet(sheetName);
   return sheet;
 }
 
