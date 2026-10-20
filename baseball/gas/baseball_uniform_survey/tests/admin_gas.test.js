@@ -415,7 +415,7 @@ test('Dashboard（#426）：デフォルトは「集計結果」タブで、設�
   assert.equal(document.getElementById('tab-results').hidden, false);
   assert.equal(document.getElementById('tab-publication').hidden, true);
   const cards = document.querySelectorAll('#results > .card');
-  assert.equal(cards.length, summary.questions.length);
+  assert.equal(cards.length, summary.questions.length + summary.internalQuestions.length);
   const q = summary.questions.find((x) => x.id === 'baseball_experience');
   const card = [...cards].find((c) => c.querySelector('h3').textContent === q.label);
   const answered = q.answeredCount;
@@ -463,7 +463,8 @@ test('Dashboard（#426）：question ID は通常表示に出さず、公開条�
     const details = card.querySelector('details');
     assert.equal(details.hasAttribute('open'), false, '折りたたみ');
     assert.match(details.textContent, /question_id/);
-    ['minTotal', 'minTarget', 'minCell', 'Tier'].forEach((k) => assert.ok(details.textContent.includes(k), k));
+    const internal = summary.internalQuestions.some((q) => q.label === card.querySelector('h3').textContent);
+    ['minTotal', 'minTarget', 'minCell', 'Tier'].forEach((k) => assert.equal(details.textContent.includes(k), !internal, k)); // 対象外設問に公開条件は付けない
   });
   const region = summary.questions.find((x) => x.id === 'region_blocks');
   assert.equal(region.type, 'region');
@@ -472,8 +473,8 @@ test('Dashboard（#426）：question ID は通常表示に出さず、公開条�
 });
 
 test('Dashboard（#426）：公開判定ビューは definition list のカード（table なし）で、障壁も設問名で表示する', () => {
-  const { document, html } = renderDashboard(fixtureRows());
-  assert.equal(document.querySelectorAll('#publication > .card').length, document.querySelectorAll('#results > .card').length);
+  const { document, summary, html } = renderDashboard(fixtureRows());
+  assert.equal(document.querySelectorAll('#publication > .card').length, summary.questions.length);
   const first = document.querySelector('#publication > .card dl.facts').textContent;
   ['公開状態', '対象数', 'minTotal', 'minTarget', 'minCell', 'Tier'].forEach((k) => assert.ok(first.includes(k), k));
   assert.equal(document.querySelectorAll('table').length, 0);
@@ -537,4 +538,41 @@ test('summary（#426）：type / answeredCount を追加しても公開判定・
     assert.equal(pub.state, q.publicState);
     if (pub.state !== 'published') assert.equal(pub.targetCount, null, '非公開のとき public 側は件数を含まない');
   });
+});
+
+test('Dashboard（#426 レビュー）：公開対象外の non-text 設問も Admin 内部集計に含め「一般公開: 対象外」。自由記述は含めない', () => {
+  const rows = rowsFrom([{ count: 12, overrides: Object.assign({ feedback: 'ADMIN-ONLY-TEXT' }, INTERESTED) }]);
+  const { document, summary } = renderDashboard(rows);
+  const publicIds = new Set(aggregate.publicEntries(schema).map((e) => e.id));
+  const expected = core.getQuestions(schema).filter((q) => q.type !== 'text' && !publicIds.has(q.id)).map((q) => q.id);
+  assert.deepEqual(summary.internalQuestions.map((q) => q.id), expected);
+  ['age', 'prefecture', 'aichi_area'].forEach((id) => assert.ok(expected.includes(id), id));
+  assert.ok(summary.internalQuestions.every((q) => q.type !== 'text' && q.publicState === 'not_public'));
+  const cards = [...document.querySelectorAll('#results > .card')];
+  assert.equal(cards.length, summary.questions.length + expected.length);
+  const age = summary.internalQuestions.find((q) => q.id === 'age');
+  const card = cards.find((c) => c.querySelector('h3').textContent === age.label);
+  assert.match(card.querySelector('.meta').textContent, /一般公開: 対象外/);
+  assert.match(card.querySelector('details').textContent, /question_id/);
+  assert.ok(!/\[age\]/.test(card.textContent.replace(card.querySelector('details').textContent, '')));
+  assert.ok(age.tally.some((c) => c.count > 0), '回答があれば件数が出る');
+  const visible = document.getElementById('results').textContent;
+  assert.ok(!visible.includes('ADMIN-ONLY-TEXT'));
+  assert.equal(document.querySelectorAll('#publication > .card').length, summary.questions.length, '公開判定タブに対象外設問は混ぜない');
+  assert.equal(document.querySelectorAll('table').length, 0);
+});
+
+test('summary（#426 レビュー）：公開対象外設問は publicPreview / snapshot に一切出ず、snapshot 検証も通る', () => {
+  const rows = fixtureRows();
+  const classification = aggregate.classifyRows(schema, rows);
+  const summary = aggregate.buildAdminSummary(schema, classification, { now: NOW });
+  const publicIds = new Set(aggregate.publicEntries(schema).map((e) => e.id));
+  assert.deepEqual(summary.questions.map((q) => q.id), [...publicIds]);
+  assert.deepEqual(summary.publicPreview, aggregate.buildSnapshot(schema, classification.valid, { generatedAt: NOW }));
+  assert.deepEqual(aggregate.validateSnapshot(schema, summary.publicPreview), []);
+  const previewText = JSON.stringify(summary.publicPreview);
+  summary.internalQuestions.forEach((q) => assert.ok(!previewText.includes(`"${q.id}"`), q.id));
+  const snapshot = JSON.parse(plain(createAdminEnv(rows).ctx.getSnapshot()).snapshotJson);
+  summary.internalQuestions.forEach((q) => assert.ok(!JSON.stringify(snapshot).includes(`"${q.id}"`), q.id));
+  assert.ok(!JSON.stringify(summary).includes('ADMIN-ONLY-TEXT'));
 });

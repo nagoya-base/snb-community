@@ -1686,6 +1686,23 @@ var SurveyAggregate = (function (core) {
         tally: table.defs.map(function (d) { return { id: d.id, label: d.label, count: table.counts[d.id] }; })
       };
     });
+    /* 公開対象外（publicResultsOrder に無い）の non-text 設問。Admin 内部集計のみ。publication / snapshot には一切渡さない。 */
+    var publicIds = {};
+    publicEntries(schema).forEach(function (entry) { publicIds[entry.id] = true; });
+    var internalQuestions = core.getQuestions(schema).filter(function (q) {
+      return q.type !== 'text' && !hasOwn(publicIds, q.id);
+    }).map(function (q) {
+      var table = tallyQuestion(schema, q, answersList);
+      return {
+        id: q.id,
+        label: q.label,
+        type: q.type,
+        targetCount: table.targetCount,
+        answeredCount: table.answeredCount,
+        publicState: 'not_public',
+        tally: table.defs.map(function (d) { return { id: d.id, label: d.label, count: table.counts[d.id] }; })
+      };
+    });
     var snapshot = buildSnapshot(schema, valid, { generatedAt: settings.now || new Date() });
     var decision = decideSnapshotUpdate(schema, settings.previousSnapshot || null, total, settings.now || new Date());
     return {
@@ -1699,6 +1716,7 @@ var SurveyAggregate = (function (core) {
       legacy_date_serial_accepted: classification.counts.legacy_date_serial_accepted || 0,
       rows: classification.counts.rows,
       questions: questions,
+      internalQuestions: internalQuestions,
       semantic: analyzeSemanticCodes(schema, valid),
       snapshotDecision: { update: decision.update, reason: decision.reason, increment: decision.increment },
       publicPreview: snapshot

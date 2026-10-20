@@ -193,16 +193,15 @@
       function renderResults(s) {
         var box = $('results');
         box.textContent = '';
-        s.questions.forEach(function (q) {
+        s.questions.concat(s.internalQuestions || []).forEach(function (q) {
+          var internal = q.publicState === 'not_public';
           var card = el('div', undefined, 'card');
-          var multiple = q.type === 'multiple';
           var base = q.answeredCount;
           card.appendChild(el('h3', q.label));
           var meta = el('div', undefined, 'meta');
           meta.appendChild(el('span', '回答 ' + base + ' 件'));
           meta.appendChild(el('span', '対象 ' + q.targetCount));
-          var pub = el('span', '一般公開: ' + PUBLIC_SHORT[q.publicState], q.publicState === 'published' ? 'ok' : 'ng');
-          meta.appendChild(pub);
+          meta.appendChild(internal ? el('span', '一般公開: 対象外') : el('span', '一般公開: ' + PUBLIC_SHORT[q.publicState], q.publicState === 'published' ? 'ok' : 'ng'));
           card.appendChild(meta);
           q.tally.forEach(function (c) {
             var p = pct(c.count, base);
@@ -218,8 +217,18 @@
             o.appendChild(bar);
             card.appendChild(o);
           });
-          if (multiple) card.appendChild(el('p', '複数選択のため合計100%にはなりません（割合は回答者数が分母）。', 'note'));
-          card.appendChild(publicationDetails(q));
+          if (q.type === 'multiple') card.appendChild(el('p', '複数選択のため合計100%にはなりません（割合は回答者数が分母）。', 'note'));
+          if (internal) {
+            var d = el('details');
+            d.appendChild(el('summary', '詳細'));
+            var dl = el('dl', undefined, 'facts');
+            fact(dl, '公開', '対象外（Admin 内部集計のみ）');
+            fact(dl, 'question_id', q.id);
+            d.appendChild(dl);
+            card.appendChild(d);
+          } else {
+            card.appendChild(publicationDetails(q));
+          }
           box.appendChild(card);
         });
       }
