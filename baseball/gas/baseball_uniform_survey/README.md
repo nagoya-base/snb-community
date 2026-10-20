@@ -191,7 +191,7 @@ private な system field です。`x / line / website / instagram / email / dire
 
 ### Deploy workflow
 
-target ごとに専用 workflow・専用 bundle allowlist・専用 Environment / Script ID / Deployment ID を持ちます（他 survey の workflow / Environment / Secret とは独立）。一覧と bootstrap 手順は [`LAUNCH_READINESS.md`](LAUNCH_READINESS.md) の「2. deploy 準備」を参照してください。
+target ごとに専用 workflow・専用 bundle allowlist・専用 Environment / Script ID / Deployment ID を持ちます（他 survey の workflow / Environment / Secret とは独立）。Public / Admin / maintenance の初回 clasp push は、専用の bootstrap workflow `baseball-uniform-survey-bootstrap-gas.yml`（`public` / `admin` / `maintenance` target・専用 Environment / bootstrap Script ID）でも行えます（空の初期 project への push のみ。Web App deployment・OAuth 承認・Script Properties は手動）。一覧と bootstrap 手順は [`LAUNCH_READINESS.md`](LAUNCH_READINESS.md) の「2. deploy 準備」を参照してください。
 
 | target | workflow |
 |---|---|

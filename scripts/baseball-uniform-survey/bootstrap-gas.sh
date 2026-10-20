@@ -2,29 +2,31 @@
 set -euo pipefail
 umask 077
 
-# Issue #390：名古屋野球ユニ部アンケート Admin / maintenance GAS の「初回 bootstrap」。手動 dispatch の bootstrap workflow からのみ実行する（PR では実行しない）。
+# Issue #390：名古屋野球ユニ部アンケート Public / Admin / maintenance GAS の「初回 bootstrap」。手動 dispatch の bootstrap workflow からのみ実行する（PR では実行しない）。
 # 空の初期 project（手動作成済み・placeholder のみ）へ allowlist のファイルを clasp push するだけ。次は一切行わない:
 #   - version の作成 / deployment の新規作成・更新（clasp create-version / create-deployment / update-deployment）
 #   - Web App のアクセス設定の変更（manifest の webapp はリポジトリ側の MYSELF / USER_DEPLOYING。deployment が無いので公開範囲は生まれない）
 #   - Script Properties の設定 / 関数の実行（clasp run）
 # bootstrap 済み（target のファイルが既にある）か、versioned deployment が既にある project は拒否する。以降は通常の deploy workflow を使う。
-#   BASEBALL_UNIFORM_SURVEY_TARGET   admin | maintenance（workflow が渡す。public は対象外）
+#   BASEBALL_UNIFORM_SURVEY_TARGET   public | admin | maintenance（workflow が渡す）
 #   CLASPRC_JSON                     GitHub Environment secret
 #   target 専用の bootstrap Script ID（専用 Environment Secret。他 target / 通常 deploy 用の ID が環境にあれば拒否）
+#     public       BASEBALL_UNIFORM_SURVEY_PUBLIC_BOOTSTRAP_SCRIPT_ID
 #     admin        BASEBALL_UNIFORM_SURVEY_ADMIN_BOOTSTRAP_SCRIPT_ID
 #     maintenance  BASEBALL_UNIFORM_SURVEY_MAINTENANCE_BOOTSTRAP_SCRIPT_ID
 : "${GITHUB_WORKSPACE:?Repository checkout is required}"
 : "${RUNNER_TEMP:?Runner temporary directory is required}"
-: "${BASEBALL_UNIFORM_SURVEY_TARGET:?BASEBALL_UNIFORM_SURVEY_TARGET (admin|maintenance) is required}"
+: "${BASEBALL_UNIFORM_SURVEY_TARGET:?BASEBALL_UNIFORM_SURVEY_TARGET (public|admin|maintenance) is required}"
 : "${CLASPRC_JSON:?CLASPRC_JSON secret is required}"
 
 target="$BASEBALL_UNIFORM_SURVEY_TARGET"
 case "$target" in
+  public)      script_id_var=BASEBALL_UNIFORM_SURVEY_PUBLIC_BOOTSTRAP_SCRIPT_ID ;;
   admin)       script_id_var=BASEBALL_UNIFORM_SURVEY_ADMIN_BOOTSTRAP_SCRIPT_ID ;;
   maintenance) script_id_var=BASEBALL_UNIFORM_SURVEY_MAINTENANCE_BOOTSTRAP_SCRIPT_ID ;;
-  *) echo 'BASEBALL_UNIFORM_SURVEY_TARGET must be "admin" or "maintenance".' >&2; exit 1 ;;
+  *) echo 'BASEBALL_UNIFORM_SURVEY_TARGET must be "public", "admin" or "maintenance".' >&2; exit 1 ;;
 esac
-for var in BASEBALL_UNIFORM_SURVEY_SCRIPT_ID BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID \
+for var in BASEBALL_UNIFORM_SURVEY_SCRIPT_ID BASEBALL_UNIFORM_SURVEY_DEPLOYMENT_ID BASEBALL_UNIFORM_SURVEY_PUBLIC_BOOTSTRAP_SCRIPT_ID \
            BASEBALL_UNIFORM_SURVEY_ADMIN_SCRIPT_ID BASEBALL_UNIFORM_SURVEY_ADMIN_DEPLOYMENT_ID BASEBALL_UNIFORM_SURVEY_ADMIN_BOOTSTRAP_SCRIPT_ID \
            BASEBALL_UNIFORM_SURVEY_MAINTENANCE_SCRIPT_ID BASEBALL_UNIFORM_SURVEY_MAINTENANCE_DEPLOYMENT_ID BASEBALL_UNIFORM_SURVEY_MAINTENANCE_BOOTSTRAP_SCRIPT_ID; do
   if [[ "$var" != "$script_id_var" && -n "${!var:-}" ]]; then
@@ -86,7 +88,8 @@ if ! node "$prepare" validate-bootstrap-remote "$target" "$remote_dir"; then
 fi
 
 # 3) allowlist のファイルだけをステージングして push（version / deployment には触れない）。
-if ! BASEBALL_UNIFORM_SURVEY_ADMIN_BOOTSTRAP_SCRIPT_ID="${BASEBALL_UNIFORM_SURVEY_ADMIN_BOOTSTRAP_SCRIPT_ID:-}" \
+if ! BASEBALL_UNIFORM_SURVEY_PUBLIC_BOOTSTRAP_SCRIPT_ID="${BASEBALL_UNIFORM_SURVEY_PUBLIC_BOOTSTRAP_SCRIPT_ID:-}" \
+     BASEBALL_UNIFORM_SURVEY_ADMIN_BOOTSTRAP_SCRIPT_ID="${BASEBALL_UNIFORM_SURVEY_ADMIN_BOOTSTRAP_SCRIPT_ID:-}" \
      BASEBALL_UNIFORM_SURVEY_MAINTENANCE_BOOTSTRAP_SCRIPT_ID="${BASEBALL_UNIFORM_SURVEY_MAINTENANCE_BOOTSTRAP_SCRIPT_ID:-}" \
      node "$prepare" stage-bootstrap "$target" "$GITHUB_WORKSPACE" "$project_dir" "$remote_dir"; then
   echo 'Failed to prepare the GAS bundle.' >&2
@@ -102,4 +105,4 @@ if ! clasp --auth "$auth_file" push --force >"$deploy_root/push.log" 2>&1; then
   echo 'clasp push failed.' >&2
   exit 1
 fi
-echo "Bootstrap push for $target is complete. Next (manual): OAuth approval, Script Properties, first Web App deployment (Only myself). Then use the regular deploy workflow; do not run this workflow again."
+echo "Bootstrap push for $target is complete. Next (manual): OAuth approval, Script Properties, first Web App deployment. Then use the regular deploy workflow; do not run this workflow again."
