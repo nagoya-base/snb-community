@@ -511,7 +511,8 @@ retention 設定状態の確認／finalize preflight／finalize 実行／finaliz
 | 生成物 | `baseball/baseball-uniform-survey-results/results-i18n.generated.js`（**直接編集禁止**）。`npm run build` で `i18n/*.json` から結果ページが使う分だけを生成し、`build:check` が差分を検出します。`results.*` は回答ページの `i18n.generated.js` には含めません |
 | 言語選択 | `baseball/baseball-uniform-survey/locale.js` を回答ページと共有します。localStorage キー `snb_baseball_uniform_survey_locale_v1`、初期言語は「保存済みの選択 → ブラウザ言語 → ja」。URL（query / hash）・GA4 には言語を載せません。相互リンクでも言語が維持されます |
 | fallback | 翻訳が欠けた設問・選択肢・地域名は snapshot の日本語 label、固定 UI は ja へ。辞書自体が読めなくても描画は壊れません（欠落は CI が失敗させます） |
-| SEO / OGP | canonical・og:url・OGP 画像は言語で変えません。`<html lang>`・`<title>`・`description` だけ現在の言語に合わせます |
+| ヒーロー画像 | 言語に合わせて `<source srcset>` / `<img src>` / `alt` を切り替えます（`images/baseball/catchball/survey-hero{,-en,-ko,-zh-hans,-zh-hant}.webp`）。画像が読めない言語は ja ヒーローへ fallback します |
+| SEO / OGP | canonical・og:url・`og:image` / `twitter:image`（`survey-ogp.jpg`）は言語で変えません。`<html lang>`・`<title>`・`description` だけ現在の言語に合わせます |
 | テスト | `tests/results_i18n.test.js`（5言語の固定 UI と設問/選択肢、state・件数・割合・suppression の不変、翻訳欠落 fallback、URL に locale が付かないこと、回答ページとの相互遷移、モバイル幅の静的検査） |
 
 ## 本番前統合・実 Google 環境 E2E（Issue #390）

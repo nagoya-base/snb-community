@@ -10,11 +10,25 @@
  *  - 固定 UI・設問ラベル・選択肢ラベルは results-i18n.generated.js（回答ページと同じ i18n/*.json から生成）を
  *    question.id / option.id（cell.id）で引く。日本語は snapshot の label（schema 由来）を使い、翻訳が欠けた場合も日本語へ fallback する。
  *  - 選択言語の保存・初期言語の決定は回答ページと共有（locale.js）。URL・GA4 には載せない。
+ *  - ヒーロー画像（source srcset / img src / alt）も言語に合わせて切り替え、画像が読めなければ ja へ fallback する。og:image / twitter:image は固定。
  */
 var SurveyResultsView = (function () {
   'use strict';
 
   var SNAPSHOT_URL = 'baseball-uniform-survey-results/snapshot.json';
+
+  /* 言語別ヒーロー画像（images/baseball/catchball/）。ja が既定で、他言語の画像が読めなければ ja へ fallback する。
+   * og:image / twitter:image は survey-ogp.jpg 固定（canonical な静的 meta）で、ここでは触らない。 */
+  var HERO_BASE = '../images/baseball/catchball/';
+  var HERO_JA = { webp: HERO_BASE + 'survey-hero.webp', img: HERO_BASE + 'survey-ogp.jpg' };
+  var HERO_IMAGES = {
+    ja: HERO_JA,
+    en: { webp: HERO_BASE + 'survey-hero-en.webp', img: HERO_BASE + 'survey-hero-en.webp' },
+    ko: { webp: HERO_BASE + 'survey-hero-ko.webp', img: HERO_BASE + 'survey-hero-ko.webp' },
+    'zh-Hans': { webp: HERO_BASE + 'survey-hero-zh-hans.webp', img: HERO_BASE + 'survey-hero-zh-hans.webp' },
+    'zh-Hant': { webp: HERO_BASE + 'survey-hero-zh-hant.webp', img: HERO_BASE + 'survey-hero-zh-hant.webp' }
+  };
+  var brokenHero = {}; // 読み込みに失敗した言語（以後は ja を使う。broken image を出さない）
 
   var I18N = (typeof SURVEY_RESULTS_I18N !== 'undefined' && SURVEY_RESULTS_I18N) || { default: 'ja', locales: ['ja'], dynamicSources: {}, dicts: { ja: { ui: {}, questions: {} } } };
   var DEFAULT_LOCALE = I18N.default || 'ja';
@@ -187,6 +201,26 @@ var SurveyResultsView = (function () {
     host.appendChild(langSelect);
   }
 
+  function heroFor(code) {
+    return !brokenHero[code] && Object.prototype.hasOwnProperty.call(HERO_IMAGES, code) ? HERO_IMAGES[code] : HERO_JA;
+  }
+  function applyHero(doc) {
+    var img = doc.querySelector('.bur-hero img');
+    if (!img) return;
+    var source = doc.querySelector('.bur-hero source');
+    var hero = heroFor(locale);
+    if (source) source.setAttribute('srcset', hero.webp);
+    img.setAttribute('src', hero.img);
+    if (!img.getAttribute('data-hero-fallback')) {
+      img.setAttribute('data-hero-fallback', '1');
+      img.addEventListener('error', function () {
+        if (locale === DEFAULT_LOCALE || brokenHero[locale]) return;
+        brokenHero[locale] = true;
+        applyHero(doc);
+      });
+    }
+  }
+
   /* <html lang>・title・description・静的 HTML の文言（data-i18n / data-i18n-alt）・言語選択を現在の言語へ合わせる。canonical・OGP は言語で変えない。 */
   function applyDocumentLocale(doc) {
     doc.documentElement.setAttribute('lang', locale);
@@ -199,6 +233,7 @@ var SurveyResultsView = (function () {
     Array.prototype.forEach.call(doc.querySelectorAll('[data-i18n-alt]'), function (node) {
       node.setAttribute('alt', t(node.getAttribute('data-i18n-alt')));
     });
+    applyHero(doc);
     if (langLabel) langLabel.textContent = t('lang.label');
     if (langSelect) langSelect.value = locale;
   }
