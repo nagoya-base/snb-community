@@ -789,7 +789,8 @@
       t('intro.note.retention'),
       t('intro.note.rollout'),
       t('intro.note.smallGroups'),
-      t('intro.note.representativeness')
+      t('intro.note.representativeness'),
+      t('intro.note.duplicates')
     ]));
     card.appendChild(el('p', 'bus-help', t('intro.contact')));
     app.appendChild(card);

@@ -237,7 +237,7 @@ test('翻訳対象件数（日本語正本）を数えられる：設問46・選
 });
 
 test('保持期間の説明（intro.note.retention）は5言語とも短い1文で、自動削除・全データ削除・内部手順を書かない', () => {
-  assert.strictEqual(dicts.ja.ui['intro.note.retention'], '回答データは、回答受付の終了後1年間保管します。その後、個別回答や自由記述などの生データを削除します。個人単位の情報を含まない集計結果は、その後も保管・公開する場合があります。');
+  assert.strictEqual(dicts.ja.ui['intro.note.retention'], '回答データは、回答受付の終了後1年間保管します。その後、個別の回答や自由記述などは削除します。個人単位の情報を含まない集計結果は、その後も保管・公開する場合があります。');
   i18n.LOCALES.forEach((locale) => {
     const text = dicts[locale].ui['intro.note.retention'];
     assert.ok(typeof text === 'string' && text.length > 0 && text.length <= 260, locale + ' は短く');
@@ -247,7 +247,7 @@ test('保持期間の説明（intro.note.retention）は5言語とも短い1文�
 });
 
 test('導入画面の段階公開・少人数保護・重複抑止の説明は5言語とも揃い、内部用語・GA4を使わず、確約や即時更新と書かない', () => {
-  ['intro.note.rollout', 'intro.note.smallGroups', 'intro.note.representativeness'].forEach((key) => {
+  ['intro.note.rollout', 'intro.note.smallGroups', 'intro.note.representativeness', 'intro.note.duplicates'].forEach((key) => {
     i18n.LOCALES.forEach((locale) => {
       const text = dicts[locale].ui[key];
       assert.ok(typeof text === 'string' && text.length > 0, locale + ' ' + key);
@@ -262,5 +262,6 @@ test('導入画面の段階公開・少人数保護・重複抑止の説明は5�
   assert.match(dicts.ja.ui['intro.note.rollout'], /30件以上を目安に/);
   assert.match(dicts.ja.ui['intro.note.rollout'], /回答のたびに更新せず、一定の件数・間隔でまとめて反映します/);
   assert.match(dicts.ja.ui['intro.note.smallGroups'], /最終結果は、回答受付の終了後に確定します/);
-  assert.match(dicts.ja.ui['intro.note.representativeness'], /完全に保証するものではありません/);
+  assert.match(dicts.ja.ui['intro.note.duplicates'], /重複回答を抑える仕組みはありますが、1人1回答を完全に保証するものではありません/);
+  assert.ok(!/重複/.test(dicts.ja.ui['intro.note.representativeness']), '代表性と重複抑止は別項目');
 });
