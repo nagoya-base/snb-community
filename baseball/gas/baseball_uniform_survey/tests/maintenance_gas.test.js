@@ -94,15 +94,15 @@ test('不要な外部 API を使わない：CacheService / UrlFetch / Mail / Dri
 
 // ── finalize ──
 
-test('finalize は締切後だけ：締切前・closes_at 未設定は拒否し、行も保存先も触らない', () => {
+test('finalize は締切後だけ：締切前・closes_at 未設定・リポジトリ既定の受付期間（現時点では締切前）は拒否し、行も保存先も触らない', () => {
   const before = createMaintenanceEnv(fixtureRows(), { now: BEFORE_CLOSE });
   assert.throws(() => before.ctx.finalizePreflight(), /not_closed_yet/);
   assert.throws(() => before.ctx.finalizeSurvey('x'), /not_closed_yet/);
   const unset = createMaintenanceEnv(fixtureRows(), { reception: Object.assign({}, RECEPTION, { closes_at: null }) });
   assert.throws(() => unset.ctx.finalizePreflight(), /closes_at_not_set/);
-  const repoDefault = createMaintenanceEnv(fixtureRows());
+  const repoDefault = createMaintenanceEnv(fixtureRows(), { now: BEFORE_CLOSE });
   repoDefault.ctx.SURVEY_RECEPTION = JSON.parse(fs.readFileSync(path.join(ROOT, 'survey.config.json'), 'utf8')).reception;
-  assert.throws(() => repoDefault.ctx.finalizePreflight(), /closes_at_not_set/);
+  assert.throws(() => repoDefault.ctx.finalizePreflight(), /not_closed_yet/);
   [before, unset, repoDefault].forEach((env) => {
     assert.deepEqual(env.events.filter((e) => !e.startsWith('lock:')), []);
     assert.equal(env.props.has('FINALIZED_MARKER'), false);

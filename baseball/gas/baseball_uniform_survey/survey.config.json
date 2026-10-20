@@ -2,8 +2,8 @@
   "config_version": 1,
   "survey_id": "nagoya_baseball_uniform_club_2026",
   "reception": {
-    "opens_at": null,
-    "closes_at": null,
+    "opens_at": "2026-10-20T13:00:00+09:00",
+    "closes_at": "2026-11-30T23:59:00+09:00",
     "timezone": "Asia/Tokyo"
   },
   "validation": {

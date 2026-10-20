@@ -315,10 +315,10 @@ test('opens_at 前・closes_at 後の production submit は拒否（両端は受
 });
 
 test('受付期間は survey config が正本：未設定・不正・保持期限未確定の production launch は fail closed', () => {
-  assert.strictEqual(require('../survey.config.json').reception.opens_at, null, '本番開始前は未設定のまま');
-  assert.strictEqual(require('../survey.config.json').reception.closes_at, null);
+  assert.strictEqual(require('../survey.config.json').reception.opens_at, '2026-10-20T13:00:00+09:00');
+  assert.strictEqual(require('../survey.config.json').reception.closes_at, '2026-11-30T23:59:00+09:00');
   assert.strictEqual(require('../survey.config.json').reception.timezone, 'Asia/Tokyo');
-  // コミット済みの config / schema そのまま（未確定）では受け付けない
+  // コミット済みの config / schema そのまま（保持期限が未確定）では受け付けない
   const fresh = loadPublic({ launched: false });
   assert.strictEqual(fresh.ctx.receptionState_(NOW), 'not_configured');
   assert.strictEqual(submit(fresh.ctx, validPayload(fresh.ctx)).error, 'survey_not_configured');
