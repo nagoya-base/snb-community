@@ -300,6 +300,7 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 ### Admin GAS（read-only）
 
 - OAuth scope は `spreadsheets.readonly` のみ。Web App は `executeAs: USER_DEPLOYING` / `access: MYSELF`（運営責任者 1 名）。Public GAS の bundle には含めず、専用 workflow `baseball-uniform-survey-admin-gas.yml`（Environment `baseball-uniform-survey-admin-production`、専用 Script ID / Deployment ID）で既存 deployment を更新します。初回の project 作成・OAuth 承認・Script Properties・最初の Web App deployment は手動 bootstrap です。
+- responses の読み取りは `SpreadsheetApp.open*`（フル `spreadsheets` scope が必要）ではなく Advanced Sheets サービス（`Sheets.Spreadsheets.Values.get`、Sheets API v4）で行い、scope は `spreadsheets.readonly` のまま動きます。manifest の `dependencies.enabledAdvancedServices`（`Sheets` / `v4`）に加え、deploy はリモート manifest の `dependencies` を保持するため、**初回 bootstrap で Apps Script エディタの「サービス」から Sheets API を追加**し、紐づく GCP project で Sheets API を有効にしてください。Admin には書き込み API（`values.update` 等）も `UrlFetchApp` も持たせません（`tests/admin_gas.test.js` が `SpreadsheetApp` の再混入を検査します）。
 - Script Property `RESPONSES_SPREADSHEET_ID`（#380 の responses Spreadsheet。値はリポジトリに置かない）を手動で設定します。`responses` シートのヘッダーが schema と完全一致しなければ読みません。
 - 回答の編集・削除・手動書き換えの UI / endpoint はありません。唯一の書き込みは自分自身の Script Property `SNAPSHOT_STATE`（最後に公開した snapshot の生成時刻と件数）です。
 - 画面: production valid total ／ test 除外件数と除外内訳 ／ 設問ごとの `targetCount` と `minTotal / minTarget / minCell` の達成・未達 ／ 抑止後の public preview ／ 障壁と安心条件の比較 ／ snapshot 生成。自由記述は別タブ「自由記述（運営者のみ）」で明示的に読み込んだときだけ取得します（`FreeText.gs`。`Snapshot.gs` と `buildSnapshot` は呼びません）。個票・`respondent_hash` は返しません。
