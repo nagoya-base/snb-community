@@ -2,15 +2,17 @@
  * Public Web App のエントリポイント。ルーティングだけを行い、ロジックは各ファイルへ委譲する。
  *
  *   GET  ?action=status                        受付状態（open / not_open / closed / not_configured）とversion
+ *   GET  ?action=results                       公開結果用の privacy-safe snapshot（PublicSnapshot.gs。raw responses は返さない）
  *   POST (Content-Type: text/plain, body=JSON) 回答送信（production と submit_excluded のみ。client-only の
  *                                              preview_no_submit / closed_view はserverへ送らない）
- * 管理者機能・公開結果・finalize はこのプロジェクトに置かない。
+ * 管理者機能・finalize はこのプロジェクトに置かない。results は validateSnapshot を通った snapshot だけを返す。
  */
 function doGet(e) {
   var params = e && e.parameter ? e.parameter : {};
   var body;
   try {
     if (params.action === 'status') body = processStatus_(new Date());
+    else if (params.action === 'results') body = processResults_(new Date());
     else body = { ok: true, service: 'baseball-uniform-survey', schema_version: SURVEY_SCHEMA.schema_version };
   } catch (error) {
     logEvent_('error', { code: 'get_failed' });

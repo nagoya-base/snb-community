@@ -104,6 +104,8 @@ function processSubmission_(rawBody, now) {
       updateNotificationStatus_(saved.sheet, saved.row, status);
     } catch (ignored) { /* 補助情報の更新失敗は無視 */ }
   }
+  // 公開 snapshot は batch 更新。更新判定（件数・間隔・minCell 以上の増分）を通ったときだけ更新し、失敗しても回答の成否に影響させない。
+  refreshPublicSnapshot_(now);
   return { ok: true, status: 'accepted' };
 }
 

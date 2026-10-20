@@ -21,7 +21,8 @@ function createAdminEnv(rows, options = {}) {
       get: (id, opts) => {
         env.calls.push('Spreadsheets.get');
         if (id !== 'responses-sheet-id') throw new Error('not_found');
-        return { sheets: [{ properties: { title: options.sheetTitle || 'responses' } }] };
+        const extra = options.publicSnapshotGrid ? [{ properties: { title: 'public_snapshot' } }] : [];
+        return { sheets: [{ properties: { title: options.sheetTitle || 'responses' } }].concat(extra) };
       },
       batchUpdate: deny('Spreadsheets.batchUpdate'),
       create: deny('Spreadsheets.create'),
@@ -30,6 +31,10 @@ function createAdminEnv(rows, options = {}) {
           env.reads++;
           env.calls.push('Values.get ' + range);
           if (id !== 'responses-sheet-id') throw new Error('not_found');
+          if (range === "'public_snapshot'") {
+            env.calls.push('public_snapshot');
+            return { range, majorDimension: 'ROWS', values: (options.publicSnapshotGrid || []).map((line) => line.slice()) };
+          }
           const render = opts && opts.valueRenderOption;
           env.renderOptions.push(render);
           // FORMATTED_VALUE は画面の表示値。options.displayRows（行オブジェクト）があればそれを表示値として返す。
@@ -65,6 +70,11 @@ function createAdminEnv(rows, options = {}) {
     console: { log: (m) => env.logs.push(String(m)), error: (m) => env.logs.push(String(m)) },
     PropertiesService: { getScriptProperties: () => properties },
     Sheets,
+    Utilities: {
+      computeDigest: (_alg, input) => Array.from(require('crypto').createHash('sha256').update(input, 'utf8').digest()).map((b) => (b > 127 ? b - 256 : b)),
+      DigestAlgorithm: { SHA_256: 'SHA_256' },
+      Charset: { UTF_8: 'UTF_8' }
+    },
     HtmlService: {
       XFrameOptionsMode: { DEFAULT: 'DEFAULT' },
       createHtmlOutputFromFile: (name) => {

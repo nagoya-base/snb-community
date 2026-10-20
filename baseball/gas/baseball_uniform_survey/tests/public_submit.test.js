@@ -229,7 +229,8 @@ test('production と test の hash namespace は分離し、test は test_run_id
 test('保存は LockService 内で行い、例外でも必ず解放する', () => {
   const { env, ctx } = loadPublic();
   assert.strictEqual(submit(ctx, validPayload(ctx)).ok, true);
-  assert.deepStrictEqual(env.lockEvents, ['acquire', 'release']);
+  // 保存（1 組）+ 保存後の公開 snapshot 更新判定（#425。別のロックで 1 組）。
+  assert.deepStrictEqual(env.lockEvents, ['acquire', 'release', 'acquire', 'release']);
   env.lockEvents.length = 0;
   env.spreadsheet.getSheetByName('responses').hooks.onWrite = () => { throw new Error('write failed'); };
   assert.strictEqual(submit(ctx, validPayload(ctx)).error, 'server_error');

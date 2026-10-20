@@ -21,13 +21,27 @@ function getResponsesSpreadsheetId_() {
   return id;
 }
 
-function responsesSheetExists_(id) {
+function sheetExists_(id, title) {
   var meta = Sheets.Spreadsheets.get(id, { fields: 'sheets.properties.title' });
   var sheets = (meta && meta.sheets) || [];
   for (var i = 0; i < sheets.length; i++) {
-    if (sheets[i].properties && sheets[i].properties.title === SHEET_RESPONSES) return true;
+    if (sheets[i].properties && sheets[i].properties.title === title) return true;
   }
   return false;
+}
+
+function responsesSheetExists_(id) { return sheetExists_(id, SHEET_RESPONSES); }
+
+/**
+ * Public GAS が保持する public_snapshot シート（privacy-safe snapshot と更新メタデータ。Public GAS だけが書く）の全値。
+ * シートが無ければ null。読み取りのみ。raw responses のシートではない。
+ */
+function readPublicSnapshotGrid_() {
+  var id = getResponsesSpreadsheetId_();
+  if (!sheetExists_(id, SnapshotStore.SHEET_NAME)) return null;
+  var range = "'" + SnapshotStore.SHEET_NAME + "'";
+  var result = Sheets.Spreadsheets.Values.get(id, range, { majorDimension: 'ROWS', valueRenderOption: 'UNFORMATTED_VALUE' });
+  return (result && result.values) || [];
 }
 
 /** responses シート全体の値（行配列）。Sheets API は末尾の空セル・空行を省くため呼び出し側で補う。 */
