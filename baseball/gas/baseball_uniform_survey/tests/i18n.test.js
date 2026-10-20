@@ -235,3 +235,13 @@ test('翻訳対象件数（日本語正本）を数えられる：設問46・選
   assert.strictEqual(n.options, schema.questions.reduce((sum, q) => sum + (q.options ? q.options.length : 0), 0));
   assert.ok(n.total > 500);
 });
+
+test('保持期間の説明（intro.note.retention）は5言語とも短い1文で、自動削除・全データ削除・内部手順を書かない', () => {
+  assert.strictEqual(dicts.ja.ui['intro.note.retention'], '回答データは、回答受付終了後1年間を保持期間とし、その後、個別回答・自由記述などの生データを削除します。個人単位の情報を含まない集計結果は、その後も保管・公開する場合があります。');
+  i18n.LOCALES.forEach((locale) => {
+    const text = dicts[locale].ui['intro.note.retention'];
+    assert.ok(typeof text === 'string' && text.length > 0 && text.length <= 260, locale + ' は短く');
+    assert.ok(/1|one year/i.test(text), locale + ' は1年を示す');
+    assert.ok(!/自動|automatic|자동|自动|自動|すべてのデータ|all data|cleanup|confirmation|retention|dry-run|GA4/i.test(text), locale + ' は内部手順・自動削除・GA4を書かない');
+  });
+});

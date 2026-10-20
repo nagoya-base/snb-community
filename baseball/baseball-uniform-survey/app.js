@@ -784,6 +784,7 @@
       t('intro.note.publication'),
       t('intro.note.admin'),
       t('intro.note.anonymity'),
+      t('intro.note.retention'),
       t('intro.note.partial'),
       t('intro.note.notEntry'),
       t('intro.note.representativeness')

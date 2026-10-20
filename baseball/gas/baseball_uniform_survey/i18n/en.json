@@ -37,6 +37,7 @@
     "intro.note.publication": "Individual answers are not published. Only aggregated results will be shown on the public page. Free-text answers and detailed place of residence are never published.",
     "intro.note.admin": "Individual answers may be viewed only by the single person in charge of the club, for the purpose of aggregation and improving operations.",
     "intro.note.anonymity": "To protect anonymity, it is in principle not possible to verify your identity and correct or delete specific answers after you submit.",
+    "intro.note.retention": "Response data is kept for one year after the survey closes. After that, raw data such as individual answers and free-text answers is deleted. Aggregated results that contain no individual-level information may continue to be stored and published.",
     "intro.note.partial": "Answers are sent all at once at the end. If you leave partway through, nothing is saved on the server.",
     "intro.note.notEntry": "Answering this survey is not an application to join a catchball meet-up.",
     "intro.note.representativeness": "Because responses are collected through social media and the web, the results do not represent the general population.",
