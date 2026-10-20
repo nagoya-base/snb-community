@@ -145,6 +145,9 @@
         var totals = $('totals');
         totals.textContent = '';
         totals.appendChild(el('p', 'production 有効回答: ' + s.production_valid_total + ' 件'));
+        if (s.legacy_date_serial_accepted > 0) {
+          totals.appendChild(el('p', 'legacy_date_serial_accepted: ' + s.legacy_date_serial_accepted + ' 件（survey_version が Sheets により月初の日付シリアル値へ自動変換された既存行。互換認識して有効回答に含めています。セル値は変更していません）', 'note'));
+        }
         totals.appendChild(el('p', 'test 回答（通常集計から除外）: ' + s.test_excluded + ' 件 ／ 全行数: ' + s.rows));
         var ex = Object.keys(s.excluded).filter(function (k) { return s.excluded[k] > 0; }).map(function (k) { return k + ': ' + s.excluded[k]; });
         totals.appendChild(el('p', '除外（production だが有効でないもの）: ' + (ex.length ? ex.join(' / ') : 'なし')));
