@@ -15,7 +15,7 @@ test('生成物は survey.schema.json / survey.config.json / src/survey-core.js 
 });
 
 test('Public GAS が読み込む SURVEY_SCHEMA / SURVEY_CONFIG / SurveyCore は正本と同一', () => {
-  const { ctx } = loadPublic({ launched: false });
+  const { ctx } = loadPublic({ committed: true });
   assert.deepStrictEqual(JSON.parse(JSON.stringify(ctx.SURVEY_SCHEMA)), schema);
   assert.deepStrictEqual(JSON.parse(JSON.stringify(ctx.SURVEY_CONFIG)), config);
   const core = require('../src/survey-core.js');

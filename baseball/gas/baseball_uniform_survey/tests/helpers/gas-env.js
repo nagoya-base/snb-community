@@ -117,7 +117,7 @@ const NOW = new Date('2026-11-10T12:00:00+09:00');
 
 /**
  * Public GAS を読み込む。既定では「受付期間を設定済み・保持期限確定済み」の状態にする（本番化後の想定）。
- * 実 schema / config の未確定状態（fail closed）を検証するときは launched:false。
+ * 未確定状態（fail closed）を検証するときは launched:false。コミット済みの config / schema そのままは committed:true。
  */
 function loadPublic(options = {}) {
   const env = createEnv();
@@ -126,10 +126,17 @@ function loadPublic(options = {}) {
   env.props.set('RESPONDENT_SALT', SALT);
   env.props.set('TEST_TOKEN', TEST_TOKEN);
   env.props.set('NOTIFICATION_EMAIL', 'owner@example.com');
-  if (options.launched !== false) {
+  if (options.committed) {
+    // リポジトリにコミット済みの config / schema をそのまま使う
+  } else if (options.launched !== false) {
     ctx.SURVEY_CONFIG.reception.opens_at = WINDOW.opens_at;
     ctx.SURVEY_CONFIG.reception.closes_at = WINDOW.closes_at;
     ctx.SURVEY_SCHEMA.respondentNotice.retention.status = 'confirmed';
+  } else {
+    // 未確定（launch 前）の状態を明示的に再現する
+    ctx.SURVEY_CONFIG.reception.opens_at = null;
+    ctx.SURVEY_CONFIG.reception.closes_at = null;
+    ctx.SURVEY_SCHEMA.respondentNotice.retention.status = 'must_set_before_launch';
   }
   if (options.setup !== false) ctx.setupSpreadsheet();
   return { env, ctx };

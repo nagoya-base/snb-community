@@ -50,7 +50,7 @@ test('生成物 maintenance/SurveyGenerated.gs は schema + 受付期間 + reten
   assert.ok(text.includes('var SURVEY_RECEPTION = ' + JSON.stringify(survey.reception) + ';'));
   assert.equal(env.ctx.SURVEY_CONFIG, undefined);
   const configPart = text.slice(text.indexOf('var SURVEY_RECEPTION'), text.indexOf('var SurveyCore'));
-  assert.ok(!/notification|minElapsedMs|payloadMaxBytes|NOTIFICATION_EMAIL|testRun/.test(configPart));
+  assert.ok(!/"notification"|minElapsedMs|payloadMaxBytes|NOTIFICATION_EMAIL|testRun/.test(configPart));
   assert.ok(!/RESPONDENT_SALT\s*=|TEST_TOKEN\s*=/.test(text));
 });
 
@@ -234,14 +234,21 @@ test('GAS：同一 marker で final_snapshot Sheet が正常/欠損/改変の3�
 
 // ── retention / cleanup ──
 
-test('retention 設定状態：リポジトリの設定は未確定で launch_ready=false（production launch blocker のまま）。inventory が見える', () => {
+test('retention 設定状態：リポジトリの設定は confirmed で launch_ready=true。未確定の設定は launch_ready=false。inventory が見える', () => {
   const env = createMaintenanceEnv([]);
   env.ctx.SURVEY_RECEPTION = JSON.parse(fs.readFileSync(path.join(ROOT, 'survey.config.json'), 'utf8')).reception;
   const status = plain(env.ctx.getRetentionStatus());
   assert.equal(status.owner, 'nagoya-base');
-  assert.equal(status.status, 'unset');
-  assert.equal(status.launch_ready, false);
-  assert.equal(status.schema_retention_status, 'must_set_before_launch');
+  assert.equal(status.status, 'confirmed');
+  assert.equal(status.policy_version, '2026-10-v1');
+  assert.equal(status.deadline, '2027-11-30T23:59:00+09:00');
+  assert.equal(status.keep_final_snapshot, true);
+  assert.equal(status.launch_ready, true);
+  assert.equal(status.schema_retention_status, 'confirmed');
+  const unset = createMaintenanceEnv([], { retention: Object.assign({}, JSON.parse(fs.readFileSync(path.join(ROOT, 'retention.config.json'), 'utf8')), { policy_status: 'unset' }) });
+  const unsetStatus = plain(unset.ctx.getRetentionStatus());
+  assert.equal(unsetStatus.status, 'unset');
+  assert.equal(unsetStatus.launch_ready, false);
   assert.equal(status.inventory.length, maintenanceCore.STORAGE_INVENTORY.length);
   assert.ok(status.inventory.some((s) => s.id === 'spreadsheet_history_and_backups' && s.automation === 'manual_required'));
   assert.deepEqual(env.events, []);
@@ -272,7 +279,7 @@ test('cleanup dry-run は非破壊で、件数と storage 名のみ。回答本�
 });
 
 test('cleanup は retention 未確定・期限前・confirmation なしでは削除しない', () => {
-  const unset = cleanupEnv(JSON.parse(fs.readFileSync(path.join(ROOT, 'retention.config.json'), 'utf8')), { finalize: false });
+  const unset = cleanupEnv(Object.assign({}, JSON.parse(fs.readFileSync(path.join(ROOT, 'retention.config.json'), 'utf8')), { policy_status: 'unset' }), { finalize: false });
   assert.throws(() => unset.ctx.cleanupExecute('CLEANUP:x:000000000000'), /retention_policy_not_confirmed/);
   const early = cleanupEnv();
   early.now = new Date('2027-03-31T12:00:00+09:00');

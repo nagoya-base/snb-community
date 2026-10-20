@@ -43,8 +43,8 @@ test('v2.17 で必須の構成要素が存在する', () => {
   assert.ok(schema.questions.some((x) => x.options && x.options.some((o) => o.reassuranceFor)), 'reassuranceFor');
 });
 
-test('retention は launch blocker のまま（期限を勝手に決めない）', () => {
-  assert.equal(schema.respondentNotice.retention.status, 'must_set_before_launch');
+test('retention は確定済み（schema は status のみ。期限の数値は retention.config.json が正本）', () => {
+  assert.equal(schema.respondentNotice.retention.status, 'confirmed');
   assert.ok(!JSON.stringify(schema.respondentNotice.retention).match(/\d+\s*(日|か月|ヶ月|年|days|months|years)/));
 });
 

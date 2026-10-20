@@ -318,7 +318,14 @@ test('受付期間は survey config が正本：未設定・不正・保持期�
   assert.strictEqual(require('../survey.config.json').reception.opens_at, '2026-10-20T13:00:00+09:00');
   assert.strictEqual(require('../survey.config.json').reception.closes_at, '2026-11-30T23:59:00+09:00');
   assert.strictEqual(require('../survey.config.json').reception.timezone, 'Asia/Tokyo');
-  // コミット済みの config / schema そのまま（保持期限が未確定）では受け付けない
+  // コミット済みの config / schema そのままでは、受付期間内なら open（server が権威）
+  const committed = loadPublic({ committed: true });
+  assert.strictEqual(committed.ctx.receptionState_(NOW), 'open');
+  assert.strictEqual(committed.ctx.receptionState_(new Date('2026-10-20T12:59:59+09:00')), 'not_open');
+  assert.strictEqual(committed.ctx.receptionState_(new Date('2026-10-20T13:00:00+09:00')), 'open');
+  assert.strictEqual(committed.ctx.receptionState_(new Date('2026-11-30T23:59:00+09:00')), 'open');
+  assert.strictEqual(committed.ctx.receptionState_(new Date('2026-11-30T23:59:00.001+09:00')), 'closed');
+  // 未確定（受付期間・保持期限）では受け付けない
   const fresh = loadPublic({ launched: false });
   assert.strictEqual(fresh.ctx.receptionState_(NOW), 'not_configured');
   assert.strictEqual(submit(fresh.ctx, validPayload(fresh.ctx)).error, 'survey_not_configured');

@@ -3994,7 +3994,7 @@
     "externalAI": "生の個別回答・自由記述は外部AIへ渡さず、必要な場合は集計済みまたは個人を特定しにくい形へ加工したデータのみ利用する",
     "representativeness": "SNS・Web等を通じて回答を募るため、一般人口全体を代表する統計ではない",
     "retention": {
-      "status": "must_set_before_launch",
+      "status": "confirmed",
       "readinessRule": "保持期限と削除方針が未設定なら本番公開不可"
     }
   },
