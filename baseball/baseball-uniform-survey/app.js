@@ -305,10 +305,16 @@
 
   function renderText(q, fieldset, changed) {
     var inputId = uid('t');
-    var textarea = document.createElement('textarea');
+    var singleLine = q.inputStyle === 'single_line';
+    var textarea = document.createElement(singleLine ? 'input' : 'textarea');
+    if (singleLine) {
+      textarea.type = 'text';
+      textarea.autocomplete = 'off';
+    } else {
+      textarea.rows = 5;
+    }
     textarea.id = inputId;
-    textarea.className = 'bus-textarea';
-    textarea.rows = 5;
+    textarea.className = singleLine ? 'bus-text' : 'bus-textarea';
     textarea.setAttribute('aria-label', q.label);
     if (typeof q.maxLength === 'number') textarea.maxLength = q.maxLength;
     textarea.value = state.answers[q.id] || '';

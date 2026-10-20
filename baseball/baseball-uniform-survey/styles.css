@@ -70,7 +70,7 @@ fieldset.bus-q { border: 0; padding: 0; margin: 0 0 24px; min-width: 0; }
 .bus-count { text-align: right; font-size: .78rem; color: var(--bus-muted); margin: 2px 0 0; }
 .bus-err { color: var(--bus-error); font-size: .9rem; margin: 8px 0 0; font-weight: 700; }
 .bus-err[hidden] { display: none; }
-fieldset.bus-has-error .bus-options, fieldset.bus-has-error .bus-scale, fieldset.bus-has-error .bus-textarea { outline: 2px solid var(--bus-error); outline-offset: 4px; border-radius: 10px; }
+fieldset.bus-has-error .bus-options, fieldset.bus-has-error .bus-scale, fieldset.bus-has-error .bus-textarea, fieldset.bus-has-error .bus-text { outline: 2px solid var(--bus-error); outline-offset: 4px; border-radius: 10px; }
 .bus-summary { background: var(--bus-error-pale); border: 1px solid #f0b4ad; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; color: var(--bus-error); }
 .bus-summary[hidden] { display: none; }
 .bus-summary-title { margin: 0 0 4px; font-weight: 700; }

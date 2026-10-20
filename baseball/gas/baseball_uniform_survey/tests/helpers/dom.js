@@ -85,7 +85,8 @@ function answer(env, id, value, other) {
   const { document, window } = env;
   const fs_ = fieldset(document, id);
   if (!fs_) throw new Error(`設問が表示されていません: ${id}`);
-  const textarea = fs_.querySelector('textarea');
+  // 自由記述は textarea、1行入力（inputStyle=single_line）は設問直下の input[type=text]（「その他」入力欄は .bus-other 内）。
+  const textarea = fs_.querySelector('textarea') || Array.from(fs_.children).find((c) => c.tagName === 'INPUT' && c.type === 'text');
   if (textarea) { textarea.value = value; fire(window, textarea, 'input'); return; }
   const wanted = Array.isArray(value) ? value : [value];
   // 冪等：指定した状態にそろえる（複数選択は指定外を外す）。

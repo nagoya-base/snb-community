@@ -75,8 +75,11 @@ function processSubmission_(rawBody, now) {
     return errorBody_('server_error');
   }
 
+  // 通知条件: production && valid && saved && notification.enabled && support_message が空白以外。
+  var supportMessage = hasSupportMessage_(validation) ? validation.clean.answers.support_message : '';
   var notificationEnabled = isProduction && SURVEY_CONFIG.notification.enabled === true;
-  var initialNotification = !isProduction ? 'not_applicable' : (notificationEnabled ? 'pending' : 'disabled');
+  var shouldNotify = notificationEnabled && supportMessage !== '';
+  var initialNotification = !isProduction ? 'not_applicable' : (!notificationEnabled ? 'disabled' : (shouldNotify ? 'pending' : 'not_required'));
   var saved;
   try {
     saved = saveWithLock_(hash, validation, mode, now, initialNotification);
@@ -94,9 +97,9 @@ function processSubmission_(rawBody, now) {
     return { ok: true, status: 'accepted_test', test: true };
   }
   logEvent_('accepted');
-  // 通知は保存成功の「後」に、productionの有効回答に限って行う。通知の失敗は回答の成否に影響させない。
-  if (notificationEnabled) {
-    var status = notifyNewResponse_(saved.sheet, now);
+  // 通知は保存成功の「後」に、support_message が入力されたproduction回答に限って行う。通知の失敗は回答の成否に影響させない。
+  if (shouldNotify) {
+    var status = notifySupportMessage_(saved.sheet, supportMessage, now);
     try {
       updateNotificationStatus_(saved.sheet, saved.row, status);
     } catch (ignored) { /* 補助情報の更新失敗は無視 */ }
