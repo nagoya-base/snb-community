@@ -383,7 +383,7 @@ test('nominal は count_desc、同数は schema の option 順（tieBreak）', (
 
 const PREF = { tokyo: 'pref_13', aichi: 'pref_23', osaka: 'pref_27', hokkaido: 'pref_01' };
 const regionOf = (specs) => entryOf(snapshotOf(validFrom(specs)), 'region_blocks');
-const prefSpec = (pref, count, extra = {}) => ({ count, overrides: Object.assign({ prefecture: pref }, pref === 'pref_23' ? { aichi_area: 'nagoya' } : {}, extra) });
+const prefSpec = (pref, count, extra = {}) => ({ count, overrides: Object.assign({ prefecture: pref }, pref === 'pref_23' ? { aichi_area: 'nagoya' } : {}, pref === 'overseas' ? { residence_country: 'COUNTRY-SECRET' } : {}, extra) });
 
 test('地域は地方ブロックだけを公開し、小さいブロックは「その他の地域」にまとめる', () => {
   const q = regionOf([prefSpec(PREF.tokyo, 12), prefSpec(PREF.aichi, 9), prefSpec(PREF.osaka, 2), prefSpec(PREF.hokkaido, 2), prefSpec('prefer_not_to_say', 1)]);
@@ -398,7 +398,7 @@ test('地域の補完秘匿：まとめた先が 1 ブロックだけ・minCell 
   assert.deepEqual(q.cells.map((c) => [c.label, c.count]), [['関東', 12], ['その他の地域', 11]]);
   assert.deepEqual(aggregate.validateSnapshot(schema, snapshotOf(validFrom([prefSpec(PREF.tokyo, 12), prefSpec(PREF.aichi, 9), prefSpec(PREF.osaka, 2)]))), []);
   // 全ブロックが少数なら公開しない。
-  const all = regionOf([prefSpec(PREF.tokyo, 2), prefSpec(PREF.osaka, 2), prefSpec(PREF.hokkaido, 2), prefSpec(PREF.aichi, 2), { count: 2, overrides: { prefecture: 'overseas' } }]);
+  const all = regionOf([prefSpec(PREF.tokyo, 2), prefSpec(PREF.osaka, 2), prefSpec(PREF.hokkaido, 2), prefSpec(PREF.aichi, 2), prefSpec('overseas', 2)]);
   assert.equal(all.state, 'suppressed_all');
   assert.equal(all.targetCount, null);
 });
@@ -409,12 +409,20 @@ test('詳細都道府県・愛知県内の地域は snapshot のどこにも出�
   assert.ok(!/pref_\d\d/.test(text));
   assert.ok(!text.includes('aichi_area') && !text.includes('"prefecture"') && !text.includes('愛知') && !text.includes('名古屋市'));
   assert.ok(!text.includes('nagoya"') && !text.includes('owari') && !text.includes('mikawa'));
+  assert.ok(!text.includes('residence_country') && !text.includes('COUNTRY-SECRET'), '海外の国・地域名は public snapshot に出ない');
   const bad = clone(snapshotOf(valid));
   bad.questions[0].cells[0].id = 'pref_23';
   assert.ok(aggregate.validateSnapshot(schema, bad).some((p) => /詳細都道府県/.test(p)));
   const loosened = clone(schema);
   loosened.publicRegionAggregation.privacy.publishPrefectureDetail = true;
   assert.throws(() => aggregate.buildSnapshot(loosened, [], { generatedAt: NOW }), /詳細都道府県/);
+});
+
+test('海外の国・地域名は Admin の自由記述一覧では確認でき、public snapshot には出ない', () => {
+  const rows = [rowFor(answersFor(Object.assign({ prefecture: 'overseas', residence_country: 'COUNTRY-SECRET' }, INTERESTED)))];
+  const items = aggregate.listFreeText(schema, aggregate.classifyRows(schema, rows));
+  assert.ok(items.some((i) => i.questionId === 'residence_country' && i.text === 'COUNTRY-SECRET'));
+  assert.ok(!JSON.stringify(aggregate.buildSnapshot(schema, aggregate.classifyRows(schema, rows).valid, { generatedAt: NOW })).includes('COUNTRY-SECRET'));
 });
 
 // ── public に出さない項目 ──

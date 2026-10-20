@@ -199,7 +199,7 @@ test('salt 未設定/短い場合は保存せず fail closed', () => {
 
 test('production の重複submitは拒否される（UUIDの大文字小文字は同一）', () => {
   const { env, ctx } = loadPublic();
-  const payload = validPayload(ctx);
+  const payload = validPayload(ctx, { support_message: '応援しています' });
   assert.strictEqual(submit(ctx, payload).ok, true);
   assert.strictEqual(submit(ctx, payload).error, 'duplicate_submission');
   assert.strictEqual(submit(ctx, Object.assign({}, payload, { uuid: payload.uuid.toUpperCase() })).error, 'duplicate_submission');
@@ -411,7 +411,7 @@ test('test mode は受付期間の前後でも送信確認でき、production co
   assert.strictEqual(submit(ctx, validPayload(ctx, {}, {}, testExtra('r2')), new Date('2027-01-01T00:00:00+09:00')).status, 'accepted_test');
   const sheet = env.spreadsheet.getSheetByName('responses');
   assert.strictEqual(ctx.countProductionResponses_(sheet), 0);
-  assert.strictEqual(submit(ctx, validPayload(ctx)).ok, true);
+  assert.strictEqual(submit(ctx, validPayload(ctx, { support_message: '応援しています' })).ok, true);
   assert.strictEqual(ctx.countProductionResponses_(sheet), 1);
   assert.match(env.mails[0].body, /累計）：1件/, 'testは通知の累計に入らない');
   // 未確定（fail closed）の launch でも test 送信自体は production を開かない
@@ -461,28 +461,63 @@ test('受付が未確定でも、test token が不正・未設定・24文字未�
 
 // ── 通知 ──
 
-test('通知：production の有効回答のみ、安全な運営情報だけを text/plain で送る', () => {
+test('通知：support_message が入った production 回答だけ、受信日時と本文のみを text/plain で1通送る', () => {
   const { env, ctx } = loadPublic();
-  const payload = validPayload(ctx, { feedback: '個人的な自由記述', support_message: '応援しています', favorite_uniforms: ['other'], top_uniform: 'other' }, { favorite_uniforms: 'ひみつの競技' });
+  const payload = validPayload(ctx, { feedback: '個人的な自由記述', support_message: '  応援しています  ', favorite_uniforms: ['other'], top_uniform: 'other' }, { favorite_uniforms: 'ひみつの競技' });
   assert.strictEqual(submit(ctx, payload).ok, true);
   assert.strictEqual(env.mails.length, 1);
   const mail = env.mails[0];
   assert.strictEqual(mail.to, 'owner@example.com');
+  assert.strictEqual(mail.subject, '名古屋野球ユニ部アンケート｜応援・激励メッセージ');
   assert.strictEqual(mail.subject, ctx.SURVEY_CONFIG.notification.subject);
   assert.strictEqual(mail.htmlBody, undefined);
-  assert.match(mail.body, /新規の有効回答が1件/);
+  assert.match(mail.body, /受信日時：\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}/);
+  assert.match(mail.body, /「運営への応援・激励メッセージ」\n応援しています\n/, 'support_message 本文（trim後）を含む');
   assert.match(mail.body, /累計）：1件/);
-  for (const secret of ['個人的な自由記述', '応援しています', 'ひみつの競技', payload.uuid, cell(env, 'respondent_hash'), SALT, TEST_TOKEN]) {
+  for (const secret of ['個人的な自由記述', 'ひみつの競技', payload.uuid, cell(env, 'respondent_hash'), SALT, TEST_TOKEN]) {
     assert.ok(!mail.body.includes(secret) && !mail.subject.includes(secret), secret);
   }
   assert.strictEqual(cell(env, 'notification_status'), 'sent');
+});
+
+test('通知しない：production でも support_message が未入力・空白のみ・feedback や「その他」だけなら送らない', () => {
+  const { env, ctx } = loadPublic();
+  const cases = [
+    validPayload(ctx),
+    validPayload(ctx, { support_message: '' }),
+    validPayload(ctx, { support_message: ' \u3000\n\t ' }),
+    validPayload(ctx, { feedback: '期待しています' }),
+    validPayload(ctx, { favorite_uniforms: ['other'], top_uniform: 'other' }, { favorite_uniforms: 'ラグビー' })
+  ];
+  cases.forEach((payload, i) => {
+    assert.strictEqual(submit(ctx, payload).ok, true);
+    assert.strictEqual(cell(env, 'notification_status', i + 1), 'not_required', String(i));
+  });
+  assert.strictEqual(rows(env).length, 1 + cases.length, '回答自体は保存される');
+  assert.deepStrictEqual(env.mails, []);
+});
+
+test('通知しない：test（support_message あり）・重複・18歳未満・検証失敗・受付期間外', () => {
+  const { env, ctx } = loadPublic();
+  const withMessage = (extra = {}, now) => submit(ctx, validPayload(ctx, Object.assign({ support_message: '応援しています' }, extra), {}, now && now.extra), now && now.at);
+  assert.strictEqual(submit(ctx, validPayload(ctx, { support_message: 'testの応援' }, {}, testExtra())).status, 'accepted_test');
+  assert.strictEqual(cell(env, 'notification_status'), 'not_applicable');
+  withMessage({ age_confirmed: 'no' });
+  withMessage({ age: 'bad' });
+  assert.strictEqual(submit(ctx, validPayload(ctx, { support_message: '期間外' }), new Date('2027-01-01T00:00:00+09:00')).ok, false);
+  assert.deepStrictEqual(env.mails, []);
+  const dup = validPayload(ctx, { support_message: '応援しています' });
+  assert.strictEqual(submit(ctx, dup).ok, true);
+  assert.strictEqual(env.mails.length, 1);
+  assert.strictEqual(submit(ctx, dup).error, 'duplicate_submission');
+  assert.strictEqual(env.mails.length, 1, '重複では追加送信しない');
 });
 
 test('通知の失敗（送信エラー・宛先未設定）は回答保存を失敗扱いにしない', () => {
   for (const mutate of [(env) => { env.failMail = true; }, (env) => { env.props.delete('NOTIFICATION_EMAIL'); }, (env) => { env.props.set('NOTIFICATION_EMAIL', 'not-an-email'); }]) {
     const { env, ctx } = loadPublic();
     mutate(env);
-    assert.deepStrictEqual(submit(ctx, validPayload(ctx)), { ok: true, status: 'accepted' });
+    assert.deepStrictEqual(submit(ctx, validPayload(ctx, { support_message: '応援しています' })), { ok: true, status: 'accepted' });
     assert.strictEqual(rows(env).length, 2, '回答は保存済み');
     assert.strictEqual(cell(env, 'notification_status'), 'failed');
     assert.ok(!env.logs.join('\n').includes('owner@example.com'));
@@ -492,23 +527,51 @@ test('通知の失敗（送信エラー・宛先未設定）は回答保存を�
 test('notification.enabled=false は明示的に無効：メールを送らず notification_status=disabled', () => {
   const { env, ctx } = loadPublic();
   ctx.SURVEY_CONFIG.notification.enabled = false;
-  assert.strictEqual(submit(ctx, validPayload(ctx)).ok, true);
+  assert.strictEqual(submit(ctx, validPayload(ctx, { support_message: '応援しています' })).ok, true);
   assert.deepStrictEqual(env.mails, []);
   assert.strictEqual(cell(env, 'notification_status'), 'disabled');
   assert.strictEqual(typeof require('../survey.config.json').notification.enabled, 'boolean', '暗黙の未実装にしない');
 });
 
-test('通知しないケース：test・18歳未満・検証失敗・重複・受付期間外', () => {
+// ── 海外選択時の国・地域名（residence_country） ──
+
+const OVERSEAS = { prefecture: 'overseas' };
+
+test('residence_country：overseas + 国・地域名あり → 保存（test でも同じvalidation）', () => {
   const { env, ctx } = loadPublic();
-  submit(ctx, validPayload(ctx, {}, {}, testExtra()));
-  submit(ctx, validPayload(ctx, { age_confirmed: 'no' }));
-  submit(ctx, validPayload(ctx, { age: 'bad' }));
-  submit(ctx, validPayload(ctx), new Date('2027-01-01T00:00:00+09:00'));
-  const dup = validPayload(ctx);
-  submit(ctx, dup);
+  assert.deepStrictEqual(submit(ctx, validPayload(ctx, Object.assign({ residence_country: '  台湾 ' }, OVERSEAS))), { ok: true, status: 'accepted' });
+  assert.strictEqual(cell(env, 'prefecture'), 'overseas');
+  assert.strictEqual(cell(env, 'residence_country'), '台湾');
+  assert.strictEqual(submit(ctx, validPayload(ctx, Object.assign({ residence_country: 'Canada' }, OVERSEAS), {}, testExtra())).status, 'accepted_test');
+  const bad = submit(ctx, validPayload(ctx, OVERSEAS, {}, testExtra('r2')));
+  assert.ok(fieldsOf(bad).includes('residence_country:required'), 'test でも required');
+});
+
+test('residence_country：overseas + 未入力・空白のみ → required、改行・長すぎる値も拒否', () => {
+  const { env, ctx } = loadPublic();
+  for (const value of [undefined, '', '  \u3000 ']) {
+    const result = submit(ctx, validPayload(ctx, Object.assign({ residence_country: value }, OVERSEAS)));
+    assert.ok(fieldsOf(result).includes('residence_country:required'), JSON.stringify(value));
+  }
+  assert.ok(fieldsOf(submit(ctx, validPayload(ctx, Object.assign({ residence_country: '台湾\n香港' }, OVERSEAS)))).includes('residence_country:invalid_text'));
+  assert.ok(fieldsOf(submit(ctx, validPayload(ctx, Object.assign({ residence_country: 'あ'.repeat(61) }, OVERSEAS)))).includes('residence_country:too_long'));
+  assert.strictEqual(rows(env).length, 1, '保存されない');
+});
+
+test('residence_country：海外以外（国内・回答しない）で送ると hidden_field で拒否（stale値）', () => {
+  const { env, ctx } = loadPublic();
+  for (const pref of ['pref_13', 'prefer_not_to_say']) {
+    assert.ok(fieldsOf(submit(ctx, validPayload(ctx, { prefecture: pref, residence_country: '台湾' }))).includes('residence_country:hidden_field'), pref);
+  }
+  assert.strictEqual(rows(env).length, 1);
+});
+
+test('residence_country：既に非公開設問で、通知メールにも出ない', () => {
+  const { env, ctx } = loadPublic();
+  assert.strictEqual(schema.questions.find((q) => q.id === 'residence_country').publication.visibility, 'private');
+  assert.strictEqual(submit(ctx, validPayload(ctx, Object.assign({ residence_country: 'ひみつの国', support_message: '応援' }, OVERSEAS))).ok, true);
   assert.strictEqual(env.mails.length, 1);
-  submit(ctx, dup);
-  assert.strictEqual(env.mails.length, 1);
+  assert.ok(!env.mails[0].body.includes('ひみつの国'));
 });
 
 // ── Formula Injection ──
