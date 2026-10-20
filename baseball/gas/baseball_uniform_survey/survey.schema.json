@@ -2529,6 +2529,7 @@
       "section": "activity_history",
       "label": "学生時代（中学〜大学年代）に経験した部活・クラブ・サークルを教えてください",
       "type": "multiple",
+      "adminTallySort": "count_desc",
       "required": true,
       "options": [
         {
@@ -2661,6 +2662,7 @@
       "section": "activity_history",
       "label": "途中でやめた、または続けなくなった理由を教えてください",
       "type": "multiple",
+      "adminTallySort": "count_desc",
       "required": true,
       "showIf": {
         "all": [
@@ -2792,6 +2794,7 @@
       "section": "adult_activity",
       "label": "社会人になってから経験したスポーツ・運動をすべて選んでください",
       "type": "multiple",
+      "adminTallySort": "count_desc",
       "required": true,
       "options": [
         {
@@ -2894,6 +2897,7 @@
       "section": "adult_activity",
       "label": "社会人になってからのスポーツ・運動は、どのような環境で行いましたか",
       "type": "multiple",
+      "adminTallySort": "count_desc",
       "required": true,
       "showIf": {
         "all": [

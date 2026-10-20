@@ -712,3 +712,67 @@ test('version（#422）：survey_version の月初日付シリアル値だけ pr
   assert.equal(counts.excluded.version_mismatch, 3);
   assert.deepEqual(counts.version_mismatch_fields, { survey_version: 1, schema_version: 1, design_version: 1 });
 });
+
+// ── Admin 集計カードの並び（Issue #429）。Admin 表示だけ。Public / snapshot は変えない ──
+
+function adminSummaryOf(overrideRows) {
+  const classification = classify(rowsFrom(overrideRows));
+  return aggregate.buildAdminSummary(schema, classification, { now: NOW });
+}
+const adminQuestion = (summary, id) => summary.questions.concat(summary.internalQuestions).find((q) => q.id === id);
+const tallyIds = (q) => q.tally.map((c) => c.id);
+const schemaIds = (id) => core.getOptions(schema, core.getQuestion(schema, id)).map((o) => o.id);
+
+test('Admin 集計（#429）：順序に意味がない設問は件数降順、同数は schema 順、0 件 option も残す', () => {
+  const summary = adminSummaryOf([
+    { count: 3, overrides: Object.assign({ barriers: ['health_concern'] }, INTERESTED) },
+    { count: 5, overrides: Object.assign({ barriers: ['skill_anxiety'] }, INTERESTED) },
+    { count: 3, overrides: Object.assign({ barriers: ['health_concern', 'skill_anxiety'] }, INTERESTED) }
+  ]);
+  ['favorite_uniforms', 'barriers', 'student_activities'].forEach((id) => {
+    const q = adminQuestion(summary, id);
+    assert.deepEqual(new Set(tallyIds(q)), new Set(schemaIds(id)), `${id}: 0 件 option も落とさない`);
+    const order = schemaIds(id);
+    for (let i = 1; i < q.tally.length; i++) {
+      const a = q.tally[i - 1];
+      const b = q.tally[i];
+      assert.ok(a.count > b.count || (a.count === b.count && order.indexOf(a.id) < order.indexOf(b.id)), `${id}: 件数降順・同数は schema 順`);
+    }
+  });
+  const barriers = adminQuestion(summary, 'barriers').tally;
+  assert.deepEqual(barriers.slice(0, 2).map((c) => [c.id, c.count]), [['skill_anxiety', 8], ['health_concern', 6]], '件数の多い選択肢が先頭（schema 順では health_concern が先）');
+});
+
+test('Admin 集計（#429）：ordinal / scale / 野球経験など意味順の設問は schema 順を維持する', () => {
+  const summary = adminSummaryOf([
+    { count: 4, overrides: { baseball_experience: 'never', exercise_frequency: schemaIds('exercise_frequency').slice(-1)[0] } },
+    { count: 1, overrides: { baseball_experience: schemaIds('baseball_experience')[0] } }
+  ]);
+  ['baseball_experience', 'exercise_frequency', 'participation_fee_tolerance', 'announcement_lead_time', 'overall_satisfaction'].forEach((id) => {
+    const q = adminQuestion(summary, id);
+    const expected = aggregate.tallyQuestion(schema, core.getQuestion(schema, id), []).defs.map((d) => d.id);
+    assert.deepEqual(tallyIds(q), expected, `${id}: schema 順`);
+  });
+  ['age', 'prefecture', 'attendance_count', 'last_attended'].forEach((id) => {
+    const q = adminQuestion(summary, id);
+    const expected = aggregate.tallyQuestion(schema, core.getQuestion(schema, id), []).defs.map((d) => d.id);
+    assert.deepEqual(tallyIds(q), expected, `${id}: allowlist 外は schema 順`);
+  });
+});
+
+test('Admin 集計（#429）：Admin の並びは Public preview / snapshot に波及しない', () => {
+  const rows = [{ count: 6, overrides: Object.assign({ barriers: ['skill_anxiety'] }, INTERESTED) }, { count: 2, overrides: Object.assign({ barriers: ['health_concern'] }, INTERESTED) }];
+  const classification = classify(rowsFrom(rows));
+  const before = aggregate.buildSnapshot(schema, classification.valid, { generatedAt: NOW });
+  const summary = aggregate.buildAdminSummary(schema, classification, { now: NOW });
+  const after = aggregate.buildSnapshot(schema, classification.valid, { generatedAt: NOW });
+  assert.deepEqual(after, before, 'snapshot は Admin 集計の影響を受けない');
+  const adminIds = tallyIds(adminQuestion(summary, 'baseball_experience'));
+  assert.deepEqual(adminIds, schemaIds('baseball_experience'));
+  summary.publicPreview.questions.filter((q) => q.state === 'published').forEach((q) => {
+    const pub = core.getPublication(schema, q.id);
+    if (pub && pub.ordinal === true) {
+      assert.deepEqual(q.cells.map((c) => c.id), aggregate.tallyQuestion(schema, core.getQuestion(schema, q.id), []).defs.map((d) => d.id).filter((id) => q.cells.some((c) => c.id === id)), `${q.id}: ordinal は schema 順`);
+    }
+  });
+});
