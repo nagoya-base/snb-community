@@ -20,3 +20,9 @@ URL: `/community/surveys/`（Issue #401）
 - `portal.sort_date` は並び替え専用。画面には表示しない（実施時期は確定している `survey_period` のみ。不明なら省略）。
 - 設問数は `question_count_label`（表示専用）を優先。値が食い違う調査は `question_count: null` で省く。
 - `survey_period_label`（表示専用）で人間向けの表記を上書きできる。正本の締切値（`survey_period.end`）は変更しない。
+
+## 表示ルール（Issue #407）
+- `status=closed` の調査には「アンケートを見る」を出さない（結果ページがあれば「結果を見る」のみ）。
+- CTAの配色は**種別で固定**: 「結果を見る」=赤塗り（`survey-cta__btn--results`）／「アンケートを見る」=白抜き・赤枠（`survey-cta__btn--open`）。primary/secondary のような位置・有無依存のクラスは使わない。Ataru の結果CTAも同じ。
+- 期限は `survey_period.end`（正本）と `survey_period_label`（表示用）で持つ。野球ユニ部=2026年11月30日まで、ポートレート意識調査=2026年10月31日まで、Studioフィードバック=「期限なし」（end は null のまま）。
+- ヒーロー・OGP画像は `community/index.html` と同じ（`images/community/top/hero-photo-main.webp` / `meta-ogp-main.jpg`）。

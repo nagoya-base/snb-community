@@ -14,6 +14,21 @@
 
 body { min-width: 320px; overflow-wrap: anywhere; }
 
+/* Hero Image（community/index.html と同じ画像・見え方） */
+.hero-image {
+  width: 100%;
+  aspect-ratio: 1731 / 909;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+.hero-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+}
+
 .archive-hero {
   background: var(--bg-tint);
   border-bottom: 1px solid var(--border);
@@ -139,10 +154,12 @@ body { min-width: 320px; overflow-wrap: anywhere; }
   line-height: 1.4;
   text-align: center;
 }
-.survey-cta__btn--primary { background: var(--accent); color: #fff; }
-.survey-cta__btn--primary:hover { background: var(--accent-lt); color: #fff; }
-.survey-cta__btn--secondary { border: 1px solid var(--accent); color: var(--accent); background: transparent; }
-.survey-cta__btn--secondary:hover { background: #FBEAEA; color: var(--accent); }
+/* CTAの配色は種別で固定：結果を見る=赤塗り／アンケートを見る=白抜き */
+.survey-cta__btn { border: 1px solid var(--accent); }
+.survey-cta__btn--results { background: var(--accent); color: #fff; }
+.survey-cta__btn--results:hover { background: var(--accent-lt); border-color: var(--accent-lt); color: #fff; }
+.survey-cta__btn--open { background: #fff; color: var(--accent); }
+.survey-cta__btn--open:hover { background: #FBEAEA; color: var(--accent); }
 
 .archive-related { background: var(--bg-tint); border-top: 1px solid var(--border); padding: 2rem 0; margin-top: 2rem; }
 .archive-related h2 { font-size: 1rem; margin-bottom: 0.75rem; }

@@ -3,6 +3,8 @@
  * - 値が null の項目は「0」や推定値を出さず、項目ごと省く。
  * - status=unknown を「回答受付中」と断定しない。
  * - link_policy=none の調査には CTA を出さない（URL 自体もデータに含めない）。
+ * - status=closed の調査には「アンケートを見る」を出さない（結果ページがあれば「結果を見る」のみ）。
+ * - CTAの見た目は種別で固定：結果を見る=赤塗り(--results)／アンケートを見る=白抜き(--open)。
  * - link_policy=results_only の調査は、公開済みの結果ページ（results_url）への CTA だけを出す。
  *   public_url は参照せず、「アンケートを見る」は出さない（明示的な例外。community/surveys/README.md 参照）。
  * - 描画は textContent / createElement のみ（データ由来の文字列を HTML として解釈しない）。
@@ -93,10 +95,10 @@
     }
     var wrap = el('div', 'survey-cta');
     var resultsUrl = survey.public_results && survey.public_results.available ? resolveUrl(survey.results_url) : null;
-    var openUrl = survey.link_policy === 'results_only' ? null : resolveUrl(survey.public_url);
+    var openUrl = survey.link_policy === 'results_only' || survey.status === 'closed' ? null : resolveUrl(survey.public_url);
 
-    function link(url, label, ctaName, primary) {
-      var a = el('a', 'survey-cta__btn survey-cta__btn--' + (primary ? 'primary' : 'secondary'), label);
+    function link(url, label, ctaName, kind) {
+      var a = el('a', 'survey-cta__btn survey-cta__btn--' + kind, label);
       a.href = url;
       if (isExternal(url)) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
       a.setAttribute('data-cta-name', ctaName);
@@ -105,8 +107,8 @@
       wrap.appendChild(a);
     }
 
-    if (resultsUrl) link(resultsUrl, '結果を見る', 'survey_archive_results', true);
-    if (openUrl) link(openUrl, 'アンケートを見る', 'survey_archive_open', !resultsUrl);
+    if (resultsUrl) link(resultsUrl, '結果を見る', 'survey_archive_results', 'results');
+    if (openUrl) link(openUrl, 'アンケートを見る', 'survey_archive_open', 'open');
     if (!wrap.children.length) return;
     if (resultsUrl && survey.public_results.final === false) {
       parent.appendChild(el('p', 'survey-card__note', '結果ページは途中経過です（最終結果ではありません）。'));
