@@ -22,7 +22,7 @@ function createAdminEnv(rows, options = {}) {
         env.calls.push('Spreadsheets.get');
         if (id !== 'responses-sheet-id') throw new Error('not_found');
         const extra = options.publicSnapshotGrid ? [{ properties: { title: 'public_snapshot' } }] : [];
-        return { sheets: [{ properties: { title: options.sheetTitle || 'responses' } }].concat(extra) };
+        return { properties: { timeZone: options.spreadsheetTimeZone === undefined ? 'Asia/Tokyo' : options.spreadsheetTimeZone }, sheets: [{ properties: { title: options.sheetTitle || 'responses' } }].concat(extra) };
       },
       batchUpdate: deny('Spreadsheets.batchUpdate'),
       create: deny('Spreadsheets.create'),

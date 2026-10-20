@@ -930,10 +930,12 @@ var SurveyAggregate = (function (core) {
    *   completion_status != complete      → incomplete
    *   survey/schema/design version 不一致 → version_mismatch
    *   18歳未満（termination）・schema 検証失敗・hash 欠損・hash 重複 → 除外
+   * options.spreadsheetTimeZone: responses Spreadsheet の timeZone（Admin の日別回答数の日付決定だけに使う）。
    * valid の各 record: {answers（text 設問を除く）, other_texts, free_text, respondent_hash}。
    * respondent_hash は重複除去のためだけに使い、public へは出さない。
    */
-  function classifyRows(schema, rows) {
+  function classifyRows(schema, rows, options) {
+    var spreadsheetTimeZone = options && options.spreadsheetTimeZone;
     var counts = { rows: 0, production_valid: 0, test_excluded: 0, excluded: emptyExcluded(), version_mismatch_fields: emptyVersionFieldCounts(), legacy_date_serial_accepted: 0 };
     var valid = [];
     var seen = {};
@@ -969,7 +971,7 @@ var SurveyAggregate = (function (core) {
         if (contains(textIds, id)) freeText[id] = validation.clean.answers[id];
         else answers[id] = validation.clean.answers[id];
       });
-      valid.push({ answers: answers, other_texts: validation.clean.other_texts, free_text: freeText, respondent_hash: hash, day: jstDayOf(row.timestamp) });
+      valid.push({ answers: answers, other_texts: validation.clean.other_texts, free_text: freeText, respondent_hash: hash, day: jstDayOf(row.timestamp, spreadsheetTimeZone) });
       counts.production_valid++;
     });
     return { valid: valid, counts: counts };
@@ -978,35 +980,70 @@ var SurveyAggregate = (function (core) {
   /* ── 日別回答数（Admin 専用。Asia/Tokyo 基準。個別 timestamp は返さず日付ごとの件数だけにする） ── */
 
   var JST_OFFSET_MS = 9 * 60 * 60 * 1000;
-  /* Sheets の日付シリアル値 0 = 1899-12-30。responses の timestamp は Script の timeZone（Asia/Tokyo）の壁時計で保存される。 */
+  /* Sheets の日付シリアル値 0 = 1899-12-30（その Spreadsheet の timeZone の壁時計）。 */
   var SHEETS_EPOCH_UTC_MS = Date.UTC(1899, 11, 30);
 
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
   function ymdOfUtc(date) { return date.getUTCFullYear() + '-' + pad2(date.getUTCMonth() + 1) + '-' + pad2(date.getUTCDate()); }
+  function jstYmdOfInstant(ms) { return ymdOfUtc(new Date(ms + JST_OFFSET_MS)); }
   function validYmd(y, m, d) {
     var t = new Date(Date.UTC(y, m - 1, d));
     return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
   }
 
-  /* timestamp セル値 → 'YYYY-MM-DD'（JST）。解釈できなければ null（日付不明）。Date / 日付シリアル / ISO（offset 付き）/ 'yyyy-MM-dd HH:mm' を受ける。 */
-  function jstDayOf(value) {
-    if (value instanceof Date) {
-      return isFinite(value.getTime()) ? ymdOfUtc(new Date(value.getTime() + JST_OFFSET_MS)) : null;
+  /* IANA タイムゾーンの、ある瞬間（ms）での UTC からの差（ms）。タイムゾーンが不正・Intl が無ければ null。 */
+  function zoneOffsetMs(timeZone, instantMs) {
+    try {
+      var parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timeZone, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'
+      }).formatToParts(new Date(instantMs));
+      var v = {};
+      parts.forEach(function (p) { v[p.type] = Number(p.value); });
+      return Date.UTC(v.year, v.month - 1, v.day, v.hour, v.minute, v.second) - Math.floor(instantMs / 1000) * 1000;
+    } catch (e) {
+      return null;
     }
+  }
+
+  /* timeZone の壁時計（UTC として表した ms）→ 実際の瞬間（ms）。解決できなければ null。 */
+  function wallToInstantMs(wallMs, timeZone) {
+    if (typeof timeZone !== 'string' || timeZone === '') return null;
+    var first = zoneOffsetMs(timeZone, wallMs);
+    if (first === null) return null;
+    var second = zoneOffsetMs(timeZone, wallMs - first);
+    return wallMs - (second === null ? first : second);
+  }
+
+  /*
+   * timestamp セル値 → 'YYYY-MM-DD'（Asia/Tokyo の日付）。解釈できなければ null（日付不明）。
+   *  - Date / offset 付き ISO 文字列は瞬間そのもの → JST に変換
+   *  - 日付シリアル値（UNFORMATTED_VALUE）・'yyyy-MM-dd HH:mm' 風の文字列は Spreadsheet の timeZone の壁時計
+   *    → spreadsheetTimeZone で瞬間に直してから JST に変換する。spreadsheetTimeZone が不明なら null（推測しない）。
+   */
+  function jstDayOf(value, spreadsheetTimeZone) {
+    if (value instanceof Date) {
+      return isFinite(value.getTime()) ? jstYmdOfInstant(value.getTime()) : null;
+    }
+    var wallMs;
     if (typeof value === 'number') {
       if (!isFinite(value) || value < 1 || value > 73050) return null;
-      return ymdOfUtc(new Date(SHEETS_EPOCH_UTC_MS + Math.floor(value) * DAY_MS));
+      wallMs = SHEETS_EPOCH_UTC_MS + Math.round(value * DAY_MS);
+    } else {
+      var text = str(value);
+      if (text === '') return null;
+      if (/^\d{4}-\d{2}-\d{2}T/.test(text) && /(Z|[+-]\d{2}:?\d{2})$/.test(text)) {
+        var parsed = Date.parse(text);
+        return isFinite(parsed) ? jstYmdOfInstant(parsed) : null;
+      }
+      var m = /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?$/.exec(text);
+      if (!m) return null;
+      var y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+      var hh = m[4] === undefined ? 0 : Number(m[4]), mi = m[5] === undefined ? 0 : Number(m[5]), ss = m[6] === undefined ? 0 : Number(m[6]);
+      if (!validYmd(y, mo, d) || hh > 23 || mi > 59 || ss > 59) return null;
+      wallMs = Date.UTC(y, mo - 1, d, hh, mi, ss);
     }
-    var text = str(value);
-    if (text === '') return null;
-    if (/(Z|[+-]\d{2}:?\d{2})$/.test(text) && /^\d{4}-\d{2}-\d{2}T/.test(text)) {
-      var parsed = Date.parse(text);
-      return isFinite(parsed) ? ymdOfUtc(new Date(parsed + JST_OFFSET_MS)) : null;
-    }
-    var m = /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[ T]\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?$/.exec(text);
-    if (!m) return null;
-    var y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
-    return validYmd(y, mo, d) ? y + '-' + pad2(mo) + '-' + pad2(d) : null;
+    var instant = wallToInstantMs(wallMs, spreadsheetTimeZone);
+    return instant === null ? null : jstYmdOfInstant(instant);
   }
 
   /*
