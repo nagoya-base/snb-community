@@ -36,6 +36,41 @@ test('manifest：OAuth scope は spreadsheets.readonly のみ、Web App は本�
   const manifest = JSON.parse(fs.readFileSync(path.join(adminDir, 'appsscript.json'), 'utf8'));
   assert.deepEqual(manifest.oauthScopes, ['https://www.googleapis.com/auth/spreadsheets.readonly']);
   assert.deepEqual(manifest.webapp, { executeAs: 'USER_DEPLOYING', access: 'MYSELF' });
+  // 読み取りは Advanced Sheets サービス（readonly scope のまま使える）。UrlFetchApp 用の external_request scope は足さない。
+  assert.deepEqual(manifest.dependencies.enabledAdvancedServices, [{ userSymbol: 'Sheets', serviceId: 'sheets', version: 'v4' }]);
+});
+
+test('回帰防止：Admin コードに SpreadsheetApp（openById / openByUrl / open を含む）を再混入させない', () => {
+  const all = fs.readdirSync(adminDir).filter((f) => f.endsWith('.gs') || f.endsWith('.html'))
+    .map((f) => ({ name: f, code: fs.readFileSync(path.join(adminDir, f), 'utf8') }));
+  const stripped = sources().concat(all.filter((f) => f.name === 'SurveyGenerated.gs'));
+  for (const { name, code } of stripped) {
+    assert.ok(!/\bSpreadsheetApp\b/.test(code), `${name}: SpreadsheetApp は spreadsheets.readonly では使えない`);
+    assert.ok(!/\.(openById|openByUrl|getActiveSpreadsheet|getActive)\s*\(/.test(code), `${name}: Spreadsheet を開く API`);
+    assert.ok(!/\bSpreadsheetApp\s*\.\s*open\s*\(/.test(code), `${name}: SpreadsheetApp.open`);
+  }
+  // 書き込み系の Sheets API（values.update / append / clear / batchUpdate 等）も持たない。
+  for (const { name, code } of stripped) {
+    assert.ok(!/Sheets\s*\.\s*Spreadsheets\s*\.\s*(batchUpdate|create)\b/.test(code), `${name}: Sheets 書き込み`);
+    assert.ok(!/Values\s*\.\s*(update|append|clear|batchUpdate|batchClear|batchUpdateByDataFilter)\b/.test(code), `${name}: Sheets values 書き込み`);
+  }
+});
+
+test('Sheets API（読み取りのみ）経由で responses を読む。SpreadsheetApp は sandbox に無い', () => {
+  const env = createAdminEnv(fixtureRows());
+  assert.equal(env.ctx.SpreadsheetApp, undefined);
+  env.ctx.getAdminSummary();
+  assert.deepEqual(env.calls.filter((c, i, a) => a.indexOf(c) === i), ['Spreadsheets.get', "Values.get 'responses'"]);
+});
+
+test('responses シートが無い場合は responses_sheet_missing', () => {
+  const env = createAdminEnv(fixtureRows(), { sheetTitle: 'other' });
+  assert.throws(() => env.ctx.getAdminSummary(), /responses_sheet_missing/);
+});
+
+test('回答 0 件（ヘッダーのみ）でも読める', () => {
+  const env = createAdminEnv([]);
+  assert.doesNotThrow(() => env.ctx.getAdminSummary());
 });
 
 test('read-only：Spreadsheet への書き込み・削除 API を呼ばない（コードにも存在しない）', () => {
@@ -47,7 +82,7 @@ test('read-only：Spreadsheet への書き込み・削除 API を呼ばない（
   assert.ok(env.reads > 0);
   for (const { name, code } of sources()) {
     assert.ok(!/\.(setValues?|appendRow|clearContent|clear|deleteRows?|deleteCells?|insertRow\w*|insertSheet|setFormula|setNumberFormat|getRange\([^)]*\)\.set)\b/.test(code), `${name}: 書き込み API`);
-    assert.ok(!/(SpreadsheetApp\.create|\.copyTo|DriveApp|MailApp|UrlFetchApp|LockService)/.test(code), `${name}: 不要な外部 API`);
+    assert.ok(!/(SpreadsheetApp|\.copyTo|DriveApp|MailApp|UrlFetchApp|LockService)/.test(code), `${name}: 不要な外部 API`);
   }
   // 書き込み先は Admin 自身の Script Property（公開済み snapshot の記録）だけ。
   const setProps = sources().filter(({ code }) => /setProperty/.test(code)).map(({ name }) => name);
