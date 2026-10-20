@@ -55,7 +55,12 @@
   </section>
 
   <section id="tab-snapshot" hidden>
-    <p class="note">公開結果は snapshot.json だけを読みます。更新は batch（原則 1 日 1 回、または十分な件数増分）です。生成した JSON を baseball/baseball-uniform-survey-results/snapshot.json として commit すると公開結果が切り替わります。</p>
+    <p class="note">公開結果ページは Public GAS が保持する privacy-safe snapshot を自動で読みます（更新は batch：原則 1 日 1 回、または十分な件数増分。1 回答ごとには更新しません）。手作業の commit は不要です。同梱の snapshot.json は Public GAS 障害時の fallback です。</p>
+    <div class="card">
+      <button type="button" id="loadPublic">公開中 snapshot の状態を読み込む</button>
+      <div id="publicState" class="note"></div>
+    </div>
+    <p class="note">以下は手動 preview です（同梱 snapshot.json を更新したいときの非常用）。生成した JSON は公開されません。</p>
     <div class="card">
       <button type="button" id="gen">snapshot を生成</button>
       <button type="button" id="confirm" disabled>公開した snapshot として記録</button>
@@ -207,6 +212,26 @@
 
       setStatus('読み込み中…');
       google.script.run.withSuccessHandler(function (s) { setStatus(''); renderSummary(s); }).withFailureHandler(fail).getAdminSummary();
+
+      $('loadPublic').addEventListener('click', function () {
+        var box = $('publicState');
+        box.textContent = '読み込み中…';
+        $('loadPublic').disabled = true;
+        google.script.run.withSuccessHandler(function (r) {
+          $('loadPublic').disabled = false;
+          box.textContent = '';
+          if (r.status !== 'ok') { box.appendChild(el('p', 'Public GAS の snapshot を読めません（' + r.status + '）。初回の更新判定を通るまでは、結果ページは全項目非公開の初期 snapshot を表示します。')); return; }
+          box.appendChild(el('p', '公開中 snapshot の generated_at: ' + r.generated_at + '（最終更新 ' + r.updated_at + '）'));
+          box.appendChild(el('p', 'production_valid_total（公開仕様上の値）: ' + r.production_valid_total + ' ／ 生成時の exact: ' + r.exact_total_at_generation + ' ／ 現在の exact: ' + r.current_production_valid_total));
+          box.appendChild(el('p', '最終更新の理由: ' + r.last_update_reason));
+          box.appendChild(el('p', '現在の増分: ' + r.increment + ' ／ 次回更新の条件: 増分が ' + r.conditions.minimum_increment + ' 以上、かつ（増分が ' + r.conditions.count_trigger_increment + ' 以上、または ' + r.conditions.next_daily_at + ' 以降）／ 現在の判定: ' + (r.would_update ? '次の保存・取得で更新される' : '更新しない') + '（' + r.decision_reason + '）'));
+          var d = r.diff;
+          box.appendChild(el('p', '手動 preview との差: 公開 total ' + d.public_production_valid_total + ' → preview ' + d.preview_production_valid_total + ' ／ 公開状態が異なる設問 ' + d.changed_questions.length + ' 件'));
+          var ul = el('ul');
+          d.changed_questions.forEach(function (q) { ul.appendChild(el('li', q.label + ' [' + q.id + ']: ' + q.public_state + ' → ' + q.preview_state)); });
+          box.appendChild(ul);
+        }).withFailureHandler(function (e) { $('loadPublic').disabled = false; box.textContent = ''; fail(e); }).getPublicSnapshotStatus();
+      });
 
       $('gen').addEventListener('click', function () {
         $('gen').disabled = true;

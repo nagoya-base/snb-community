@@ -1,8 +1,10 @@
 /*
  * 名古屋野球ユニ部アンケート 公開結果ページ（Issue #382 / 5言語対応 #414）。
  *
- * Spreadsheet・Public GAS には接続しない。読むのは privacy-safe snapshot（snapshot.json）だけで、
- * snapshot は Admin が batch で生成して commit したもの。回答の送信ごとに更新されることはない。
+ * Spreadsheet には接続しない。読むのは privacy-safe snapshot だけ（Issue #425）：
+ *  1. Public GAS の読み取り専用 endpoint（GET ?action=results）が返す snapshot（validateSnapshot 通過済み・batch 更新）
+ *  2. 取得失敗・不正な応答のときは、同梱の snapshot.json（障害時 fallback）
+ * 回答内容・locale は一切送らない（query は action=results のみ）。回答の送信ごとに更新されることはない。
  * DOM へは textContent だけで書く（innerHTML は使わない）。
  *
  * 多言語化（Issue #414）: ja / en / ko / zh-Hans / zh-Hant。
@@ -16,6 +18,10 @@ var SurveyResultsView = (function () {
   'use strict';
 
   var SNAPSHOT_URL = 'baseball-uniform-survey-results/snapshot.json';
+  var DYNAMIC_TIMEOUT_MS = 10000;
+  /* privacy-safe snapshot に現れてはならないキー。dynamic な応答にあれば fail-closed で捨て、bundled snapshot へ fallback する。 */
+  var PRIVATE_KEYS = ['respondent_hash', 'uuid', 'timestamp', 'source_channel', 'client_elapsed_ms', 'other_texts', 'free_text',
+    'test_run_id', 'notification_status', 'response_mode', 'completion_status', 'answers', 'rows', 'records'];
 
   /* 言語別ヒーロー画像（images/baseball/catchball/）。ja が既定で、他言語の画像が読めなければ ja へ fallback する。
    * og:image / twitter:image は survey-ogp.jpg 固定（canonical な静的 meta）で、ここでは触らない。 */
@@ -251,6 +257,58 @@ var SurveyResultsView = (function () {
     render(root, snapshot);
   }
 
+  function hasPrivateKey(value) {
+    if (Array.isArray(value)) return value.some(hasPrivateKey);
+    if (value && typeof value === 'object') {
+      return Object.keys(value).some(function (key) { return PRIVATE_KEYS.indexOf(key) !== -1 || hasPrivateKey(value[key]); });
+    }
+    return false;
+  }
+
+  /* dynamic snapshot の最低限の形（描画できる形か）。内容の privacy 検証は Public GAS の validateSnapshot が行う。 */
+  function isUsableSnapshot(snapshot) {
+    return !!snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot) &&
+      typeof snapshot.survey_id === 'string' && typeof snapshot.snapshot_version !== 'undefined' &&
+      Array.isArray(snapshot.questions) && Array.isArray(snapshot.sections) && !hasPrivateKey(snapshot);
+  }
+
+  /* Public GAS の endpoint（回答ページと同じ設定）。未設定なら dynamic は使わない。 */
+  function dynamicUrl(win) {
+    var config = win.BASEBALL_UNIFORM_SURVEY_CONFIG;
+    var endpoint = config && typeof config.endpoint === 'string' ? config.endpoint : '';
+    if (!endpoint) return '';
+    return endpoint + (endpoint.indexOf('?') === -1 ? '?' : '&') + 'action=results';
+  }
+
+  function fetchDynamic(win) {
+    var url = dynamicUrl(win);
+    if (!url) return Promise.reject(new Error('dynamic_not_configured'));
+    var request = win.fetch(url, { method: 'GET', cache: 'no-store' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('dynamic_unavailable');
+        return response.json();
+      })
+      .then(function (body) {
+        if (!body || body.ok !== true || !isUsableSnapshot(body.snapshot)) throw new Error('dynamic_invalid');
+        return body.snapshot;
+      });
+    var timer;
+    var timeout = new Promise(function (resolve, reject) {
+      timer = win.setTimeout(function () { reject(new Error('dynamic_timeout')); }, DYNAMIC_TIMEOUT_MS);
+    });
+    return Promise.race([request, timeout]).then(
+      function (snapshot) { win.clearTimeout(timer); return snapshot; },
+      function (error) { win.clearTimeout(timer); throw error; }
+    );
+  }
+
+  function fetchBundled(win) {
+    return win.fetch(SNAPSHOT_URL).then(function (response) {
+      if (!response.ok) throw new Error('snapshot_unavailable');
+      return response.json();
+    });
+  }
+
   function load(win) {
     var doc = win.document;
     var root = doc.getElementById('bur-app');
@@ -258,11 +316,8 @@ var SurveyResultsView = (function () {
     locale = SurveyLocale.initial(win, I18N.locales);
     buildLangSelector(doc);
     applyDocumentLocale(doc);
-    return win.fetch(SNAPSHOT_URL)
-      .then(function (response) {
-        if (!response.ok) throw new Error('snapshot_unavailable');
-        return response.json();
-      })
+    return fetchDynamic(win)
+      .catch(function () { return fetchBundled(win); })
       .then(function (snapshot) { show(root, snapshot); })
       .catch(function () { show(root, null); });
   }
@@ -271,5 +326,5 @@ var SurveyResultsView = (function () {
     load(window);
   }
 
-  return { render: render, load: load, SNAPSHOT_URL: SNAPSHOT_URL };
+  return { render: render, load: load, SNAPSHOT_URL: SNAPSHOT_URL, isUsableSnapshot: isUsableSnapshot };
 })();

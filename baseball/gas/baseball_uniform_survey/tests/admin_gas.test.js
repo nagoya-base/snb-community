@@ -262,15 +262,18 @@ test('CI：既存の baseball survey workflow が #382 の paths と Admin / sna
   });
   assert.match(publicWorkflow, /tests\/aggregate\.test\.js tests\/admin_gas\.test\.js tests\/results_page\.test\.js/);
   const prepare = require(path.join(repo, 'scripts', 'baseball-uniform-survey', 'prepare-gas.js'));
-  assert.ok(prepare.TARGETS.public.files.every((f) => !/Dashboard|Snapshot|FreeText|admin/i.test(f)), 'Public GAS の bundle に Admin を含めない');
+  assert.ok(prepare.TARGETS.public.files.every((f) => !/Dashboard|FreeText|admin/i.test(f)), 'Public GAS の bundle に Admin を含めない');
   assert.ok(!/SNAPSHOT_STATE|RESPONSES_SPREADSHEET_ID/.test(publicWorkflow));
 });
 
-test('Public GAS（#380）は #382 で変更されず、submit のたびに snapshot / cache を更新しない', () => {
+test('Public GAS（#380）の回答保存仕様は #425 でも変わらない：snapshot は PublicSnapshot.gs に分離し、CacheService・Admin 機能・自由記述の参照を持たない', () => {
   const dir = path.join(ROOT, 'public');
-  const code = fs.readdirSync(dir).filter((f) => f.endsWith('.gs') && f !== 'SurveyGenerated.gs').map((f) => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
-  assert.ok(!/snapshot|CacheService|SurveyAggregate|results\.json/i.test(code));
-  assert.ok(!/SurveyAggregate/.test(fs.readFileSync(path.join(dir, 'SurveyGenerated.gs'), 'utf8')));
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.gs') && f !== 'SurveyGenerated.gs');
+  for (const f of files) {
+    const code = fs.readFileSync(path.join(dir, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    assert.ok(!/CacheService|results\.json|listFreeText|SNAPSHOT_STATE|RESPONSES_SPREADSHEET_ID/.test(code), `${f}: 不要な依存`);
+    if (f !== 'PublicSnapshot.gs') assert.ok(!/SurveyAggregate|SnapshotStore/.test(code.replace(/refreshPublicSnapshot_/g, '')), `${f}: 集計は PublicSnapshot.gs だけが呼ぶ`);
+  }
 });
 
 // ── version_mismatch 診断（Issue #422） ──

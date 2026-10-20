@@ -10,6 +10,7 @@
  *   google.script.run.getResponsesDiagnostics() : responses 列構成の安全な診断（個別回答値なし）
  *   google.script.run.getVersionDiagnostics() : version_mismatch の原因診断（version の型・分類・件数のみ。回答値なし）
  *   google.script.run.getSnapshot()      : privacy-safe snapshot（JSON）と更新判定
+ *   google.script.run.getPublicSnapshotStatus() : Public GAS が保持している公開 snapshot の状態（readonly）と手動 preview との差
  *   google.script.run.confirmSnapshotPublished(generatedAt, exactTotal) : 公開済み snapshot の記録（Script Property のみ）
  *   google.script.run.getFreeText()       : 自由記述（運営者のみ。個票・集計とは別の操作）
  * Logger / console に回答内容・hash を出さない。
@@ -41,6 +42,10 @@ function getVersionDiagnostics() {
 
 function getSnapshot() {
   return buildSnapshotResult_(new Date());
+}
+
+function getPublicSnapshotStatus() {
+  return getPublicSnapshotStatus_(new Date());
 }
 
 function confirmSnapshotPublished(generatedAt, exactTotal) {

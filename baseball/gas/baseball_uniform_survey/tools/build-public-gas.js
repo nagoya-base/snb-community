@@ -17,6 +17,7 @@ const SCHEMA_PATH = path.join(ROOT, 'survey.schema.json');
 const CONFIG_PATH = path.join(ROOT, 'survey.config.json');
 const CORE_PATH = path.join(ROOT, 'src', 'survey-core.js');
 const AGGREGATE_PATH = path.join(ROOT, 'src', 'survey-aggregate.js');
+const SNAPSHOT_STORE_PATH = path.join(ROOT, 'src', 'snapshot-store.js');
 const MAINTENANCE_CORE_PATH = path.join(ROOT, 'src', 'maintenance-core.js');
 const RETENTION_PATH = path.join(ROOT, 'retention.config.json');
 const TARGET = path.join(ROOT, 'public', 'SurveyGenerated.gs');
@@ -34,10 +35,11 @@ function renderAdmin() {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const core = fs.readFileSync(CORE_PATH, 'utf8');
   const aggregate = fs.readFileSync(AGGREGATE_PATH, 'utf8');
+  const store = fs.readFileSync(SNAPSHOT_STORE_PATH, 'utf8');
   return [
     '/*',
     ' * AUTO-GENERATED (Admin GAS) — DO NOT EDIT.',
-    ' * 正本: baseball/gas/baseball_uniform_survey/survey.schema.json, src/survey-core.js, src/survey-aggregate.js',
+    ' * 正本: baseball/gas/baseball_uniform_survey/survey.schema.json, src/survey-core.js, src/survey-aggregate.js, src/snapshot-store.js',
     ' * 再生成: (baseball/gas/baseball_uniform_survey で) npm run build',
     ' * CIは `npm run build:check` で生成物との差分を検出する。',
     ' */',
@@ -45,7 +47,9 @@ function renderAdmin() {
     '',
     core,
     '',
-    aggregate
+    aggregate,
+    '',
+    store
   ].join('\n');
 }
 
@@ -118,17 +122,23 @@ function render() {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
   const core = fs.readFileSync(CORE_PATH, 'utf8');
+  const aggregate = fs.readFileSync(AGGREGATE_PATH, 'utf8');
+  const store = fs.readFileSync(SNAPSHOT_STORE_PATH, 'utf8');
   return [
     '/*',
     ' * AUTO-GENERATED (Public GAS) — DO NOT EDIT.',
-    ' * 正本: baseball/gas/baseball_uniform_survey/survey.schema.json, survey.config.json, src/survey-core.js',
+    ' * 正本: baseball/gas/baseball_uniform_survey/survey.schema.json, survey.config.json, src/survey-core.js, src/survey-aggregate.js, src/snapshot-store.js',
     ' * 再生成: (baseball/gas/baseball_uniform_survey で) npm run build',
     ' * CIは `npm run build:check` で生成物との差分を検出する。',
     ' */',
     'var SURVEY_SCHEMA = ' + JSON.stringify(schema) + ';',
     'var SURVEY_CONFIG = ' + JSON.stringify(config) + ';',
     '',
-    core
+    core,
+    '',
+    aggregate,
+    '',
+    store
   ].join('\n');
 }
 
@@ -168,5 +178,5 @@ if (require.main === module) process.exitCode = main(process.argv.slice(2));
 module.exports = {
   render, renderFrontend, renderFrontendI18n, renderResultsI18n, RESULTS_I18N_TARGET, renderAdmin, renderMaintenance,
   TARGET, FRONTEND_TARGET, FRONTEND_I18N_TARGET, ADMIN_TARGET, MAINTENANCE_TARGET,
-  SCHEMA_PATH, CONFIG_PATH, CORE_PATH, AGGREGATE_PATH, MAINTENANCE_CORE_PATH, RETENTION_PATH
+  SCHEMA_PATH, CONFIG_PATH, CORE_PATH, AGGREGATE_PATH, MAINTENANCE_CORE_PATH, RETENTION_PATH, SNAPSHOT_STORE_PATH
 };
