@@ -4,5 +4,5 @@
  * 受付状態（open / not_open / closed / not_configured）は必ず status API から取得する（Frontendで受付期間を判断しない）。
  */
 window.BASEBALL_UNIFORM_SURVEY_CONFIG = {
-  endpoint: ''
+  endpoint: 'https://script.google.com/macros/s/AKfycbzhaG7ReF1-uTdWJv9djP1evmWnA3YUHwuJtGKBo3L_pjyh9sKHMxGoCI3g9G1akfzq2w/exec'
 };
