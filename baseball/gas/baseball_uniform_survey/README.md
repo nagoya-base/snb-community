@@ -163,6 +163,8 @@ private な system field です。`x / line / website / instagram / email / dire
 
 - `submit_excluded` は POST body の `test_token` を `TEST_TOKEN`（Script Property）と照合して確定します。`TEST_TOKEN` が未設定・短い（24文字未満）場合は全て拒否（fail closed）。token は query string に置かず、ログ・Sheet・通知にも出しません。Frontend 側の取得方法（fragment → sessionStorage → POST body）は #381 で実装します。
 - `test_run_id` は必須（`^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$`）。test 送信は受付期間・最短回答時間の対象外なので、公開前にも確認できます。
+  - 正しい `TEST_TOKEN` + 有効な `test_run_id` の `submit_excluded` は、production の受付状態が `not_configured` / `not_open` / `closed` のいずれでも保存されます（`opens_at` / `closes_at` を仮設定する必要はありません）。production 送信は従来どおり受付判定が必須で、`survey_not_configured` / `survey_not_open` / `survey_closed` で拒否します。token が不正・未設定・24文字未満の場合は受付状態に関わらず拒否します。
+  - Frontend は `endpoint` を読み込み時に固定せず、status 取得・送信の時点で `BASEBALL_UNIFORM_SURVEY_CONFIG.endpoint` を読みます（ローカル override で後から設定しても、test 送信が「準備中」で止まりません）。test mode は起動時に通信しないため、endpoint 未設定は送信時にだけ判明します。
 - 保存列 `completion_status` は保存した回答すべてで `complete` です（旧 survey の `completion_status='test'` / `LIVE_TEST_ENABLED` は使いません）。本番集計の絞り込みは `response_mode == 'production'` です。
 
 ### 通知

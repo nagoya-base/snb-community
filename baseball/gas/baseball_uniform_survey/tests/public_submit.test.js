@@ -420,6 +420,45 @@ test('test mode は受付期間の前後でも送信確認でき、production co
   assert.strictEqual(submit(fresh.ctx, validPayload(fresh.ctx)).error, 'survey_not_configured');
 });
 
+// ── submit_excluded は production の受付状態（not_configured / not_open / closed）に依存しない（#390 実Google E2E） ──
+
+const RECEPTION_STATES = {
+  not_configured: { launched: false, now: NOW },
+  not_open: { launched: true, now: new Date('2026-10-31T23:59:59+09:00') },
+  closed: { launched: true, now: new Date('2026-11-30T23:59:59.001+09:00') }
+};
+
+for (const [state, spec] of Object.entries(RECEPTION_STATES)) {
+  test(`受付 ${state}：有効な submit_excluded は保存され、同条件の production は拒否される`, () => {
+    const { env, ctx } = loadPublic({ launched: spec.launched });
+    assert.strictEqual(ctx.receptionState_(spec.now), state);
+    const result = submit(ctx, validPayload(ctx, {}, {}, Object.assign({ elapsed_ms: 1 }, testExtra('run_e2e'))), spec.now);
+    assert.deepStrictEqual(result, { ok: true, status: 'accepted_test', test: true });
+    assert.strictEqual(rows(env).length, 2);
+    assert.strictEqual(cell(env, 'response_mode'), 'test');
+    assert.strictEqual(cell(env, 'test_run_id'), 'run_e2e');
+    assert.strictEqual(ctx.countProductionResponses_(env.spreadsheet.getSheetByName('responses')), 0);
+    assert.strictEqual(env.mails.length, 0, 'test は通知しない');
+    // production は従来どおり受付判定が必須（fail closed）
+    const production = submit(ctx, validPayload(ctx), spec.now);
+    assert.strictEqual(production.error, { not_configured: 'survey_not_configured', not_open: 'survey_not_open', closed: 'survey_closed' }[state]);
+    assert.strictEqual(rows(env).length, 2, 'production は保存されない');
+  });
+}
+
+test('受付が未確定でも、test token が不正・未設定・24文字未満なら test 送信は拒否される（fail closed）', () => {
+  const { env, ctx } = loadPublic({ launched: false });
+  const send = (extra) => submit(ctx, validPayload(ctx, {}, {}, extra));
+  assert.ok(fieldsOf(send({ test_token: 'wrong-token-0123456789abcdef-0123', test_run_id: 'r1' })).includes('test_token:invalid_token'));
+  assert.ok(fieldsOf(send({ test_token: '', test_run_id: 'r1' })).includes('test_token:invalid_token'));
+  env.props.delete('TEST_TOKEN');
+  assert.ok(fieldsOf(send({ test_token: TEST_TOKEN, test_run_id: 'r1' })).includes('test_token:invalid_token'), 'TEST_TOKEN 未設定');
+  const shortToken = 'a'.repeat(23);
+  env.props.set('TEST_TOKEN', shortToken);
+  assert.ok(fieldsOf(send({ test_token: shortToken, test_run_id: 'r1' })).includes('test_token:invalid_token'), '24文字未満');
+  assert.strictEqual(rows(env).length, 1, '何も保存されない');
+});
+
 // ── 通知 ──
 
 test('通知：production の有効回答のみ、安全な運営情報だけを text/plain で送る', () => {

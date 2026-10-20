@@ -56,7 +56,11 @@
   };
 
   var config = window.BASEBALL_UNIFORM_SURVEY_CONFIG || {};
-  var endpoint = typeof config.endpoint === 'string' ? config.endpoint : '';
+  // endpoint は読み込み時に固定せず、使う時点で config から読む（Local Override 等で後から設定されても送信・status で使える）。
+  function getEndpoint() {
+    var current = (window.BASEBALL_UNIFORM_SURVEY_CONFIG || config || {}).endpoint;
+    return typeof current === 'string' ? current : '';
+  }
   var testMode = window.SNB_BASEBALL_SURVEY_TEST_MODE || null; // null | preview_no_submit | closed_view | submit_excluded
   var testStore = window.SNBBaseballSurveyTestStore || { read: function () { return null; }, clear: function () {} };
   var CHANNELS = schema.persistenceSchema.sourceChannel.allowlist;
@@ -870,6 +874,7 @@
 
     if (testMode === 'preview_no_submit') { showCompletion('preview'); return; }
     if (testMode === 'closed_view') { showClosed(); return; }
+    var endpoint = getEndpoint();
     if (!endpoint) { submitError('現在このアンケートは準備中のため、送信できません。'); return; }
     if (testMode === 'submit_excluded' && !(testStore.read() && testStore.read().token)) {
       submitError('テストの設定を確認できません。テスト用のURLから開き直してください。');
@@ -1017,6 +1022,7 @@
 
   /* ── status API ── */
   function fetchStatus() {
+    var endpoint = getEndpoint();
     var url = endpoint + (endpoint.indexOf('?') === -1 ? '?' : '&') + 'action=status';
     return fetch(url, { method: 'GET', cache: 'no-store' }).then(function (response) {
       if (!response.ok) throw new Error('http');
@@ -1035,7 +1041,7 @@
     if (testMode === INVALID_TEST) { showInvalidTestConfig(); return; }
     if (testMode === 'closed_view') { showClosed(); return; }
     if (testMode === 'preview_no_submit' || testMode === 'submit_excluded') { renderIntro(); return; }
-    if (!endpoint) { showPreparing(); return; }
+    if (!getEndpoint()) { showPreparing(); return; }
     shell();
     app.appendChild(el('p', 'bus-lead', '受付状況を確認しています…'));
     fetchStatus().then(function (status) {
