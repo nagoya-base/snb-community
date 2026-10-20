@@ -53,11 +53,40 @@ function sanitizeCell_(value) {
 
 function encodeMultiple_(ids) { return ids.length ? '|' + ids.join('|') + '|' : ''; }
 
-/** Sheetsが "1" を数値へ、"12345e6" 風のhashを指数表記へ変換しないよう、自由記述以外の列は書式を '@'（文字列）にする。 */
+/**
+ * 文字列として保存する system field。Sheets が "2026-10" を日付へ、"1" / "2.18" を数値へ、"12345e6" 風のhashを指数表記へ
+ * 自動変換すると、Admin が UNFORMATTED_VALUE で読む値の型が変わり version 比較などの意味が変わる。
+ * timestamp（日時）・client_elapsed_ms（数値）・source_channel（allowlist の固定語）は対象外（現行の型のまま）。
+ */
+var TEXT_SYSTEM_FIELDS = [
+  'survey_version', 'schema_version', 'design_version', 'response_mode', 'completion_status',
+  'test_run_id', 'respondent_hash', 'notification_status'
+];
+
+/** 書式を '@'（文字列）にする列名。自由記述（text 設問）は ' プレフィックスが効くので書式を変えない。 */
 function textFormatColumns_() {
-  var names = ['respondent_hash', 'test_run_id'];
+  var names = TEXT_SYSTEM_FIELDS.slice();
   questionList_().forEach(function (q) { if (q.type !== 'text') names.push(q.id); });
   return names;
+}
+
+/**
+ * 追記する行の文字列書式列を、値を書く前に '@' にする。setupSpreadsheet の列書式は空シートの初回作成時にしか入らないため、
+ * 既存シート（書式が未設定の列を持つもの）でも新規回答の version 等が自動型変換されないようにする。
+ * 書式を変えるのはこれから書く行だけで、既存行のセルや値は変更しない。連続する列はまとめて設定する。
+ */
+function applyTextFormatToRow_(sheet, row) {
+  var header = responseHeader_();
+  var columns = textFormatColumns_().map(function (name) { return header.indexOf(name) + 1; })
+    .filter(function (c) { return c > 0; }).sort(function (a, b) { return a - b; });
+  var start = 0;
+  for (var i = 0; i < columns.length; i++) {
+    if (!start) start = columns[i];
+    if (i === columns.length - 1 || columns[i + 1] !== columns[i] + 1) {
+      sheet.getRange(row, start, 1, columns[i] - start + 1).setNumberFormat('@');
+      start = 0;
+    }
+  }
 }
 
 function buildRow_(validation, mode, hash, now, notificationStatus) {
@@ -98,6 +127,7 @@ function hasRespondentHash_(sheet, hash) {
 /** 呼び出し元はScriptLockを保持していること。保存した行番号を返す。 */
 function appendResponse_(sheet, values) {
   var row = sheet.getLastRow() + 1;
+  applyTextFormatToRow_(sheet, row);
   sheet.getRange(row, 1, 1, values.length).setValues([values]);
   return row;
 }

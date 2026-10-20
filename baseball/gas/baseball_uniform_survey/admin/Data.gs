@@ -42,6 +42,37 @@ function readResponsesValues_() {
   return (result && result.values) || [];
 }
 
+/** A1 表記の列名（0 始まりの列番号 → 'A', 'B', … 'AA'）。 */
+function columnLetter_(index) {
+  var n = index + 1;
+  var letters = '';
+  while (n > 0) {
+    var rem = (n - 1) % 26;
+    letters = String.fromCharCode(65 + rem) + letters;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letters;
+}
+
+/**
+ * version 列（survey/schema/design）だけの「表示値」（FORMATTED_VALUE）を読む。診断専用。
+ * UNFORMATTED_VALUE と並べて、画面表示は同じなのに API が返す型・値が違うことを確認するために使う。
+ * 読むのは version 列のみ（回答本文・hash の列は読まない）。
+ */
+function readVersionDisplayValues_(header) {
+  var id = getResponsesSpreadsheetId_();
+  var columns = SurveyAggregate.VERSION_FIELDS.map(function (field) { return header.indexOf(field); });
+  var first = Math.min.apply(null, columns);
+  var last = Math.max.apply(null, columns);
+  var range = "'" + SHEET_RESPONSES.replace(/'/g, "''") + "'!" + columnLetter_(first) + ':' + columnLetter_(last);
+  var result = Sheets.Spreadsheets.Values.get(id, range, {
+    majorDimension: 'ROWS',
+    valueRenderOption: 'FORMATTED_VALUE'
+  });
+  var values = (result && result.values) || [];
+  return { values: values, offsets: columns.map(function (c) { return c - first; }) };
+}
+
 function isEmptyCell_(v) { return v === undefined || v === null || v === ''; }
 
 /**
@@ -102,6 +133,38 @@ function diagnoseResponses_() {
   } catch (e) {
     var message = e && e.message ? String(e.message) : '';
     if (message === 'not_configured' || message === 'responses_sheet_missing') return { status: message };
+    throw e;
+  }
+}
+
+/**
+ * version_mismatch の原因診断（読み取りのみ）。回答本文・自由記述・hash・timestamp・source_channel・Spreadsheet ID は返さない。
+ * 返すのは schema 側の期待 version、field 別の不一致件数、Sheets API が返した値の型と安全な分類、表示値との比較結果だけ。
+ * ヘッダー不一致・余分な非空データ列のシートは readRows_ と同じく読まない（fail-closed）。
+ */
+function diagnoseVersions_() {
+  try {
+    var header = expectedHeader_();
+    var rows = readRows_();
+    var shown = readVersionDisplayValues_(header);
+    var displayRows = [];
+    /* Sheets API は末尾の空行・空セルを省くため、rows と同じ行数になるよう '' で補う（rows[i] ↔ values[i + 1]）。 */
+    for (var n = 1; n <= rows.length; n++) {
+      var line = shown.values[n] || [];
+      var entry = {};
+      SurveyAggregate.VERSION_FIELDS.forEach(function (field, i) {
+        var cell = line[shown.offsets[i]];
+        entry[field] = cell === undefined ? '' : cell;
+      });
+      displayRows.push(entry);
+    }
+    var result = SurveyAggregate.diagnoseVersions(SURVEY_SCHEMA, rows, displayRows);
+    result.status = 'ok';
+    return result;
+  } catch (e) {
+    var message = e && e.message ? String(e.message) : '';
+    if (message === 'not_configured' || message === 'responses_sheet_missing' ||
+        message === 'header_mismatch' || message === 'unexpected_extra_data_columns') return { status: message };
     throw e;
   }
 }

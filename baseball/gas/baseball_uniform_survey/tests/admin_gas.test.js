@@ -272,3 +272,95 @@ test('Public GAS（#380）は #382 で変更されず、submit のたびに snap
   assert.ok(!/snapshot|CacheService|SurveyAggregate|results\.json/i.test(code));
   assert.ok(!/SurveyAggregate/.test(fs.readFileSync(path.join(dir, 'SurveyGenerated.gs'), 'utf8')));
 });
+
+// ── version_mismatch 診断（Issue #422） ──
+
+// Sheets が "2026-10" を日付へ自動変換した状態の再現：API（UNFORMATTED_VALUE）は日付シリアル値を返し、画面表示（FORMATTED_VALUE）は '2026-10' のまま。
+const SERIAL_2026_10 = Math.round((Date.UTC(2026, 9, 1) - Date.UTC(1899, 11, 30)) / 86400000);
+const convertedRows = (count = 6) => {
+  const shown = rowsFrom([{ count: 20, overrides: Object.assign({ feedback: 'ADMIN-ONLY-TEXT' }, INTERESTED) }, { count, overrides: ATTENDEE }]);
+  const raw = shown.map((r, i) => (i >= 20 ? Object.assign({}, r, { survey_version: SERIAL_2026_10 }) : r));
+  return { shown, raw };
+};
+
+test('version 診断（#422）：表示は 2026-10 のまま API が日付シリアル値を返す 6 件を version_mismatch として数え、field 別・型別に原因を特定できる', () => {
+  const { shown, raw } = convertedRows(6);
+  const env = createAdminEnv(raw, { displayRows: shown });
+  const summary = plain(env.ctx.getAdminSummary());
+  assert.equal(summary.excluded.version_mismatch, 6);
+  assert.deepEqual(summary.version_mismatch_fields, { survey_version: 6, schema_version: 0, design_version: 0 });
+  assert.equal(summary.production_valid_total, 20, '日付化された行は fail-closed のまま除外（自動採用しない）');
+  const d = plain(env.ctx.getVersionDiagnostics());
+  assert.equal(d.status, 'ok');
+  assert.deepEqual(d.expected, { survey_version: '2026-10', schema_version: '1', design_version: '2.18' });
+  assert.equal(d.rows_checked, 26);
+  assert.equal(d.mismatch_rows, 6);
+  assert.deepEqual(d.mismatch_by_field, { survey_version: 6, schema_version: 0, design_version: 0 });
+  assert.equal(d.display_equal_api_differs_rows, 6);
+  assert.deepEqual(d.observed.survey_version, [{ api_type: 'number', shape: 'date_serial_of_expected_month', display_matches_expected: true, count: 6 }]);
+  assert.deepEqual([d.observed.schema_version, d.observed.design_version], [[], []]);
+});
+
+test('version 診断（#422）：read-only で、version 列（B:D）以外の表示値を読まない。Sheets の書き込み API を呼ばない', () => {
+  const { shown, raw } = convertedRows(2);
+  const env = createAdminEnv(raw, { displayRows: shown });
+  env.ctx.getVersionDiagnostics();
+  assert.deepEqual(env.writes, []);
+  assert.deepEqual(env.ranges, ["'responses'!B:D"]);
+  assert.deepEqual(env.renderOptions, ['UNFORMATTED_VALUE', 'FORMATTED_VALUE']);
+  assert.equal(env.ctx.SpreadsheetApp, undefined);
+});
+
+test('version 診断（#422）：回答本文・自由記述・hash・timestamp・source_channel・Spreadsheet ID を出力しない（Admin summary の内訳も同様）', () => {
+  const { shown, raw } = convertedRows(3);
+  const env = createAdminEnv(raw, { displayRows: shown });
+  const outputs = JSON.stringify(env.ctx.getVersionDiagnostics()) + JSON.stringify(plain(env.ctx.getAdminSummary()).version_mismatch_fields);
+  ['ADMIN-ONLY-TEXT', 'responses-sheet-id', '2026-11-10 12:00', 'unknown', 'sent'].forEach((s) => assert.ok(!outputs.includes(s), s));
+  raw.forEach((r) => assert.ok(!outputs.includes(r.respondent_hash)));
+  const d = plain(env.ctx.getVersionDiagnostics());
+  assert.deepEqual(Object.keys(d).sort(), ['display_equal_api_differs_rows', 'expected', 'mismatch_by_field', 'mismatch_rows', 'observed', 'rows_checked', 'status']);
+});
+
+test('version 診断（#422）：本当に異なる version は mismatch のまま、表示値も違うと分かる（Sheets の型変換が原因ではない）', () => {
+  const base = rowsFrom([{ count: 5, overrides: INTERESTED }]);
+  const rows = base.map((r, i) => (i < 2 ? Object.assign({}, r, { design_version: '2.17' }) : r));
+  const env = createAdminEnv(rows, { displayRows: rows });
+  const d = plain(env.ctx.getVersionDiagnostics());
+  assert.deepEqual(d.mismatch_by_field, { survey_version: 0, schema_version: 0, design_version: 2 });
+  assert.equal(d.display_equal_api_differs_rows, 0);
+  assert.deepEqual(d.observed.design_version, [{ api_type: 'string', shape: 'string_other', display_matches_expected: false, count: 2 }]);
+  assert.equal(plain(env.ctx.getAdminSummary()).excluded.version_mismatch, 2);
+});
+
+test('version 診断（#422）：正常な文字列 version と、Sheets が数値化した schema/design version は mismatch ゼロで production_valid', () => {
+  const rows = rowsFrom([{ count: 4, overrides: INTERESTED }]).map((r, i) => (i % 2 ? Object.assign({}, r, { schema_version: 1, design_version: 2.18 }) : r));
+  const env = createAdminEnv(rows);
+  const d = plain(env.ctx.getVersionDiagnostics());
+  assert.equal(d.mismatch_rows, 0);
+  assert.equal(plain(env.ctx.getAdminSummary()).production_valid_total, 4);
+});
+
+test('version 診断（#422）：ヘッダー不一致・未設定・シート無しは回答を読まず status だけ返す', () => {
+  assert.equal(plain(createAdminEnv(fixtureRows(), { header: header().slice().reverse() }).ctx.getVersionDiagnostics()).status, 'header_mismatch');
+  assert.equal(plain(createAdminEnv(fixtureRows(), { sheetTitle: 'other' }).ctx.getVersionDiagnostics()).status, 'responses_sheet_missing');
+  const none = createAdminEnv([]);
+  none.props.delete('RESPONSES_SPREADSHEET_ID');
+  assert.equal(plain(none.ctx.getVersionDiagnostics()).status, 'not_configured');
+});
+
+test('version 診断（#422）：既存行を書き換えない（診断前後で Sheets の読み取り内容も API 呼び出しも変わらない）', () => {
+  const { shown, raw } = convertedRows(6);
+  const env = createAdminEnv(raw, { displayRows: shown });
+  const before = JSON.stringify(plain(env.ctx.readRows_()));
+  env.ctx.getVersionDiagnostics();
+  env.ctx.getAdminSummary();
+  assert.equal(JSON.stringify(plain(env.ctx.readRows_())), before);
+  assert.deepEqual(env.writes, []);
+});
+
+test('Dashboard（#422）：version_mismatch があれば内訳と診断を textContent で表示する（innerHTML・個別行の値なし）', () => {
+  const html = fs.readFileSync(path.join(adminDir, 'Dashboard.html'), 'utf8');
+  assert.match(html, /getVersionDiagnostics/);
+  assert.match(html, /version_mismatch_fields/);
+  assert.ok(!/innerHTML/.test(html));
+});

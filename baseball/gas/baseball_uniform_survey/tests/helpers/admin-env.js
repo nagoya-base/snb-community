@@ -8,7 +8,7 @@ const { header } = require('./fixtures');
 const ROOT = path.join(__dirname, '..', '..');
 
 function createAdminEnv(rows, options = {}) {
-  const env = { writes: [], reads: 0, props: new Map(), logs: [], htmlOutputs: [] };
+  const env = { writes: [], reads: 0, props: new Map(), logs: [], htmlOutputs: [], renderOptions: [], ranges: [] };
   let values = [options.header || header()].concat(rows.map((row) => (options.header || header()).map((name) => (row[name] === undefined ? '' : row[name]))));
   if (options.transform) values = options.transform(values);
   const deny = (name) => () => { env.writes.push(name); throw new Error('write_not_allowed: ' + name); };
@@ -30,7 +30,27 @@ function createAdminEnv(rows, options = {}) {
           env.reads++;
           env.calls.push('Values.get ' + range);
           if (id !== 'responses-sheet-id') throw new Error('not_found');
-          return { range, majorDimension: 'ROWS', values: trimmed.map((line) => line.slice()) };
+          const render = opts && opts.valueRenderOption;
+          env.renderOptions.push(render);
+          // FORMATTED_VALUE は画面の表示値。options.displayRows（行オブジェクト）があればそれを表示値として返す。
+          let source = trimmed;
+          if (render === 'FORMATTED_VALUE') {
+            const base = options.header || header();
+            const shown = options.displayRows
+              ? [base].concat(options.displayRows.map((row) => base.map((name) => (row[name] === undefined ? '' : row[name]))))
+              : values;
+            source = shown.map((line) => { const out = line.map((cell) => (typeof cell === 'number' ? String(cell) : cell)); while (out.length && out[out.length - 1] === '') out.pop(); return out; });
+          }
+          // 'responses'!B:D のような列範囲だけ返す（Sheets API 同様、範囲の左端が先頭列になる）。
+          const columns = /!([A-Z]+):([A-Z]+)$/.exec(range);
+          if (columns) {
+            const index = (letters) => letters.split('').reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+            const first = index(columns[1]);
+            const last = index(columns[2]);
+            env.ranges.push(range);
+            source = source.map((line) => { const out = line.slice(first, last + 1); while (out.length && out[out.length - 1] === '') out.pop(); return out; });
+          }
+          return { range, majorDimension: 'ROWS', values: source.map((line) => line.slice()) };
         },
         update: deny('Values.update'), append: deny('Values.append'), clear: deny('Values.clear'),
         batchUpdate: deny('Values.batchUpdate'), batchClear: deny('Values.batchClear')

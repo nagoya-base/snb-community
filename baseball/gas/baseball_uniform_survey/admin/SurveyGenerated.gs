@@ -796,6 +796,114 @@ var SurveyAggregate = (function (core) {
     };
   }
 
+  /* ── version system field の比較 ── */
+
+  var VERSION_FIELDS = ['survey_version', 'schema_version', 'design_version'];
+  var SHEETS_EPOCH_OFFSET_DAYS = 25569; /* 1899-12-30 → 1970-01-01 の日数（Sheets の日付シリアル値の起点） */
+
+  /*
+   * 保存仕様では version は文字列。Sheets が "1" / "2.18" を数値へ自動変換した場合に限り、
+   * 数値を文字列表現（String(n)）で比較して許容する。それ以外の型変換（日付シリアル・真偽値・前後空白付き文字列など）は
+   * 同一視しない（fail-closed）。型が変わった値を曖昧に採用しないため、診断（diagnoseVersions）で原因を確定してから Owner が判断する。
+   */
+  function versionMatches(expected, actual) {
+    if (typeof actual === 'string') return actual === expected;
+    if (typeof actual === 'number') return isFinite(actual) && String(actual) === expected;
+    return false;
+  }
+
+  /* 不一致の version field 名の配列（一致なら空）。classifyRows と diagnoseVersions が同じ判定を使う。 */
+  function mismatchedVersionFields(schema, row) {
+    return VERSION_FIELDS.filter(function (field) { return !versionMatches(str(schema[field]), row[field]); });
+  }
+
+  /* classifyRows が version 比較へ進める行（production かつ complete）。診断も同じ条件で対象行を決める。 */
+  function reachesVersionCheck(row) {
+    return isPlainObject(row) && core.isProductionResponseMode(str(row.response_mode)) &&
+      str(row.response_mode) !== 'test' && str(row.completion_status) === PRODUCTION_STATUS;
+  }
+
+  function emptyVersionFieldCounts() {
+    var counts = {};
+    VERSION_FIELDS.forEach(function (field) { counts[field] = 0; });
+    return counts;
+  }
+
+  /* 'YYYY-MM' の月初を Sheets の日付シリアル値にしたもの。形式が違えば null。 */
+  function monthStartSerial(text) {
+    var m = /^(\d{4})-(\d{2})$/.exec(text);
+    if (!m || Number(m[2]) < 1 || Number(m[2]) > 12) return null;
+    return Date.UTC(Number(m[1]), Number(m[2]) - 1, 1) / 86400000 + SHEETS_EPOCH_OFFSET_DAYS;
+  }
+
+  /* API が返した値の型と、値そのものを出さない安全な分類。 */
+  function describeVersionValue(expected, actual) {
+    if (actual === undefined || actual === null || actual === '') return { api_type: 'empty', shape: 'empty' };
+    if (typeof actual === 'string') {
+      return { api_type: 'string', shape: actual.trim() === expected ? 'string_whitespace_variant' : 'string_other' };
+    }
+    if (typeof actual === 'number') {
+      var serial = monthStartSerial(expected);
+      var shape;
+      if (!isFinite(actual)) shape = 'number_other';
+      else if (serial !== null && actual === serial) shape = 'date_serial_of_expected_month';
+      else if (Math.floor(actual) === actual && actual >= 36526 && actual <= 73050) shape = 'date_serial_other';
+      else shape = 'number_other';
+      return { api_type: 'number', shape: shape };
+    }
+    return { api_type: typeof actual === 'boolean' ? 'boolean' : 'other', shape: typeof actual === 'boolean' ? 'boolean' : 'other' };
+  }
+
+  /*
+   * version_mismatch の原因診断。行ごとの値・回答本文・hash・timestamp は返さない（件数と型の分類だけ）。
+   *   rows: Sheets API（UNFORMATTED_VALUE）が返した値の行オブジェクト
+   *   displayRows: 同じ行の表示値（FORMATTED_VALUE）の行オブジェクト（任意。行の並びは rows と同じ）
+   * display_matches_expected が true なのに mismatch なら、画面表示ではなく API が返した型・値が原因（Sheets の自動型変換）。
+   */
+  function diagnoseVersions(schema, rows, displayRows) {
+    var list = Array.isArray(rows) ? rows : [];
+    var display = Array.isArray(displayRows) ? displayRows : null;
+    var expected = {};
+    VERSION_FIELDS.forEach(function (field) { expected[field] = str(schema[field]); });
+    var result = {
+      expected: expected,
+      rows_checked: 0,
+      mismatch_rows: 0,
+      mismatch_by_field: emptyVersionFieldCounts(),
+      display_equal_api_differs_rows: display ? 0 : null,
+      observed: {}
+    };
+    VERSION_FIELDS.forEach(function (field) { result.observed[field] = []; });
+    var groups = {};
+
+    list.forEach(function (row, index) {
+      if (!reachesVersionCheck(row)) return;
+      result.rows_checked++;
+      var fields = mismatchedVersionFields(schema, row);
+      if (!fields.length) return;
+      result.mismatch_rows++;
+      var displayEqual = false;
+      fields.forEach(function (field) {
+        result.mismatch_by_field[field]++;
+        var shown = null;
+        if (display) {
+          var shownRow = isPlainObject(display[index]) ? display[index] : {};
+          shown = str(shownRow[field]) === expected[field];
+          if (shown) displayEqual = true;
+        }
+        var described = describeVersionValue(expected[field], row[field]);
+        var key = [field, described.api_type, described.shape, String(shown)].join('|');
+        if (!hasOwn(groups, key)) {
+          groups[key] = { api_type: described.api_type, shape: described.shape, display_matches_expected: shown, count: 0 };
+          result.observed[field].push(groups[key]);
+        }
+        groups[key].count++;
+      });
+      if (display && displayEqual) result.display_equal_api_differs_rows++;
+    });
+    return result;
+  }
+
   /*
    * 行を production 有効回答とそれ以外に分ける。
    *   response_mode = test               → test_excluded（通常集計に入れない）
@@ -807,7 +915,7 @@ var SurveyAggregate = (function (core) {
    * respondent_hash は重複除去のためだけに使い、public へは出さない。
    */
   function classifyRows(schema, rows) {
-    var counts = { rows: 0, production_valid: 0, test_excluded: 0, excluded: emptyExcluded() };
+    var counts = { rows: 0, production_valid: 0, test_excluded: 0, excluded: emptyExcluded(), version_mismatch_fields: emptyVersionFieldCounts() };
     var valid = [];
     var seen = {};
     var textIds = core.getQuestions(schema).filter(function (q) { return q.type === 'text'; }).map(function (q) { return q.id; });
@@ -819,10 +927,10 @@ var SurveyAggregate = (function (core) {
       if (mode === 'test') { counts.test_excluded++; return; }
       if (!core.isProductionResponseMode(mode)) { counts.excluded.unknown_response_mode++; return; }
       if (str(row.completion_status) !== PRODUCTION_STATUS) { counts.excluded.incomplete++; return; }
-      if (str(row.survey_version) !== str(schema.survey_version) ||
-          str(row.schema_version) !== str(schema.schema_version) ||
-          str(row.design_version) !== str(schema.design_version)) {
+      var mismatched = mismatchedVersionFields(schema, row);
+      if (mismatched.length) {
         counts.excluded.version_mismatch++;
+        mismatched.forEach(function (field) { counts.version_mismatch_fields[field]++; });
         return;
       }
       var parsed = rowToAnswers(schema, row);
@@ -1564,6 +1672,7 @@ var SurveyAggregate = (function (core) {
       production_valid_total: total,
       test_excluded: classification.counts.test_excluded,
       excluded: classification.counts.excluded,
+      version_mismatch_fields: classification.counts.version_mismatch_fields || emptyVersionFieldCounts(),
       rows: classification.counts.rows,
       questions: questions,
       semantic: analyzeSemanticCodes(schema, valid),
@@ -1599,6 +1708,9 @@ var SurveyAggregate = (function (core) {
     decodeMultiple: decodeMultiple,
     rowToAnswers: rowToAnswers,
     classifyRows: classifyRows,
+    VERSION_FIELDS: VERSION_FIELDS,
+    diagnoseVersions: diagnoseVersions,
+    versionMatches: versionMatches,
     cellDefinitions: cellDefinitions,
     tallyQuestion: tallyQuestion,
     tallyRegion: tallyRegion,

@@ -588,3 +588,100 @@ test('Admin summary は exact な件数と公開条件の達成/未達、抑止�
   assert.ok(!text.includes('SUMMARY-SECRET'));
   assert.equal(aggregate.listFreeText(schema, classification).filter((i) => i.text === 'SUMMARY-SECRET').length, 35);
 });
+
+// ── version 比較の正規化と version_mismatch 診断（Issue #422） ──
+
+// Sheets の日付シリアル値（1899-12-30 起点）。テスト側で独立に計算する。
+const sheetsSerial = (y, m) => Math.round((Date.UTC(y, m - 1, 1) - Date.UTC(1899, 11, 30)) / 86400000);
+
+test('version（#422）：保存仕様の文字列、および Sheets が数値化した schema/design version は production_valid', () => {
+  const ok = answersFor({});
+  const { counts } = classify([
+    rowFor(ok), // 文字列 '2026-10' / '1' / '2.18'
+    rowFor(ok, { schema_version: 1 }), // "1" → number
+    rowFor(ok, { design_version: 2.18 }), // "2.18" → number
+    rowFor(ok, { schema_version: 1, design_version: 2.18 })
+  ]);
+  assert.equal(counts.production_valid, 4);
+  assert.equal(counts.excluded.version_mismatch, 0);
+  assert.deepEqual(counts.version_mismatch_fields, { survey_version: 0, schema_version: 0, design_version: 0 });
+});
+
+test('version（#422）：本当に異なる survey/schema/design version は従来どおり fail-closed の version_mismatch', () => {
+  const ok = answersFor({});
+  const { counts, valid } = classify([
+    rowFor(ok, { survey_version: '2026-11' }),
+    rowFor(ok, { schema_version: '2' }),
+    rowFor(ok, { schema_version: 2 }),
+    rowFor(ok, { design_version: '2.17' }),
+    rowFor(ok, { design_version: 2.17 }),
+    rowFor(ok, { design_version: 2.1 }), // '2.18' と別 version を曖昧に同一視しない
+    rowFor(ok, { design_version: '2.180' }),
+    rowFor(ok, { survey_version: '', schema_version: '', design_version: '' })
+  ]);
+  assert.equal(valid.length, 0);
+  assert.equal(counts.excluded.version_mismatch, 8);
+  assert.deepEqual(counts.version_mismatch_fields, { survey_version: 2, schema_version: 3, design_version: 5 });
+});
+
+test('version（#422）：日付化・真偽値・空白付きなど、型変換された値を無条件に同一視しない（fail-closed）', () => {
+  const ok = answersFor({});
+  const serial = sheetsSerial(2026, 10);
+  assert.equal(serial, 46296);
+  const variants = [serial, true, ' 2026-10 ', '2026-10\n', new Date(Date.UTC(2026, 9, 1)).toISOString(), [], {}, NaN, Infinity];
+  const { counts, valid } = classify(variants.map((v) => rowFor(ok, { survey_version: v })));
+  assert.equal(valid.length, 0);
+  assert.equal(counts.excluded.version_mismatch, variants.length);
+  assert.equal(counts.version_mismatch_fields.survey_version, variants.length);
+  assert.equal(aggregate.versionMatches('2026-10', '2026-10'), true);
+  assert.equal(aggregate.versionMatches('1', 1), true);
+  assert.equal(aggregate.versionMatches('2.18', 2.18), true);
+  assert.equal(aggregate.versionMatches('2.18', '2.18 '), false);
+  assert.equal(aggregate.versionMatches('2026-10', serial), false);
+});
+
+test('version 診断（#422）：Sheets が survey_version を日付化したケースを、値を出さずに原因として特定できる', () => {
+  const ok = answersFor({ feedback: 'SECRET-FREE-TEXT' });
+  const converted = rowFor(ok, { survey_version: sheetsSerial(2026, 10) });
+  const rows = [rowFor(ok), converted, rowFor(ok, { survey_version: sheetsSerial(2026, 10) }), rowFor(ok, { response_mode: 'test', test_run_id: 'r', survey_version: 1 }), rowFor(ok, { completion_status: 'partial', survey_version: 1 })];
+  const display = rows.map((row, i) => ({ survey_version: i === 3 || i === 4 ? '1' : '2026-10', schema_version: '1', design_version: '2.18' }));
+  const d = aggregate.diagnoseVersions(schema, rows, display);
+  assert.deepEqual(d.expected, { survey_version: '2026-10', schema_version: '1', design_version: '2.18' });
+  assert.equal(d.rows_checked, 3, 'test / incomplete は classifyRows と同じく version 比較の対象外');
+  assert.equal(d.mismatch_rows, 2);
+  assert.deepEqual(d.mismatch_by_field, { survey_version: 2, schema_version: 0, design_version: 0 });
+  assert.equal(d.display_equal_api_differs_rows, 2, '表示は一致しているのに API の値が違う（= 表示ではなく API が返した型・値が原因）');
+  assert.deepEqual(d.observed.survey_version, [{ api_type: 'number', shape: 'date_serial_of_expected_month', display_matches_expected: true, count: 2 }]);
+  assert.deepEqual(d.observed.schema_version, []);
+  assert.deepEqual(d.observed.design_version, []);
+  // 診断件数は classifyRows と一致する。
+  assert.equal(classify(rows).counts.excluded.version_mismatch, d.mismatch_rows);
+});
+
+test('version 診断（#422）：表示値が無い場合は不明（null）、別 version・別型・空は shape で区別する', () => {
+  const ok = answersFor({});
+  const rows = [
+    rowFor(ok, { survey_version: '2026-11' }),
+    rowFor(ok, { schema_version: 2 }),
+    rowFor(ok, { design_version: sheetsSerial(2026, 11) }),
+    rowFor(ok, { design_version: ' 2.18' }),
+    rowFor(ok, { survey_version: true }),
+    rowFor(ok, { survey_version: '' })
+  ];
+  const d = aggregate.diagnoseVersions(schema, rows);
+  assert.equal(d.display_equal_api_differs_rows, null);
+  assert.deepEqual(d.mismatch_by_field, { survey_version: 3, schema_version: 1, design_version: 2 });
+  const shapes = (field) => d.observed[field].map((g) => `${g.api_type}:${g.shape}:${g.display_matches_expected}:${g.count}`).sort();
+  assert.deepEqual(shapes('survey_version'), ['boolean:boolean:null:1', 'empty:empty:null:1', 'string:string_other:null:1']);
+  assert.deepEqual(shapes('schema_version'), ['number:number_other:null:1']);
+  assert.deepEqual(shapes('design_version'), ['number:date_serial_other:null:1', 'string:string_whitespace_variant:null:1']);
+});
+
+test('version 診断（#422）：回答本文・自由記述・hash・timestamp・source_channel を結果に含めない', () => {
+  const ok = answersFor({ feedback: 'SECRET-FREE-TEXT' });
+  const rows = [rowFor(ok, { survey_version: sheetsSerial(2026, 10) }, { favorite_uniforms: 'SECRET-OTHER-TEXT' }), rowFor(ok, { survey_version: 'weird-SECRET-VALUE' })];
+  const out = JSON.stringify(aggregate.diagnoseVersions(schema, rows, rows.map(() => ({ survey_version: '2026-10', schema_version: '1', design_version: '2.18' }))));
+  ['SECRET-FREE-TEXT', 'SECRET-OTHER-TEXT', 'weird-SECRET-VALUE', '2026-11-10 12:00', 'unknown'].forEach((s) => assert.ok(!out.includes(s), s));
+  rows.forEach((r) => assert.ok(!out.includes(r.respondent_hash)));
+  assert.deepEqual(Object.keys(JSON.parse(out)).sort(), ['display_equal_api_differs_rows', 'expected', 'mismatch_by_field', 'mismatch_rows', 'observed', 'rows_checked']);
+});

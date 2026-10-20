@@ -26,16 +26,34 @@ class FakeRange {
     values.forEach((line, r) => line.forEach((v, c) => {
       const rowIndex = this.row - 1 + r;
       while (this.sheet.rows.length <= rowIndex) this.sheet.rows.push([]);
-      this.sheet.rows[rowIndex][this.col - 1 + c] = v;
+      const textCell = this.sheet.cellFormats[`${rowIndex + 1}:${this.col + c}`] === '@';
+      this.sheet.rows[rowIndex][this.col - 1 + c] = this.sheet.autoConvert && !textCell ? sheetsAutoConvert(v) : v;
     }));
     return this;
   }
   setValue(value) { return this.setValues([[value]]); }
-  setNumberFormat(format) { for (let c = 0; c < this.numCols; c++) this.sheet.formats[this.col + c] = format; return this; }
+  setNumberFormat(format) {
+    for (let c = 0; c < this.numCols; c++) {
+      this.sheet.formats[this.col + c] = format;
+      for (let r = 0; r < this.numRows; r++) this.sheet.cellFormats[`${this.row + r}:${this.col + c}`] = format;
+    }
+    return this;
+  }
+}
+
+// Google Sheets が書式未設定（自動）のセルへ文字列を setValues したときの型変換の再現（実機の既知挙動）：
+//   'YYYY-MM' → その月 1 日の日付（Admin が UNFORMATTED_VALUE で読むと日付シリアル値の number）、数字だけの文字列 → number。
+// FakeSheet.autoConvert = true のときだけ有効（既定は無効で、既存テストの挙動を変えない）。
+function sheetsAutoConvert(value) {
+  if (typeof value !== 'string') return value;
+  const month = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(value);
+  if (month) return Date.UTC(Number(month[1]), Number(month[2]) - 1, 1) / 86400000 + 25569;
+  if (/^-?\d+(\.\d+)?$/.test(value)) return Number(value);
+  return value;
 }
 
 class FakeSheet {
-  constructor(name) { this.name = name; this.rows = []; this.hooks = {}; this.formats = {}; }
+  constructor(name) { this.name = name; this.rows = []; this.hooks = {}; this.formats = {}; this.cellFormats = {}; this.autoConvert = false; }
   getLastRow() { return this.rows.length; }
   getLastColumn() { return this.rows.reduce((m, r) => Math.max(m, r.length), 0); }
   getMaxRows() { return Math.max(1000, this.rows.length); }
