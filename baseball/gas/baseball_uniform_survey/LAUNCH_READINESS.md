@@ -149,7 +149,7 @@ E2E で作った test row は retention 対象です。launch 前に必要なら
 
 - [ ] route 分岐
 - [ ] hidden stale value が送信に残らない
-- [ ] 低関心 route でも `exercise_frequency / exercise_motivation / age / region / feedback / support_message` が残る
+- [ ] 低関心 route でも `exercise_frequency / exercise_motivation / age / region（海外は residence_country）/ feedback / support_message` が残る
 - [ ] 進捗が route-aware で後退しない
 - [ ] 18 歳未満は回答本文を送信しない
 - [ ] submit の二重押し防止

@@ -3470,6 +3470,23 @@
       }
     },
     {
+      "id": "residence_country",
+      "section": "profile",
+      "label": "お住まいの国・地域を教えてください",
+      "type": "text",
+      "required": true,
+      "showIf": {
+        "question": "prefecture",
+        "equals": "overseas"
+      },
+      "maxLength": 60,
+      "inputStyle": "single_line",
+      "publication": {
+        "visibility": "private"
+      },
+      "helpText": "国名または地域名を1行で入力してください（例：アメリカ、台湾）。公開結果には表示されません。"
+    },
+    {
       "id": "feedback",
       "section": "closing",
       "label": "名古屋野球ユニ部への期待・改善してほしいことがあれば教えてください",
@@ -4120,6 +4137,7 @@
         "age",
         "prefecture",
         "aichi_area",
+        "residence_country",
         "feedback",
         "support_message"
       ],

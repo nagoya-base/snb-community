@@ -47,7 +47,7 @@ test('全 question.id に label があり、日本語に helpText があれば�
       else assert.strictEqual(entry.helpText, undefined, `${locale}.${q.id}.helpText は日本語に無い`);
     });
   });
-  assert.strictEqual(schema.questions.filter((q) => q.helpText).length, 2);
+  assert.strictEqual(schema.questions.filter((q) => q.helpText).length, 3, 'exercise_continuation_motivation / support_message / residence_country');
 });
 
 test('全 option.id に label があり、option ID 集合は日本語（schema）と各言語で完全一致する', () => {

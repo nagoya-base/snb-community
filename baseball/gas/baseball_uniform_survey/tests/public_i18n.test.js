@@ -171,3 +171,16 @@ test('5言語の回答を Admin 集計へ通しても、選択肢は stable ID �
   Object.keys(tally.counts).filter((id) => id !== 'baseball').forEach((id) => assert.strictEqual(tally.counts[id], 0, id));
   assert.deepStrictEqual(valid.map((r) => r.free_text.feedback).sort(), LOCALES.map((l) => `${l} free text`).sort(), '自由記述は原文のまま');
 });
+
+test('residence_country：どの言語の画面からでも入力原文がそのまま保存され、翻訳されない（label は保存値にならない）', () => {
+  const { env, ctx } = loadPublic();
+  const payload = validPayload(ctx, { prefecture: 'overseas', residence_country: 'Việt Nam（ベトナム）' });
+  assert.deepStrictEqual(submit(ctx, payload), { ok: true, status: 'accepted' });
+  const [head, row] = rows(env);
+  assert.strictEqual(row[head.indexOf('residence_country')], 'Việt Nam（ベトナム）');
+  assert.strictEqual(row[head.indexOf('prefecture')], 'overseas');
+  // 海外でなければ hidden として拒否される挙動は言語によらず不変
+  const { ctx: ctx2 } = loadPublic();
+  const bad = validPayload(ctx2, { prefecture: 'pref_23', residence_country: 'Japan' });
+  assert.ok(fieldsOf(submit(ctx2, bad)).includes('residence_country:hidden_field'));
+});

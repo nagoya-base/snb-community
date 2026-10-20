@@ -730,6 +730,10 @@
         "prefer_not_to_say": "Prefer not to answer"
       }
     },
+    "residence_country": {
+      "label": "Which country or region do you live in?",
+      "helpText": "Please enter the name of your country or region on one line (e.g., United States, Taiwan). It will not be shown in the public results."
+    },
     "feedback": {
       "label": "Please tell us what you expect from Nagoya Baseball Uniform Club and anything you would like improved"
     },

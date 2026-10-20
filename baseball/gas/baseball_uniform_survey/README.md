@@ -171,10 +171,11 @@ private な system field です。`x / line / website / instagram / email / dire
 
 `survey.config.json` の `notification.enabled` で明示します（現在 `true`）。無効にする場合は `false` にします。暗黙の未実装にはしません。
 
-- production の有効回答を**保存した後**だけ、運営者（`NOTIFICATION_EMAIL`）へ text/plain で「新規有効回答1件・受信日時・本番累計件数」を送ります。個票・自由記述本文・UUID・hash は載せません。
-- test mode・18歳未満・検証失敗・重複・受付期間外では送りません。
+- 通知条件は `production && valid && saved && notification.enabled && support_message.trim() !== ''` です。通常の回答、`feedback`、「その他」自由記述だけでは送りません。
+- 送るのは回答を**保存した後**だけで、運営者（`NOTIFICATION_EMAIL`）へ text/plain で「受信日時・本番累計件数・`support_message` 本文」だけを送ります（件名: `名古屋野球ユニ部アンケート｜応援・激励メッセージ`）。他の回答・feedback・「その他」本文・UUID・hash は載せません。
+- test mode（`support_message` があっても）・18歳未満・検証失敗・重複・受付期間外では送りません。
 - 送信失敗・宛先未設定でも回答の保存は成功のままです（`notification_status` が `failed` になります）。
-- `notification_status`: `pending`（送信前の一時値）→ `sent` / `failed`、`disabled`（`enabled=false`）、`not_applicable`（test）。
+- `notification_status`: `pending`（送信前の一時値）→ `sent` / `failed`、`disabled`（`enabled=false`）、`not_required`（production だが `support_message` が空白のみ／未入力）、`not_applicable`（test）。
 
 ### Setup と Script Properties
 
@@ -357,7 +358,7 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 
 `generated_at` 以外に時刻・識別子は含みません。`region_blocks` は地方ブロック集計の疑似 question id です。
 
-**public に絶対出さないもの**: 自由記述（feedback / support_message）・「その他」本文・個別回答・詳細都道府県・愛知県内地域・`respondent_hash`・UUID・個別 timestamp・`source_channel` その他 system field・private 設問の ID。
+**public に絶対出さないもの**: 自由記述（feedback / support_message）・海外在住時の国・地域名（`residence_country`）・「その他」本文・個別回答・詳細都道府県・愛知県内地域・`respondent_hash`・UUID・個別 timestamp・`source_channel` その他 system field・private 設問の ID。
 
 ### snapshot の batch 更新（submit ごとに更新しない）
 
@@ -474,6 +475,7 @@ retention 設定状態の確認／finalize preflight／finalize 実行／finaliz
 - 翻訳は question.id / option.id をキーに対応付けます。翻訳側に**新しい設問・選択肢・意味は作れません**（辞書にあって schema に無い key は CI で失敗）。option 数・ID・分岐条件は schema のままです。
 - `single_dynamic`（`top_uniform` / `main_barrier`）は選択肢を持たず、source 設問（`favorite_uniforms` / `barriers`）の翻訳を使います。
 - 中国語は `zh-Hans` と `zh-Hant` を別辞書で管理します（`zh` にまとめない）。
+- `residence_country`（海外選択時の国・地域名。1行・必須）の label / helpText も5言語。入力された国・地域名は翻訳せず原文のまま保存し、公開結果・GA4 には出しません（Admin は日本語 UI で原文を確認）。
 - 固有名詞「名古屋野球ユニ部」は、別団体名に見えないよう原表記を併記します（例: `Nagoya Baseball Uniform Club (名古屋野球ユニ部)`）。訳語は `tests/i18n.test.js` の用語検査（団体名・キャッチボール会・ユニフォーム交流）で固定します。
 - 辞書を変更したら `npm run build`（検証に失敗すると生成しません）→ `npm test`。
 

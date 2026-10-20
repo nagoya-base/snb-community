@@ -682,3 +682,54 @@ test('モバイル幅でも言語選択が崩れない構造（CSS：flex 折り
   assert.match(css, /html:lang\(zh-Hans\)/);
   assert.match(css, /html:lang\(zh-Hant\)/);
 });
+
+// ── residence_country（海外選択時の国・地域名。1行・必須・自由記述は翻訳しない） ──
+
+async function openOverseasProfile(languages) {
+  const env = await openPage({ languages });
+  await walkToReview(env, { club_awareness: 'first_time', catchball_interest: 'low_interest' });
+  for (let i = 0; i < 20 && !visibleIds(env.document).includes('prefecture'); i++) { click(env.document, 'bus-back-btn'); await settle(); }
+  answer(env, 'prefecture', 'overseas');
+  return env;
+}
+
+test('residence_country：label・helpText・必須・required error が5言語で表示され、1行入力が維持される', async () => {
+  const env = await openOverseasProfile(['ja-JP']);
+  for (const code of LOCALES) {
+    await setLang(env, code);
+    const fs_ = fieldset(env.document, 'residence_country');
+    assert.ok(fs_, `${code}: 海外選択で表示`);
+    assert.strictEqual(fs_.querySelector('legend .bus-qtext').textContent, labelOf(code, 'residence_country'));
+    assert.strictEqual(fs_.querySelector('.bus-help').textContent, code === 'ja' ? schema.questions.find((q) => q.id === 'residence_country').helpText : dicts[code].questions.residence_country.helpText);
+    assert.strictEqual(fs_.querySelector('.bus-req').textContent, ui(code, 'common.required'));
+    const input = Array.from(fs_.children).find((c) => c.tagName === 'INPUT');
+    assert.strictEqual(input.type, 'text');
+    assert.strictEqual(input.getAttribute('aria-label'), labelOf(code, 'residence_country'));
+  }
+  await setLang(env, 'ko');
+  click(env.document, 'bus-next'); // 未入力
+  await settle();
+  assert.strictEqual(env.document.getElementById('bus-err-residence_country').textContent, ui('ko', 'error.required'));
+  await setLang(env, 'zh-Hant');
+  assert.strictEqual(env.document.getElementById('bus-err-residence_country').textContent, ui('zh-Hant', 'error.required'));
+  assert.strictEqual(env.document.querySelector('#bus-summary a').textContent, ui('zh-Hant', 'error.summaryItem', { label: labelOf('zh-Hant', 'residence_country'), message: ui('zh-Hant', 'error.required') }));
+});
+
+test('residence_country：入力は翻訳せず原文のまま保持・確認表示・送信され、公開向けの翻訳に混ざらない', async () => {
+  const env = await openOverseasProfile(['en-US']);
+  answer(env, 'residence_country', 'Việt Nam / 台灣 / España');
+  for (const code of ['ko', 'zh-Hans']) {
+    await setLang(env, code);
+    const input = Array.from(fieldset(env.document, 'residence_country').children).find((c) => c.tagName === 'INPUT');
+    assert.strictEqual(input.value, 'Việt Nam / 台灣 / España', `${code}: 原文のまま`);
+  }
+  for (let guard = 0; guard < 20 && env.document.getElementById('bus-questions'); guard++) { fillPage(env, { club_awareness: 'first_time', catchball_interest: 'low_interest' }); await next(env); }
+  await setLang(env, 'zh-Hant');
+  assert.ok(bodyText(env.document).includes('Việt Nam / 台灣 / España'), '確認画面も原文');
+  click(env.document, 'bus-next');
+  await settle();
+  const body = bodyOf(posts(env)[0]);
+  assert.strictEqual(body.answers.prefecture, 'overseas');
+  assert.strictEqual(body.answers.residence_country, 'Việt Nam / 台灣 / España');
+  assert.ok(!env.events().some((e) => JSON.stringify(e).includes('Việt')), 'GA4 へ送らない');
+});

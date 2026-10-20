@@ -542,7 +542,7 @@ var SurveyCore = (function () {
           if (question.required) fail(id, 'required');
         } else if (typeof value !== 'string') {
           fail(id, 'invalid_type');
-        } else if (CONTROL_CHARS.test(value)) {
+        } else if (CONTROL_CHARS.test(value) || (question.inputStyle === 'single_line' && /[\r\n]/.test(value))) {
           fail(id, 'invalid_text');
         } else {
           var text = normalizeText(value);

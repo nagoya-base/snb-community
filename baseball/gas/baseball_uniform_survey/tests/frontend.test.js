@@ -182,6 +182,45 @@ test('hidden になった設問は DOM から消え（tab 順に残らない）�
   assert.deepStrictEqual(plain(stale), []);
 });
 
+test('海外選択時だけ residence_country（1行入力）が出て、必須。国内へ変更すると値が破棄され payload に残らない', async () => {
+  const env = await openPage();
+  await walkToReview(env, { club_awareness: 'first_time', catchball_interest: 'low_interest' });
+  // review まで進んだ後、profile ページへ戻って prefecture を切り替える
+  for (let i = 0; i < 20 && !visibleIds(env.document).includes('prefecture'); i++) { click(env.document, 'bus-back-btn'); await settle(); }
+  assert.strictEqual(visibleIds(env.document).includes('residence_country'), false);
+  answer(env, 'prefecture', 'overseas');
+  const fs_ = fieldset(env.document, 'residence_country');
+  assert.ok(fs_, '海外選択で表示');
+  const input = Array.from(fs_.children).find((c) => c.tagName === 'INPUT');
+  assert.strictEqual(input.type, 'text', '1行入力');
+  assert.strictEqual(input.maxLength, 60);
+  assert.strictEqual(fs_.querySelector('textarea'), null);
+  await next(env);
+  assert.strictEqual(visibleIds(env.document).includes('residence_country'), true, '未入力では次へ進めない');
+  assert.strictEqual(env.document.getElementById('bus-err-residence_country').hidden, false);
+  answer(env, 'residence_country', 'ひみつの国');
+  answer(env, 'prefecture', 'pref_13');
+  assert.strictEqual(visibleIds(env.document).includes('residence_country'), false, '国内へ変更で非表示');
+  answer(env, 'prefecture', 'overseas');
+  assert.strictEqual(Array.from(fieldset(env.document, 'residence_country').children).find((c) => c.tagName === 'INPUT').value, '', '再表示時に旧値は残らない');
+  answer(env, 'prefecture', 'pref_13');
+  for (let i = 0; i < 20 && env.document.getElementById('bus-questions'); i++) { fillPage(env, ROUTES.low_interest); await next(env); }
+  click(env.document, 'bus-next');
+  await settle();
+  const body = bodyOf(posts(env)[0]);
+  assert.strictEqual(body.answers.residence_country, undefined);
+  assert.ok(!JSON.stringify(body).includes('ひみつの国'));
+});
+
+test('海外 route の payload（residence_country あり）は Public GAS の server validation を通る', async () => {
+  const env = await submitRoute(Object.assign({}, ROUTES.low_interest, { prefecture: 'overseas', residence_country: 'カナダ' }));
+  const body = bodyOf(posts(env)[0]);
+  assert.strictEqual(body.answers.residence_country, 'カナダ');
+  body.elapsed_ms = 90000;
+  const { env: gas, ctx } = loadPublic();
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(ctx.processSubmission_(JSON.stringify(body), NOW))), { ok: true, status: 'accepted' });
+});
+
 test('single_dynamic：source の選択変更で旧値が消え、1件なら自動選択される', async () => {
   const env = await openPage();
   await start(env);
