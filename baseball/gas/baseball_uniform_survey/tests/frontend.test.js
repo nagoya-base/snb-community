@@ -756,13 +756,14 @@ test('responsive：390px / 1440px で横スクロールしない構造（CSS / v
   assert.match(css, /\.bus-btn\[disabled\][^}]*background-image/, 'disabled は色だけでなく模様でも判別できる');
 });
 
-test('回答者向け説明：目的・18歳以上・5〜12分・非公開範囲・アクセス解析・匿名性・参加申込ではない。保持期限は補わない', async () => {
+test('回答者向け説明：目的・18歳以上・5〜12分・非公開範囲・匿名性・参加申込ではない。保持期限は補わない', async () => {
   const env = await openPage();
   const text = bodyText(env.document);
-  for (const phrase of ['今後の運営・企画', '18歳以上', '5〜12分', '個別の回答は公開しません', '自由記述', '詳細な居住地域は公開しません', '回答内容・どの質問にどう答えたか', '修正・削除することは原則できません', '参加申込ではありません']) {
+  for (const phrase of ['今後の運営・企画', '18歳以上', '5〜12分', '個別の回答は公開しません', '自由記述', '詳細な居住地域は公開しません', '修正・削除することは原則できません', '参加申込ではありません']) {
     assert.ok(text.includes(phrase), phrase);
   }
   assert.ok(!/保管期間|保持期限|削除します|日後|か月|ヶ月/.test(text), '未確定の retention を補わない');
+  assert.ok(!/GA4|アクセス解析|Analytics/i.test(text), '技術的な GA4 の説明は回答者向け画面に出さない（計測の制限仕様は実装で守る）');
   assert.match(fs.readFileSync(path.join(D.REPO, D.PAGE), 'utf8'), /<meta name="robots" content="noindex">/);
 });
 

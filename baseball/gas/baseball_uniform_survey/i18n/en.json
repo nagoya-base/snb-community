@@ -35,7 +35,6 @@
     "intro.note.eligibility": "This survey is for people aged 18 or older.",
     "intro.note.time": "It takes about {min}–{max} minutes. The number of questions varies depending on your interests and answers.",
     "intro.note.publication": "Individual answers are not published. Only aggregated results will be shown on the public page. Free-text answers and detailed place of residence are never published.",
-    "intro.note.analytics": "We do not send your answers, which questions you answered how, or your free-text comments to our access analytics (GA4).",
     "intro.note.admin": "Individual answers may be viewed only by the single person in charge of the club, for the purpose of aggregation and improving operations.",
     "intro.note.anonymity": "To protect anonymity, it is in principle not possible to verify your identity and correct or delete specific answers after you submit.",
     "intro.note.partial": "Answers are sent all at once at the end. If you leave partway through, nothing is saved on the server.",

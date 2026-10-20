@@ -733,3 +733,17 @@ test('residence_country：入力は翻訳せず原文のまま保持・確認表
   assert.strictEqual(body.answers.residence_country, 'Việt Nam / 台灣 / España');
   assert.ok(!env.events().some((e) => JSON.stringify(e).includes('Việt')), 'GA4 へ送らない');
 });
+
+test('回答者向け画面（5言語）に GA4 / アクセス解析の技術的な説明を出さない。計測の制限（GA4 へ送らない実装）は変えない', async () => {
+  const TECH = /GA4|Google Analytics|analytics|アクセス解析|접속 분석|访问分析|流量分析/i;
+  for (const code of LOCALES) {
+    const env = await openPage({ languages: [code] });
+    assert.ok(!TECH.test(bodyText(env.document)), `${code}: intro`);
+    Object.entries(dicts[code].ui).filter(([k]) => !k.startsWith('test.')).forEach(([k, v]) => assert.ok(!TECH.test(v), `${code}: ui.${k}`));
+    assert.ok(!Object.prototype.hasOwnProperty.call(dicts[code].ui, 'intro.note.analytics'));
+  }
+  // 実装上の制限は従来どおり：form_start だけが送られ、設問ID・route・回答は含まれない
+  const env = await openPage({ languages: ['ja-JP'] });
+  await start(env);
+  assert.deepStrictEqual(plain(env.events().map((e) => e.name)), ['form_start']);
+});

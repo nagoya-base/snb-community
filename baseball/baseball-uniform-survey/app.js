@@ -782,7 +782,6 @@
       t('intro.note.eligibility'),
       t('intro.note.time', { min: schema.respondentNotice.estimatedMinutes.min, max: schema.respondentNotice.estimatedMinutes.max }),
       t('intro.note.publication'),
-      t('intro.note.analytics'),
       t('intro.note.admin'),
       t('intro.note.anonymity'),
       t('intro.note.partial'),
