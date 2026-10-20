@@ -5,53 +5,72 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    :root { --ink: #1c1a17; --muted: #5f574d; --line: #ddd8cf; --paper: #f5f2ec; --accent: #2c5f35; --warn: #8a5a00; --bad: #b3261e; }
+    :root { --ink: #1c1a17; --muted: #5f574d; --line: #ddd8cf; --paper: #f5f2ec; --accent: #2c5f35; --accent-soft: #cfe2d2; --warn: #8a5a00; --bad: #b3261e; }
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 16px; color: var(--ink); background: var(--paper); font: 15px/1.7 'Hiragino Sans', 'Noto Sans JP', Meiryo, system-ui, sans-serif; }
-    h1 { font-size: 1.3rem; margin: 0 0 4px; }
-    h2 { font-size: 1.05rem; margin: 24px 0 8px; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; padding: 12px; color: var(--ink); background: var(--paper); font: 15px/1.7 'Hiragino Sans', 'Noto Sans JP', Meiryo, system-ui, sans-serif; overflow-wrap: anywhere; word-break: break-word; }
+    h1 { font-size: 1.2rem; margin: 0 0 4px; }
+    h2 { font-size: 1.05rem; margin: 20px 0 8px; }
+    h3 { font-size: 1rem; margin: 0 0 2px; }
     .note { color: var(--muted); font-size: .88rem; margin: 0 0 12px; }
-    .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; overflow-x: auto; }
-    table { border-collapse: collapse; width: 100%; font-size: .88rem; }
-    th, td { border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
-    th { background: #faf8f4; white-space: nowrap; }
-    td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; min-width: 0; }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 0 0 8px; }
+    .kpi { margin: 0; }
+    .kpi dt { color: var(--muted); font-size: .8rem; }
+    .kpi dd { margin: 0; font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
     .ok { color: var(--accent); font-weight: 700; }
     .ng { color: var(--warn); font-weight: 700; }
     .err { color: var(--bad); }
-    button { font: inherit; padding: 6px 12px; margin: 0 6px 6px 0; border: 1px solid var(--accent); background: #fff; color: var(--accent); border-radius: 6px; cursor: pointer; }
+    .meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .85rem; color: var(--muted); margin: 2px 0 8px; }
+    .opt { margin: 0 0 8px; }
+    .opt-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+    .opt-label { min-width: 0; }
+    .opt-num { flex: none; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .bar { height: 8px; background: var(--paper); border-radius: 4px; overflow: hidden; margin-top: 2px; }
+    .bar > span { display: block; height: 100%; background: var(--accent); }
+    dl.facts { margin: 6px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; font-size: .88rem; }
+    dl.facts dt { color: var(--muted); }
+    dl.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+    button { font: inherit; padding: 8px 12px; margin: 0 6px 6px 0; border: 1px solid var(--accent); background: #fff; color: var(--accent); border-radius: 6px; cursor: pointer; }
     button:disabled { opacity: .5; cursor: default; }
     textarea { width: 100%; min-height: 160px; font: 12px/1.5 monospace; }
     .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+    .tabs button { margin: 0; }
     .tabs button[aria-selected="true"] { background: var(--accent); color: #fff; }
     section[hidden] { display: none; }
     details { margin: 4px 0; }
+    summary { cursor: pointer; }
     ul { margin: 4px 0; padding-left: 1.2em; }
-  </style>
+</style>
 </head>
 <body>
   <h1>名古屋野球ユニ部アンケート｜Admin</h1>
   <p class="note">read-only の集計画面です。回答の編集・削除はできません。個票は表示しません。自由記述は「自由記述（運営者のみ）」タブでのみ読み込みます。</p>
   <div class="tabs" role="tablist">
-    <button type="button" role="tab" data-tab="summary" aria-selected="true">集計・公開条件</button>
+    <button type="button" role="tab" data-tab="results" aria-selected="true">集計結果</button>
+    <button type="button" role="tab" data-tab="publication" aria-selected="false">公開判定</button>
     <button type="button" role="tab" data-tab="semantic" aria-selected="false">障壁と安心条件</button>
     <button type="button" role="tab" data-tab="snapshot" aria-selected="false">snapshot</button>
     <button type="button" role="tab" data-tab="freetext" aria-selected="false">自由記述（運営者のみ）</button>
   </div>
   <p id="status" class="note" role="status"></p>
+  <div class="card" id="totals"></div>
 
-  <section id="tab-summary">
-    <div class="card" id="totals"></div>
-    <h2>設問別の targetCount と公開条件</h2>
+  <section id="tab-results">
+    <p class="note">運営者向けの内部集計です。公開条件に届いていない設問も件数・割合を表示します（一般公開の可否とは別です）。割合は「その設問に回答した人」を分母にしています。</p>
+    <div id="results"></div>
+  </section>
+
+  <section id="tab-publication" hidden>
     <p class="note">targetCount は設問に到達した有効回答者数（question_reached）です。公開は question.publication の minTotal / minTarget / minCell だけで判定します。</p>
-    <div class="card"><table id="questions"></table></div>
+    <div id="publication"></div>
     <h2>公開プレビュー（抑止後。これが公開結果に出る内容です）</h2>
     <div id="preview"></div>
   </section>
 
   <section id="tab-semantic" hidden>
     <p class="note">semantic code ごとに回答者単位で数えます（同じ回答者が同じ code に複数 option から該当しても 1 人）。自由記述の自動分類はしません。Admin 専用で、公開結果には出ません。</p>
-    <div class="card"><table id="semantic"></table></div>
+    <div id="semantic"></div>
   </section>
 
   <section id="tab-snapshot" hidden>
@@ -79,14 +98,6 @@
       var lastSnapshot = null;
       function $(id) { return document.getElementById(id); }
       function el(tag, text, cls) { var e = document.createElement(tag); if (text !== undefined) e.textContent = String(text); if (cls) e.className = cls; return e; }
-      function row(parent, cells, header) {
-        var tr = el('tr');
-        cells.forEach(function (c) {
-          var td = el(header ? 'th' : 'td', c.text === undefined ? c : c.text, c.cls);
-          tr.appendChild(td);
-        });
-        parent.appendChild(tr);
-      }
       function setStatus(text, bad) { var s = $('status'); s.textContent = text || ''; s.className = bad ? 'note err' : 'note'; }
       var ERROR_TEXT = {
         header_mismatch: 'responses シートの1行目ヘッダーが現行 schema と一致しません（列数・列名・順序）。',
@@ -137,47 +148,127 @@
         }
       }
 
+      var PUBLIC_SHORT = { published: '可', insufficient: '未達', sensitive_withheld: '未達', suppressed_all: '未達' };
       var STATE_LABEL = { published: '公開可', insufficient: '非公開（回答数不足）', sensitive_withheld: '非公開（sensitive・達するまで正常）', suppressed_all: '非公開（少数セルのみ）' };
 
       document.querySelectorAll('[data-tab]').forEach(function (b) {
         b.addEventListener('click', function () {
           document.querySelectorAll('[data-tab]').forEach(function (o) { o.setAttribute('aria-selected', o === b ? 'true' : 'false'); });
-          ['summary', 'semantic', 'snapshot', 'freetext'].forEach(function (t) { $('tab-' + t).hidden = (t !== b.getAttribute('data-tab')); });
+          ['results', 'publication', 'semantic', 'snapshot', 'freetext'].forEach(function (t) { $('tab-' + t).hidden = (t !== b.getAttribute('data-tab')); });
         });
       });
 
-      function renderSummary(s) {
+      function pct(count, base) { return base > 0 ? Math.round(count * 100 / base) : 0; }
+      function fact(dl, name, value) { dl.appendChild(el('dt', name)); dl.appendChild(el('dd', value)); }
+
+      function renderTotals(s) {
         var totals = $('totals');
         totals.textContent = '';
-        totals.appendChild(el('p', 'production 有効回答: ' + s.production_valid_total + ' 件'));
+        var k = el('dl', undefined, 'kpis');
+        [['production 有効回答', s.production_valid_total + ' 件'], ['test 回答', s.test_excluded + ' 件'],
+         ['除外', Object.keys(s.excluded).reduce(function (n, key) { return n + (s.excluded[key] || 0); }, 0) + ' 件']].forEach(function (p) {
+          var d = el('div', undefined, 'kpi'); d.appendChild(el('dt', p[0])); d.appendChild(el('dd', p[1])); k.appendChild(d);
+        });
         if (s.legacy_date_serial_accepted > 0) {
-          totals.appendChild(el('p', 'legacy_date_serial_accepted: ' + s.legacy_date_serial_accepted + ' 件（survey_version が Sheets により月初の日付シリアル値へ自動変換された既存行。互換認識して有効回答に含めています。セル値は変更していません）', 'note'));
+          var d = el('div', undefined, 'kpi'); d.appendChild(el('dt', 'version 互換認識')); d.appendChild(el('dd', s.legacy_date_serial_accepted + ' 件')); k.appendChild(d);
         }
-        totals.appendChild(el('p', 'test 回答（通常集計から除外）: ' + s.test_excluded + ' 件 ／ 全行数: ' + s.rows));
-        var ex = Object.keys(s.excluded).filter(function (k) { return s.excluded[k] > 0; }).map(function (k) { return k + ': ' + s.excluded[k]; });
-        totals.appendChild(el('p', '除外（production だが有効でないもの）: ' + (ex.length ? ex.join(' / ') : 'なし')));
+        totals.appendChild(k);
+        totals.appendChild(el('p', 'snapshot: ' + (s.snapshotDecision.update ? '更新可' : '更新不要') + '（' + s.snapshotDecision.reason + '、増分 ' + s.snapshotDecision.increment + '）', 'note'));
+
+        var det = el('details');
+        det.appendChild(el('summary', '診断の詳細'));
+        det.appendChild(el('p', '全行数: ' + s.rows + ' 行 ／ test 回答は通常集計から除外'));
+        var ex = Object.keys(s.excluded).filter(function (key) { return s.excluded[key] > 0; }).map(function (key) { return key + ': ' + s.excluded[key]; });
+        det.appendChild(el('p', '除外（production だが有効でないもの）: ' + (ex.length ? ex.join(' / ') : 'なし')));
+        if (s.legacy_date_serial_accepted > 0) {
+          det.appendChild(el('p', 'legacy_date_serial_accepted: ' + s.legacy_date_serial_accepted + ' 件（survey_version が Sheets により月初の日付シリアル値へ自動変換された既存行。互換認識して有効回答に含めています。セル値は変更していません）', 'note'));
+        }
         if (s.excluded.version_mismatch > 0) {
           var vf = s.version_mismatch_fields || {};
-          totals.appendChild(el('p', 'version_mismatch の内訳: survey_version ' + (vf.survey_version || 0) + ' / schema_version ' + (vf.schema_version || 0) + ' / design_version ' + (vf.design_version || 0) + '（1 行が複数 field で不一致なら重複して数えます）', 'note'));
+          det.appendChild(el('p', 'version_mismatch の内訳: survey_version ' + (vf.survey_version || 0) + ' / schema_version ' + (vf.schema_version || 0) + ' / design_version ' + (vf.design_version || 0) + '（1 行が複数 field で不一致なら重複して数えます）', 'note'));
           var diag = el('p', 'version 診断を読み込み中…', 'note');
           diag.id = 'versionDiag';
-          totals.appendChild(diag);
+          det.appendChild(diag);
           google.script.run.withSuccessHandler(function (d) { diag.textContent = versionDiagText(d); }).withFailureHandler(function () { diag.textContent = 'version 診断を読み込めませんでした。'; }).getVersionDiagnostics();
         }
-        totals.appendChild(el('p', 'snapshot 更新判定: ' + (s.snapshotDecision.update ? '更新可' : '更新不要') + '（' + s.snapshotDecision.reason + '、増分 ' + s.snapshotDecision.increment + '）'));
+        totals.appendChild(det);
+      }
 
-        var table = $('questions');
-        table.textContent = '';
-        row(table, ['設問', 'tier', 'targetCount', 'minTotal', 'minTarget', 'minCell', '総数', '対象数', '公開状態'], true);
+      /* 設問ごとの縦カード。件数・割合が主役で、公開判定は 1 行の補助表示、詳細は折りたたみ。 */
+      function renderResults(s) {
+        var box = $('results');
+        box.textContent = '';
+        s.questions.concat(s.internalQuestions || []).forEach(function (q) {
+          var internal = q.publicState === 'not_public';
+          var card = el('div', undefined, 'card');
+          var base = q.answeredCount;
+          card.appendChild(el('h3', q.label));
+          var meta = el('div', undefined, 'meta');
+          meta.appendChild(el('span', '回答 ' + base + ' 件'));
+          meta.appendChild(el('span', '対象 ' + q.targetCount));
+          meta.appendChild(internal ? el('span', '一般公開: 対象外') : el('span', '一般公開: ' + PUBLIC_SHORT[q.publicState], q.publicState === 'published' ? 'ok' : 'ng'));
+          card.appendChild(meta);
+          q.tally.forEach(function (c) {
+            var p = pct(c.count, base);
+            var o = el('div', undefined, 'opt');
+            var head = el('div', undefined, 'opt-head');
+            head.appendChild(el('span', c.label, 'opt-label'));
+            head.appendChild(el('span', c.count + '件 ' + p + '%', 'opt-num'));
+            o.appendChild(head);
+            var bar = el('div', undefined, 'bar');
+            var fill = el('span');
+            fill.style.width = Math.min(100, p) + '%';
+            bar.appendChild(fill);
+            o.appendChild(bar);
+            card.appendChild(o);
+          });
+          if (q.type === 'multiple') card.appendChild(el('p', '複数選択のため合計100%にはなりません（割合は回答者数が分母）。', 'note'));
+          if (internal) {
+            var d = el('details');
+            d.appendChild(el('summary', '詳細'));
+            var dl = el('dl', undefined, 'facts');
+            fact(dl, '公開', '対象外（Admin 内部集計のみ）');
+            fact(dl, 'question_id', q.id);
+            d.appendChild(dl);
+            card.appendChild(d);
+          } else {
+            card.appendChild(publicationDetails(q));
+          }
+          box.appendChild(card);
+        });
+      }
+
+      /* 公開条件の詳細（question_id・tier・閾値）。主表示には出さず details の中に置く。 */
+      function publicationFacts(q, dl) {
+        var t = q.thresholds || {};
+        fact(dl, '公開状態', STATE_LABEL[q.publicState] || q.publicState);
+        fact(dl, '対象数', q.targetCount);
+        fact(dl, 'minTotal', t.minTotal + '（' + (q.totalMet ? '達成' : '未達') + '）');
+        fact(dl, 'minTarget', t.minTarget + '（' + (q.targetMet ? '達成' : '未達') + '）');
+        fact(dl, 'minCell', t.minCell);
+        fact(dl, 'Tier', q.tier + (q.sensitiveBranch ? ' / sensitive' : ''));
+        fact(dl, 'question_id', q.id);
+      }
+      function publicationDetails(q) {
+        var d = el('details');
+        d.appendChild(el('summary', '公開条件の詳細'));
+        var dl = el('dl', undefined, 'facts');
+        publicationFacts(q, dl);
+        d.appendChild(dl);
+        return d;
+      }
+
+      /* 公開判定専用ビュー。横長 table は使わず、設問ごとの definition list カードにする。 */
+      function renderPublication(s) {
+        var box = $('publication');
+        box.textContent = '';
         s.questions.forEach(function (q) {
-          var t = q.thresholds || {};
-          row(table, [
-            q.label + ' [' + q.id + ']', q.tier + (q.sensitiveBranch ? ' / sensitive' : ''),
-            { text: q.targetCount, cls: 'n' }, { text: t.minTotal, cls: 'n' }, { text: t.minTarget, cls: 'n' }, { text: t.minCell, cls: 'n' },
-            { text: q.totalMet ? '達成' : '未達', cls: q.totalMet ? 'ok' : 'ng' },
-            { text: q.targetMet ? '達成' : '未達', cls: q.targetMet ? 'ok' : 'ng' },
-            { text: STATE_LABEL[q.publicState] || q.publicState, cls: q.publicState === 'published' ? 'ok' : 'ng' }
-          ], false);
+          var card = el('div', undefined, 'card');
+          card.appendChild(el('h3', q.label));
+          var dl = el('dl', undefined, 'facts');
+          publicationFacts(q, dl);
+          card.appendChild(dl);
+          box.appendChild(card);
         });
 
         var preview = $('preview');
@@ -193,21 +284,38 @@
           }
           preview.appendChild(d);
         });
+      }
 
-        var sem = $('semantic');
-        sem.textContent = '';
-        var cols = s.semantic.sources.map(function (x) { return x.questionId + (x.role === 'barrier' ? '（障壁）' : '（安心条件）'); });
-        row(sem, ['code'].concat(cols, ['安心条件の定義']), true);
+      /* 障壁と安心条件：code ごとのカード。設問は内部 ID ではなく設問名で表示する。 */
+      function renderSemantic(s) {
+        var box = $('semantic');
+        box.textContent = '';
+        var labelOf = {};
+        s.questions.forEach(function (q) { labelOf[q.id] = q.label; });
         s.semantic.comparison.forEach(function (c) {
-          var cells = [c.label + ' [' + c.code + ']'];
+          var card = el('div', undefined, 'card');
+          card.appendChild(el('h3', c.label));
+          var dl = el('dl', undefined, 'facts');
           s.semantic.sources.forEach(function (x) {
             var map = x.role === 'barrier' ? c.barrier : c.reassurance;
-            var n = Object.prototype.hasOwnProperty.call(map, x.questionId) ? map[x.questionId] : '';
-            cells.push({ text: n === '' ? '' : n + ' / ' + x.targetCount, cls: 'n' });
+            if (!Object.prototype.hasOwnProperty.call(map, x.questionId)) return;
+            fact(dl, (labelOf[x.questionId] || '設問') + (x.role === 'barrier' ? '（障壁）' : '（安心条件）'), map[x.questionId] + ' / ' + x.targetCount);
           });
-          cells.push(c.reassuranceDefined ? 'あり' : 'なし');
-          row(sem, cells, false);
+          fact(dl, '安心条件の定義', c.reassuranceDefined ? 'あり' : 'なし');
+          card.appendChild(dl);
+          var det = el('details');
+          det.appendChild(el('summary', '詳細'));
+          det.appendChild(el('p', 'code: ' + c.code, 'note'));
+          card.appendChild(det);
+          box.appendChild(card);
         });
+      }
+
+      function renderSummary(s) {
+        renderTotals(s);
+        renderResults(s);
+        renderPublication(s);
+        renderSemantic(s);
       }
 
       setStatus('読み込み中…');
@@ -253,7 +361,7 @@
         google.script.run.withSuccessHandler(function (items) {
           var ul = $('texts');
           ul.textContent = '';
-          items.forEach(function (i) { ul.appendChild(el('li', '[' + i.questionId + '] ' + i.text)); });
+          items.forEach(function (i) { ul.appendChild(el('li', i.label + '：' + i.text)); });
           if (!items.length) ul.appendChild(el('li', '自由記述はありません。'));
         }).withFailureHandler(fail).getFreeText();
       });
