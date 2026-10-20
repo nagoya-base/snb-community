@@ -3,6 +3,7 @@
 親Issue #377 / 本ディレクトリの範囲は Issue #378（schema 正本の配置・参照整合 validation・CI）、Issue #379（専用 survey-core の fork と v2.17 構文対応）、Issue #380（Public GAS・保存・匿名重複抑止・server validation・test mode・受付期間・通知・deploy workflow）です。
 Issue #381 で回答 Frontend（`baseball/baseball-uniform-survey.html` と `baseball/baseball-uniform-survey/`）・route 進捗 UX・test UI・GA4 最小計測・analytics.js の section_view opt-out を追加しました（下記「Frontend」）。
 Issue #382 で Admin 集計・publication 判定・small-cell / complementary suppression・privacy-safe snapshot・公開結果ページを追加しました（下記「Admin と公開結果」）。
+Issue #425 で公開結果 snapshot の自動化（Public GAS の `action=results`）を追加しました（下記「snapshot の batch 更新」）。
 Issue #383 で maintenance GAS（retention・close 後 finalize・final snapshot 固定・cleanup）を追加しました（下記「maintenance・retention・finalize・cleanup」）。
 
 ## 正本
@@ -373,13 +374,21 @@ version の比較は保存仕様（文字列）に合わせた厳密比較です
 
 ### snapshot の batch 更新（submit ごとに更新しない）
 
-公開結果ページは Spreadsheet も Public GAS も読まず、`baseball/baseball-uniform-survey-results/snapshot.json` だけを読みます。**回答の送信では何も更新されません**（Public GAS は変更していません）。公開手順:
+Issue #425 以降、公開結果ページは **Public GAS の読み取り専用 endpoint** `GET /exec?action=results` から privacy-safe snapshot を取得します。手作業で `snapshot.json` をコピー・commit する必要はなく、GitHub / GitHub Actions に Sheets の資格情報や raw responses を渡しません。
 
-1. Admin の「snapshot」タブで「snapshot を生成」。更新判定（`decideSnapshotUpdate`）が「更新してよい」のときだけ進める。
-2. 生成された JSON を `baseball/baseball-uniform-survey-results/snapshot.json` として PR で commit する（cache が切り替わるのはこのときだけ）。
-3. 公開後に「公開した snapshot として記録」を押す（`SNAPSHOT_STATE` に生成時刻と件数を記録）。
+| 項目 | 内容 |
+|---|---|
+| endpoint | `GET ?action=results` → `{ok:true, snapshot}`。`SurveyAggregate.buildSnapshot` + `validateSnapshot` を通過した snapshot だけを返す（回答本文・自由記述・hash・timestamp・source_channel・test_run_id・notification_status・詳細居住地は含まない）。query で回答内容・locale は受け付けない。`action=status` / 回答送信は従来どおり |
+| 永続化 | 同じ Spreadsheet の専用 `public_snapshot` シート（`responses` とは別。Public GAS だけが書く）。A1 にメタデータ、B列/C列に 2 つの slot（40,000 文字ごとの chunk。先頭 `c:`）。meta は最後に書くので、保存途中で失敗しても直前の snapshot は壊れない。読み戻し時に meta・chunk 数・文字数・SHA-256・schema/survey/design version・`validateSnapshot` を照合し、1 つでも合わなければ「無い」ものとして扱う（`src/snapshot-store.js`） |
+| 更新判定 | 既存の `SurveyAggregate.decideSnapshotUpdate`（`publicationPolicy.snapshotUpdate`）が唯一の判定。増分が `minimumIncrement`（`minCell` 以上）未満なら更新しない。1 日経過、または増分が `countTriggerIncrement` 以上のときだけ更新。`perResponseUpdate:false` |
+| 更新の契機 | production 回答の保存後、および `action=results` の取得時。どちらも判定を通ったときだけ書く（毎回は書かない）。ScriptLock で直列化し、失敗しても回答保存・結果取得の成否には影響しない |
+| fail closed | 新しい snapshot が `validateSnapshot` に通らない・保存の読み戻しが合わないときは **last-known-good を維持**。store が空/読めないときは、現在の production valid 回答から initial snapshot を 1 回生成（それも検証必須）。生成できなければ endpoint は `server_error` を返し、結果ページは同梱 `snapshot.json` へ fallback |
+| 結果ページ | まず `action=results`（endpoint は回答ページと共有する `config.js`）。取得失敗・不正な形・private key 混入は同梱 `snapshot.json` へ fallback（障害時用に残す） |
+| Admin | snapshot タブの「公開中 snapshot の状態」で、Public GAS が保持する snapshot の `generated_at`・公開仕様上の `production_valid_total`・最終更新理由・次回更新の条件と現在の増分・手動 preview との差を表示（`spreadsheets.readonly` のまま） |
 
-更新判定は `publicationPolicy.snapshotUpdate` に従い、原則 1 日 1 回、または件数増分が `countTriggerIncrement` 以上のとき。どちらも増分が `minCell`（および `minimumBatchIncrement`）以上でなければ更新しません（連続する snapshot の差分から少数の回答が推測されるのを防ぐため）。時刻トリガーによる自動更新・自動 commit は今回は作っていません。
+`Admin` の「snapshot を生成」は手動 preview です（同梱 `snapshot.json` を更新したい非常用）。公開 snapshot の更新判定の基準は Public GAS の store を優先し、無ければ従来の `SNAPSHOT_STATE` を使います。
+
+デプロイ/移行: PR merge → Public GAS 通常 deploy → GitHub Pages 通常 deploy → `GET /exec?action=results` で初期 snapshot を確認 → 結果ページが dynamic snapshot を取得できることを確認。初回の取得時に store が空なら、現在の production valid 回答から snapshot が 1 回だけ生成されます。
 
 ### 公開結果ページ
 

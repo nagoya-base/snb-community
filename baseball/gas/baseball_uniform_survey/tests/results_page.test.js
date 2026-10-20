@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const { JSDOM, VirtualConsole } = require('jsdom');
-const { schema, core, aggregate, clone, validFrom, snapshotOf, entryOf } = require('./helpers/fixtures');
+const { schema, core, aggregate, clone, validFrom, snapshotOf, entryOf, NOW } = require('./helpers/fixtures');
 const { renderInitial, SNAPSHOT_PATH } = require('../tools/build-initial-snapshot');
 const { openResults } = require('./helpers/results');
 
@@ -17,6 +17,7 @@ const resultsJs = read('baseball/baseball-uniform-survey-results/results.js');
 const INTERESTED = { club_awareness: 'aware_not_attended', catchball_interest: 'very_interested' };
 const ATTENDEE = { club_awareness: 'attended', last_attended: 'within_3m' };
 
+const NOW_ISO = NOW;
 const ten = () => validFrom([{ count: 10 }]);
 const rich = () => validFrom([
   { count: 25, overrides: Object.assign({}, ATTENDEE, { overall_satisfaction: '5' }) },
@@ -28,7 +29,9 @@ test('結果ページは snapshot.json だけを読み、Spreadsheet・Public GA
   assert.deepEqual(env.calls, ['baseball-uniform-survey-results/snapshot.json']);
   assert.deepEqual(env.errors, []);
   const html = read(PAGE);
-  assert.ok(!/script\.google\.com|googleusercontent|docs\.google\.com|config\.js|survey\.generated\.js|app\.js/.test(html + resultsJs));
+  // Public GAS の endpoint は回答ページと共有する config.js からだけ読む（URL を結果ページへベタ書きしない）。
+  assert.ok(!/script\.google\.com|googleusercontent|docs\.google\.com|survey\.generated\.js|app\.js/.test(html + resultsJs));
+  assert.ok(!/config\.js/.test(resultsJs));
   assert.ok(!/POST|XMLHttpRequest|sendBeacon|localStorage|sessionStorage|document\.cookie|innerHTML|insertAdjacentHTML|eval\(/.test(resultsJs.replace(/\/\*[\s\S]*?\*\//g, '')), 'DOM は textContent だけで書く');
 });
 
@@ -218,4 +221,76 @@ test('アンケート回答ページ：「結果を見る」セカンダリーCT
   const resultsCss = read('baseball/baseball-uniform-survey-results/results.css');
   assert.match(resultsCss, /\.bur-answer-cta\s*\{[^}]*max-width:\s*100%[^}]*background:\s*var\(--bur-accent\)/);
   assert.match(resultsCss, /\.bur-hero-image img\s*\{[^}]*width:\s*100%;\s*height:\s*auto/);
+});
+
+// ── dynamic snapshot（Issue #425）：Public GAS の action=results → 失敗時は bundled snapshot.json ──
+
+const ENDPOINT = 'https://script.example.test/macros/s/AKfake/exec';
+const respond = (body, ok = true) => Promise.resolve({ ok, json: () => Promise.resolve(JSON.parse(JSON.stringify(body))) });
+/** URL ごとに応答を切り替える fetch。 */
+const routes = (map) => (url) => {
+  const key = String(url).startsWith(ENDPOINT) ? 'dynamic' : 'bundled';
+  const handler = map[key];
+  return typeof handler === 'function' ? handler(url) : handler;
+};
+const titles = (env) => Array.from(env.document.querySelectorAll('h3')).map((h) => h.textContent);
+
+test('dynamic snapshot：まず Public GAS の action=results を取得して表示する。locale・回答内容は送らない', async () => {
+  const dynamic = snapshotOf(rich());
+  const bundled = renderInitial(NOW_ISO);
+  const env = await openResults(null, routes({ dynamic: () => respond({ ok: true, snapshot: dynamic }), bundled: () => respond(JSON.parse(bundled)) }), { endpoint: ENDPOINT, languages: ['en-US'] });
+  assert.deepEqual(env.calls, [ENDPOINT + '?action=results']);
+  assert.ok(titles(env).length > 0, 'dynamic の公開設問が表示される');
+  assert.ok(!env.calls.some((c) => /locale|lang|answers|uuid/i.test(c)));
+  assert.deepEqual(env.errors, []);
+});
+
+test('dynamic の取得失敗（HTTP エラー・ネットワーク・不正 JSON・ok:false・形が違う）は bundled snapshot.json へ fallback し、既存 UI を壊さない', async () => {
+  const bundled = snapshotOf(rich());
+  const cases = {
+    http_error: () => respond({}, false),
+    network: () => Promise.reject(new Error('offline')),
+    server_error: () => respond({ ok: false, error: 'server_error' }),
+    not_object: () => respond('oops'),
+    wrong_shape: () => respond({ ok: true, snapshot: { questions: 'x' } }),
+    missing_snapshot: () => respond({ ok: true })
+  };
+  for (const [name, dynamic] of Object.entries(cases)) {
+    const env = await openResults(null, routes({ dynamic, bundled: () => respond(bundled) }), { endpoint: ENDPOINT });
+    assert.deepEqual(env.calls, [ENDPOINT + '?action=results', 'baseball-uniform-survey-results/snapshot.json'], name);
+    const expected = bundled.questions.filter((q) => q.state === 'published').map((q) => q.label);
+    assert.deepEqual(titles(env), expected, name);
+    assert.equal(env.document.querySelector('.bur-error'), null, name);
+  }
+});
+
+test('dynamic に private field が混入していたら採用せず bundled へ fallback する（fail-closed）', async () => {
+  const leaked = snapshotOf(rich());
+  leaked.questions[0].respondent_hash = 'a'.repeat(64);
+  const bundled = snapshotOf(rich());
+  const env = await openResults(null, routes({ dynamic: () => respond({ ok: true, snapshot: leaked }), bundled: () => respond(bundled) }), { endpoint: ENDPOINT });
+  assert.deepEqual(env.calls, [ENDPOINT + '?action=results', 'baseball-uniform-survey-results/snapshot.json']);
+  assert.ok(!env.text().includes('a'.repeat(64)));
+});
+
+test('dynamic も bundled も失敗したときは従来どおりエラー文言を出す（壊れた表示にしない）', async () => {
+  const env = await openResults(null, routes({ dynamic: () => Promise.reject(new Error('x')), bundled: () => respond({}, false) }), { endpoint: ENDPOINT });
+  assert.ok(env.document.querySelector('.bur-error'));
+});
+
+test('endpoint 未設定なら dynamic を試さず bundled だけを読む（従来動作）', async () => {
+  const env = await openResults(snapshotOf(rich()));
+  assert.deepEqual(env.calls, ['baseball-uniform-survey-results/snapshot.json']);
+});
+
+test('dynamic snapshot でも 5 言語の表示切替が動き、snapshot の値は言語で変わらない', async () => {
+  const dynamic = snapshotOf(rich());
+  for (const [lang, h1] of [['ja-JP', 'アンケート結果'], ['en-US', null], ['ko-KR', null], ['zh-CN', null], ['zh-TW', null]]) {
+    const env = await openResults(null, routes({ dynamic: () => respond({ ok: true, snapshot: dynamic }), bundled: () => respond({}, false) }), { endpoint: ENDPOINT, languages: [lang] });
+    assert.deepEqual(env.calls, [ENDPOINT + '?action=results'], lang);
+    assert.equal(env.document.querySelector('.bur-error'), null, lang);
+    const counts = Array.from(env.document.querySelectorAll('.bur-cell-count')).map((n) => n.textContent.replace(/\D+/g, ' ').trim());
+    assert.ok(counts.length > 0, lang);
+    if (h1) assert.ok(env.text().includes(h1));
+  }
 });

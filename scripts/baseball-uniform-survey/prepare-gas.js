@@ -16,7 +16,7 @@ const OWNER_ONLY_WEBAPP = { executeAs: 'USER_DEPLOYING', access: 'MYSELF' };
 const TARGETS = {
   public: {
     dir: BASE + '/public',
-    files: ['Config.gs', 'Log.gs', 'Main.gs', 'Notify.gs', 'Respondent.gs', 'SheetStore.gs', 'Setup.gs', 'Submission.gs', 'SurveyGenerated.gs', 'Validation.gs'],
+    files: ['Config.gs', 'Log.gs', 'Main.gs', 'Notify.gs', 'Respondent.gs', 'SheetStore.gs', 'PublicSnapshot.gs', 'Setup.gs', 'Submission.gs', 'SurveyGenerated.gs', 'Validation.gs'],
     // 承認が必要な権限。これ以外（外部通信・Drive等）は追加させない。
     requiredScopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/script.send_mail'],
     // Public の webapp はリモート（初回手動 deploy）の値を残し、CI では変更しない。
