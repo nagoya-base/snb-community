@@ -1,12 +1,14 @@
-name: Baseball uniform survey Admin/maintenance GAS bootstrap
+name: Baseball uniform survey Public/Admin/maintenance GAS bootstrap
 
-# Issue #390：Admin / maintenance GAS の「初回 bootstrap push」専用 workflow（通常の deployment 更新 workflow とは分離）。
+# Issue #390：Public / Admin / maintenance GAS の「初回 bootstrap push」専用 workflow（通常の deployment 更新 workflow とは分離）。
 #  - 手動 workflow_dispatch（main 限定）のみ。push / schedule では動かない。
 #  - Script ID は target 専用の bootstrap Environment Secret から取得する（Deployment ID・通常 deploy 用 Secret は参照しない）。
 #  - 行うのは target 別 allowlist のファイルの clasp push だけ。version / 新規 deployment の作成・既存 deployment の更新・
 #    Web App のアクセス設定変更・Script Properties の設定は行わない。
+#  - Public も同じ安全設計（専用 Environment・専用 bootstrap Script ID・空の初期 project のみ）。Public の最初の Web App deployment・
+#    OAuth 承認・Script Properties は引き続き手動（この workflow は行わない）。
 #  - 空の初期 project（placeholder のみ・versioned deployment なし）にしか push しない。bootstrap 成功後は通常の deploy workflow
-#    （baseball-uniform-survey-{admin,maintenance}-gas.yml）へ移行し、この workflow は再実行しない（再実行しても拒否される）。
+#    （baseball-uniform-survey-{public,admin,maintenance}-gas.yml）へ移行し、この workflow は再実行しない（再実行しても拒否される）。
 #  - Pull request: テスト・生成物の差分検査・bundle の dry-run のみ（secret も GAS 接続も使わない）。auto-merge はしない。
 
 on:
@@ -23,6 +25,7 @@ on:
         required: true
         type: choice
         options:
+          - public
           - admin
           - maintenance
       confirm_first_bootstrap:
@@ -45,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [admin, maintenance]
+        target: [public, admin, maintenance]
     steps:
       - name: Require dispatch from the main branch (fail closed)
         if: github.event_name == 'workflow_dispatch'
@@ -86,11 +89,12 @@ jobs:
           # 空の初期 project（placeholder の Code.gs と最小 manifest）を模したリモート。
           printf 'function myFunction() {\n}\n' > "$root/remote/Code.gs"
           printf '{"timeZone":"Asia/Tokyo","exceptionLogging":"STACKDRIVER","runtimeVersion":"V8"}\n' > "$root/remote/appsscript.json"
-          if [[ "$TARGET" == 'admin' ]]; then
-            BASEBALL_UNIFORM_SURVEY_ADMIN_BOOTSTRAP_SCRIPT_ID='dry-run-only' node scripts/baseball-uniform-survey/prepare-gas.js stage-bootstrap "$TARGET" "$GITHUB_WORKSPACE" "$root/out" "$root/remote"
-          else
-            BASEBALL_UNIFORM_SURVEY_MAINTENANCE_BOOTSTRAP_SCRIPT_ID='dry-run-only' node scripts/baseball-uniform-survey/prepare-gas.js stage-bootstrap "$TARGET" "$GITHUB_WORKSPACE" "$root/out" "$root/remote"
-          fi
+          case "$TARGET" in
+            public)      BASEBALL_UNIFORM_SURVEY_PUBLIC_BOOTSTRAP_SCRIPT_ID='dry-run-only' node scripts/baseball-uniform-survey/prepare-gas.js stage-bootstrap "$TARGET" "$GITHUB_WORKSPACE" "$root/out" "$root/remote" ;;
+            admin)       BASEBALL_UNIFORM_SURVEY_ADMIN_BOOTSTRAP_SCRIPT_ID='dry-run-only' node scripts/baseball-uniform-survey/prepare-gas.js stage-bootstrap "$TARGET" "$GITHUB_WORKSPACE" "$root/out" "$root/remote" ;;
+            maintenance) BASEBALL_UNIFORM_SURVEY_MAINTENANCE_BOOTSTRAP_SCRIPT_ID='dry-run-only' node scripts/baseball-uniform-survey/prepare-gas.js stage-bootstrap "$TARGET" "$GITHUB_WORKSPACE" "$root/out" "$root/remote" ;;
+            *) echo 'Unknown target.' >&2; exit 1 ;;
+          esac
           BUNDLE="$root/out" TARGET="$TARGET" node <<'NODE'
           const fs = require('fs');
           const path = require('path');
@@ -106,11 +110,52 @@ jobs:
           if (JSON.stringify([...manifest.oauthScopes].sort()) !== JSON.stringify([...target.requiredScopes].sort())) {
             throw new Error('Unexpected OAuth scopes.');
           }
-          if (!manifest.webapp || manifest.webapp.access !== OWNER_ONLY_WEBAPP.access || manifest.webapp.executeAs !== OWNER_ONLY_WEBAPP.executeAs) {
-            throw new Error('The Web App must be access MYSELF and executeAs USER_DEPLOYING.');
+          if (target.ownerOnly) {
+            if (!manifest.webapp || manifest.webapp.access !== OWNER_ONLY_WEBAPP.access || manifest.webapp.executeAs !== OWNER_ONLY_WEBAPP.executeAs) {
+              throw new Error('The Web App must be access MYSELF and executeAs USER_DEPLOYING.');
+            }
+          } else if (manifest.webapp !== undefined) {
+            throw new Error('The public manifest must not define Web App settings.');
           }
           console.log('Dry-run bootstrap bundle contains only the approved ' + process.env.TARGET + ' GAS files.');
           NODE
+
+  bootstrap-public:
+    name: Bootstrap push to the empty public GAS project
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'public'
+    needs: verify
+    runs-on: ubuntu-latest
+    # Public 専用の bootstrap Environment（main 限定・承認者あり）。通常 deploy 用の Environment とは別。
+    environment: baseball-uniform-survey-public-bootstrap
+    env:
+      CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+      BASEBALL_UNIFORM_SURVEY_TARGET: public
+      BASEBALL_UNIFORM_SURVEY_PUBLIC_BOOTSTRAP_SCRIPT_ID: ${{ secrets.BASEBALL_UNIFORM_SURVEY_PUBLIC_BOOTSTRAP_SCRIPT_ID }}
+      BOOTSTRAP_CONFIRMED: ${{ inputs.confirm_first_bootstrap && 'true' || 'false' }}
+    steps:
+      - name: Require the first-bootstrap confirmation (fail closed)
+        run: |
+          if [[ "$BOOTSTRAP_CONFIRMED" != 'true' ]]; then
+            echo 'Set confirm_first_bootstrap only for the first bootstrap of an empty public GAS project. Nothing was changed.' >&2
+            exit 1
+          fi
+      - name: Check out the pinned main HEAD (github.sha)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned clasp (npm ci, lockfile only)
+        working-directory: scripts/baseball-uniform-survey
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Put the pinned clasp on PATH
+        run: echo "$GITHUB_WORKSPACE/scripts/baseball-uniform-survey/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Push the allowlisted files only (no version, no deployment)
+        shell: bash
+        run: bash scripts/baseball-uniform-survey/bootstrap-gas.sh
 
   bootstrap-admin:
     name: Bootstrap push to the empty admin GAS project
