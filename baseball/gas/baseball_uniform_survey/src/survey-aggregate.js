@@ -958,15 +958,35 @@ var SurveyAggregate = (function (core) {
       return {
         id: entry.id,
         label: entry.label,
+        type: entry.kind === 'region' ? 'region' : entry.question.type,
         tier: entry.publication.tier,
         sensitiveBranch: entry.publication.sensitiveBranch === true,
         denominator: entry.kind === 'region' ? (schema.publicRegionAggregation.denominator || 'question_reached') : (core.denominatorOf(schema, entry.id) || 'question_reached'),
         targetCount: table.targetCount,
+        answeredCount: table.answeredCount,
         thresholds: t,
         totalMet: evaluation.totalMet,
         targetMet: evaluation.targetMet,
         publicState: publicEntry.state,
         hasSuppressedCells: publicEntry.hasSuppressedCells,
+        /* Admin 内部の exact な集計。公開閾値・suppression とは無関係に常に返す（公開側は publicPreview / buildPublicEntry を通る）。 */
+        tally: table.defs.map(function (d) { return { id: d.id, label: d.label, count: table.counts[d.id] }; })
+      };
+    });
+    /* 公開対象外（publicResultsOrder に無い）の non-text 設問。Admin 内部集計のみ。publication / snapshot には一切渡さない。 */
+    var publicIds = {};
+    publicEntries(schema).forEach(function (entry) { publicIds[entry.id] = true; });
+    var internalQuestions = core.getQuestions(schema).filter(function (q) {
+      return q.type !== 'text' && !hasOwn(publicIds, q.id);
+    }).map(function (q) {
+      var table = tallyQuestion(schema, q, answersList);
+      return {
+        id: q.id,
+        label: q.label,
+        type: q.type,
+        targetCount: table.targetCount,
+        answeredCount: table.answeredCount,
+        publicState: 'not_public',
         tally: table.defs.map(function (d) { return { id: d.id, label: d.label, count: table.counts[d.id] }; })
       };
     });
@@ -983,6 +1003,7 @@ var SurveyAggregate = (function (core) {
       legacy_date_serial_accepted: classification.counts.legacy_date_serial_accepted || 0,
       rows: classification.counts.rows,
       questions: questions,
+      internalQuestions: internalQuestions,
       semantic: analyzeSemanticCodes(schema, valid),
       snapshotDecision: { update: decision.update, reason: decision.reason, increment: decision.increment },
       publicPreview: snapshot
