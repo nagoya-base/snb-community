@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-20",
+  "description": "ポータル専用の公開用データ。運営提供の surveys.json から表示に必要な項目のみ抜粋（内部パス・運営用URL・注記・回答者単位データは含めない）。null は不明を表し、推測で補完しない。",
+  "surveys": [
+    {
+      "id": "snbc_september_project_202609",
+      "title": "9月企画アンケート",
+      "also_known_as": null,
+      "summary": "学校セット撮影会 着たい衣装・参加条件を教えてください",
+      "brand": "SNBコミュニティ",
+      "theme": [
+        "学校セット撮影会",
+        "着たい衣装",
+        "参加条件",
+        "参加可能日",
+        "開催スタイル"
+      ],
+      "target": null,
+      "estimated_minutes": null,
+      "status": "closed",
+      "survey_period": {
+        "start": null,
+        "end": null
+      },
+      "response_count": {
+        "value": null,
+        "state": "unknown"
+      },
+      "question_count": null,
+      "public_url": "https://nagoya-base.github.io/snb-community/community/enquete_202609.html",
+      "results_url": null,
+      "public_results": {
+        "available": false,
+        "final": null
+      },
+      "link_policy": "normal",
+      "portal": {
+        "include": true,
+        "section": "archive",
+        "sort_date": "2026-09-01"
+      }
+    },
+    {
+      "id": "ataru_rope_interest_2026",
+      "title": "緊縛・ロープへの関心アンケート",
+      "also_known_as": null,
+      "summary": null,
+      "brand": "アタル",
+      "theme": [
+        "緊縛・ロープ表現への関心",
+        "体験・役割・不安",
+        "スポーツ・ユニフォーム嗜好",
+        "企画ニーズ"
+      ],
+      "target": "18歳以上・全ジェンダー",
+      "estimated_minutes": null,
+      "status": "closed",
+      "survey_period": {
+        "start": null,
+        "end": "2026-10-05T00:00:00+09:00"
+      },
+      "response_count": {
+        "value": 193,
+        "state": "count"
+      },
+      "question_count": 34,
+      "public_url": null,
+      "results_url": null,
+      "public_results": {
+        "available": true,
+        "final": true
+      },
+      "link_policy": "none",
+      "portal": {
+        "include": true,
+        "section": "archive",
+        "sort_date": "2026-09-18"
+      }
+    },
+    {
+      "id": "snbc_fetish_costume_2026",
+      "title": "衣装・ユニフォーム嗜好アンケート",
+      "also_known_as": "名古屋のフェチ・衣装交流に関するアンケート",
+      "summary": null,
+      "brand": "SNB Community",
+      "theme": [
+        "衣装・ユニフォーム嗜好",
+        "スーツ・コスプレ",
+        "交流への関心",
+        "参加条件",
+        "SNBC認知・参加意向"
+      ],
+      "target": null,
+      "estimated_minutes": null,
+      "status": "closed",
+      "survey_period": {
+        "start": null,
+        "end": "2026-09-30T23:59:59+09:00"
+      },
+      "response_count": {
+        "value": 121,
+        "state": "count"
+      },
+      "question_count": 25,
+      "public_url": "https://nagoya-base.github.io/snb-community/community/fetish-survey.html",
+      "results_url": "https://nagoya-base.github.io/snb-community/community/fetish-survey-results.html",
+      "public_results": {
+        "available": true,
+        "final": true
+      },
+      "link_policy": "normal",
+      "portal": {
+        "include": true,
+        "section": "archive",
+        "sort_date": "2026-09-30"
+      }
+    },
+    {
+      "id": "snbc_costume_portrait_2026",
+      "title": "男性の衣装・ポートレート意識調査",
+      "also_known_as": null,
+      "summary": "ユニ・スーツ・衣装で、撮ってもらいたい？撮りたい？",
+      "brand": "SNBコミュニティ",
+      "theme": [
+        "男性ポートレート",
+        "スポーツユニフォーム",
+        "学生服・学校制服",
+        "スーツ",
+        "作業服",
+        "ラバー・下着",
+        "撮ってもらいたい／撮りたいニーズ",
+        "企画・価格・設備ニーズ"
+      ],
+      "target": "18歳以上",
+      "estimated_minutes": null,
+      "status": "unknown",
+      "survey_period": {
+        "start": null,
+        "end": null
+      },
+      "response_count": {
+        "value": null,
+        "state": "unknown"
+      },
+      "question_count": 30,
+      "public_url": "https://nagoya-base.github.io/snb-community/community/costume-portrait-survey.html",
+      "results_url": "https://nagoya-base.github.io/snb-community/community/costume-portrait-survey-results.html",
+      "public_results": {
+        "available": true,
+        "final": false
+      },
+      "link_policy": "normal",
+      "portal": {
+        "include": true,
+        "section": "current_or_recent",
+        "sort_date": "2026-10-08"
+      }
+    },
+    {
+      "id": "studio_service_feedback_2026",
+      "title": "Studio Nagoya Base サービス改善フィードバック",
+      "also_known_as": null,
+      "summary": null,
+      "brand": "Studio Nagoya Base",
+      "theme": [
+        "スタジオ利用状況",
+        "利用経験・未利用理由",
+        "料金",
+        "設備・アメニティ",
+        "サービス改善",
+        "自由意見"
+      ],
+      "target": "18歳以上",
+      "estimated_minutes": "5〜6分",
+      "status": "unknown",
+      "survey_period": {
+        "start": null,
+        "end": null
+      },
+      "response_count": {
+        "value": null,
+        "state": "unknown"
+      },
+      "question_count": null,
+      "public_url": "https://nagoya-base.github.io/Studio-nagoya-base/survey/",
+      "results_url": null,
+      "public_results": {
+        "available": false,
+        "final": null
+      },
+      "link_policy": "normal",
+      "portal": {
+        "include": true,
+        "section": "current_or_recent",
+        "sort_date": "2026-10-01"
+      }
+    },
+    {
+      "id": "nagoya_baseball_uniform_club_2026",
+      "title": "名古屋野球ユニ部アンケート",
+      "also_known_as": null,
+      "summary": null,
+      "brand": "名古屋野球ユニ部 / SNBC",
+      "theme": [
+        "スポーツユニフォーム嗜好",
+        "スポーツ経験",
+        "名古屋野球ユニ部の認知",
+        "参加意向・障壁",
+        "参加経験者満足度",
+        "開催内容・時間帯・人数",
+        "価格受容",
+        "告知方法",
+        "運動継続・再開モチベーション"
+      ],
+      "target": "18歳以上",
+      "estimated_minutes": "5〜12分",
+      "status": "collecting",
+      "survey_period": {
+        "start": null,
+        "end": null
+      },
+      "response_count": {
+        "value": null,
+        "state": "withheld"
+      },
+      "question_count": 46,
+      "public_url": "https://nagoya-base.github.io/snb-community/baseball/baseball-uniform-survey.html",
+      "results_url": "https://nagoya-base.github.io/snb-community/baseball/baseball-uniform-survey-results.html",
+      "public_results": {
+        "available": true,
+        "final": false
+      },
+      "link_policy": "normal",
+      "portal": {
+        "include": true,
+        "section": "current",
+        "sort_date": "2026-10-20"
+      }
+    }
+  ]
+}
