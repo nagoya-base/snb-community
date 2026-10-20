@@ -25,6 +25,15 @@ body {
 .bur-back { display: inline-block; margin: 4px 0 12px; color: var(--bur-muted); font-size: .88rem; min-height: 24px; }
 .bur-hero h1 { font-size: 1.5rem; line-height: 1.4; margin: 0 0 12px; }
 .bur-eyebrow { margin: 0; color: var(--bur-accent-dark); font-weight: 700; font-size: .9rem; }
+.bur-hero-image { display: block; margin: 0 0 14px; }
+.bur-hero-image img { display: block; width: 100%; height: auto; border-radius: 12px; }
+/* 結果閲覧後に回答へ進む主CTA（塗りつぶし）。 */
+.bur-answer-cta {
+  display: flex; align-items: center; justify-content: center; max-width: 100%; min-height: 48px; padding: 0 20px; margin: 0 0 4px;
+  border: 2px solid var(--bur-accent); border-radius: 10px; background: var(--bur-accent); color: #fff;
+  font-weight: 700; text-decoration: none; text-align: center;
+}
+.bur-answer-cta:focus-visible { outline: 3px solid var(--bur-ink); outline-offset: 2px; }
 #bur-main:focus { outline: none; }
 .bur-notice { background: var(--bur-note-pale); color: var(--bur-note); border-radius: 10px; padding: 12px 16px; margin: 0 0 20px; font-size: .9rem; }
 .bur-notice h2 { font-size: .95rem; margin: 0 0 4px; }
