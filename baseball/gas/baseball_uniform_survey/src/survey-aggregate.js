@@ -943,6 +943,24 @@ var SurveyAggregate = (function (core) {
     return { sources: sources, comparison: comparison };
   }
 
+  /*
+   * Admin「集計結果」カード専用の並び（Public / snapshot / publication には使わない）。
+   *  - publication.ordinal === true : schema 順（意味順）を維持。
+   *  - publication.sort === 'count_desc' : 件数降順（同数は schema 順）。
+   *  - publication を持たない Admin 内部設問は、設問の adminTallySort === 'count_desc'（明示 allowlist）のものだけ件数降順にする。
+   * 件数 0 の option も落とさない。table.defs / counts は変更しない（コピーを並べる）。
+   */
+  function adminTally(table, countDesc) {
+    var indexed = table.defs.map(function (d, index) { return { def: d, index: index }; });
+    if (countDesc) {
+      indexed.sort(function (a, b) {
+        var diff = table.counts[b.def.id] - table.counts[a.def.id];
+        return diff !== 0 ? diff : a.index - b.index;
+      });
+    }
+    return indexed.map(function (x) { return { id: x.def.id, label: x.def.label, count: table.counts[x.def.id] }; });
+  }
+
   /* ── Admin サマリー（exact。運営者のみ。個票・自由記述・hash を含まない） ── */
 
   function buildAdminSummary(schema, classification, options) {
@@ -970,7 +988,7 @@ var SurveyAggregate = (function (core) {
         publicState: publicEntry.state,
         hasSuppressedCells: publicEntry.hasSuppressedCells,
         /* Admin 内部の exact な集計。公開閾値・suppression とは無関係に常に返す（公開側は publicPreview / buildPublicEntry を通る）。 */
-        tally: table.defs.map(function (d) { return { id: d.id, label: d.label, count: table.counts[d.id] }; })
+        tally: adminTally(table, entry.publication.ordinal !== true && entry.publication.sort === 'count_desc')
       };
     });
     /* 公開対象外（publicResultsOrder に無い）の non-text 設問。Admin 内部集計のみ。publication / snapshot には一切渡さない。 */
@@ -987,7 +1005,7 @@ var SurveyAggregate = (function (core) {
         targetCount: table.targetCount,
         answeredCount: table.answeredCount,
         publicState: 'not_public',
-        tally: table.defs.map(function (d) { return { id: d.id, label: d.label, count: table.counts[d.id] }; })
+        tally: adminTally(table, q.adminTallySort === 'count_desc')
       };
     });
     var snapshot = buildSnapshot(schema, valid, { generatedAt: settings.now || new Date() });
