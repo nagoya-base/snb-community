@@ -7,6 +7,7 @@
  *
  *   GET /exec                       : Dashboard.html
  *   google.script.run.getAdminSummary()   : production 件数・除外件数・設問別 targetCount と公開条件・public preview・障壁/安心条件の比較
+ *   google.script.run.getResponsesDiagnostics() : responses 列構成の安全な診断（個別回答値なし）
  *   google.script.run.getSnapshot()       : privacy-safe snapshot（JSON）と更新判定
  *   google.script.run.confirmSnapshotPublished(generatedAt, exactTotal) : 公開済み snapshot の記録（Script Property のみ）
  *   google.script.run.getFreeText()       : 自由記述（運営者のみ。個票・集計とは別の操作）
@@ -22,6 +23,11 @@ function doGet() {
 function getAdminSummary() {
   var now = new Date();
   return SurveyAggregate.buildAdminSummary(SURVEY_SCHEMA, classifyResponses_(), { now: now, previousSnapshot: getSnapshotState_() });
+}
+
+/** responses の列構成診断（列数・不一致列番号・ヘッダー列名のみ。回答値は返さない）。 */
+function getResponsesDiagnostics() {
+  return diagnoseResponses_();
 }
 
 function getSnapshot() {
