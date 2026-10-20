@@ -113,7 +113,7 @@ test('未公開設問（insufficient / sensitive_withheld / suppressed_all / 未
   [0, 1, 2].forEach((i) => assert.ok(!titles2.includes(mutated.questions[i].label)));
 });
 
-test('回答数が閾値未満の初期状態：設問カードは 0 件で、回答状況だけを出し、公開設問のないセクションは見出しごと出さない', async () => {
+test('回答数が閾値未満の初期状態：設問カードは 0 件。公開設問のないセクションは見出しごと出さず、例外は response_status（回答受付中 / 回答数表示）だけ', async () => {
   const snapshot = snapshotOf(validFrom([{ count: 7 }]));
   assert.ok(snapshot.questions.every((q) => q.state !== 'published'));
   const env = await openResults(snapshot);

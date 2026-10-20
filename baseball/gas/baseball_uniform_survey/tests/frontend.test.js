@@ -768,11 +768,18 @@ test('回答者向け説明：目的・18歳以上・5〜12分・非公開範囲
   assert.match(fs.readFileSync(path.join(D.REPO, D.PAGE), 'utf8'), /<meta name="robots" content="noindex">/);
 });
 
-test('Pages 公開前提：Frontend に実回答・salt・token・Spreadsheet ID を置かない', () => {
+test('Pages 公開前提：Frontend に置いてよいのは公開 /exec endpoint だけで、実回答・salt・token・Spreadsheet ID・通知先は置かない', () => {
   const dir = path.join(D.REPO, 'baseball/baseball-uniform-survey');
+  // #409：Public GAS Web App の公開 /exec URL は Frontend の公開設定（config.js の endpoint だけ）。
+  const PUBLIC_EXEC = /https:\/\/script\.google\.com\/macros\/s\/AKfycb[A-Za-z0-9_-]+\/exec/g;
   for (const file of fs.readdirSync(dir)) {
     const text = fs.readFileSync(path.join(dir, file), 'utf8');
+    const rest = file === 'config.js' ? text.replace(PUBLIC_EXEC, '') : text;
+    assert.ok(!/AKfycb/.test(rest), `${file}: 公開 /exec URL は config.js の endpoint 以外に置かない`);
     assert.ok(!/(?:salt|secret|token)\s*["']?\s*[:=]\s*["'][A-Za-z0-9+/_-]{16,}/i.test(text), file);
-    assert.ok(!/spreadsheets\/d\/|AKfycb/.test(text), file);
+    assert.ok(!/spreadsheets\/d\/|RESPONDENT_SALT|TEST_TOKEN|SPREADSHEET_ID|NOTIFICATION_EMAIL/.test(text), `${file}: 秘密・運用値`);
+    assert.ok(!/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z.]+/.test(text), `${file}: 通知先メールアドレス`);
   }
+  const config = fs.readFileSync(path.join(dir, 'config.js'), 'utf8');
+  assert.equal((config.match(PUBLIC_EXEC) || []).length, 1, 'config.js の endpoint は公開 /exec URL 1 件');
 });
