@@ -3,6 +3,7 @@
 親Issue #377 / 本ディレクトリの範囲は Issue #378（schema 正本の配置・参照整合 validation・CI）、Issue #379（専用 survey-core の fork と v2.17 構文対応）、Issue #380（Public GAS・保存・匿名重複抑止・server validation・test mode・受付期間・通知・deploy workflow）です。
 Issue #381 で回答 Frontend（`baseball/baseball-uniform-survey.html` と `baseball/baseball-uniform-survey/`）・route 進捗 UX・test UI・GA4 最小計測・analytics.js の section_view opt-out を追加しました（下記「Frontend」）。
 Issue #382 で Admin 集計・publication 判定・small-cell / complementary suppression・privacy-safe snapshot・公開結果ページを追加しました（下記「Admin と公開結果」）。
+Issue #432 で Admin 上部に「日別回答数」（production 有効回答のみ・Asia/Tokyo 基準の棒グラフ）を追加しました。件数のみで個別 timestamp・hash・自由記述は出さず、Admin の `daily_responses` 専用で Public 結果・snapshot には含めません。日別件数の合計 + 日付不明 = `production_valid_total` です。
 Issue #425 で公開結果 snapshot の自動化（Public GAS の `action=results`）を追加しました（下記「snapshot の batch 更新」）。
 Issue #383 で maintenance GAS（retention・close 後 finalize・final snapshot 固定・cleanup）を追加しました（下記「maintenance・retention・finalize・cleanup」）。
 

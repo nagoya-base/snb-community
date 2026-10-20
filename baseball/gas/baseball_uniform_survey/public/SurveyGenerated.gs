@@ -970,10 +970,71 @@ var SurveyAggregate = (function (core) {
         if (contains(textIds, id)) freeText[id] = validation.clean.answers[id];
         else answers[id] = validation.clean.answers[id];
       });
-      valid.push({ answers: answers, other_texts: validation.clean.other_texts, free_text: freeText, respondent_hash: hash });
+      valid.push({ answers: answers, other_texts: validation.clean.other_texts, free_text: freeText, respondent_hash: hash, day: jstDayOf(row.timestamp) });
       counts.production_valid++;
     });
     return { valid: valid, counts: counts };
+  }
+
+  /* ── 日別回答数（Admin 専用。Asia/Tokyo 基準。個別 timestamp は返さず日付ごとの件数だけにする） ── */
+
+  var JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+  /* Sheets の日付シリアル値 0 = 1899-12-30。responses の timestamp は Script の timeZone（Asia/Tokyo）の壁時計で保存される。 */
+  var SHEETS_EPOCH_UTC_MS = Date.UTC(1899, 11, 30);
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function ymdOfUtc(date) { return date.getUTCFullYear() + '-' + pad2(date.getUTCMonth() + 1) + '-' + pad2(date.getUTCDate()); }
+  function validYmd(y, m, d) {
+    var t = new Date(Date.UTC(y, m - 1, d));
+    return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+  }
+
+  /* timestamp セル値 → 'YYYY-MM-DD'（JST）。解釈できなければ null（日付不明）。Date / 日付シリアル / ISO（offset 付き）/ 'yyyy-MM-dd HH:mm' を受ける。 */
+  function jstDayOf(value) {
+    if (value instanceof Date) {
+      return isFinite(value.getTime()) ? ymdOfUtc(new Date(value.getTime() + JST_OFFSET_MS)) : null;
+    }
+    if (typeof value === 'number') {
+      if (!isFinite(value) || value < 1 || value > 73050) return null;
+      return ymdOfUtc(new Date(SHEETS_EPOCH_UTC_MS + Math.floor(value) * DAY_MS));
+    }
+    var text = str(value);
+    if (text === '') return null;
+    if (/(Z|[+-]\d{2}:?\d{2})$/.test(text) && /^\d{4}-\d{2}-\d{2}T/.test(text)) {
+      var parsed = Date.parse(text);
+      return isFinite(parsed) ? ymdOfUtc(new Date(parsed + JST_OFFSET_MS)) : null;
+    }
+    var m = /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[ T]\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?$/.exec(text);
+    if (!m) return null;
+    var y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+    return validYmd(y, mo, d) ? y + '-' + pad2(mo) + '-' + pad2(d) : null;
+  }
+
+  /*
+   * production 有効回答の日別件数。records は classifyRows().valid（各 record.day が JST の日付 or null）。
+   * 最初の回答日〜最後の回答日を連続させ（0 件の日も含める）、日付不明は undated にまとめる。
+   * sum(days.count) + undated = total = valid.length。
+   */
+  function dailyResponses(records) {
+    var list = Array.isArray(records) ? records : [];
+    var perDay = {};
+    var undated = 0;
+    list.forEach(function (record) {
+      var day = record && record.day;
+      if (typeof day !== 'string') { undated++; return; }
+      perDay[day] = (perDay[day] || 0) + 1;
+    });
+    var keys = Object.keys(perDay).sort();
+    var days = [];
+    if (keys.length) {
+      var cursor = Date.parse(keys[0] + 'T00:00:00Z');
+      var end = Date.parse(keys[keys.length - 1] + 'T00:00:00Z');
+      for (; cursor <= end; cursor += DAY_MS) {
+        var key = ymdOfUtc(new Date(cursor));
+        days.push({ date: key, count: perDay[key] || 0 });
+      }
+    }
+    return { timezone: 'Asia/Tokyo', days: days, undated: undated, total: list.length };
   }
 
   /* ── 設問ごとの集計（exact。Admin 用。public へは suppress を通す） ── */
@@ -1729,6 +1790,8 @@ var SurveyAggregate = (function (core) {
       survey_version: schema.survey_version,
       design_version: schema.design_version,
       production_valid_total: total,
+      /* Admin 専用。publicPreview / snapshot には含めない。 */
+      daily_responses: dailyResponses(valid),
       test_excluded: classification.counts.test_excluded,
       excluded: classification.counts.excluded,
       version_mismatch_fields: classification.counts.version_mismatch_fields || emptyVersionFieldCounts(),
@@ -1769,6 +1832,8 @@ var SurveyAggregate = (function (core) {
     decodeMultiple: decodeMultiple,
     rowToAnswers: rowToAnswers,
     classifyRows: classifyRows,
+    jstDayOf: jstDayOf,
+    dailyResponses: dailyResponses,
     VERSION_FIELDS: VERSION_FIELDS,
     diagnoseVersions: diagnoseVersions,
     versionMatches: versionMatches,
