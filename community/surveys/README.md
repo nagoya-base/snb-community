@@ -13,3 +13,6 @@ URL: `/community/surveys/`（Issue #401）
 - 内部パス・運営用ダッシュボード・Admin/GAS・注記（note）・回答者単位データは含めない。
 - 独立アンケートとして掲載しないもの: prototype、イベント申込、初参加エントリー、運営用集計画面。
 - 調査同士の設問・回答は統合・変換しない。
+- `portal.sort_date` は並び替え専用。画面には表示しない（実施時期は確定している `survey_period` のみ。不明なら省略）。
+- 設問数は `question_count_label`（表示専用）を優先。値が食い違う調査は `question_count: null` で省く。
+- `survey_period_label`（表示専用）で人間向けの表記を上書きできる。正本の締切値（`survey_period.end`）は変更しない。

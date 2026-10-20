@@ -50,8 +50,13 @@ async function boot() {
   assert(card('ataru_rope_interest_2026').querySelectorAll('a').length === 0, 'アタル: リンクが一切出ない');
   assert(/関連サイトへのリンクは掲載していません/.test(card('ataru_rope_interest_2026').textContent), 'アタル: リンク非掲載の注記');
   assert(card('ataru_rope_interest_2026').textContent.includes('193件') && card('ataru_rope_interest_2026').textContent.includes('34問'), 'アタル: 回答数・設問数は掲載');
-  assert(/〜 2026年10月5日 0:00/.test(card('ataru_rope_interest_2026').textContent), 'アタル: 終了日のみ「〜 日付」表示');
+  assert(/2026年10月4日まで/.test(card('ataru_rope_interest_2026').textContent) && !/10月5日/.test(card('ataru_rope_interest_2026').textContent), 'アタル: 「2026年10月4日まで」と表示（正本のendは10/5 0:00のまま）');
   assert(/〜 2026年9月30日/.test(card('snbc_fetish_costume_2026').textContent) && !/23:59/.test(card('snbc_fetish_costume_2026').textContent), '衣装嗜好: 「〜 2026年9月30日」');
+  assert(!/20\d\d年\d+月/.test(card('nagoya_baseball_uniform_club_2026').textContent) && !/20\d\d年\d+月/.test(card('snbc_costume_portrait_2026').textContent), 'sort_date由来の年月を表示しない（期間不明なら日付なし）');
+  assert(!card('snbc_september_project_202609').querySelector('.timeline__date'), '9月企画: 期間不明なら日付表示なし');
+  assert(!/設問数/.test(card('nagoya_baseball_uniform_club_2026').textContent), '野球ユニ部: 設問数の不一致があるため設問数を省く');
+  assert(/設問数Q1〜Q30（条件分岐あり）/.test(card('snbc_costume_portrait_2026').textContent) && !/30問/.test(card('snbc_costume_portrait_2026').textContent), 'ポートレート意識調査: 「Q1〜Q30（条件分岐あり）」表記');
+  assert(JSON.parse(jsonText).surveys.find((s) => s.id === 'ataru_rope_interest_2026').survey_period.end === '2026-10-05T00:00:00+09:00', '正本の締切値(end)は変更していない');
   assert(!/回答数/.test(card('snbc_september_project_202609').textContent), '9月企画: 回答数不明は項目ごと非表示');
   assert(!/設問数/.test(card('studio_service_feedback_2026').textContent), 'Studio: 設問数不明は非表示');
   assert(/回答受付中（件数は非公開）/.test(card('nagoya_baseball_uniform_club_2026').textContent), '野球ユニ部: 少数秘匿は件数を出さない');

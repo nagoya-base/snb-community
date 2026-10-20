@@ -49,12 +49,9 @@
     return text;
   }
 
-  function formatYearMonth(sortDate) {
-    var p = parseDate(sortDate);
-    return p ? p.y + '年' + p.mo + '月' : null;
-  }
-
-  function periodText(period) {
+  function periodText(survey) {
+    if (survey.survey_period_label) return survey.survey_period_label; // 表示専用ラベル（正本の値は変えない）
+    var period = survey.survey_period;
     if (!period) return null;
     var start = formatDate(period.start);
     var end = formatDate(period.end);
@@ -120,8 +117,9 @@
     item.setAttribute('data-survey-id', survey.id);
     item.setAttribute('data-status', survey.status);
 
-    var ym = formatYearMonth(survey.portal && survey.portal.sort_date);
-    if (ym) item.appendChild(el('time', 'timeline__date', ym));
+    // sort_date は並び替え専用。画面には確定している実施期間だけを出す（不明なら省略）。
+    var period = periodText(survey);
+    if (period) item.appendChild(el('span', 'timeline__date', period));
 
     var card = el('article', 'survey-card');
     var head = el('div', 'survey-card__head');
@@ -142,10 +140,9 @@
     }
 
     var facts = el('dl', 'survey-facts');
-    addFact(facts, '実施期間', periodText(survey.survey_period));
     addFact(facts, '対象', survey.target);
     addFact(facts, '回答数', responseText(survey.response_count));
-    addFact(facts, '設問数', typeof survey.question_count === 'number' ? survey.question_count + '問' : null);
+    addFact(facts, '設問数', survey.question_count_label || (typeof survey.question_count === 'number' ? survey.question_count + '問' : null));
     addFact(facts, '所要時間', survey.estimated_minutes);
     var resultsState = null; // 公開結果なし／未確認は断定せず項目を省く
     if (survey.public_results) {

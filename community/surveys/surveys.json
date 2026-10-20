@@ -76,7 +76,8 @@
         "include": true,
         "section": "archive",
         "sort_date": "2026-09-18"
-      }
+      },
+      "survey_period_label": "2026年10月4日まで"
     },
     {
       "id": "snbc_fetish_costume_2026",
@@ -143,7 +144,7 @@
         "value": null,
         "state": "unknown"
       },
-      "question_count": 30,
+      "question_count": null,
       "public_url": "https://nagoya-base.github.io/snb-community/community/costume-portrait-survey.html",
       "results_url": "https://nagoya-base.github.io/snb-community/community/costume-portrait-survey-results.html",
       "public_results": {
@@ -155,7 +156,8 @@
         "include": true,
         "section": "current_or_recent",
         "sort_date": "2026-10-08"
-      }
+      },
+      "question_count_label": "Q1〜Q30（条件分岐あり）"
     },
     {
       "id": "studio_service_feedback_2026",
@@ -224,7 +226,7 @@
         "value": null,
         "state": "withheld"
       },
-      "question_count": 46,
+      "question_count": null,
       "public_url": "https://nagoya-base.github.io/snb-community/baseball/baseball-uniform-survey.html",
       "results_url": "https://nagoya-base.github.io/snb-community/baseball/baseball-uniform-survey-results.html",
       "public_results": {
