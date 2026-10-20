@@ -9,11 +9,12 @@ const ROOT = path.join(__dirname, '..', '..');
 
 function createAdminEnv(rows, options = {}) {
   const env = { writes: [], reads: 0, props: new Map(), logs: [], htmlOutputs: [] };
-  const values = [options.header || header()].concat(rows.map((row) => (options.header || header()).map((name) => (row[name] === undefined ? '' : row[name]))));
+  let values = [options.header || header()].concat(rows.map((row) => (options.header || header()).map((name) => (row[name] === undefined ? '' : row[name]))));
+  if (options.transform) values = options.transform(values);
   const deny = (name) => () => { env.writes.push(name); throw new Error('write_not_allowed: ' + name); };
   // Sheets API は末尾の空セル・空行を省く（実挙動の再現）。
-  const trimmed = values.map((line) => { const out = line.slice(); while (out.length && out[out.length - 1] === '') out.pop(); return out; });
-  while (trimmed.length && !trimmed[trimmed.length - 1].length) trimmed.pop();
+  const trimmed = values.map((line) => { const out = line.slice(); while (!options.noTrim && out.length && out[out.length - 1] === '') out.pop(); return out; });
+  while (!options.noTrim && trimmed.length && !trimmed[trimmed.length - 1].length) trimmed.pop();
   env.calls = [];
   const Sheets = {
     Spreadsheets: {

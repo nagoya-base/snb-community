@@ -83,7 +83,32 @@
         parent.appendChild(tr);
       }
       function setStatus(text, bad) { var s = $('status'); s.textContent = text || ''; s.className = bad ? 'note err' : 'note'; }
-      function fail(error) { setStatus('読み込めませんでした（' + (error && error.message ? error.message : '不明なエラー') + '）。Script Property と responses シートの列構成を確認してください。', true); }
+      var ERROR_TEXT = {
+        header_mismatch: 'responses シートの1行目ヘッダーが現行 schema と一致しません（列数・列名・順序）。',
+        unexpected_extra_data_columns: 'ヘッダーは正しいものの、期待列より右側に値の入ったデータ列があります。安全のため読み込みを停止しました（自動修復・削除はしません）。',
+        responses_sheet_missing: 'RESPONSES_SPREADSHEET_ID の Spreadsheet に responses シートがありません。参照先の Spreadsheet を確認してください。',
+        not_configured: 'Script Property RESPONSES_SPREADSHEET_ID が未設定です。'
+      };
+      function errorCode(error) {
+        var m = error && error.message ? String(error.message) : '';
+        for (var k in ERROR_TEXT) if (m.indexOf(k) !== -1) return k;
+        return null;
+      }
+      function diagText(d) {
+        if (!d || d.firstMismatchColumn === undefined) return '';
+        var t = ' 期待列数 ' + d.expectedColumnCount + ' / ヘッダー列数 ' + d.actualHeaderColumnCount + ' / データ行最大幅 ' + d.dataRowMaxWidth;
+        if (d.firstMismatchColumn) t += ' / 最初の不一致 ' + d.firstMismatchColumn + ' 列目（期待: ' + (d.expectedColumnName || 'なし') + '、実際: ' + (d.actualHeaderColumnName || 'なし') + '）';
+        t += ' / 期待列より右の非空データ: ' + (d.extraNonEmptyDataColumns ? 'あり' : 'なし');
+        return t;
+      }
+      function fail(error) {
+        var code = errorCode(error);
+        var base = code ? ERROR_TEXT[code] + '（' + code + '）' : '読み込めませんでした（' + (error && error.message ? error.message : '不明なエラー') + '）。Script Property と responses シートの列構成を確認してください。';
+        setStatus(base, true);
+        if (code === 'header_mismatch' || code === 'unexpected_extra_data_columns') {
+          google.script.run.withSuccessHandler(function (d) { setStatus(base + diagText(d), true); }).withFailureHandler(function () {}).getResponsesDiagnostics();
+        }
+      }
 
       var STATE_LABEL = { published: '公開可', insufficient: '非公開（回答数不足）', sensitive_withheld: '非公開（sensitive・達するまで正常）', suppressed_all: '非公開（少数セルのみ）' };
 

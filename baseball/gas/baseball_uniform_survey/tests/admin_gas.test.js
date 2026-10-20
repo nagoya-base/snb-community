@@ -175,6 +175,62 @@ test('ヘッダーが schema と一致しない Sheet・未設定は読まない
   assert.equal(plain(empty.ctx.getAdminSummary()).production_valid_total, 0);
 });
 
+test('header 診断（#420）：正常・末尾空セル省略・期待列以降が空のみは読み込み成功', () => {
+  const rows = fixtureRows();
+  const total = plain(createAdminEnv(rows).ctx.getAdminSummary()).production_valid_total;
+  assert.ok(total > 0);
+  const short = createAdminEnv(rows); // Sheets API は末尾空セルを省く（helper が再現）
+  const read = plain(short.ctx.readRows_());
+  assert.equal(read.length, rows.length);
+  read.forEach((r) => assert.deepEqual(Object.keys(r), header()));
+  const padded = createAdminEnv(rows, { noTrim: true, transform: (v) => v.map((l) => l.concat(['', ''])) });
+  assert.equal(plain(padded.ctx.getAdminSummary()).production_valid_total, total);
+  assert.equal(padded.ctx.getResponsesDiagnostics().status, 'ok');
+});
+
+test('header 診断（#420）：列数不足・列名/順序不一致は header_mismatch', () => {
+  const fewer = createAdminEnv(fixtureRows(), { header: header().slice(0, -2) });
+  assert.throws(() => fewer.ctx.getAdminSummary(), /header_mismatch/);
+  const d = plain(fewer.ctx.getResponsesDiagnostics());
+  assert.equal(d.status, 'header_mismatch');
+  assert.equal(d.expectedColumnCount, header().length);
+  assert.equal(d.actualHeaderColumnCount, header().length - 2);
+  assert.equal(d.firstMismatchColumn, header().length - 1);
+  assert.equal(d.expectedColumnName, header()[header().length - 2]);
+  assert.equal(d.actualHeaderColumnName, null);
+  const swapped = header().slice();
+  [swapped[1], swapped[2]] = [swapped[2], swapped[1]];
+  const order = createAdminEnv(fixtureRows(), { header: swapped });
+  assert.throws(() => order.ctx.getAdminSummary(), /header_mismatch/);
+  const o = plain(order.ctx.getResponsesDiagnostics());
+  assert.equal(o.firstMismatchColumn, 2);
+  assert.equal(o.expectedColumnName, header()[1]);
+  assert.equal(o.actualHeaderColumnName, swapped[1]);
+});
+
+test('header 診断（#420）：ヘッダーが正しく期待列以降に非空値があれば別エラーで fail-closed。回答値・hash は診断に出ない', () => {
+  const rows = fixtureRows();
+  const extra = createAdminEnv(rows, { transform: (v) => v.map((l, i) => (i === 3 ? l.concat(['LEAKED-EXTRA']) : l)) });
+  assert.throws(() => extra.ctx.getAdminSummary(), /unexpected_extra_data_columns/);
+  assert.throws(() => extra.ctx.getAdminSummary(), (e) => !/header_mismatch/.test(e.message));
+  const d = plain(extra.ctx.getResponsesDiagnostics());
+  assert.equal(d.status, 'unexpected_extra_data_columns');
+  assert.equal(d.extraNonEmptyDataColumns, true);
+  assert.equal(d.firstMismatchColumn, null);
+  assert.equal(d.dataRowMaxWidth, header().length + 1);
+  const out = JSON.stringify(d);
+  assert.ok(!out.includes('LEAKED-EXTRA') && !out.includes('ADMIN-ONLY-TEXT') && !out.includes('responses-sheet-id'));
+  rows.forEach((r) => assert.ok(!out.includes(r.respondent_hash)));
+  assert.deepEqual(Object.keys(d).sort(), ['actualHeaderColumnCount', 'actualHeaderColumnName', 'dataRowMaxWidth', 'expectedColumnCount', 'expectedColumnName', 'extraNonEmptyDataColumns', 'firstMismatchColumn', 'status']);
+  assert.deepEqual(extra.writes, []);
+});
+
+test('header 診断（#420）：responses シートが無ければ responses_sheet_missing を維持し、診断も別 status', () => {
+  const missing = createAdminEnv(fixtureRows(), { sheetTitle: 'other' });
+  assert.throws(() => missing.ctx.getAdminSummary(), /responses_sheet_missing/);
+  assert.equal(missing.ctx.getResponsesDiagnostics().status, 'responses_sheet_missing');
+});
+
 test('設問 ID・option ID・分岐・閾値を Admin にベタ書きしない', () => {
   const ids = new Set();
   schema.questions.forEach((q) => { ids.add(q.id); (q.options || []).forEach((o) => ids.add(o.id)); });
