@@ -238,7 +238,7 @@ test('翻訳対象件数（日本語正本）を数えられる：設問46・選
 });
 
 test('保持期間の説明（intro.note.retention）は5言語とも短い1文で、自動削除・全データ削除・内部手順を書かない', () => {
-  assert.strictEqual(dicts.ja.ui['intro.note.retention'], '回答データは、回答受付の終了後1年間保管します。その後、個別の回答や自由記述などは削除します。個人単位の情報を含まない集計結果は、その後も保管・公開する場合があります。');
+  assert.strictEqual(dicts.ja.ui['intro.note.retention'], '回答データは受付終了後1年間保管し、その後、個別回答や自由記述を削除します。集計結果は残る場合があります。');
   i18n.LOCALES.forEach((locale) => {
     const text = dicts[locale].ui['intro.note.retention'];
     assert.ok(typeof text === 'string' && text.length > 0 && text.length <= 260, locale + ' は短く');
@@ -247,22 +247,26 @@ test('保持期間の説明（intro.note.retention）は5言語とも短い1文�
   });
 });
 
-test('導入画面の段階公開・少人数保護・重複抑止の説明は5言語とも揃い、内部用語・GA4を使わず、確約や即時更新と書かない', () => {
-  ['intro.note.rollout', 'intro.note.smallGroups', 'intro.note.representativeness', 'intro.note.duplicates'].forEach((key) => {
-    i18n.LOCALES.forEach((locale) => {
-      const text = dicts[locale].ui[key];
-      assert.ok(typeof text === 'string' && text.length > 0, locale + ' ' + key);
-      assert.ok(!/minTotal|minTarget|minCell|suppression|snapshot|hash|stable|GA4|retention|cleanup/i.test(text), locale + ' ' + key + ' は内部用語を使わない');
-    });
-  });
+const INTRO_NOTE_KEYS = ['eligibility', 'partial', 'publication', 'admin', 'retention'];
+const REMOVED_INTRO_KEYS = ['time', 'anonymity', 'rollout', 'smallGroups', 'representativeness', 'duplicates'];
+
+test('導入画面の注意書きは5項目＋参加申込ではない旨の補足だけで、旧11項目の key は辞書に残らない（Issue #417）', () => {
   i18n.LOCALES.forEach((locale) => {
-    const rollout = dicts[locale].ui['intro.note.rollout'];
-    assert.ok(/10/.test(rollout) && /30/.test(rollout), locale + ' は10件・30件の段階を示す');
+    const ui = dicts[locale].ui;
+    INTRO_NOTE_KEYS.concat(['notEntry']).forEach((key) => assert.ok(typeof ui['intro.note.' + key] === 'string' && ui['intro.note.' + key].length > 0, locale + ' intro.note.' + key));
+    REMOVED_INTRO_KEYS.forEach((key) => assert.ok(!Object.prototype.hasOwnProperty.call(ui, 'intro.note.' + key), locale + ' intro.note.' + key + ' は削除済み'));
+    assert.deepEqual(Object.keys(ui).filter((k) => k.indexOf('intro.note.') === 0).sort(), INTRO_NOTE_KEYS.concat(['notEntry']).map((k) => 'intro.note.' + k).sort(), locale);
+    // 所要時間は schema の分数を差し込む（5言語とも同じ placeholder）。
+    assert.deepEqual(i18n.placeholders(ui['intro.note.eligibility']), '{max},{min}', locale);
+    INTRO_NOTE_KEYS.concat(['notEntry']).forEach((key) => assert.ok(!/minTotal|minTarget|minCell|suppression|snapshot|hash|stable|GA4|retention|cleanup/i.test(ui['intro.note.' + key]), locale + ' ' + key + ' は内部用語を使わない'));
   });
-  assert.match(dicts.ja.ui['intro.note.rollout'], /10件未満では正確な回答数を表示しません/);
-  assert.match(dicts.ja.ui['intro.note.rollout'], /30件以上を目安に/);
-  assert.match(dicts.ja.ui['intro.note.rollout'], /回答のたびに更新せず、一定の件数・間隔でまとめて反映します/);
-  assert.match(dicts.ja.ui['intro.note.smallGroups'], /最終結果は、回答受付の終了後に確定します/);
-  assert.match(dicts.ja.ui['intro.note.duplicates'], /重複回答を抑える仕組みはありますが、1人1回答を完全に保証するものではありません/);
-  assert.ok(!/重複/.test(dicts.ja.ui['intro.note.representativeness']), '代表性と重複抑止は別項目');
+});
+
+test('導入画面（ja）の注意書きは Issue #417 の正本どおり：18歳以上・所要時間・途中保存なし・公開範囲・運営責任者による確認・修正削除不可・1年保管', () => {
+  const ui = dicts.ja.ui;
+  assert.strictEqual(ui['intro.note.eligibility'], '対象は18歳以上です。所要時間は{min}〜{max}分程度です。');
+  assert.strictEqual(ui['intro.note.partial'], '回答は最後にまとめて送信します。途中で閉じた場合、入力内容は保存されません。');
+  assert.strictEqual(ui['intro.note.publication'], '公開するのは個人が分からない集計結果だけです。自由記述や詳しい居住地域は公開しません。');
+  assert.strictEqual(ui['intro.note.admin'], '運営責任者1名が集計・運営改善のため個別回答を確認する場合があります。匿名のため、送信後の個別の修正・削除は原則できません。');
+  assert.strictEqual(ui['intro.note.notEntry'], 'このアンケートへの回答は、キャッチボール会への参加申込ではありません。');
 });
