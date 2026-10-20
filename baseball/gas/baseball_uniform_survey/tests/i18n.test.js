@@ -195,7 +195,8 @@ test('Frontend が参照する ui key は辞書にあり、辞書の ui key は 
   ['invalid_test_config', 'preview_no_submit', 'closed_view', 'submit_excluded'].forEach((mode) => used.add('test.banner.' + mode));
   const errorCodes = /ERROR_CODES = \[([^\]]+)\]/.exec(code)[1].match(/'([a-z_]+)'/g).map((s) => s.slice(1, -1));
   errorCodes.forEach((c) => used.add('error.' + c));
-  const known = new Set(Object.keys(dicts.ja.ui));
+  // results.* は結果ページ専用（tests/results_i18n.test.js が検証する）。
+  const known = new Set(Object.keys(dicts.ja.ui).filter((key) => key.indexOf(i18n.RESULTS_UI_PREFIX) !== 0));
   used.forEach((key) => { if (!key.endsWith('.')) assert.ok(known.has(key), `辞書に無い key: ${key}`); });
   known.forEach((key) => assert.ok(used.has(key), `使われていない key: ${key}`));
   // 動的 key の接頭辞だけの文字列（'test.banner.' / 'error.'）は literal に拾われないこと

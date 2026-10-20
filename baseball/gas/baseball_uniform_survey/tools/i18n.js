@@ -206,10 +206,25 @@ function countTargets(schema, dicts) {
   return { ui, sections, questions, options, anchors, help, schemaText, total: ui + sections + questions + options + anchors + help + schemaText };
 }
 
-/** Frontend 用の生成物。ja の設問文言は schema（SURVEY_SCHEMA）が正本なので含めない。 */
+// 結果ページ専用の UI 文言は ui の `results.` 接頭辞に置く（回答ページには配らない）。固定 UI のうち共通のもの（本文へ移動・戻るリンク・eyebrow・言語ラベル）は回答ページと同じ key を再利用する。
+const RESULTS_UI_PREFIX = 'results.';
+const RESULTS_SHARED_UI_KEYS = ['page.skip', 'page.back', 'page.eyebrow', 'lang.label'];
+
+function pick(source, keys) {
+  const out = {};
+  keys.forEach((k) => { if (source[k] !== undefined) out[k] = source[k]; });
+  return out;
+}
+
+/** Frontend 用の生成物。ja の設問文言は schema（SURVEY_SCHEMA）が正本なので含めない。結果ページ専用の `results.*` は含めない（results-i18n.generated.js へ）。 */
 function renderFrontend(dicts) {
   const out = { default: DEFAULT_LOCALE, locales: LOCALES.slice(), dicts: {} };
-  LOCALES.forEach((locale) => { out.dicts[locale] = dicts[locale]; });
+  LOCALES.forEach((locale) => {
+    const dict = dicts[locale];
+    const ui = {};
+    Object.keys(dict.ui).forEach((k) => { if (k.indexOf(RESULTS_UI_PREFIX) !== 0) ui[k] = dict.ui[k]; });
+    out.dicts[locale] = Object.assign({}, dict, { ui });
+  });
   return [
     '/*',
     ' * AUTO-GENERATED (Frontend i18n) — DO NOT EDIT.',
@@ -222,4 +237,51 @@ function renderFrontend(dicts) {
   ].join('\n');
 }
 
-module.exports = { LOCALES, DEFAULT_LOCALE, I18N_DIR, loadDicts, jaContent, validate, countTargets, renderFrontend, sectionIds, placeholders, milestoneKey };
+/** 結果ページに表示される設問（publicResultsOrder）と、single_dynamic の候補の元になる設問。region_blocks は設問ではない。 */
+function resultsQuestionIds(schema) {
+  const ids = [];
+  const add = (id) => { if (ids.indexOf(id) === -1 && schema.questions.some((q) => q.id === id)) ids.push(id); };
+  (schema.publicResultsOrder || []).forEach((id) => {
+    add(id);
+    const q = schema.questions.find((x) => x.id === id);
+    if (q && q.type === 'single_dynamic') add(q.sourceQuestion);
+  });
+  return ids;
+}
+
+/**
+ * 結果ページ用の生成物。回答ページと同じ i18n/*.json から、結果ページが使う分だけ（固定 UI・公開設問の label / options / anchors / notApplicable）を取り出す。
+ * 設問・選択肢は question.id / option.id をキーにする。ja の設問文言は snapshot（= schema 由来）が持つので含めない。
+ */
+function renderResults(dicts, schema) {
+  const ids = resultsQuestionIds(schema);
+  const dynamic = {};
+  schema.questions.forEach((q) => { if (q.type === 'single_dynamic' && ids.indexOf(q.id) !== -1) dynamic[q.id] = q.sourceQuestion; });
+  const out = { default: DEFAULT_LOCALE, locales: LOCALES.slice(), dynamicSources: dynamic, dicts: {} };
+  LOCALES.forEach((locale) => {
+    const dict = dicts[locale];
+    const uiKeys = Object.keys(dict.ui).filter((k) => k.indexOf(RESULTS_UI_PREFIX) === 0).concat(RESULTS_SHARED_UI_KEYS);
+    const questions = {};
+    if (locale !== DEFAULT_LOCALE) {
+      ids.forEach((id) => {
+        const entry = dict.questions[id];
+        const picked = {};
+        ['label', 'options', 'anchors', 'notApplicable'].forEach((k) => { if (entry[k] !== undefined) picked[k] = entry[k]; });
+        questions[id] = picked;
+      });
+    }
+    out.dicts[locale] = { locale, ui: pick(dict.ui, uiKeys), questions };
+  });
+  return [
+    '/*',
+    ' * AUTO-GENERATED (Results page i18n) — DO NOT EDIT.',
+    ' * 正本: baseball/gas/baseball_uniform_survey/i18n/*.json（回答ページと同じ辞書。設問・選択肢は question.id / option.id で共有し、二重管理しない）',
+    ' * 再生成: (baseball/gas/baseball_uniform_survey で) npm run build',
+    ' * CIは `npm run build:check` で生成物との差分を検出し、`tests/results_i18n.test.js` が結果ページに必要な翻訳の完全性を検証する。',
+    ' */',
+    'var SURVEY_RESULTS_I18N = ' + JSON.stringify(out) + ';',
+    ''
+  ].join('\n');
+}
+
+module.exports = { LOCALES, DEFAULT_LOCALE, I18N_DIR, loadDicts, jaContent, validate, countTargets, renderFrontend, renderResults, resultsQuestionIds, RESULTS_UI_PREFIX, RESULTS_SHARED_UI_KEYS, sectionIds, placeholders, milestoneKey };

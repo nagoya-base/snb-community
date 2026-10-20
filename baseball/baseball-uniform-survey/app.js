@@ -36,51 +36,14 @@
   /* ── 表示言語（i18n）。辞書は i18n.generated.js（SURVEY_I18N）。保存値・schema は言語で変わらない。 ── */
   var I18N = window.SURVEY_I18N || { default: 'ja', locales: ['ja'], dicts: { ja: { ui: {}, sections: {} } } };
   var DEFAULT_LOCALE = I18N.default || 'ja';
-  var LOCALE_KEY = 'snb_baseball_uniform_survey_locale_v1';
-  var LOCALE_NAMES = { ja: '日本語', en: 'English', ko: '한국어', 'zh-Hans': '简体中文', 'zh-Hant': '繁體中文' };
+  // 言語の保存・初期言語の決定は結果ページと共有する（locale.js）。
+  var LOCALE_NAMES = SurveyLocale.NAMES;
   var locale = DEFAULT_LOCALE;
-  var memoryLocale = null;
 
   function isSupported(value) { return typeof value === 'string' && I18N.locales.indexOf(value) !== -1; }
-
-  /* ブラウザ言語タグ → 対応言語。対応外は null。zh は script / 地域で簡体・繁体を分け、指定のない zh は簡体とする。 */
-  function localeFromTag(tag) {
-    var lower = String(tag || '').toLowerCase().replace(/_/g, '-');
-    var base = lower.split('-')[0];
-    if (base === 'ja') return 'ja';
-    if (base === 'en') return 'en';
-    if (base === 'ko') return 'ko';
-    if (base === 'zh') {
-      if (/(^|-)hant(-|$)/.test(lower) || /-(tw|hk|mo)(-|$)/.test(lower)) return 'zh-Hant';
-      return 'zh-Hans'; // zh-Hans / zh-CN / zh-SG / zh（地域なし）
-    }
-    return null;
-  }
-  function detectBrowserLocale() {
-    var tags = [];
-    try {
-      if (window.navigator.languages && window.navigator.languages.length) tags = Array.prototype.slice.call(window.navigator.languages);
-      else if (window.navigator.language) tags = [window.navigator.language];
-    } catch (e) { tags = []; }
-    for (var i = 0; i < tags.length; i++) {
-      var found = localeFromTag(tags[i]);
-      if (found && isSupported(found)) return found;
-    }
-    return DEFAULT_LOCALE;
-  }
-  function readStoredLocale() {
-    try {
-      var stored = window.localStorage.getItem(LOCALE_KEY);
-      if (isSupported(stored)) return stored;
-    } catch (e) { /* storage が使えない場合はメモリだけ */ }
-    return isSupported(memoryLocale) ? memoryLocale : null;
-  }
-  function storeLocale(value) {
-    memoryLocale = value;
-    try { window.localStorage.setItem(LOCALE_KEY, value); } catch (e) { /* ignore */ }
-  }
+  function storeLocale(value) { SurveyLocale.store(window, value); }
   /* 初期言語：保存済みの選択 → ブラウザ言語 → ja。 */
-  locale = readStoredLocale() || detectBrowserLocale();
+  locale = SurveyLocale.initial(window, I18N.locales);
 
   function dictOf(code) { return I18N.dicts[code] || null; }
   function fillParams(text, params) {
