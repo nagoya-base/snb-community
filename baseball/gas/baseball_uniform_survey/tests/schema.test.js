@@ -13,8 +13,8 @@ const raw = fs.readFileSync(DEFAULT_SCHEMA_PATH, 'utf8');
 const schema = JSON.parse(raw);
 const q = (id) => schema.questions.find((x) => x.id === id);
 
-test('survey.schema.json は parse でき design_version は 2.17', () => {
-  assert.equal(schema.design_version, '2.17');
+test('survey.schema.json は parse でき design_version は 2.18', () => {
+  assert.equal(schema.design_version, '2.18');
   assert.equal(schema.survey_id, 'nagoya_baseball_uniform_club_2026');
   assert.equal(schema.survey_version, '2026-10');
   assert.ok(Array.isArray(schema.questions) && schema.questions.length > 0);

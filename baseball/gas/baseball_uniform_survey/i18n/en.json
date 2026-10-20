@@ -1,0 +1,744 @@
+{
+  "locale": "en",
+  "ui": {
+    "page.title": "Nagoya Baseball Uniform Club (名古屋野球ユニ部) Survey | SNBC",
+    "page.metaDescription": "An anonymous survey to help improve how Nagoya Baseball Uniform Club (名古屋野球ユニ部) is run and planned. For people aged 18 or older; takes about 5–12 minutes.",
+    "page.skip": "Skip to main content",
+    "page.back": "← Back to the Nagoya Baseball Uniform Club page",
+    "page.eyebrow": "Nagoya Baseball Uniform Club (名古屋野球ユニ部)",
+    "page.heading": "Nagoya Baseball Uniform Club Survey",
+    "lang.label": "Language",
+
+    "common.required": "Required",
+    "common.optional": "Optional",
+    "common.back": "Back",
+    "common.next": "Next",
+    "common.start": "Start the survey",
+    "common.submit": "Submit these answers",
+    "common.submitting": "Submitting…",
+    "common.edit": "Edit",
+    "common.editAria": "Edit: {section}",
+    "common.unanswered": "(No answer)",
+    "common.otherText": "Details for “Other”",
+    "common.listSeparator": ", ",
+    "common.withOther": "{label} ({text})",
+    "common.scalePoint": "{value} {label}",
+    "common.charCount": "{count} / {max} characters",
+    "common.noOptions": "There are no options to choose from. Please check your previous answers.",
+    "common.unsupported": "This question cannot be displayed.",
+    "common.backToClub": "Back to the Nagoya Baseball Uniform Club page",
+    "common.resultsLink": "Go to the public results page",
+    "common.checkingStatus": "Checking whether the survey is open…",
+
+    "intro.title": "Please read before you answer",
+    "intro.lead": "This is an anonymous survey to help improve how Nagoya Baseball Uniform Club (名古屋野球ユニ部) is run and planned.",
+    "intro.note.eligibility": "This survey is for people aged 18 or older.",
+    "intro.note.time": "It takes about {min}–{max} minutes. The number of questions varies depending on your interests and answers.",
+    "intro.note.publication": "Individual answers are not published. Only aggregated results will be shown on the public page. Free-text answers and detailed place of residence are never published.",
+    "intro.note.admin": "Individual answers may be viewed only by the single person in charge of the club, for the purpose of aggregation and improving operations.",
+    "intro.note.anonymity": "To protect anonymity, it is in principle not possible to verify your identity and correct or delete specific answers after you submit.",
+    "intro.note.partial": "Answers are sent all at once at the end. If you leave partway through, nothing is saved on the server.",
+    "intro.note.notEntry": "Answering this survey is not an application to join a catchball meet-up.",
+    "intro.note.representativeness": "Because responses are collected through social media and the web, the results do not represent the general population.",
+    "intro.contact": "If you have questions about taking part, please use the contact form.",
+
+    "review.title": "Review your answers",
+    "review.lead": "Please check your answers and submit. After submitting, it is in principle not possible to verify your identity and correct or delete specific answers.",
+
+    "progress.groupAria": "Survey progress",
+    "progress.barAria": "Overall progress",
+    "progress.undetermined": "Section {index} so far. Only the questions relevant to you will be shown.",
+    "progress.undeterminedValueText": "The questions depend on your answers",
+    "progress.section": "Section {index} of {total}",
+    "progress.percent": "About {percent}% done",
+    "progress.minutes": "About {minutes} min left",
+    "progress.almostDone": "Almost done",
+
+    "error.required": "Please answer this question.",
+    "error.other_text_required": "Please enter details for “Other”.",
+    "error.too_long": "This text is too long.",
+    "error.invalid_text": "This text contains characters that cannot be used.",
+    "error.exclusive_conflict": "These options cannot be selected together.",
+    "error.other_text_unexpected": "Please check your selection.",
+    "error.invalid_option": "Please check your selection.",
+    "error.invalid_type": "Please check your selection.",
+    "error.duplicate_option": "Please check your selection.",
+    "error.hidden_field": "Please check your selection.",
+    "error.unknown_field": "Please check your selection.",
+    "error.generic": "Please check your input.",
+    "error.summaryTitle": "Please check your input ({count})",
+    "error.summaryItem": "{label}: {message}",
+
+    "submit.invalid": "Please check your input.",
+    "submit.preparing": "This survey is being prepared and cannot accept answers yet.",
+    "submit.testConfigMissing": "The test settings could not be confirmed. Please reopen the test URL.",
+    "submit.networkFailed": "Submission failed. Please check your connection and try again. Your answers have been kept.",
+    "submit.serverFailed": "Submission failed. Please wait a moment and try again. Your answers have been kept.",
+    "submit.genericInvalid": "Your answers could not be submitted because of a problem with the input. Please check them.",
+    "submit.tooFast": "Your answers were submitted too quickly to be accepted. Please check them, wait a little, and try again.",
+    "submit.invalidUuid": "We could not verify your browser information. Please reload the page and try again.",
+    "submit.invalidToken": "The test settings are not valid. Please reopen the test URL shared by the administrator.",
+    "submit.invalidRunId": "The test run ID format is not valid. Please check the test URL.",
+
+    "done.thanks.title": "Thank you for your answers",
+    "done.thanks.line": "Your answers have been received. Thank you for your cooperation. The public page will show only aggregated results, not individual answers.",
+    "done.duplicate.title": "Your answers have already been received",
+    "done.duplicate.line": "We have already received answers from this browser. Thank you for your cooperation.",
+    "done.closed.title": "This survey is now closed",
+    "done.closed.line": "Thank you very much for your cooperation.",
+    "done.notOpen.title": "This survey has not opened yet",
+    "done.notOpen.line": "Please wait a little longer until it opens.",
+    "done.preparing.title": "Coming soon",
+    "done.preparing.line": "This survey has not been published yet. Please wait until it opens.",
+    "done.updateNeeded.title": "This page is out of date",
+    "done.updateNeeded.line": "The survey has been updated. Please reload the page and answer again.",
+    "done.ineligible.title": "This survey is for people aged 18 or older",
+    "done.ineligible.line": "Thank you for your interest. Your answers have not been saved.",
+
+    "test.chip": "TEST",
+    "test.exit": "Exit test mode",
+    "test.banner.invalid_test_config": "TEST MODE (configuration error): The test URL settings are not valid. Nothing will be answered, submitted or measured.",
+    "test.banner.preview_no_submit": "TEST MODE (preview): Answers are not saved when you submit, and nothing is sent over the network.",
+    "test.banner.closed_view": "TEST MODE (closed view): You can only check what is shown after the survey closes.",
+    "test.banner.submit_excluded": "TEST MODE (test submission): Answers are sent to the server but are not included in the official tallies, public results or notifications.",
+    "test.preview.title": "Preview complete (your answers were not submitted or saved)",
+    "test.preview.line": "This screen is for checking the completion page. Nothing was sent to the server.",
+    "test.submitted.title": "Test submission received (excluded from tallies)",
+    "test.submitted.line": "This was a test submission. It is not included in the official response count, public results or notifications.",
+    "test.duplicate.title": "Already submitted in this test run",
+    "test.duplicate.line": "The same duplicate prevention as production applies to the same test run ID. To try again, reopen the test URL with a new test run ID.",
+    "test.invalid.title": "The test URL settings are not valid",
+    "test.invalid.line1": "Please check the test URL. Reopen the URL shared by the administrator exactly as it was given.",
+    "test.invalid.line2": "Nothing is answered, submitted or measured on this page. To answer normally, open the URL without any test settings."
+  },
+  "sections": {
+    "eligibility": "Before you answer",
+    "uniform": "About uniforms",
+    "club": "About Nagoya Baseball Uniform Club",
+    "nonattendee": "Interest in catchball meet-ups",
+    "club_interest": "Interest in uniform meet-ups",
+    "attendee": "For those who have taken part",
+    "operations": "About how the catchball meet-ups are run",
+    "activity_history": "Your past sports activities",
+    "adult_activity": "About exercise",
+    "profile": "About you",
+    "closing": "Finally"
+  },
+  "schemaText": {
+    "milestones": {
+      "after:top_uniform_sport_experience": "That completes the questions about uniforms. From here on, only the questions that apply to you will be shown, depending on your interest in and experience with catchball meet-ups.",
+      "before:preferred_program": "The following questions are for people who are actually considering taking part."
+    },
+    "lowInterestAcknowledgement": "Thank you. Answers saying you are not very interested in taking part right now are just as valuable for planning future events.",
+    "routes": {
+      "pure_uniform_short_route": {
+        "messageBeforeProfile": "That is the end of the detailed questions about running catchball meet-ups. We ask everyone about their current exercise frequency and what motivates them to exercise or start again, and then move on to the basic questions."
+      }
+    }
+  },
+  "questions": {
+    "age_confirmed": {
+      "label": "Are you 18 or older?",
+      "options": { "yes": "Yes", "no": "No" }
+    },
+    "favorite_uniforms": {
+      "label": "Select all the sports uniforms you like",
+      "options": {
+        "baseball": "Baseball",
+        "soccer": "Soccer",
+        "basketball": "Basketball",
+        "volleyball": "Volleyball",
+        "rugby": "Rugby",
+        "american_football": "American football",
+        "track_field": "Track and field",
+        "racing_briefs": "Competitive swim briefs",
+        "swimwear_other": "Swimwear and competitive swimsuits (other than swim briefs)",
+        "wrestling_singlet": "Wrestling singlets",
+        "gymnastics": "Gymnastics",
+        "tennis": "Tennis",
+        "table_tennis": "Table tennis",
+        "badminton": "Badminton",
+        "martial_arts": "Martial arts such as judo and kendo",
+        "ice_hockey": "Ice hockey",
+        "cycling": "Cycling and cycling wear",
+        "training_wear": "Track suits and training wear",
+        "school_gym_wear": "School gym clothes",
+        "other": "Other",
+        "none": "No sports uniform in particular appeals to me strongly"
+      }
+    },
+    "top_uniform": {
+      "label": "Which one of those do you like the most? Please choose one."
+    },
+    "uniform_appeal": {
+      "label": "What do you find appealing about sports uniforms?",
+      "options": {
+        "design_color": "Design and color",
+        "silhouette": "Silhouette and body lines",
+        "material_touch": "Material and feel against the skin",
+        "smooth_texture": "A smooth, silky feel",
+        "stretch_fit": "Stretch and fit",
+        "pants_fit_tension": "The snug fit and tension of baseball pants",
+        "thin_sheer": "Thin, light or slightly sheer fabric",
+        "thick_solid": "Thick, sturdy fabric",
+        "sweat_feel": "How it feels when sweaty or damp",
+        "undershirt": "The look of layering over an undershirt",
+        "team_identity": "A sense of team or club unity",
+        "athletic_atmosphere": "The athletic-club atmosphere, like school baseball clubs",
+        "nostalgia": "Memories of my school days",
+        "athlete_admiration": "Admiration for the sport or its players",
+        "other": "Other",
+        "none": "Nothing in particular appeals to me strongly"
+      }
+    },
+    "uniform_engagement": {
+      "label": "How would you like to be involved with the sports uniforms you like?",
+      "options": {
+        "wear": "I want to wear them myself",
+        "see_others": "I want to see other people wearing them",
+        "photograph": "I want to be involved as the one taking photos",
+        "have_photos_taken": "I want to have photos taken of me wearing them",
+        "sport_activity": "I want to play sports or exercise in those uniforms",
+        "collect": "I enjoy collecting or admiring them",
+        "none": "None of these apply to me right now"
+      }
+    },
+    "top_uniform_sport_experience": {
+      "label": "Have you actually played the sport of the uniform you like the most?",
+      "options": {
+        "continuous": "Yes, regularly, such as in a school club or team",
+        "casual": "Yes, several times (in classes, for fun, on my own, etc.)",
+        "trial_only": "Only tried it once or twice",
+        "none": "No, I have never played it"
+      }
+    },
+    "baseball_play_interest": {
+      "label": "How interested are you in playing baseball or catchball itself?",
+      "options": {
+        "currently_do": "I do it now",
+        "very_interested": "I would love to try",
+        "if_opportunity": "I would try if I had the chance",
+        "little_interest": "Not very interested",
+        "no_interest": "Not interested"
+      }
+    },
+    "baseball_experience": {
+      "label": "Which best describes your experience with baseball or catchball? Please choose one.",
+      "options": {
+        "team": "I have played on a baseball club or competitive team",
+        "grass_baseball": "I have played recreational (sandlot) baseball",
+        "catchball_only": "I have played catchball a few times",
+        "class_play": "I have played baseball a few times in classes or for fun",
+        "none": "No experience"
+      }
+    },
+    "club_awareness": {
+      "label": "Do you know Nagoya Baseball Uniform Club (名古屋野球ユニ部)?",
+      "options": {
+        "attended": "I have taken part",
+        "aware_not_attended": "I know of it but have not taken part",
+        "name_only": "I only know the name",
+        "first_time": "I am hearing about it for the first time"
+      }
+    },
+    "catchball_interest": {
+      "label": "How interested are you in a meet-up where people play catchball while wearing baseball uniforms?",
+      "options": {
+        "very_interested": "I would love to take part",
+        "if_conditions": "I would like to take part if the conditions suit me",
+        "some_interest": "I am a little interested",
+        "low_interest": "I am not very interested at the moment",
+        "not_interested": "I do not want to take part at the moment"
+      }
+    },
+    "uniform_social_interest": {
+      "label": "Even without playing catchball, are you interested in gatherings centered on wearing, viewing or photographing baseball uniforms?",
+      "options": {
+        "very_interested": "I would love to take part",
+        "if_conditions": "I am interested if the content and atmosphere suit me",
+        "some_interest": "I am a little interested",
+        "low_interest": "I am not very interested at the moment",
+        "not_interested": "I am not interested at the moment"
+      }
+    },
+    "near_term_participation_intent": {
+      "label": "How likely are you to actually take part in a catchball meet-up within the next 3 months?",
+      "options": {
+        "definitely": "Very likely",
+        "if_conditions": "I may take part if the schedule and conditions suit me",
+        "unsure": "I do not know yet",
+        "not_now": "I do not plan to take part for the time being"
+      }
+    },
+    "barriers": {
+      "label": "Select anything that makes you hesitate or worries you about taking part",
+      "options": {
+        "exercise_not_confident": "I am not good at exercise or not confident about my stamina",
+        "health_concern": "I am worried about my health or getting injured",
+        "skill_anxiety": "I worry about keeping up with experienced players",
+        "rules_unknown": "I do not know the rules or how baseball and catchball are played",
+        "solo": "It is hard to take part on my own",
+        "regulars": "I worry it will be hard to join the circle of regulars",
+        "participants_unknown": "I do not know what kind of people will attend",
+        "age_fit": "I worry whether I fit in with the age range of participants",
+        "body_fit": "I worry whether my body type or appearance fits in",
+        "sexual_atmosphere": "I worry about a sexual atmosphere or unwanted physical contact",
+        "hard_to_refuse": "I worry it would be hard to say no to things I dislike",
+        "photo_privacy": "I worry about being photographed, photos being posted on social media, or being identified",
+        "no_uniform": "I do not have a uniform",
+        "no_glove": "I do not have a glove",
+        "location": "The venue is far away or hard to get to",
+        "schedule": "The date and time do not suit me",
+        "cost": "I am concerned about costs such as participation and transport fees",
+        "weather": "I am worried about the outdoor conditions, such as heat, cold or rain",
+        "work_life": "I am busy with work, studies or personal life and find it hard to make time",
+        "community_scope": "I wonder whether a space for gay men and men attracted to men suits me",
+        "other": "Other",
+        "none": "Nothing in particular"
+      }
+    },
+    "main_barrier": {
+      "label": "Which one of those is your biggest reason? Please choose one."
+    },
+    "participation_conditions": {
+      "label": "What conditions would make it easier for you to take part?",
+      "options": {
+        "beginner_welcome": "Beginners are clearly welcome",
+        "participant_info": "I can find out the atmosphere of the participants beforehand",
+        "newcomers_present": "Several first-timers or people returning after a long break are there",
+        "glove_rental": "Gloves can be borrowed",
+        "uniform_rental": "Uniforms can be borrowed",
+        "small_group": "A small-group event",
+        "with_friend": "I can come with an acquaintance",
+        "schedule_match": "The date and time suit me",
+        "near_location": "The venue is close or easy to get to",
+        "no_photo_option": "I can choose not to appear in photos or on social media",
+        "safe_policy": "A wholesome code of conduct and rules on physical contact are clearly stated",
+        "price_clear": "The participation fee is known in advance",
+        "other": "Other",
+        "none": "Nothing in particular / not sure yet"
+      }
+    },
+    "attendance_count": {
+      "label": "How many times have you taken part in Nagoya Baseball Uniform Club events so far?",
+      "options": { "once": "Once", "two_to_four": "2–4 times", "five_plus": "5 times or more" }
+    },
+    "last_attended": {
+      "label": "When did you last take part?",
+      "options": {
+        "within_3m": "Within the last 3 months",
+        "three_to_six_m": "3–6 months ago",
+        "six_to_twelve_m": "6 months to 1 year ago",
+        "over_1y": "More than 1 year ago",
+        "dont_remember": "I do not remember"
+      }
+    },
+    "repeat_intent": {
+      "label": "Would you like to take part again within the next 3 months?",
+      "options": {
+        "definitely": "Yes, definitely",
+        "if_conditions": "Yes, if the conditions suit me",
+        "unsure": "I do not know yet",
+        "not_now": "I do not plan to take part for the time being"
+      }
+    },
+    "overall_satisfaction": {
+      "label": "How satisfied are you with Nagoya Baseball Uniform Club overall?",
+      "anchors": { "1": "Dissatisfied", "2": "Somewhat dissatisfied", "3": "Neither satisfied nor dissatisfied", "4": "Somewhat satisfied", "5": "Satisfied" },
+      "notApplicable": "Cannot rate"
+    },
+    "satisfaction_atmosphere": {
+      "label": "How satisfied are you with the participants and the atmosphere?",
+      "anchors": { "1": "Dissatisfied", "2": "Somewhat dissatisfied", "3": "Neither satisfied nor dissatisfied", "4": "Somewhat satisfied", "5": "Satisfied" },
+      "notApplicable": "Cannot rate"
+    },
+    "satisfaction_beginner_support": {
+      "label": "How satisfied are you with the consideration shown to beginners and people returning after a break?",
+      "anchors": { "1": "Dissatisfied", "2": "Somewhat dissatisfied", "3": "Neither satisfied nor dissatisfied", "4": "Somewhat satisfied", "5": "Satisfied" },
+      "notApplicable": "Cannot rate"
+    },
+    "satisfaction_activity": {
+      "label": "How satisfied are you with the activities themselves, such as the catchball and the amount of exercise?",
+      "anchors": { "1": "Dissatisfied", "2": "Somewhat dissatisfied", "3": "Neither satisfied nor dissatisfied", "4": "Somewhat satisfied", "5": "Satisfied" },
+      "notApplicable": "Cannot rate"
+    },
+    "pre_attendance_worries": {
+      "label": "What were you worried about before your first time taking part?",
+      "options": {
+        "exercise_not_confident": "I was not good at exercise or not confident about my stamina",
+        "health_concern": "I was worried about my health or getting injured",
+        "skill_anxiety": "I worried about keeping up with experienced players",
+        "rules_unknown": "I did not know the rules or how baseball and catchball are played",
+        "solo": "I was worried about taking part on my own",
+        "regulars": "I worried whether I could join the circle of regulars",
+        "participants_unknown": "I did not know what kind of people would attend",
+        "age_fit": "I worried whether I fit in with the age range of participants",
+        "body_fit": "I worried whether my body type or appearance fit in",
+        "sexual_atmosphere": "I worried about a sexual atmosphere or unwanted physical contact",
+        "hard_to_refuse": "I worried whether I could clearly say no to things I disliked",
+        "photo_privacy": "I worried about being photographed, photos being posted on social media, or being identified",
+        "equipment": "I was worried about equipment such as the uniform and glove",
+        "weather": "I was worried about the outdoor conditions, such as heat, cold or rain",
+        "other": "Other",
+        "none": "I had no particular worries"
+      }
+    },
+    "attendance_lapse_reasons": {
+      "label": "Select the reasons that apply for why you have not taken part recently",
+      "options": {
+        "schedule": "The date and time no longer suit me",
+        "location": "The venue is hard to get to",
+        "work_life": "I became busy with work, studies or personal life",
+        "health_injury": "Health problems or injuries were a burden",
+        "weather": "The outdoor conditions, such as heat, cold or rain, became a burden",
+        "skill_level": "I felt my experience or level did not match",
+        "content_fit": "The balance of sports, socializing and photography did not suit me",
+        "relationships": "I was bothered by my relationship with certain participants",
+        "regulars": "It was hard to fit into the circle of regulars or the overall atmosphere",
+        "age": "I felt the age range of participants did not suit me",
+        "body_image": "I was self-conscious about my body type or appearance",
+        "community_scope": "A space for gay men and men attracted to men did not suit me",
+        "sexual_atmosphere": "The sexual atmosphere or sense of distance did not suit me",
+        "solo": "Continuing to take part on my own became a burden",
+        "interest": "I lost interest in baseball or uniforms",
+        "privacy_photo": "I was worried about or uncomfortable with photography or social media posts",
+        "cost": "I was concerned about costs such as participation and transport fees",
+        "motivation": "No particular reason; I just gradually stopped going",
+        "other": "Other"
+      }
+    },
+    "rejoin_conditions": {
+      "label": "What changes would make it easier for you to take part again?",
+      "options": {
+        "more_dates": "More event dates",
+        "different_times": "Different days of the week or times",
+        "nearer_location": "More venues or venues closer to me",
+        "small_group": "Small-group sessions",
+        "returner_session": "Sessions for first-timers and people returning after a break",
+        "beginner_session": "Sessions focused on beginners",
+        "experienced_session": "Sessions for experienced players",
+        "more_catchball": "Sessions focused on catchball",
+        "more_games": "Sessions with light games",
+        "more_photo": "Sessions where I can enjoy photography",
+        "more_social": "Sessions where I can enjoy socializing and chatting",
+        "participant_info": "I can find out the participants and atmosphere beforehand",
+        "loaners": "Equipment and uniforms can be borrowed",
+        "no_change": "No changes needed; I would take part again if the timing works",
+        "other": "Other"
+      }
+    },
+    "preferred_program": {
+      "label": "What kind of content would make it easier for you to take part?",
+      "options": {
+        "beginner_catchball": "Catchball focused on beginners",
+        "mixed_level": "A mix of experienced players and beginners",
+        "catchball_only": "Catchball only",
+        "light_fielding": "Light fielding practice",
+        "simple_game": "A simple game",
+        "uniform_photo": "Photography in uniforms",
+        "social": "Chatting and socializing",
+        "none": "Nothing in particular / not sure yet"
+      }
+    },
+    "preferred_schedule": {
+      "label": "Select the days and times that work for you",
+      "options": {
+        "weekday_day": "Weekday daytime",
+        "weekday_night": "Weekday evening or night",
+        "sat_morning": "Saturday morning",
+        "sat_afternoon": "Saturday afternoon",
+        "sat_evening": "Saturday early evening",
+        "sun_morning": "Sunday morning",
+        "sun_afternoon": "Sunday afternoon",
+        "sun_evening": "Sunday early evening",
+        "holiday": "Public holidays",
+        "no_preference": "No particular preference"
+      }
+    },
+    "preferred_size": {
+      "label": "About how many participants would make it easy for you to take part?",
+      "options": {
+        "three_five": "3–5 people",
+        "six_eight": "6–8 people",
+        "nine_twelve": "9–12 people",
+        "thirteen_plus": "13 or more people",
+        "no_preference": "The number does not matter"
+      }
+    },
+    "age_limit_effect": {
+      "label": "If a separate session limited to people aged 39 or under were held in addition to the regular sessions, would it change how easy it is for you to take part?",
+      "options": {
+        "much_easier": "It would be easier to take part",
+        "somewhat_easier": "It would be somewhat easier to take part",
+        "no_change": "It would make no difference",
+        "somewhat_harder": "It would be somewhat harder to take part",
+        "much_harder": "It would be harder to take part",
+        "ineligible": "I am outside that age range, so I could not take part in that session",
+        "unsure": "I do not know"
+      }
+    },
+    "participation_fee_tolerance": {
+      "label": "Taking part is currently free, but if a fee became necessary in the future, which is closest to the most you would pay per session?",
+      "options": {
+        "no_paid": "I would not take part if a fee were required",
+        "up_to_500": "Up to 500 yen",
+        "up_to_1000": "Up to 1,000 yen",
+        "up_to_2000": "Up to 2,000 yen",
+        "up_to_3000": "Up to 3,000 yen",
+        "over_3000": "I might consider more than 3,000 yen depending on the content"
+      }
+    },
+    "announcement_lead_time": {
+      "label": "How far in advance of an event would an announcement make it easier for you to take part?",
+      "options": {
+        "three_days": "About 3 days before",
+        "one_week": "About 1 week before",
+        "two_weeks": "About 2 weeks before",
+        "three_weeks": "About 3 weeks before",
+        "one_month": "About 1 month before",
+        "over_month": "More than 1 month before",
+        "no_preference": "I do not mind"
+      }
+    },
+    "announcement_style": {
+      "label": "Select the ways of announcing upcoming events that would make it easier for you to take part",
+      "options": {
+        "monthly_batch": "Announcing events together, such as a whole month at a time",
+        "each_event": "Announcing each event individually",
+        "fixed_schedule": "Announcing with a fixed regular day and time",
+        "no_preference": "No particular preference"
+      }
+    },
+    "announcement_channels": {
+      "label": "How would you prefer to receive event information?",
+      "options": {
+        "x": "X",
+        "line_openchat": "LINE Open Chat",
+        "website": "Website",
+        "instagram": "Instagram",
+        "email": "Email",
+        "other": "Other",
+        "no_preference": "No particular preference"
+      }
+    },
+    "student_activities": {
+      "label": "Which school clubs, club activities or circles did you take part in during your school years (junior high to university)?",
+      "options": {
+        "baseball_softball": "Baseball or softball",
+        "soccer_futsal": "Soccer or futsal",
+        "basketball": "Basketball",
+        "volleyball": "Volleyball",
+        "rugby_american_football": "Rugby or American football",
+        "track_field": "Track and field",
+        "swimming": "Swimming",
+        "tennis": "Tennis",
+        "table_tennis_badminton": "Table tennis or badminton",
+        "gymnastics": "Gymnastics",
+        "martial_arts": "Martial arts such as judo and kendo",
+        "wrestling_combat": "Wrestling or combat sports",
+        "cycling": "Cycling",
+        "other_sport": "Other sports",
+        "culture": "Cultural clubs",
+        "other": "Other",
+        "none": "I had no club activity experience"
+      }
+    },
+    "activity_stopped": {
+      "label": "Is there an activity from your school years that you quit partway or gradually drifted away from?",
+      "options": { "yes": "Yes", "no": "No", "dont_remember": "I do not remember / prefer not to answer" }
+    },
+    "activity_stopped_reasons": {
+      "label": "Why did you quit or stop continuing?",
+      "options": {
+        "environment_ended": "The environment I was active in ended, for example by moving on to a new school or graduating",
+        "work_life": "I became busy with work, studies or personal life",
+        "move": "Moving house made it hard to get there",
+        "cost": "The cost became a burden",
+        "physical": "Injury, health or physical stamina reasons",
+        "skill": "I could not improve or felt it did not suit me",
+        "interest": "My interest shifted to something else",
+        "relationships": "I did not get along with the people",
+        "atmosphere": "The atmosphere did not suit me, such as the hierarchy, competition or athletic-club culture",
+        "no_companions": "I no longer had anyone to do it with",
+        "sexuality": "I felt uncomfortable because of matters related to my sexual orientation",
+        "motivation": "No particular reason; I just gradually stopped going",
+        "other": "Other"
+      }
+    },
+    "adult_sports": {
+      "label": "Select all the sports and exercise you have done since becoming an adult in the workforce",
+      "options": {
+        "baseball_softball": "Baseball or softball",
+        "catchball": "Catchball",
+        "soccer_futsal": "Soccer or futsal",
+        "basketball": "Basketball",
+        "volleyball": "Volleyball",
+        "rugby_football": "Rugby or American football",
+        "track_running": "Track, running or jogging",
+        "swimming": "Swimming",
+        "tennis": "Tennis",
+        "table_badminton": "Table tennis or badminton",
+        "martial_combat": "Martial arts or combat sports",
+        "cycling": "Cycling",
+        "gym": "Gym or strength training",
+        "walking_hiking": "Walking, mountain climbing or hiking",
+        "dance_fitness": "Dance or fitness",
+        "other": "Other",
+        "none": "I have not done any sports or exercise since starting work"
+      }
+    },
+    "adult_context": {
+      "label": "In what settings did you do sports or exercise after becoming an adult in the workforce?",
+      "options": {
+        "gay_men_group": "Circles or groups for gay men and men attracted to men",
+        "general_group": "General circles or adult teams not limited by sexual orientation",
+        "work_team": "A team at my workplace or company",
+        "gym_club": "A commercial sports club or gym",
+        "friends": "Gatherings with friends or acquaintances",
+        "individual": "On my own",
+        "other": "Other"
+      }
+    },
+    "exercise_frequency": {
+      "label": "How often do you currently exercise?",
+      "options": {
+        "three_plus_week": "3 or more times a week",
+        "one_two_week": "1–2 times a week",
+        "one_three_month": "1–3 times a month",
+        "less_monthly": "Less than once a month",
+        "none": "I do not exercise at present"
+      }
+    },
+    "exercise_continuation_motivation": {
+      "label": "What keeps you motivated to continue exercising?",
+      "helpText": "Please select everything that actually helps you keep going.",
+      "options": {
+        "health": "Staying healthy and not losing my stamina",
+        "appearance": "Maintaining or improving my body shape and appearance",
+        "self_confidence": "Gaining self-confidence",
+        "stress_relief": "Relieving stress and refreshing myself",
+        "enjoyment": "Exercise itself is fun",
+        "improvement": "I enjoy getting better and being able to do more",
+        "goals": "Achieving records and goals",
+        "competition_event": "Taking part in competitions, games or events",
+        "routine": "It has become part of my daily routine",
+        "friends": "I can keep going together with friends",
+        "community": "I have a place or community I can join regularly",
+        "uniform": "I enjoy wearing uniforms and sportswear",
+        "recognition": "I am happy to be noticed, praised or appreciated by others",
+        "attractiveness": "I want to be popular and look attractive",
+        "dating": "I also want it to lead to romance or meeting people",
+        "sexual_appeal": "I want to improve my physique and sex appeal",
+        "other": "Other",
+        "no_conscious_reason": "No particular reason; I just keep going somehow"
+      }
+    },
+    "exercise_motivation": {
+      "label": "What would motivate you to keep exercising, start, or start again in the future?",
+      "options": {
+        "health": "Staying healthy and improving stamina",
+        "appearance": "Maintaining or improving body shape and appearance",
+        "stress_relief": "Relieving stress and refreshing myself",
+        "enjoyment": "The enjoyment of exercise itself",
+        "improvement": "Feeling that I am improving and can do more",
+        "goals": "Achieving records and goals",
+        "competition_event": "Taking part in competitions, events or games",
+        "friends": "Enjoying it together with friends",
+        "community": "Having a community I can join regularly",
+        "meet_people": "Meeting new people",
+        "uniform": "The enjoyment of wearing uniforms and sportswear",
+        "photo_record": "The enjoyment of keeping photos and records",
+        "routine": "Keeping it up as part of my daily routine",
+        "recognition": "Being encouraged and appreciated by those around me",
+        "other": "Other",
+        "none": "Nothing in particular"
+      }
+    },
+    "age": {
+      "label": "What is your age group?",
+      "options": {
+        "18_24": "18–24",
+        "25_29": "25–29",
+        "30_39": "30–39",
+        "40_49": "40–49",
+        "50_59": "50–59",
+        "60_plus": "60 or older",
+        "prefer_not_to_say": "Prefer not to answer"
+      }
+    },
+    "prefecture": {
+      "label": "Which prefecture do you live in?",
+      "options": {
+        "pref_01": "Hokkaido",
+        "pref_02": "Aomori",
+        "pref_03": "Iwate",
+        "pref_04": "Miyagi",
+        "pref_05": "Akita",
+        "pref_06": "Yamagata",
+        "pref_07": "Fukushima",
+        "pref_08": "Ibaraki",
+        "pref_09": "Tochigi",
+        "pref_10": "Gunma",
+        "pref_11": "Saitama",
+        "pref_12": "Chiba",
+        "pref_13": "Tokyo",
+        "pref_14": "Kanagawa",
+        "pref_15": "Niigata",
+        "pref_16": "Toyama",
+        "pref_17": "Ishikawa",
+        "pref_18": "Fukui",
+        "pref_19": "Yamanashi",
+        "pref_20": "Nagano",
+        "pref_21": "Gifu",
+        "pref_22": "Shizuoka",
+        "pref_23": "Aichi",
+        "pref_24": "Mie",
+        "pref_25": "Shiga",
+        "pref_26": "Kyoto",
+        "pref_27": "Osaka",
+        "pref_28": "Hyogo",
+        "pref_29": "Nara",
+        "pref_30": "Wakayama",
+        "pref_31": "Tottori",
+        "pref_32": "Shimane",
+        "pref_33": "Okayama",
+        "pref_34": "Hiroshima",
+        "pref_35": "Yamaguchi",
+        "pref_36": "Tokushima",
+        "pref_37": "Kagawa",
+        "pref_38": "Ehime",
+        "pref_39": "Kochi",
+        "pref_40": "Fukuoka",
+        "pref_41": "Saga",
+        "pref_42": "Nagasaki",
+        "pref_43": "Kumamoto",
+        "pref_44": "Oita",
+        "pref_45": "Miyazaki",
+        "pref_46": "Kagoshima",
+        "pref_47": "Okinawa",
+        "overseas": "Outside Japan",
+        "prefer_not_to_say": "Prefer not to answer"
+      }
+    },
+    "aichi_area": {
+      "label": "Which area do you live in?",
+      "options": {
+        "nagoya": "Nagoya City",
+        "owari": "Owari region (outside Nagoya City)",
+        "mikawa": "Mikawa region",
+        "prefer_not_to_say": "Prefer not to answer"
+      }
+    },
+    "residence_country": {
+      "label": "Which country or region do you live in?",
+      "helpText": "Please enter the name of your country or region on one line (e.g., United States, Taiwan). It will not be shown in the public results."
+    },
+    "feedback": {
+      "label": "Please tell us what you expect from Nagoya Baseball Uniform Club and anything you would like improved"
+    },
+    "support_message": {
+      "label": "If you have a message of support or encouragement for the people running Nagoya Baseball Uniform Club, please share it",
+      "helpText": "Optional. Feel free to write words of support or encouragement for the organizers, or anything you hope they will keep doing."
+    }
+  }
+}

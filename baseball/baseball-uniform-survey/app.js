@@ -12,6 +12,13 @@
  *      submit_excluded のみ server へ送信し、token は sessionStorage から POST body にだけ載せる
  *  - GA4 は analytics.js の form_start / form_error（error type のみ）/ survey_submit だけ。
  *    section_view・設問ID・section・route・進捗・回答値・自由記述・UUID・test token/run は送らない。
+ *
+ * 多言語化（Issue #398）: ja / en / ko / zh-Hans / zh-Hant。
+ *  - 表示文言だけを切り替える。answers / other_texts / payload は stable ID のまま（言語で変わらない）。
+ *  - 日本語は schema が正本、他言語は i18n.generated.js（i18n/*.json から生成）を question.id / option.id で引く。
+ *    翻訳keyが欠けても 選択言語 → ja（schema）の順で表示し、画面を壊さない（欠落は CI の辞書テストが失敗させる）。
+ *  - 選択言語は localStorage にだけ保持する。URL・GA4・payload・Spreadsheet には載せない。
+ *  - 自由記述の本文は翻訳しない（入力された原文のまま）。
  */
 (function () {
   'use strict';
@@ -26,34 +33,99 @@
   var SECONDS_PER_QUESTION = 15;
   var MAX_PERCENT_BEFORE_SUBMIT = 99;
 
-  /* 画面上の見出し（UI 文言。設問・option・分岐は含まない）。schema の section ID と 1:1 で、欠けるとテストが失敗する。 */
-  var SECTION_TITLES = {
-    eligibility: '回答の前に',
-    uniform: 'ユニフォームについて',
-    club: '名古屋野球ユニ部について',
-    nonattendee: 'キャッチボール会への関心',
-    club_interest: 'ユニフォーム交流への関心',
-    attendee: '参加された方へ',
-    operations: 'キャッチボール会の運営について',
-    activity_history: 'これまでのスポーツ活動',
-    adult_activity: '運動について',
-    profile: 'あなたについて',
-    closing: '最後に'
-  };
+  /* ── 表示言語（i18n）。辞書は i18n.generated.js（SURVEY_I18N）。保存値・schema は言語で変わらない。 ── */
+  var I18N = window.SURVEY_I18N || { default: 'ja', locales: ['ja'], dicts: { ja: { ui: {}, sections: {} } } };
+  var DEFAULT_LOCALE = I18N.default || 'ja';
+  var LOCALE_KEY = 'snb_baseball_uniform_survey_locale_v1';
+  var LOCALE_NAMES = { ja: '日本語', en: 'English', ko: '한국어', 'zh-Hans': '简体中文', 'zh-Hant': '繁體中文' };
+  var locale = DEFAULT_LOCALE;
+  var memoryLocale = null;
 
-  var ERROR_MESSAGES = {
-    required: 'この質問は回答が必要です。',
-    other_text_required: '「その他」の内容を入力してください。',
-    too_long: '文字数が上限を超えています。',
-    invalid_text: '使用できない文字が含まれています。',
-    exclusive_conflict: '一緒に選べない選択肢が選ばれています。',
-    other_text_unexpected: '選択内容を確認してください。',
-    invalid_option: '選択内容を確認してください。',
-    invalid_type: '選択内容を確認してください。',
-    duplicate_option: '選択内容を確認してください。',
-    hidden_field: '選択内容を確認してください。',
-    unknown_field: '選択内容を確認してください。'
-  };
+  function isSupported(value) { return typeof value === 'string' && I18N.locales.indexOf(value) !== -1; }
+
+  /* ブラウザ言語タグ → 対応言語。対応外は null。zh は script / 地域で簡体・繁体を分け、指定のない zh は簡体とする。 */
+  function localeFromTag(tag) {
+    var lower = String(tag || '').toLowerCase().replace(/_/g, '-');
+    var base = lower.split('-')[0];
+    if (base === 'ja') return 'ja';
+    if (base === 'en') return 'en';
+    if (base === 'ko') return 'ko';
+    if (base === 'zh') {
+      if (/(^|-)hant(-|$)/.test(lower) || /-(tw|hk|mo)(-|$)/.test(lower)) return 'zh-Hant';
+      return 'zh-Hans'; // zh-Hans / zh-CN / zh-SG / zh（地域なし）
+    }
+    return null;
+  }
+  function detectBrowserLocale() {
+    var tags = [];
+    try {
+      if (window.navigator.languages && window.navigator.languages.length) tags = Array.prototype.slice.call(window.navigator.languages);
+      else if (window.navigator.language) tags = [window.navigator.language];
+    } catch (e) { tags = []; }
+    for (var i = 0; i < tags.length; i++) {
+      var found = localeFromTag(tags[i]);
+      if (found && isSupported(found)) return found;
+    }
+    return DEFAULT_LOCALE;
+  }
+  function readStoredLocale() {
+    try {
+      var stored = window.localStorage.getItem(LOCALE_KEY);
+      if (isSupported(stored)) return stored;
+    } catch (e) { /* storage が使えない場合はメモリだけ */ }
+    return isSupported(memoryLocale) ? memoryLocale : null;
+  }
+  function storeLocale(value) {
+    memoryLocale = value;
+    try { window.localStorage.setItem(LOCALE_KEY, value); } catch (e) { /* ignore */ }
+  }
+  /* 初期言語：保存済みの選択 → ブラウザ言語 → ja。 */
+  locale = readStoredLocale() || detectBrowserLocale();
+
+  function dictOf(code) { return I18N.dicts[code] || null; }
+  function fillParams(text, params) {
+    return String(text).replace(/\{([A-Za-z0-9_]+)\}/g, function (match, name) {
+      return params && params[name] !== undefined && params[name] !== null ? String(params[name]) : match;
+    });
+  }
+  function hasUi(key) { var ja = dictOf(DEFAULT_LOCALE); return !!(ja && ja.ui && typeof ja.ui[key] === 'string'); }
+  /* UI 文言：選択言語 → ja → key 名（辞書の欠落は CI が検出する。実行時は画面を壊さないためだけの安全策）。 */
+  function t(key, params) {
+    var current = dictOf(locale);
+    var value = current && current.ui && current.ui[key];
+    if (typeof value !== 'string' || value === '') {
+      var base = dictOf(DEFAULT_LOCALE);
+      value = base && base.ui && base.ui[key];
+    }
+    if (typeof value !== 'string' || value === '') value = key;
+    return fillParams(value, params);
+  }
+  /* 設問由来の文言：日本語は schema が正本。他言語は question.id / option.id で引き、無ければ schema（ja）。 */
+  function qEntry(questionId) {
+    var current = dictOf(locale);
+    return locale !== DEFAULT_LOCALE && current && current.questions && current.questions[questionId] || null;
+  }
+  function qLabel(q) { var e = qEntry(q.id); return e && e.label || q.label; }
+  function qHelp(q) { var e = qEntry(q.id); return e && e.helpText || q.helpText; }
+  function optionLabel(q, option) {
+    // single_dynamic の候補は source 設問の option ID なので、source 設問の翻訳を使う。
+    var owner = q.type === 'single_dynamic' ? q.sourceQuestion : q.id;
+    var e = qEntry(owner);
+    var id = option.sourceOptionId || option.id;
+    return e && e.options && e.options[id] || option.label;
+  }
+  function anchorLabel(q, point) { var e = qEntry(q.id); return e && e.anchors && e.anchors[String(point.value)] || point.label; }
+  function notApplicableLabel(q, na) { var e = qEntry(q.id); return e && e.notApplicable || na.label; }
+  function schemaText(path, fallback) {
+    var current = dictOf(locale);
+    var node = locale !== DEFAULT_LOCALE && current && current.schemaText;
+    for (var i = 0; node && i < path.length; i++) node = node[path[i]];
+    return typeof node === 'string' && node ? node : fallback;
+  }
+  function milestoneText(m) { return schemaText(['milestones', (m.afterQuestion ? 'after:' + m.afterQuestion : 'before:' + m.beforeQuestion)], m.message); }
+
+  var ERROR_CODES = ['required', 'other_text_required', 'too_long', 'invalid_text', 'exclusive_conflict', 'other_text_unexpected',
+    'invalid_option', 'invalid_type', 'duplicate_option', 'hidden_field', 'unknown_field'];
 
   var config = window.BASEBALL_UNIFORM_SURVEY_CONFIG || {};
   // endpoint は読み込み時に固定せず、使う時点で config から読む（Local Override 等で後から設定されても送信・status で使える）。
@@ -74,8 +146,12 @@
     submitting: false,
     finished: false,
     shown: { percent: 0, minutes: null },
-    banner: []
+    banner: [],          // milestone オブジェクト（言語切替で再解決するため、文字列ではなく参照を持つ）
+    shownErrors: {},     // 画面に出している検証エラー {questionId: code}（言語切替後に同じ内容を再表示する）
+    submitMsgKey: null,  // 画面に出している送信エラー文言の key
+    relang: false        // 言語切替による再描画中（フォーカス・スクロールを動かさない）
   };
+  var view = null; // 再描画用: null（フォーム画面）| {message: spec} | {loading: true}
   var uuid = null;
   var memoryUuid = null;
 
@@ -136,7 +212,11 @@
     return sectionIds().filter(function (id) { return sectionQuestions(id).length > 0; });
   }
   function pageList() { return ['intro'].concat(visibleSections(), ['review']); }
-  function titleOf(sectionId) { return SECTION_TITLES[sectionId] || ''; }
+  function titleOf(sectionId) {
+    var current = dictOf(locale);
+    var base = dictOf(DEFAULT_LOCALE);
+    return current && current.sections && current.sections[sectionId] || base && base.sections && base.sections[sectionId] || '';
+  }
 
   /* ── 回答の更新（hidden / stale は直ちに除去し、送信payloadに残さない） ── */
   function isEmptyAnswer(value) {
@@ -188,11 +268,11 @@
     var fieldset = el('fieldset', 'bus-q');
     fieldset.setAttribute('data-qid', q.id);
     var legend = el('legend');
-    legend.appendChild(el('span', 'bus-qtext', q.label));
+    legend.appendChild(el('span', 'bus-qtext', qLabel(q)));
     // required 表示は visible な設問にだけ描画する（hidden 設問は DOM に存在しない）。
-    legend.appendChild(el('span', q.required ? 'bus-req' : 'bus-optional', q.required ? '必須' : '任意'));
+    legend.appendChild(el('span', q.required ? 'bus-req' : 'bus-optional', q.required ? t('common.required') : t('common.optional')));
     fieldset.appendChild(legend);
-    if (q.helpText) fieldset.appendChild(el('p', 'bus-help', q.helpText));
+    if (q.helpText) fieldset.appendChild(el('p', 'bus-help', qHelp(q)));
     return fieldset;
   }
 
@@ -231,7 +311,7 @@
     if (info.optionIds.length) {
       var box = el('div', 'bus-other');
       var inputId = uid('other');
-      var label = el('label', '', '「その他」の内容');
+      var label = el('label', '', t('common.otherText'));
       label.setAttribute('for', inputId);
       var input = document.createElement('input');
       input.type = 'text';
@@ -247,7 +327,7 @@
     }
     var ackDef = schema.sectionUx && schema.sectionUx.lowInterestAcknowledgement;
     if (ackDef && ackDef.trigger && ackDef.trigger.question === q.id) {
-      var ack = el('p', 'bus-ack', ackDef.message);
+      var ack = el('p', 'bus-ack', schemaText(['lowInterestAcknowledgement'], ackDef.message));
       ack.setAttribute('role', 'status');
       fieldset.appendChild(ack);
     }
@@ -263,12 +343,12 @@
     var list = el('div', 'bus-options');
     var name = uid('q');
     if (q.type === 'single_dynamic' && options.length === 0) {
-      list.appendChild(el('p', 'bus-help', '選択できる項目がありません。前の質問をご確認ください。'));
+      list.appendChild(el('p', 'bus-help', t('common.noOptions')));
     }
     options.forEach(function (option) {
       var current = state.answers[q.id];
       var checked = type === 'radio' ? current === option.id : Array.isArray(current) && current.indexOf(option.id) !== -1;
-      list.appendChild(optionRow(q, option, type, name, checked, function (input) {
+      list.appendChild(optionRow(q, { id: option.id, label: optionLabel(q, option) }, type, name, checked, function (input) {
         if (type === 'radio') setAnswer(q, input.value);
         else {
           var next = core.applyMultipleSelection(schema, q.id, state.answers[q.id], option.id, input.checked);
@@ -287,7 +367,7 @@
     var name = uid('q');
     var list = el('div', 'bus-scale');
     scale.points.forEach(function (point) {
-      list.appendChild(optionRow(q, { id: point.id, label: point.value + '　' + point.label }, 'radio', name, state.answers[q.id] === point.id, function (input) {
+      list.appendChild(optionRow(q, { id: point.id, label: t('common.scalePoint', { value: point.value, label: anchorLabel(q, point) }) }, 'radio', name, state.answers[q.id] === point.id, function (input) {
         setAnswer(q, input.value);
         changed(q);
       }));
@@ -295,7 +375,7 @@
     fieldset.appendChild(list);
     if (scale.notApplicable) {
       var na = el('div', 'bus-scale-na');
-      na.appendChild(optionRow(q, scale.notApplicable, 'radio', name, state.answers[q.id] === scale.notApplicable.id, function (input) {
+      na.appendChild(optionRow(q, { id: scale.notApplicable.id, label: notApplicableLabel(q, scale.notApplicable) }, 'radio', name, state.answers[q.id] === scale.notApplicable.id, function (input) {
         setAnswer(q, input.value);
         changed(q);
       }));
@@ -315,12 +395,12 @@
     }
     textarea.id = inputId;
     textarea.className = singleLine ? 'bus-text' : 'bus-textarea';
-    textarea.setAttribute('aria-label', q.label);
+    textarea.setAttribute('aria-label', qLabel(q));
     if (typeof q.maxLength === 'number') textarea.maxLength = q.maxLength;
     textarea.value = state.answers[q.id] || '';
     var counter = el('p', 'bus-count');
     function updateCount() {
-      counter.textContent = typeof q.maxLength === 'number' ? textarea.value.length + ' / ' + q.maxLength + '文字' : '';
+      counter.textContent = typeof q.maxLength === 'number' ? t('common.charCount', { count: textarea.value.length, max: q.maxLength }) : '';
     }
     textarea.addEventListener('input', function () {
       setAnswer(q, textarea.value);
@@ -344,7 +424,7 @@
     if (q.type === 'single' || q.type === 'multiple' || q.type === 'single_dynamic') renderChoice(q, fieldset, changed);
     else if (q.type === 'scale') renderScale(q, fieldset, changed);
     else if (q.type === 'text') renderText(q, fieldset, changed);
-    else fieldset.appendChild(el('p', 'bus-help', 'この質問は表示できません。'));
+    else fieldset.appendChild(el('p', 'bus-help', t('common.unsupported')));
     addExtras(fieldset, q);
     errorSlot(fieldset, q);
     fieldset.bus_sig = signature(q);
@@ -437,14 +517,14 @@
     var box = el('div', 'bus-progress');
     box.id = 'bus-progress';
     box.setAttribute('role', 'group');
-    box.setAttribute('aria-label', '回答の進み具合');
+    box.setAttribute('aria-label', t('progress.groupAria'));
     var text = el('p', 'bus-progress-text');
     text.id = 'bus-progress-text';
     var bar = el('div', 'bus-bar');
     bar.setAttribute('role', 'progressbar');
     bar.setAttribute('aria-valuemin', '0');
     bar.setAttribute('aria-valuemax', '100');
-    bar.setAttribute('aria-label', '全体の進み具合');
+    bar.setAttribute('aria-label', t('progress.barAria'));
     bar.appendChild(el('i'));
     box.appendChild(text);
     box.appendChild(bar);
@@ -458,17 +538,17 @@
     var bar = box.querySelector('[role="progressbar"]');
     if (!info.determined) {
       // ルート確定前：割合・残り時間は出さない（過小表示になるため）。aria-valuenow を持たない indeterminate 表示。
-      document.getElementById('bus-progress-text').textContent = '現在 ' + info.sectionIndex + ' セクション目　あなたに必要な質問だけを表示します';
+      document.getElementById('bus-progress-text').textContent = t('progress.undetermined', { index: info.sectionIndex });
       bar.removeAttribute('aria-valuenow');
-      bar.setAttribute('aria-valuetext', '回答に応じて質問が決まります');
+      bar.setAttribute('aria-valuetext', t('progress.undeterminedValueText'));
       bar.firstChild.style.width = '0%';
       return;
     }
-    var parts = ['現在 ' + info.sectionIndex + '/' + info.sectionTotal + ' セクション', '全体の約' + info.percent + '%'];
-    parts.push(info.minutes === 0 ? 'まもなく完了' : '残り約' + info.minutes + '分');
+    var parts = [t('progress.section', { index: info.sectionIndex, total: info.sectionTotal }), t('progress.percent', { percent: info.percent })];
+    parts.push(info.minutes === 0 ? t('progress.almostDone') : t('progress.minutes', { minutes: info.minutes }));
     document.getElementById('bus-progress-text').textContent = parts.join('　');
     bar.setAttribute('aria-valuenow', String(info.percent));
-    bar.setAttribute('aria-valuetext', '全体の約' + info.percent + '%');
+    bar.setAttribute('aria-valuetext', t('progress.percent', { percent: info.percent }));
     bar.firstChild.style.width = info.percent + '%';
   }
 
@@ -480,14 +560,14 @@
       if (m.beforeQuestion) {
         var qs = sectionQuestions(sectionId).map(function (q) { return q.id; });
         if (qs.indexOf(m.beforeQuestion) !== -1 && (!m.conditionRef || core.evalNamedCondition(schema, m.conditionRef, state.answers))) {
-          messages.push(m.message);
+          messages.push(milestoneText(m));
         }
       }
     });
-    state.banner.forEach(function (text) { if (messages.indexOf(text) === -1) messages.push(text); });
+    state.banner.forEach(function (m) { var text = milestoneText(m); if (messages.indexOf(text) === -1) messages.push(text); });
     var route = schema.routeUx && schema.routeUx.pure_uniform_short_route;
     if (route && route.messageBeforeProfile && sectionId === 'profile' && core.evalCondition(schema, route.trigger, state.answers)) {
-      messages.push(route.messageBeforeProfile);
+      messages.push(schemaText(['routes', 'pure_uniform_short_route', 'messageBeforeProfile'], route.messageBeforeProfile));
     }
     return messages;
   }
@@ -501,7 +581,7 @@
       if (!m.afterQuestion) return;
       var target = ids.indexOf(m.afterQuestion) !== -1 ? m.afterQuestion
         : (m.fallbackAfterQuestion && !core.isVisible(schema, m.afterQuestion, state.answers) && ids.indexOf(m.fallbackAfterQuestion) !== -1 ? m.fallbackAfterQuestion : null);
-      if (target) out.push(m.message);
+      if (target) out.push(m); // 表示時に現在の言語で解決する
     });
     return out;
   }
@@ -525,6 +605,7 @@
 
   /* ── エラー表示 ── */
   function clearError(qid) {
+    delete state.shownErrors[qid];
     var fieldset = document.querySelector('fieldset[data-qid="' + qid + '"]');
     if (!fieldset) return;
     var slot = fieldset.querySelector('.bus-err');
@@ -535,22 +616,24 @@
     if (summary && !document.querySelector('.bus-has-error')) { summary.hidden = true; clear(summary); }
   }
 
-  function messageFor(code) { return ERROR_MESSAGES[code] || '入力内容を確認してください。'; }
+  function messageFor(code) { return ERROR_CODES.indexOf(code) !== -1 && hasUi('error.' + code) ? t('error.' + code) : t('error.generic'); }
 
   /* errors: {questionId: code}。要約（role=alert）と個別エラー（aria-live）を出し、最初の誤りへフォーカスする。 */
-  function showErrors(errors) {
+  function showErrors(errors, options) {
     var ids = Object.keys(errors);
+    state.shownErrors = {};
+    ids.forEach(function (id) { state.shownErrors[id] = errors[id]; });
     var summary = document.getElementById('bus-summary');
     if (summary) {
       clear(summary);
       summary.hidden = ids.length === 0;
       if (ids.length) {
-        summary.appendChild(el('p', 'bus-summary-title', '入力内容を確認してください（' + ids.length + '件）'));
+        summary.appendChild(el('p', 'bus-summary-title', t('error.summaryTitle', { count: ids.length })));
         var list = el('ul');
         ids.forEach(function (id) {
           var q = core.getQuestion(schema, id);
           var item = el('li');
-          var link = el('a', '', (q ? q.label : '') + '：' + messageFor(errors[id]));
+          var link = el('a', '', t('error.summaryItem', { label: q ? qLabel(q) : '', message: messageFor(errors[id]) }));
           link.href = '#bus-err-' + id;
           link.addEventListener('click', function (event) { event.preventDefault(); focusQuestion(id); });
           item.appendChild(link);
@@ -568,7 +651,7 @@
       fieldset.classList.add('bus-has-error');
       Array.prototype.forEach.call(fieldset.querySelectorAll('input:not([disabled]), textarea'), function (i) { i.setAttribute('aria-invalid', 'true'); });
     });
-    if (ids.length) focusQuestion(ids[0]);
+    if (ids.length && !(options && options.noFocus)) focusQuestion(ids[0]);
   }
 
   function focusQuestion(id) {
@@ -605,18 +688,12 @@
   }
 
   var INVALID_TEST = 'invalid_test_config';
-  var TEST_LABELS = {
-    invalid_test_config: 'TEST MODE（設定エラー）：テスト用URLの設定が正しくありません。回答・送信・計測は行いません。',
-    preview_no_submit: 'TEST MODE（プレビュー）：送信しても回答は保存されず、通信もしません。',
-    closed_view: 'TEST MODE（終了後表示の確認）：受付終了の表示だけを確認できます。',
-    submit_excluded: 'TEST MODE（テスト送信）：サーバーへ送信しますが、本番の集計・公開結果・通知には入りません。'
-  };
   function testBanner() {
     var banner = el('div', 'bus-test-banner');
     banner.id = 'bus-test-banner';
     banner.setAttribute('role', 'status');
-    banner.appendChild(el('span', '', TEST_LABELS[testMode]));
-    var exit = el('button', 'bus-test-exit', 'テストを終了');
+    banner.appendChild(el('span', '', t('test.banner.' + testMode)));
+    var exit = el('button', 'bus-test-exit', t('test.exit'));
     exit.type = 'button';
     exit.addEventListener('click', function () {
       testStore.clear();
@@ -641,6 +718,7 @@
   }
 
   function focusHeading() {
+    if (state.relang) return; // 言語切替による再描画では、フォーカスとスクロール位置を動かさない
     var h = document.getElementById('bus-page-title');
     if (h) h.focus();
     scrollTop();
@@ -650,7 +728,7 @@
     var nav = el('div', 'bus-nav');
     var inner = el('div', 'bus-nav-inner');
     if (onBack) {
-      var back = el('button', 'bus-btn bus-secondary', backLabel || '戻る');
+      var back = el('button', 'bus-btn bus-secondary', backLabel || t('common.back'));
       back.type = 'button';
       back.id = 'bus-back-btn';
       back.addEventListener('click', onBack);
@@ -676,6 +754,8 @@
   function go(page, banner) {
     state.page = page;
     state.banner = banner || [];
+    state.shownErrors = {};
+    state.submitMsgKey = null;
     render();
   }
 
@@ -692,25 +772,25 @@
   }
 
   function renderIntro() {
+    view = null;
     shell();
     var card = el('section', 'bus-card');
     card.setAttribute('aria-labelledby', 'bus-page-title');
-    card.appendChild(heading('回答の前にご確認ください'));
-    card.appendChild(el('p', 'bus-lead', '名古屋野球ユニ部の今後の運営・企画をよりよくするための匿名アンケートです。'));
+    card.appendChild(heading(t('intro.title')));
+    card.appendChild(el('p', 'bus-lead', t('intro.lead')));
     card.appendChild(noteList([
-      '対象は18歳以上の方です。',
-      '所要時間は' + schema.respondentNotice.estimatedMinutes.min + '〜' + schema.respondentNotice.estimatedMinutes.max + '分程度です。興味のある内容や回答ルートによって質問数が変わります。',
-      '個別の回答は公開しません。公開ページには集計結果だけを載せます。自由記述と、詳細な居住地域は公開しません。',
-      'アクセス解析（GA4）には、回答内容・どの質問にどう答えたか・自由記述を送りません。',
-      '個別の回答は、運営責任者1名のみが集計・運営改善の目的で確認する場合があります。',
-      '匿名性を優先するため、送信後に特定の回答を本人確認して修正・削除することは原則できません。',
-      '最後にまとめて送信する方式です。途中で離れた場合、回答内容はサーバーへ保存されません。',
-      'このアンケートへの回答は、キャッチボール会への参加申込ではありません。',
-      'SNS・Web等で回答を募っているため、結果は一般の人口全体を代表するものではありません。'
+      t('intro.note.eligibility'),
+      t('intro.note.time', { min: schema.respondentNotice.estimatedMinutes.min, max: schema.respondentNotice.estimatedMinutes.max }),
+      t('intro.note.publication'),
+      t('intro.note.admin'),
+      t('intro.note.anonymity'),
+      t('intro.note.partial'),
+      t('intro.note.notEntry'),
+      t('intro.note.representativeness')
     ]));
-    card.appendChild(el('p', 'bus-help', '参加についてのご相談は、問い合わせフォームからお願いします。'));
+    card.appendChild(el('p', 'bus-help', t('intro.contact')));
     app.appendChild(card);
-    app.appendChild(navBar(null, '回答をはじめる', function () {
+    app.appendChild(navBar(null, t('common.start'), function () {
       state.startedAt = Date.now();
       trackStart();
       var first = visibleSections()[0];
@@ -720,6 +800,7 @@
   }
 
   function renderSection(sectionId) {
+    view = null;
     shell();
     app.appendChild(progressNode());
     app.appendChild(summaryNode());
@@ -735,7 +816,8 @@
     syncSection(container, sectionId, null);
     var pages = pageList();
     var index = pages.indexOf(sectionId);
-    app.appendChild(navBar(function () { go(pages[Math.max(0, index - 1)]); }, '次へ', function () { next(sectionId); }));
+    app.appendChild(navBar(function () { go(pages[Math.max(0, index - 1)]); }, t('common.next'), function () { next(sectionId); }));
+    restoreMessages();
     focusHeading();
   }
 
@@ -762,40 +844,42 @@
     var labelOf = function (id) {
       if (q.type === 'scale') {
         var scale = core.getScale(schema, q.id);
-        if (scale.notApplicable && scale.notApplicable.id === id) return scale.notApplicable.label;
+        if (scale.notApplicable && scale.notApplicable.id === id) return notApplicableLabel(q, scale.notApplicable);
         var hit = scale.points.filter(function (p) { return p.id === id; })[0];
-        return hit ? hit.value + '　' + hit.label : id;
+        return hit ? t('common.scalePoint', { value: hit.value, label: anchorLabel(q, hit) }) : id;
       }
       var opt = options.filter(function (o) { return o.id === id; })[0];
-      var text = opt ? opt.label : id;
-      if (opt && (opt.other || opt.fromOther) && state.otherTexts[q.id] && q.type !== 'single_dynamic') text += '（' + state.otherTexts[q.id] + '）';
+      var text = opt ? optionLabel(q, opt) : id;
+      // 「その他」の自由記述は翻訳せず、入力された原文のまま表示する。
+      if (opt && (opt.other || opt.fromOther) && state.otherTexts[q.id] && q.type !== 'single_dynamic') text = t('common.withOther', { label: text, text: state.otherTexts[q.id] });
       return text;
     };
-    return core.selectedIds(q, value).map(labelOf).join('、');
+    return core.selectedIds(q, value).map(labelOf).join(t('common.listSeparator'));
   }
 
   function renderReview() {
+    view = null;
     shell();
     app.appendChild(progressNode());
     app.appendChild(summaryNode());
     var card = el('section', 'bus-card');
     card.setAttribute('aria-labelledby', 'bus-page-title');
-    card.appendChild(heading('回答内容の確認'));
-    card.appendChild(el('p', 'bus-lead', '内容をご確認のうえ、送信してください。送信後は、特定の回答を本人確認して修正・削除することは原則できません。'));
+    card.appendChild(heading(t('review.title')));
+    card.appendChild(el('p', 'bus-lead', t('review.lead')));
     var all = validateAll();
     visibleSections().forEach(function (sectionId) {
       var block = el('section', 'bus-review-block');
       var head = el('h3', '', titleOf(sectionId));
-      var edit = el('button', 'bus-link-btn', '修正する');
+      var edit = el('button', 'bus-link-btn', t('common.edit'));
       edit.type = 'button';
-      edit.setAttribute('aria-label', titleOf(sectionId) + 'を修正する');
+      edit.setAttribute('aria-label', t('common.editAria', { section: titleOf(sectionId) }));
       edit.addEventListener('click', function () { go(sectionId); });
       head.appendChild(edit);
       block.appendChild(head);
       var dl = el('dl');
       sectionQuestions(sectionId).forEach(function (q) {
-        dl.appendChild(el('dt', '', q.label));
-        var text = isEmptyAnswer(state.answers[q.id]) ? '（未回答）' : answerText(q);
+        dl.appendChild(el('dt', '', qLabel(q)));
+        var text = isEmptyAnswer(state.answers[q.id]) ? t('common.unanswered') : answerText(q);
         dl.appendChild(el('dd', 'bus-answer', text));
       });
       block.appendChild(dl);
@@ -803,8 +887,9 @@
     });
     app.appendChild(card);
     var pages = pageList();
-    app.appendChild(navBar(function () { go(pages[pages.length - 2]); }, 'この内容で送信する', function () { submit(); }));
+    app.appendChild(navBar(function () { go(pages[pages.length - 2]); }, t('common.submit'), function () { submit(); }));
     updateProgress();
+    restoreMessages();
     focusHeading();
     return all;
   }
@@ -815,19 +900,28 @@
     var back = document.getElementById('bus-back-btn');
     if (next) {
       next.disabled = value;
-      next.textContent = value ? '送信中…' : 'この内容で送信する';
+      next.textContent = value ? t('common.submitting') : t('common.submit');
       next.setAttribute('aria-busy', value ? 'true' : 'false');
     }
     if (back) back.disabled = value;
   }
 
-  function submitError(message) {
+  /* 送信エラー：文言は key で保持し、言語切替後も選択言語で再表示する。 */
+  function submitError(key, options) {
+    state.submitMsgKey = key;
     var summary = document.getElementById('bus-summary');
     if (!summary) return;
     clear(summary);
     summary.hidden = false;
-    summary.appendChild(el('p', 'bus-summary-title', message));
-    try { summary.scrollIntoView({ block: 'center' }); } catch (e) { /* ignore */ }
+    summary.appendChild(el('p', 'bus-summary-title', t(key)));
+    if (!(options && options.noScroll)) { try { summary.scrollIntoView({ block: 'center' }); } catch (e) { /* ignore */ } }
+  }
+
+  /* 言語切替で再描画したあと、表示中だった検証エラー・送信エラー・送信中の状態を選択言語で戻す。 */
+  function restoreMessages() {
+    if (Object.keys(state.shownErrors).length) showErrors(state.shownErrors, { noFocus: true });
+    else if (state.submitMsgKey) submitError(state.submitMsgKey, { noScroll: true });
+    if (state.submitting) setSubmitting(true);
   }
 
   /* ── payload / 送信 ── */
@@ -873,7 +967,7 @@
       });
       trackError('validation');
       if (firstPage) { go(firstPage); showErrors(firstMap); }
-      else submitError('入力内容を確認してください。');
+      else submitError('submit.invalid');
       return;
     }
     if (core.findTermination(schema, state.answers)) { showIneligible(); return; }
@@ -881,13 +975,14 @@
     if (testMode === 'preview_no_submit') { showCompletion('preview'); return; }
     if (testMode === 'closed_view') { showClosed(); return; }
     var endpoint = getEndpoint();
-    if (!endpoint) { submitError('現在このアンケートは準備中のため、送信できません。'); return; }
+    if (!endpoint) { submitError('submit.preparing'); return; }
     if (testMode === 'submit_excluded' && !(testStore.read() && testStore.read().token)) {
-      submitError('テストの設定を確認できません。テスト用のURLから開き直してください。');
+      submitError('submit.testConfigMissing');
       return;
     }
 
     var payload = buildPayload();
+    state.submitMsgKey = null;
     setSubmitting(true);
     var errorType = 'network';
     fetch(endpoint, { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
@@ -899,7 +994,7 @@
       .catch(function () {
         trackError(errorType);
         setSubmitting(false);
-        submitError('送信に失敗しました。通信環境をご確認のうえ、もう一度お試しください。入力内容は保持されています。');
+        submitError('submit.networkFailed');
       });
   }
 
@@ -929,17 +1024,17 @@
       trackError('invalid_request'); handleInvalidRequest(body);
     } else {
       trackError('server');
-      submitError('送信に失敗しました。時間をおいてもう一度お試しください。入力内容は保持されています。');
+      submitError('submit.serverFailed');
     }
   }
 
   var ENVELOPE_MESSAGES = {
-    'elapsed_ms:too_fast': '回答が早すぎるため送信できませんでした。内容をご確認のうえ、少し時間をおいてもう一度お試しください。',
-    'uuid:invalid_uuid': 'ブラウザ情報を確認できませんでした。ページを再読み込みしてもう一度お試しください。',
-    'test_token:invalid_token': 'テスト用の設定が正しくありません。管理者から共有されたテスト用URLで開き直してください。',
-    'test_run_id:invalid_test_run_id': 'テスト実行IDの形式が正しくありません。テスト用URLを確認してください。'
+    'elapsed_ms:too_fast': 'submit.tooFast',
+    'uuid:invalid_uuid': 'submit.invalidUuid',
+    'test_token:invalid_token': 'submit.invalidToken',
+    'test_run_id:invalid_test_run_id': 'submit.invalidRunId'
   };
-  var GENERIC_INVALID = '入力内容に不備があるため送信できませんでした。内容をご確認ください。';
+  var GENERIC_INVALID = 'submit.genericInvalid';
 
   function handleInvalidRequest(body) {
     var fields = Array.isArray(body.fields) ? body.fields : [];
@@ -963,25 +1058,27 @@
     submitError(message);
   }
 
-  /* ── 完了・状態表示 ── */
-  function showMessage(kind, title, lines, options) {
+  /* ── 完了・状態表示 ──
+   * 画面は spec（文言の key）で保持し、言語切替のたびに選択言語で描き直す。 */
+  function showMessage(spec) {
+    view = { message: spec };
     shell();
-    var box = el('section', 'bus-message ' + (kind === 'ok' ? 'bus-ok' : 'bus-warn'));
+    var box = el('section', 'bus-message ' + (spec.kind === 'ok' ? 'bus-ok' : 'bus-warn'));
     box.setAttribute('role', 'status');
     box.setAttribute('aria-labelledby', 'bus-page-title');
-    if (options && options.test) box.appendChild(el('p', 'bus-test-chip', 'TEST'));
-    box.appendChild(heading(title));
-    lines.forEach(function (line) { box.appendChild(el('p', '', line)); });
-    if (options && options.link) {
+    if (spec.test) box.appendChild(el('p', 'bus-test-chip', t('test.chip')));
+    box.appendChild(heading(t(spec.title)));
+    spec.lines.forEach(function (key) { box.appendChild(el('p', '', t(key))); });
+    if (spec.results) {
       var p = el('p');
-      var a = el('a', 'bus-link', options.link.text);
-      a.href = options.link.href;
+      var a = el('a', 'bus-link', t('common.resultsLink'));
+      a.href = RESULTS_URL;
       p.appendChild(a);
       box.appendChild(p);
     }
     app.appendChild(box);
     var back = el('p');
-    var link = el('a', 'bus-link', '名古屋野球ユニ部のページへ戻る');
+    var link = el('a', 'bus-link', t('common.backToClub'));
     link.href = './';
     back.appendChild(link);
     app.appendChild(back);
@@ -991,39 +1088,38 @@
   function showCompletion(kind) {
     state.finished = true;
     state.shown.percent = 100;
-    var results = RESULTS_URL ? { link: { text: '公開結果のページへ', href: RESULTS_URL } } : {};
+    var results = !!RESULTS_URL;
     if (kind === 'preview') {
-      showMessage('ok', 'プレビュー完了（回答は送信・保存されていません）', ['これは送信完了画面の確認用です。サーバーへは何も送っていません。'], { test: true });
+      showMessage({ kind: 'ok', title: 'test.preview.title', lines: ['test.preview.line'], test: true });
     } else if (kind === 'test') {
-      showMessage('ok', 'テスト送信を受け付けました（集計対象外）', ['これはテスト送信です。本番の回答件数・公開結果・通知には含まれません。'], { test: true });
+      showMessage({ kind: 'ok', title: 'test.submitted.title', lines: ['test.submitted.line'], test: true });
     } else if (kind === 'test_duplicate') {
-      showMessage('warn', 'このテスト実行では送信済みです', ['同じテスト実行IDでは、本番と同じ重複抑止が働きます。もう一度試す場合は、新しいテスト実行IDでテスト用URLを開き直してください。'], { test: true });
+      showMessage({ kind: 'warn', title: 'test.duplicate.title', lines: ['test.duplicate.line'], test: true });
     } else if (kind === 'duplicate') {
-      showMessage('ok', '回答はすでに受付済みです', ['このブラウザからのご回答は受け付けています。ご協力ありがとうございました。'], results);
+      showMessage({ kind: 'ok', title: 'done.duplicate.title', lines: ['done.duplicate.line'], results: results });
     } else {
-      showMessage('ok', 'ご回答ありがとうございました',
-        ['回答を受け付けました。ご協力ありがとうございました。公開ページには、個別の回答ではなく集計結果だけを掲載します。'], results);
+      showMessage({ kind: 'ok', title: 'done.thanks.title', lines: ['done.thanks.line'], results: results });
     }
   }
   function showClosed() {
     state.finished = true;
-    showMessage('warn', 'アンケートの受付は終了しました', ['たくさんのご協力をありがとうございました。'], null);
+    showMessage({ kind: 'warn', title: 'done.closed.title', lines: ['done.closed.line'] });
   }
   function showNotOpen() {
-    showMessage('warn', 'アンケートはまだ始まっていません', ['受付開始まで、もうしばらくお待ちください。']);
+    showMessage({ kind: 'warn', title: 'done.notOpen.title', lines: ['done.notOpen.line'] });
   }
   function showPreparing() {
-    showMessage('warn', '現在準備中です', ['このアンケートはまだ公開前です。公開までしばらくお待ちください。']);
+    showMessage({ kind: 'warn', title: 'done.preparing.title', lines: ['done.preparing.line'] });
   }
   function showUpdateNeeded() {
-    showMessage('warn', 'ページが古くなっています', ['アンケートの内容が更新されました。ページを再読み込みしてから、もう一度回答してください。']);
+    showMessage({ kind: 'warn', title: 'done.updateNeeded.title', lines: ['done.updateNeeded.line'] });
   }
   function showIneligible() {
     // 18歳未満相当：回答内容はここで破棄する。server へは何も送らない。
     state.answers = {};
     state.otherTexts = {};
     state.finished = true;
-    showMessage('warn', 'このアンケートは18歳以上の方が対象です', ['ご関心をお寄せいただきありがとうございます。回答内容は保存されていません。']);
+    showMessage({ kind: 'warn', title: 'done.ineligible.title', lines: ['done.ineligible.line'] });
   }
 
   /* ── status API ── */
@@ -1039,8 +1135,13 @@
   /* test 指定を検出したのに検証できない：GA4なし・status GETなし・POSTなしで案内だけを表示する（fail closed）。 */
   function showInvalidTestConfig() {
     state.finished = true;
-    showMessage('warn', 'テスト用URLの設定が正しくありません',
-      ['テスト用のURLを確認してください。管理者から共有されたURLを、そのままの形で開き直してください。', 'このページでは回答・送信・アクセス解析を行いません。通常の回答は、テスト指定のないURLから開いてください。'], { test: true });
+    showMessage({ kind: 'warn', title: 'test.invalid.title', lines: ['test.invalid.line1', 'test.invalid.line2'], test: true });
+  }
+
+  function renderLoading() {
+    view = { loading: true };
+    shell();
+    app.appendChild(el('p', 'bus-lead', t('common.checkingStatus')));
   }
 
   function start() {
@@ -1048,8 +1149,7 @@
     if (testMode === 'closed_view') { showClosed(); return; }
     if (testMode === 'preview_no_submit' || testMode === 'submit_excluded') { renderIntro(); return; }
     if (!getEndpoint()) { showPreparing(); return; }
-    shell();
-    app.appendChild(el('p', 'bus-lead', '受付状況を確認しています…'));
+    renderLoading();
     fetchStatus().then(function (status) {
       if (!status || status.ok !== true) throw new Error('status');
       if (String(status.schema_version) !== String(schema.schema_version)) { showUpdateNeeded(); return; }
@@ -1063,5 +1163,69 @@
     });
   }
 
+  /* ── 言語選択（回答中いつでも切り替えられる。回答値・page・route は state に残り、表示だけを描き直す） ── */
+  var langSelect = null;
+  var langLabel = null;
+
+  function buildLangSelector() {
+    var host = document.getElementById('bus-lang');
+    if (!host) return;
+    clear(host);
+    langLabel = el('label', 'bus-lang-label');
+    langLabel.setAttribute('for', 'bus-lang-select');
+    langSelect = document.createElement('select');
+    langSelect.id = 'bus-lang-select';
+    langSelect.className = 'bus-lang-select';
+    I18N.locales.forEach(function (code) {
+      var option = document.createElement('option');
+      option.value = code;
+      option.setAttribute('lang', code);
+      option.textContent = LOCALE_NAMES[code] || code;
+      langSelect.appendChild(option);
+    });
+    langSelect.addEventListener('change', function () { setLocale(langSelect.value); });
+    host.appendChild(langLabel);
+    host.appendChild(langSelect);
+  }
+
+  /* <html lang>・title・description・静的 HTML の文言（data-i18n）・言語選択を現在の言語へ合わせる。 */
+  function applyDocumentLocale() {
+    document.documentElement.setAttribute('lang', locale);
+    document.title = t('page.title');
+    var meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute('content', t('page.metaDescription'));
+    Array.prototype.forEach.call(document.querySelectorAll('[data-i18n]'), function (node) {
+      node.textContent = t(node.getAttribute('data-i18n'));
+    });
+    if (langLabel) langLabel.textContent = t('lang.label');
+    if (langSelect) langSelect.value = locale;
+  }
+
+  function rerender() {
+    var offset = 0;
+    try { offset = window.pageYOffset || 0; } catch (e) { offset = 0; }
+    state.relang = true;
+    try {
+      if (view && view.message) showMessage(view.message);
+      else if (view && view.loading) renderLoading();
+      else render();
+    } finally {
+      state.relang = false;
+    }
+    try { window.scrollTo(0, offset); } catch (e) { /* ignore */ }
+    if (langSelect) langSelect.focus(); // 切替操作を続けられるよう、フォーカスは言語選択に残す
+  }
+
+  /* 選択言語を保持して描き直す。GA4・URL・payload には何も載せない。 */
+  function setLocale(next) {
+    if (!isSupported(next) || next === locale) { if (langSelect) langSelect.value = locale; return; }
+    locale = next;
+    storeLocale(next);
+    applyDocumentLocale();
+    rerender();
+  }
+
+  buildLangSelector();
+  applyDocumentLocale();
   start();
 })();

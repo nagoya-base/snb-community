@@ -1,0 +1,744 @@
+{
+  "locale": "zh-Hans",
+  "ui": {
+    "page.title": "名古屋棒球球衣部（名古屋野球ユニ部）问卷调查｜SNBC",
+    "page.metaDescription": "为改进名古屋棒球球衣部（名古屋野球ユニ部）今后的运营与活动策划而开展的匿名问卷调查。对象为18岁以上人士，所需时间约5～12分钟。",
+    "page.skip": "跳转到正文",
+    "page.back": "← 返回名古屋棒球球衣部页面",
+    "page.eyebrow": "名古屋棒球球衣部（名古屋野球ユニ部）",
+    "page.heading": "名古屋棒球球衣部问卷调查",
+    "lang.label": "语言 / Language",
+
+    "common.required": "必填",
+    "common.optional": "选填",
+    "common.back": "上一步",
+    "common.next": "下一步",
+    "common.start": "开始作答",
+    "common.submit": "提交以上内容",
+    "common.submitting": "提交中…",
+    "common.edit": "修改",
+    "common.editAria": "修改{section}",
+    "common.unanswered": "（未作答）",
+    "common.otherText": "“其他”的具体内容",
+    "common.listSeparator": "、",
+    "common.withOther": "{label}（{text}）",
+    "common.scalePoint": "{value} {label}",
+    "common.charCount": "{count} / {max}字",
+    "common.noOptions": "没有可选择的项目。请确认前面的问题。",
+    "common.unsupported": "无法显示此问题。",
+    "common.backToClub": "返回名古屋棒球球衣部页面",
+    "common.resultsLink": "前往公开结果页面",
+    "common.checkingStatus": "正在确认受理状态…",
+
+    "intro.title": "作答前请先确认",
+    "intro.lead": "这是为了让名古屋棒球球衣部（名古屋野球ユニ部）今后的运营与活动策划更加完善而开展的匿名问卷调查。",
+    "intro.note.eligibility": "对象为18岁以上人士。",
+    "intro.note.time": "所需时间约{min}～{max}分钟。题目数量会根据您感兴趣的内容和作答路径而有所不同。",
+    "intro.note.publication": "不会公开个人的回答。公开页面只会刊登汇总结果。自由填写的内容和详细的居住地区不会公开。",
+    "intro.note.admin": "个人的回答可能仅由运营负责人1人出于汇总和改进运营的目的进行查看。",
+    "intro.note.anonymity": "为优先保护匿名性，提交后原则上无法通过确认本人身份来修改或删除特定的回答。",
+    "intro.note.partial": "本问卷在最后统一提交。中途离开的话，回答内容不会保存到服务器。",
+    "intro.note.notEntry": "回答本问卷并不等同于报名参加传接球活动。",
+    "intro.note.representativeness": "由于是通过社交媒体和网络等方式征集回答，调查结果不代表整体人口。",
+    "intro.contact": "有关参加的咨询，请通过咨询表单联系我们。",
+
+    "review.title": "确认回答内容",
+    "review.lead": "请确认内容后再提交。提交后，原则上无法通过确认本人身份来修改或删除特定的回答。",
+
+    "progress.groupAria": "作答进度",
+    "progress.barAria": "整体进度",
+    "progress.undetermined": "当前为第{index}部分　仅显示适合您的问题",
+    "progress.undeterminedValueText": "问题会根据您的回答而定",
+    "progress.section": "当前第{index}/{total}部分",
+    "progress.percent": "整体约{percent}%",
+    "progress.minutes": "还需约{minutes}分钟",
+    "progress.almostDone": "即将完成",
+
+    "error.required": "此问题必须作答。",
+    "error.other_text_required": "请填写“其他”的具体内容。",
+    "error.too_long": "字数超出上限。",
+    "error.invalid_text": "包含无法使用的字符。",
+    "error.exclusive_conflict": "选择了无法同时选择的选项。",
+    "error.other_text_unexpected": "请确认所选内容。",
+    "error.invalid_option": "请确认所选内容。",
+    "error.invalid_type": "请确认所选内容。",
+    "error.duplicate_option": "请确认所选内容。",
+    "error.hidden_field": "请确认所选内容。",
+    "error.unknown_field": "请确认所选内容。",
+    "error.generic": "请确认填写的内容。",
+    "error.summaryTitle": "请确认填写的内容（{count}项）",
+    "error.summaryItem": "{label}：{message}",
+
+    "submit.invalid": "请确认填写的内容。",
+    "submit.preparing": "本问卷目前尚在准备中，无法提交。",
+    "submit.testConfigMissing": "无法确认测试设置。请从测试用网址重新打开。",
+    "submit.networkFailed": "提交失败。请确认网络环境后再试一次。您填写的内容已保留。",
+    "submit.serverFailed": "提交失败。请稍后再试一次。您填写的内容已保留。",
+    "submit.genericInvalid": "由于填写内容存在问题，无法提交。请确认内容。",
+    "submit.tooFast": "由于作答过快，无法提交。请确认内容后稍等片刻再试一次。",
+    "submit.invalidUuid": "无法确认浏览器信息。请重新加载页面后再试一次。",
+    "submit.invalidToken": "测试设置不正确。请使用管理员分享的测试用网址重新打开。",
+    "submit.invalidRunId": "测试运行ID的格式不正确。请确认测试用网址。",
+
+    "done.thanks.title": "感谢您的回答",
+    "done.thanks.line": "已收到您的回答，感谢您的配合。公开页面只会刊登汇总结果，不会刊登个人的回答。",
+    "done.duplicate.title": "您的回答已受理",
+    "done.duplicate.line": "已受理来自此浏览器的回答。感谢您的配合。",
+    "done.closed.title": "问卷调查已结束受理",
+    "done.closed.line": "非常感谢大家的配合。",
+    "done.notOpen.title": "问卷调查尚未开始",
+    "done.notOpen.line": "请再稍等片刻，直到开始受理。",
+    "done.preparing.title": "目前正在准备中",
+    "done.preparing.line": "本问卷尚未公开。请耐心等待公开。",
+    "done.updateNeeded.title": "页面已过期",
+    "done.updateNeeded.line": "问卷内容已更新。请重新加载页面后再作答。",
+    "done.ineligible.title": "本问卷的对象为18岁以上人士",
+    "done.ineligible.line": "感谢您的关注。您的回答内容不会被保存。",
+
+    "test.chip": "TEST",
+    "test.exit": "结束测试",
+    "test.banner.invalid_test_config": "TEST MODE（设置错误）：测试用网址的设置不正确。不会进行作答、提交和统计。",
+    "test.banner.preview_no_submit": "TEST MODE（预览）：即使提交，回答也不会被保存，也不会进行通信。",
+    "test.banner.closed_view": "TEST MODE（结束后显示确认）：只能确认受理结束的显示画面。",
+    "test.banner.submit_excluded": "TEST MODE（测试提交）：会发送到服务器，但不会计入正式汇总、公开结果和通知。",
+    "test.preview.title": "预览完成（回答未被提交或保存）",
+    "test.preview.line": "这是用于确认提交完成画面的页面。没有向服务器发送任何内容。",
+    "test.submitted.title": "已受理测试提交（不计入汇总）",
+    "test.submitted.line": "这是测试提交。不会计入正式的回答数量、公开结果和通知。",
+    "test.duplicate.title": "此次测试运行中已提交过",
+    "test.duplicate.line": "相同的测试运行ID会启用与正式环境相同的重复提交防护。如需再次测试，请使用新的测试运行ID重新打开测试用网址。",
+    "test.invalid.title": "测试用网址的设置不正确",
+    "test.invalid.line1": "请确认测试用网址。请按管理员分享的网址原样重新打开。",
+    "test.invalid.line2": "此页面不会进行作答、提交和访问分析。正常作答时，请从不带测试指定的网址打开。"
+  },
+  "sections": {
+    "eligibility": "作答之前",
+    "uniform": "关于球衣与运动队服",
+    "club": "关于名古屋棒球球衣部",
+    "nonattendee": "对传接球活动的兴趣",
+    "club_interest": "对球衣交流的兴趣",
+    "attendee": "致参加过的朋友",
+    "operations": "关于传接球活动的运营",
+    "activity_history": "至今的运动经历",
+    "adult_activity": "关于运动",
+    "profile": "关于您",
+    "closing": "最后"
+  },
+  "schemaText": {
+    "milestones": {
+      "after:top_uniform_sport_experience": "关于球衣与运动队服的问题到此结束。接下来，会根据您对传接球活动的兴趣和参加经历，只显示需要回答的问题。",
+      "before:preferred_program": "接下来是面向正在考虑实际参加的朋友的问题。"
+    },
+    "lowInterestAcknowledgement": "谢谢您。“目前对参加兴趣不大”这样的回答，对今后的活动策划同样十分重要。",
+    "routes": {
+      "pure_uniform_short_route": {
+        "messageBeforeProfile": "关于传接球活动运营的详细问题到此结束。目前的运动频率以及继续或重新开始运动的动力，是向所有人询问的，之后将进入基本信息的问题。"
+      }
+    }
+  },
+  "questions": {
+    "age_confirmed": {
+      "label": "您已满18岁吗？",
+      "options": { "yes": "是", "no": "否" }
+    },
+    "favorite_uniforms": {
+      "label": "请选出所有您喜欢的运动服装（队服、球衣）",
+      "options": {
+        "baseball": "棒球",
+        "soccer": "足球",
+        "basketball": "篮球",
+        "volleyball": "排球",
+        "rugby": "橄榄球",
+        "american_football": "美式橄榄球",
+        "track_field": "田径",
+        "racing_briefs": "竞技三角泳裤",
+        "swimwear_other": "游泳、竞技泳装（竞技三角泳裤除外）",
+        "wrestling_singlet": "摔跤紧身连体服",
+        "gymnastics": "体操",
+        "tennis": "网球",
+        "table_tennis": "乒乓球",
+        "badminton": "羽毛球",
+        "martial_arts": "柔道、剑道等武道",
+        "ice_hockey": "冰球",
+        "cycling": "自行车、骑行服",
+        "training_wear": "运动服、训练服",
+        "school_gym_wear": "学校体操服",
+        "other": "其他",
+        "none": "没有特别强烈喜欢的运动服装"
+      }
+    },
+    "top_uniform": {
+      "label": "在其中请选出您最喜欢的一个"
+    },
+    "uniform_appeal": {
+      "label": "您觉得运动服装的魅力在哪里？",
+      "options": {
+        "design_color": "设计、颜色",
+        "silhouette": "轮廓、身体线条",
+        "material_touch": "材质、触感",
+        "smooth_texture": "清爽、顺滑的触感",
+        "stretch_fit": "弹性、贴合感",
+        "pants_fit_tension": "棒球裤的贴合感、紧绷感",
+        "thin_sheer": "轻薄、轻盈、半透明感",
+        "thick_solid": "厚实、挺括的面料质感",
+        "sweat_feel": "出汗时的触感、湿润感",
+        "undershirt": "与打底衫叠穿的感觉",
+        "team_identity": "球队或社团的归属感、凝聚力",
+        "athletic_atmosphere": "像社团、学校棒球那样的体育社团氛围",
+        "nostalgia": "学生时代的回忆",
+        "athlete_admiration": "对项目、运动员的憧憬",
+        "other": "其他",
+        "none": "没有特别强烈的魅力感"
+      }
+    },
+    "uniform_engagement": {
+      "label": "您想以怎样的方式接触自己喜欢的运动服装？",
+      "options": {
+        "wear": "想自己穿",
+        "see_others": "想看别人穿着的样子",
+        "photograph": "想作为拍摄者参与",
+        "have_photos_taken": "想让别人拍下自己穿着的样子",
+        "sport_activity": "想穿着那套服装进行比赛、运动",
+        "collect": "想收集或欣赏来享受乐趣",
+        "none": "目前没有特别符合的"
+      }
+    },
+    "top_uniform_sport_experience": {
+      "label": "您实际体验过最喜欢的那套服装所对应的运动项目吗？",
+      "options": {
+        "continuous": "在社团、俱乐部、球队等中持续体验过",
+        "casual": "玩过几次（课堂、玩耍、个人活动等）",
+        "trial_only": "只体验过一两次",
+        "none": "没有体验过"
+      }
+    },
+    "baseball_play_interest": {
+      "label": "您对打棒球、传接球本身有多大兴趣？",
+      "options": {
+        "currently_do": "目前正在做",
+        "very_interested": "很想试试",
+        "if_opportunity": "有机会的话想试试",
+        "little_interest": "不太感兴趣",
+        "no_interest": "没有兴趣"
+      }
+    },
+    "baseball_experience": {
+      "label": "关于棒球、传接球的经历，请选出最接近的一项",
+      "options": {
+        "team": "有棒球部、竞技球队的经历",
+        "grass_baseball": "有业余棒球（草野球）的经历",
+        "catchball_only": "玩过几次传接球",
+        "class_play": "在课堂、玩耍中打过几次棒球",
+        "none": "没有经验"
+      }
+    },
+    "club_awareness": {
+      "label": "您知道名古屋棒球球衣部（名古屋野球ユニ部）吗？",
+      "options": {
+        "attended": "参加过",
+        "aware_not_attended": "知道，但没有参加过",
+        "name_only": "只知道名字",
+        "first_time": "这次是第一次知道"
+      }
+    },
+    "catchball_interest": {
+      "label": "您对穿着棒球服进行传接球的交流活动有多大兴趣？",
+      "options": {
+        "very_interested": "很想参加",
+        "if_conditions": "条件合适的话想参加",
+        "some_interest": "有一点兴趣",
+        "low_interest": "目前兴趣不大",
+        "not_interested": "目前不想参加"
+      }
+    },
+    "uniform_social_interest": {
+      "label": "即使不进行传接球，您对以穿、看、拍棒球服为中心的交流活动是否感兴趣？",
+      "options": {
+        "very_interested": "很想参加",
+        "if_conditions": "内容或氛围合适的话有兴趣",
+        "some_interest": "有一点兴趣",
+        "low_interest": "目前兴趣不大",
+        "not_interested": "目前没有兴趣"
+      }
+    },
+    "near_term_participation_intent": {
+      "label": "今后3个月内，您实际参加传接球活动的可能性有多大？",
+      "options": {
+        "definitely": "参加的可能性很高",
+        "if_conditions": "日程或条件合适的话有可能参加",
+        "unsure": "还不确定",
+        "not_now": "近期没有参加的打算"
+      }
+    },
+    "barriers": {
+      "label": "请选出让您对参加犹豫或在意的地方",
+      "options": {
+        "exercise_not_confident": "不擅长运动、对体力没有信心",
+        "health_concern": "担心身体状况或受伤",
+        "skill_anxiety": "担心跟不上有经验的人",
+        "rules_unknown": "不了解棒球或传接球的规则、流程",
+        "solo": "一个人不太好参加",
+        "regulars": "担心难以融入常客的圈子",
+        "participants_unknown": "不知道会有什么样的参加者",
+        "age_fit": "担心自己是否适合参加者的年龄层",
+        "body_fit": "担心自己的体型或外貌是否适合这个场合",
+        "sexual_atmosphere": "担心是否有性暗示的氛围或不想要的身体接触",
+        "hard_to_refuse": "担心难以拒绝不喜欢的事情",
+        "photo_privacy": "担心被拍照、被发布到社交媒体、被认出身份",
+        "no_uniform": "没有球衣",
+        "no_glove": "没有手套",
+        "location": "举办地点太远、不方便前往",
+        "schedule": "举办日期和时间不合适",
+        "cost": "在意参加费、交通费等费用",
+        "weather": "担心炎热、寒冷、下雨等户外环境",
+        "work_life": "工作、学业、私人生活很忙，很难抽出时间",
+        "community_scope": "在意这是面向男同性恋者（gay）的场合，是否适合自己",
+        "other": "其他",
+        "none": "没有特别的"
+      }
+    },
+    "main_barrier": {
+      "label": "在其中请选出最主要的一个原因"
+    },
+    "participation_conditions": {
+      "label": "有怎样的条件会让您更容易参加？",
+      "options": {
+        "beginner_welcome": "明确欢迎初学者",
+        "participant_info": "能事先了解参加者的氛围",
+        "newcomers_present": "有多位首次参加或久违参加的人",
+        "glove_rental": "可以租借手套",
+        "uniform_rental": "可以租借球衣",
+        "small_group": "小规模举办",
+        "with_friend": "可以和熟人一起参加",
+        "schedule_match": "举办日期和时间合适",
+        "near_location": "举办地点近、方便前往",
+        "no_photo_option": "可以选择不入镜、不发布到社交媒体",
+        "safe_policy": "明确写明健康的运营方针和身体接触的规则",
+        "price_clear": "能事先知道参加费用",
+        "other": "其他",
+        "none": "没有特别的、还不确定"
+      }
+    },
+    "attendance_count": {
+      "label": "您至今参加过几次名古屋棒球球衣部的活动？",
+      "options": { "once": "1次", "two_to_four": "2～4次", "five_plus": "5次以上" }
+    },
+    "last_attended": {
+      "label": "您最后一次参加是在什么时候？",
+      "options": {
+        "within_3m": "3个月以内",
+        "three_to_six_m": "3～6个月前",
+        "six_to_twelve_m": "6个月～1年前",
+        "over_1y": "1年以上前",
+        "dont_remember": "不记得了"
+      }
+    },
+    "repeat_intent": {
+      "label": "今后3个月内，您想再次参加吗？",
+      "options": {
+        "definitely": "很想参加",
+        "if_conditions": "条件合适的话想参加",
+        "unsure": "还不确定",
+        "not_now": "近期没有参加的打算"
+      }
+    },
+    "overall_satisfaction": {
+      "label": "请告诉我们您对名古屋棒球球衣部的总体满意度",
+      "anchors": { "1": "不满意", "2": "有点不满意", "3": "一般", "4": "比较满意", "5": "满意" },
+      "notApplicable": "无法评价"
+    },
+    "satisfaction_atmosphere": {
+      "label": "请告诉我们您对参加者和现场氛围的满意度",
+      "anchors": { "1": "不满意", "2": "有点不满意", "3": "一般", "4": "比较满意", "5": "满意" },
+      "notApplicable": "无法评价"
+    },
+    "satisfaction_beginner_support": {
+      "label": "请告诉我们您对初学者、久违参加者的关照的满意度",
+      "anchors": { "1": "不满意", "2": "有点不满意", "3": "一般", "4": "比较满意", "5": "满意" },
+      "notApplicable": "无法评价"
+    },
+    "satisfaction_activity": {
+      "label": "请告诉我们您对传接球、运动量等活动内容的满意度",
+      "anchors": { "1": "不满意", "2": "有点不满意", "3": "一般", "4": "比较满意", "5": "满意" },
+      "notApplicable": "无法评价"
+    },
+    "pre_attendance_worries": {
+      "label": "请告诉我们首次参加之前让您不安的事情",
+      "options": {
+        "exercise_not_confident": "不擅长运动、对体力没有信心",
+        "health_concern": "担心身体状况或受伤",
+        "skill_anxiety": "担心跟不上有经验的人",
+        "rules_unknown": "不了解棒球或传接球的规则、流程，感到不安",
+        "solo": "担心一个人参加",
+        "regulars": "担心能否融入常客的圈子",
+        "participants_unknown": "不知道会有什么样的参加者，感到不安",
+        "age_fit": "担心自己是否适合参加者的年龄层",
+        "body_fit": "担心自己的体型或外貌是否适合这个场合",
+        "sexual_atmosphere": "担心是否有性暗示的氛围或不想要的身体接触",
+        "hard_to_refuse": "担心能否明确拒绝不喜欢的事情",
+        "photo_privacy": "担心被拍照、被发布到社交媒体、被认出身份",
+        "equipment": "担心球衣、手套等装备方面的问题",
+        "weather": "担心炎热、寒冷、下雨等户外环境",
+        "other": "其他",
+        "none": "没有特别不安的事"
+      }
+    },
+    "attendance_lapse_reasons": {
+      "label": "请告诉我们最近没有参加的原因中符合您的项目",
+      "options": {
+        "schedule": "举办日期和时间变得不合适了",
+        "location": "举办地点不方便前往",
+        "work_life": "工作、学业、私人生活变忙了",
+        "health_injury": "身体状况、受伤等健康方面造成了负担",
+        "weather": "炎热、寒冷、下雨等户外环境成了负担",
+        "skill_level": "觉得和自己的经验、水平不合",
+        "content_fit": "活动内容以及运动、交流、拍摄的比例不适合自己",
+        "relationships": "在意与特定参加者之间的人际关系",
+        "regulars": "难以融入常客的圈子或整体氛围",
+        "age": "觉得参加者的年龄层与自己不合",
+        "body_image": "在意自己的体型或外貌",
+        "community_scope": "这是面向男同性恋者（gay）的场合，不适合自己",
+        "sexual_atmosphere": "性暗示的氛围或距离感不适合自己",
+        "solo": "一个人持续参加成了负担",
+        "interest": "对棒球、球衣的兴趣减退了",
+        "privacy_photo": "对拍照或发布到社交媒体感到不安、抗拒",
+        "cost": "在意参加费、交通费等费用",
+        "motivation": "没有特别明确的原因，自然而然就不去了",
+        "other": "其他"
+      }
+    },
+    "rejoin_conditions": {
+      "label": "有怎样的变化会让您更容易再次参加？",
+      "options": {
+        "more_dates": "举办日增加",
+        "different_times": "举办的星期几、时间段有所变化",
+        "nearer_location": "举办地点增加、变得更近",
+        "small_group": "有小规模的场次",
+        "returner_session": "有面向首次参加、久违参加者的场次",
+        "beginner_session": "有以初学者为主的场次",
+        "experienced_session": "有面向有经验者的场次",
+        "more_catchball": "有以传接球为主的场次",
+        "more_games": "有轻松的比赛、游戏",
+        "more_photo": "有可以享受拍照的场次",
+        "more_social": "有可以享受交流、闲聊的场次",
+        "participant_info": "能事先了解参加者构成和当天的氛围",
+        "loaners": "可以租借器具、球衣",
+        "no_change": "即使没有特别的变化，时间合适的话也想再次参加",
+        "other": "其他"
+      }
+    },
+    "preferred_program": {
+      "label": "怎样的内容会让您更容易参加？",
+      "options": {
+        "beginner_catchball": "以初学者为主的传接球",
+        "mixed_level": "有经验者与初学者混合",
+        "catchball_only": "只进行传接球",
+        "light_fielding": "轻松的守备练习",
+        "simple_game": "简单的游戏",
+        "uniform_photo": "穿着球衣拍照",
+        "social": "闲聊、交流",
+        "none": "没有特别的、还不确定"
+      }
+    },
+    "preferred_schedule": {
+      "label": "请选出您方便参加的星期几和时间段",
+      "options": {
+        "weekday_day": "工作日白天",
+        "weekday_night": "工作日晚上",
+        "sat_morning": "周六上午",
+        "sat_afternoon": "周六下午",
+        "sat_evening": "周六傍晚",
+        "sun_morning": "周日上午",
+        "sun_afternoon": "周日下午",
+        "sun_evening": "周日傍晚",
+        "holiday": "节假日",
+        "no_preference": "没有特别的要求"
+      }
+    },
+    "preferred_size": {
+      "label": "多少人左右的规模会让您更容易参加？",
+      "options": {
+        "three_five": "3～5人",
+        "six_eight": "6～8人",
+        "nine_twelve": "9～12人",
+        "thirteen_plus": "13人以上",
+        "no_preference": "不在意人数"
+      }
+    },
+    "age_limit_effect": {
+      "label": "如果在常规场次之外，另设“限39岁以下”的场次，您参加的难易程度会有变化吗？",
+      "options": {
+        "much_easier": "会更容易参加",
+        "somewhat_easier": "稍微更容易参加",
+        "no_change": "没有特别变化",
+        "somewhat_harder": "稍微更难参加",
+        "much_harder": "会更难参加",
+        "ineligible": "我不在对象年龄范围内，无法参加该限定场次",
+        "unsure": "不清楚"
+      }
+    },
+    "participation_fee_tolerance": {
+      "label": "目前是免费的，但如果将来需要参加费，请选出最接近您每次可接受上限的金额",
+      "options": {
+        "no_paid": "如果需要参加费就不参加",
+        "up_to_500": "最多500日元",
+        "up_to_1000": "最多1,000日元",
+        "up_to_2000": "最多2,000日元",
+        "up_to_3000": "最多3,000日元",
+        "over_3000": "视内容而定，超过3,000日元也可以考虑"
+      }
+    },
+    "announcement_lead_time": {
+      "label": "活动举办日前多久发布通知，会让您更容易参加？",
+      "options": {
+        "three_days": "提前3天左右",
+        "one_week": "提前1周左右",
+        "two_weeks": "提前2周左右",
+        "three_weeks": "提前3周左右",
+        "one_month": "提前1个月左右",
+        "over_month": "提前1个月以上",
+        "no_preference": "不太在意"
+      }
+    },
+    "announcement_style": {
+      "label": "关于活动预定的通知方式，请选出会让您更容易参加的方式",
+      "options": {
+        "monthly_batch": "统一发布下个月的活动等",
+        "each_event": "每次举办时逐次通知",
+        "fixed_schedule": "固定定期的星期几和时间并发布",
+        "no_preference": "没有特别的要求"
+      }
+    },
+    "announcement_channels": {
+      "label": "请告诉我们您更容易接收活动信息的方式",
+      "options": {
+        "x": "X",
+        "line_openchat": "LINE开放聊天",
+        "website": "网站",
+        "instagram": "Instagram",
+        "email": "电子邮件",
+        "other": "其他",
+        "no_preference": "没有特别的要求"
+      }
+    },
+    "student_activities": {
+      "label": "请告诉我们您在学生时代（初中至大学阶段）参加过的社团、俱乐部、兴趣小组",
+      "options": {
+        "baseball_softball": "棒球、垒球",
+        "soccer_futsal": "足球、五人制足球",
+        "basketball": "篮球",
+        "volleyball": "排球",
+        "rugby_american_football": "橄榄球、美式橄榄球",
+        "track_field": "田径",
+        "swimming": "游泳",
+        "tennis": "网球",
+        "table_tennis_badminton": "乒乓球、羽毛球",
+        "gymnastics": "体操",
+        "martial_arts": "柔道、剑道等武道",
+        "wrestling_combat": "摔跤、格斗",
+        "cycling": "自行车、骑行",
+        "other_sport": "其他运动类",
+        "culture": "文化类社团、俱乐部",
+        "other": "其他",
+        "none": "没有特别的活动经历"
+      }
+    },
+    "activity_stopped": {
+      "label": "在学生时代之前进行的活动中，有没有中途放弃或自然而然远离的？",
+      "options": { "yes": "有", "no": "没有", "dont_remember": "不记得了、不作回答" }
+    },
+    "activity_stopped_reasons": {
+      "label": "请告诉我们您中途放弃或不再继续的原因",
+      "options": {
+        "environment_ended": "因升学、毕业等，原来的活动环境没有了",
+        "work_life": "工作、学业、私人生活变忙了",
+        "move": "因搬家等原因，去起来不方便了",
+        "cost": "费用成了负担",
+        "physical": "受伤、身体状况、体力方面的原因",
+        "skill": "无法进步，或觉得不适合自己",
+        "interest": "兴趣转移到了别的事情上",
+        "relationships": "人际关系不合",
+        "atmosphere": "上下级关系、竞争、体育社团文化等氛围不合",
+        "no_companions": "没有一起做的人了",
+        "sexuality": "因与性取向有关的事情而感到难以待下去",
+        "motivation": "没有特别明确的原因，自然而然就不去了",
+        "other": "其他"
+      }
+    },
+    "adult_sports": {
+      "label": "请选出您步入社会后体验过的所有运动",
+      "options": {
+        "baseball_softball": "棒球、垒球",
+        "catchball": "传接球",
+        "soccer_futsal": "足球、五人制足球",
+        "basketball": "篮球",
+        "volleyball": "排球",
+        "rugby_football": "橄榄球、美式橄榄球",
+        "track_running": "田径、跑步、慢跑",
+        "swimming": "游泳",
+        "tennis": "网球",
+        "table_badminton": "乒乓球、羽毛球",
+        "martial_combat": "武道、格斗",
+        "cycling": "自行车、骑行",
+        "gym": "健身房、力量训练",
+        "walking_hiking": "步行、登山、远足",
+        "dance_fitness": "舞蹈、健身操",
+        "other": "其他",
+        "none": "步入社会后没有运动经历"
+      }
+    },
+    "adult_context": {
+      "label": "步入社会后，您是在怎样的环境中进行运动的？",
+      "options": {
+        "gay_men_group": "面向男同性恋者（gay）的社团、聚会",
+        "general_group": "不限定性取向的一般社团、社会人球队",
+        "work_team": "工作单位、公司的球队",
+        "gym_club": "民营运动俱乐部、健身房",
+        "friends": "与朋友、熟人的聚会",
+        "individual": "个人活动",
+        "other": "其他"
+      }
+    },
+    "exercise_frequency": {
+      "label": "请告诉我们您目前的运动频率",
+      "options": {
+        "three_plus_week": "每周3次以上",
+        "one_two_week": "每周1～2次",
+        "one_three_month": "每月1～3次",
+        "less_monthly": "每月不到1次",
+        "none": "目前不运动"
+      }
+    },
+    "exercise_continuation_motivation": {
+      "label": "您能够坚持运动的原因、动力是什么？",
+      "helpText": "请选出实际成为坚持动力的所有项目。",
+      "options": {
+        "health": "保持健康、不想让体力下降",
+        "appearance": "想保持、改善体型和外貌",
+        "self_confidence": "想增强自信",
+        "stress_relief": "可以缓解压力、转换心情",
+        "enjoyment": "运动本身很有趣",
+        "improvement": "进步、会做的事情变多很有趣",
+        "goals": "想达成成绩、目标",
+        "competition_event": "想参加比赛、赛事、活动",
+        "routine": "已经成为生活习惯、日常安排",
+        "friends": "可以和伙伴、朋友一起坚持",
+        "community": "有可以定期参加的归属之地、社群",
+        "uniform": "享受穿球衣、运动服的乐趣",
+        "recognition": "被人注视、夸奖、认可时很开心",
+        "attractiveness": "想受欢迎、想显得有魅力",
+        "dating": "也想借此作为恋爱、结识他人的契机",
+        "sexual_appeal": "想提升身材和性魅力",
+        "other": "其他",
+        "no_conscious_reason": "没有特别在意、不知不觉就坚持下来了"
+      }
+    },
+    "exercise_motivation": {
+      "label": "今后，有哪些事情可能成为您继续、开始或重新开始运动的动力？",
+      "options": {
+        "health": "保持健康、提升体力",
+        "appearance": "保持、改善体型和外貌",
+        "stress_relief": "缓解压力、转换心情",
+        "enjoyment": "运动本身的乐趣",
+        "improvement": "进步、会做的事情变多的实感",
+        "goals": "达成成绩或目标",
+        "competition_event": "参加比赛、活动、赛事",
+        "friends": "和伙伴、朋友一起享受",
+        "community": "有可以定期参加的社群",
+        "meet_people": "能结识新朋友",
+        "uniform": "享受穿球衣、运动服的乐趣",
+        "photo_record": "享受留下照片和记录的乐趣",
+        "routine": "作为生活习惯、日常安排坚持下去",
+        "recognition": "得到周围人的鼓励、认可",
+        "other": "其他",
+        "none": "没有特别的"
+      }
+    },
+    "age": {
+      "label": "请告诉我们您的年龄段",
+      "options": {
+        "18_24": "18～24岁",
+        "25_29": "25～29岁",
+        "30_39": "30～39岁",
+        "40_49": "40～49岁",
+        "50_59": "50～59岁",
+        "60_plus": "60岁以上",
+        "prefer_not_to_say": "不作回答"
+      }
+    },
+    "prefecture": {
+      "label": "请告诉我们您居住的都道府县",
+      "options": {
+        "pref_01": "北海道",
+        "pref_02": "青森县",
+        "pref_03": "岩手县",
+        "pref_04": "宫城县",
+        "pref_05": "秋田县",
+        "pref_06": "山形县",
+        "pref_07": "福岛县",
+        "pref_08": "茨城县",
+        "pref_09": "栃木县",
+        "pref_10": "群马县",
+        "pref_11": "埼玉县",
+        "pref_12": "千叶县",
+        "pref_13": "东京都",
+        "pref_14": "神奈川县",
+        "pref_15": "新潟县",
+        "pref_16": "富山县",
+        "pref_17": "石川县",
+        "pref_18": "福井县",
+        "pref_19": "山梨县",
+        "pref_20": "长野县",
+        "pref_21": "岐阜县",
+        "pref_22": "静冈县",
+        "pref_23": "爱知县",
+        "pref_24": "三重县",
+        "pref_25": "滋贺县",
+        "pref_26": "京都府",
+        "pref_27": "大阪府",
+        "pref_28": "兵库县",
+        "pref_29": "奈良县",
+        "pref_30": "和歌山县",
+        "pref_31": "鸟取县",
+        "pref_32": "岛根县",
+        "pref_33": "冈山县",
+        "pref_34": "广岛县",
+        "pref_35": "山口县",
+        "pref_36": "德岛县",
+        "pref_37": "香川县",
+        "pref_38": "爱媛县",
+        "pref_39": "高知县",
+        "pref_40": "福冈县",
+        "pref_41": "佐贺县",
+        "pref_42": "长崎县",
+        "pref_43": "熊本县",
+        "pref_44": "大分县",
+        "pref_45": "宫崎县",
+        "pref_46": "鹿儿岛县",
+        "pref_47": "冲绳县",
+        "overseas": "海外",
+        "prefer_not_to_say": "不作回答"
+      }
+    },
+    "aichi_area": {
+      "label": "请告诉我们您居住的地区",
+      "options": {
+        "nagoya": "名古屋市",
+        "owari": "尾张地区（名古屋市以外）",
+        "mikawa": "三河地区",
+        "prefer_not_to_say": "不作回答"
+      }
+    },
+    "residence_country": {
+      "label": "请告诉我们您居住的国家或地区",
+      "helpText": "请用一行文字填写国家或地区名称（例如：美国、台湾）。不会显示在公开结果中。"
+    },
+    "feedback": {
+      "label": "如果您对名古屋棒球球衣部有什么期待或希望改进的地方，请告诉我们"
+    },
+    "support_message": {
+      "label": "如果您有想对名古屋棒球球衣部运营团队说的支持、鼓励的话，请留言",
+      "helpText": "选填。对运营成员的支持与鼓励，或希望今后继续保持的事情等，都可以自由填写。"
+    }
+  }
+}

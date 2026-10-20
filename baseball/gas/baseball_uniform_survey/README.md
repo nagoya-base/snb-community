@@ -1,4 +1,4 @@
-# 名古屋野球ユニ部アンケート（design v2.17）
+# 名古屋野球ユニ部アンケート（design v2.18）
 
 親Issue #377 / 本ディレクトリの範囲は Issue #378（schema 正本の配置・参照整合 validation・CI）、Issue #379（専用 survey-core の fork と v2.17 構文対応）、Issue #380（Public GAS・保存・匿名重複抑止・server validation・test mode・受付期間・通知・deploy workflow）です。
 Issue #381 で回答 Frontend（`baseball/baseball-uniform-survey.html` と `baseball/baseball-uniform-survey/`）・route 進捗 UX・test UI・GA4 最小計測・analytics.js の section_view opt-out を追加しました（下記「Frontend」）。
@@ -11,7 +11,7 @@ Issue #383 で maintenance GAS（retention・close 後 finalize・final snapshot
 |---|---|
 | `survey.schema.json` | design v2.17。設問・option・分岐・publication・semantic code の**唯一の正本** |
 
-- `design_version = 2.17` / `survey_id = nagoya_baseball_uniform_club_2026` / `survey_version = 2026-10`
+- `design_version = 2.18` / `survey_id = nagoya_baseball_uniform_club_2026` / `survey_version = 2026-10`
 - 設問・option・分岐条件を各コードへベタ書きせず、必ずこの schema を参照します。
 - 長期離脱の判定は文章で再定義せず、`conditions.lapsed_attendee` を唯一の正本とします。
 - 公開設定は各 question の `publication` object のみを正本とします。
@@ -458,6 +458,46 @@ retention 設定状態の確認／finalize preflight／finalize 実行／finaliz
 ### CI
 
 既存の `baseball-uniform-survey-schema.yml` / `baseball-uniform-survey-public-gas.yml` が、`npm run build:check`（`maintenance/SurveyGenerated.gs` の generated drift を含む）と `tests/maintenance_core.test.js` / `tests/maintenance_gas.test.js` を実行します。maintenance は専用 workflow で deploy し、Public GAS の bundle・Script ID・Environment・Secret は共有しません。PR は build / test / bundle dry-run のみ、本番は `workflow_dispatch` + Environment 承認の明示操作です。
+
+## 多言語対応（Issue #398）
+
+回答者向け Frontend を ja / en / ko / zh-Hans / zh-Hant の5言語に対応しました。Admin・公開結果ページは日本語のままです（別 Issue）。**表示文言だけ**を切り替え、保存・集計・分岐は変わりません。
+
+### 構成
+
+| ファイル | 役割 |
+|---|---|
+| `i18n/ja.json` | UI 文言と section 見出し。**日本語の設問・選択肢・scale・milestone は `survey.schema.json` が正本**で、ja.json は持たない（上書き不可） |
+| `i18n/{en,ko,zh-Hans,zh-Hant}.json` | `ui` / `sections` / `schemaText`（milestone・低関心メッセージ・短縮 route 案内）/ `questions`（question.id → label・helpText・anchors・notApplicable・options（option.id → label）） |
+| `tools/i18n.js` | 辞書の読み込み・完全性検証・生成物の描画 |
+| `baseball/baseball-uniform-survey/i18n.generated.js` | **生成物（直接編集禁止）**。`npm run build` で `i18n/*.json` から生成し、`build:check` が差分を検出。Frontend 専用で、Public/Admin/maintenance GAS には含まれない |
+
+- 翻訳は question.id / option.id をキーに対応付けます。翻訳側に**新しい設問・選択肢・意味は作れません**（辞書にあって schema に無い key は CI で失敗）。option 数・ID・分岐条件は schema のままです。
+- `single_dynamic`（`top_uniform` / `main_barrier`）は選択肢を持たず、source 設問（`favorite_uniforms` / `barriers`）の翻訳を使います。
+- 中国語は `zh-Hans` と `zh-Hant` を別辞書で管理します（`zh` にまとめない）。
+- `residence_country`（海外選択時の国・地域名。1行・必須）の label / helpText も5言語。入力された国・地域名は翻訳せず原文のまま保存し、公開結果・GA4 には出しません（Admin は日本語 UI で原文を確認）。
+- 固有名詞「名古屋野球ユニ部」は、別団体名に見えないよう原表記を併記します（例: `Nagoya Baseball Uniform Club (名古屋野球ユニ部)`）。訳語は `tests/i18n.test.js` の用語検査（団体名・キャッチボール会・ユニフォーム交流）で固定します。
+- 辞書を変更したら `npm run build`（検証に失敗すると生成しません）→ `npm test`。
+
+### 言語選択・初期言語
+
+- ページ上部の言語選択（日本語 / English / 한국어 / 简体中文 / 繁體中文）。回答中いつでも切り替えられ、回答値・ページ位置・route・「その他」本文・自由記述・検証エラーを保ったまま表示だけを描き直します。
+- 初期言語: ① localStorage に保存済みの選択 → ② browser 言語（`ja*`→ja / `en*`→en / `ko*`→ko / `zh-CN`・`zh-SG`・`zh-Hans*`・`zh`→zh-Hans / `zh-TW`・`zh-HK`・`zh-MO`・`zh-Hant*`→zh-Hant）→ ③ ja。自動判定は保存せず、選んだときだけ保存します。
+- localStorage key は `snb_baseball_uniform_survey_locale_v1`（言語コードだけ）。使えない環境ではメモリのみで動作します。URL query/fragment には言語を載せません。
+- `<html lang>` と `<title>` を選択言語に合わせて更新します。
+
+### 保存・集計は変わらない
+
+- 保存値は stable ID のみ（`question.id` / `option.id` / scale は文字列の数値と `cannot_rate`）。言語別の schema・アンケート・Spreadsheet は作りません。
+- 自由記述（`feedback` / `support_message` / 「その他」本文）は**翻訳せず入力原文**を保存・表示します。
+- **`response_locale` は保存しません。** 検討結果: ① 言語別の分析が必要になる根拠が現時点で無い、② 保存すると responses の列が増え、header 完全一致で書き込みを拒否する既存 Spreadsheet（#390 で構築済み）と衝突する、③ 少数言語の回答者が個票で目立ち再識別リスクを上げる。Public GAS は言語・locale 系 key を `unknown_field` で拒否します（テスト固定）。必要になった場合は別 Issue で allowlist（5言語）検証・public snapshot へ出さない・GA4 へ送らない前提で追加します。
+- GA4 へは従来どおり `form_start` / `form_error`（error type のみ）/ `survey_submit` だけ。言語・設問ID・route・回答は送りません。test mode では従来どおり GA4 を初期化しません。
+
+### fallback と CI
+
+- 実行時: 翻訳が欠けても画面を壊さず、選択言語 → ja（schema）の順で表示します。**これは事故時の安全策で、翻訳漏れを許容するものではありません。**
+- CI（`npm test`）: `tests/i18n.test.js` が 5言語の存在、全 question.id の label、全 option.id の label と option ID 集合の完全一致、helpText・anchors・section・milestone・UI 共通文言の全言語分、unknown key / typo key / 空文字 / placeholder 欠け / 日本語の翻訳漏れ、簡体・繁体の混在、Frontend が参照する ui key と辞書の過不足を検査し、1 件でもあれば失敗します。`tests/frontend_i18n.test.js`（初期言語・切替・保持・test mode・GA4・a11y）、`tests/public_i18n.test.js`（server は stable ID のみ受理）も同様です。
+- 実 Google での確認は `LAUNCH_READINESS.md` の 3A。
 
 ## 本番前統合・実 Google 環境 E2E（Issue #390）
 

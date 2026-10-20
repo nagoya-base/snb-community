@@ -36,21 +36,30 @@
 <!-- data-disable-section-view: アンケートではセクション名・進捗を GA4 へ送らない（analytics.js のページ単位 opt-out）。
      設問ID・route・回答値を data-* に埋めて自動計測させない。 -->
 <body data-site-section="baseball" data-page-type="survey" data-disable-section-view="true">
-  <a class="bus-skip" href="#bus-main">本文へ移動</a>
+  <a class="bus-skip" href="#bus-main" data-i18n="page.skip">本文へ移動</a>
   <div class="bus-wrap">
-    <a class="bus-back" href="./">← 名古屋野球ユニ部のページへ戻る</a>
+    <!-- 言語選択（app.js が描画）。選択はこのブラウザの localStorage にだけ保持し、URL・GA4 には載せない。 -->
+    <div class="bus-lang" id="bus-lang"></div>
+    <a class="bus-back" href="./" data-i18n="page.back">← 名古屋野球ユニ部のページへ戻る</a>
     <header class="bus-hero">
-      <p class="bus-eyebrow">名古屋野球ユニ部</p>
-      <h1>名古屋野球ユニ部アンケート</h1>
+      <p class="bus-eyebrow" data-i18n="page.eyebrow">名古屋野球ユニ部</p>
+      <h1 data-i18n="page.heading">名古屋野球ユニ部アンケート</h1>
     </header>
     <main id="bus-main" tabindex="-1">
       <div id="bus-app">
-        <noscript><p class="bus-lead">このアンケートの回答にはJavaScriptが必要です。</p></noscript>
+        <noscript>
+          <p class="bus-lead" lang="ja">このアンケートの回答にはJavaScriptが必要です。</p>
+          <p class="bus-lead" lang="en">JavaScript is required to answer this survey.</p>
+          <p class="bus-lead" lang="ko">이 설문조사에 응답하려면 JavaScript가 필요합니다.</p>
+          <p class="bus-lead" lang="zh-Hans">回答本问卷需要启用JavaScript。</p>
+          <p class="bus-lead" lang="zh-Hant">回答本問卷需要啟用JavaScript。</p>
+        </noscript>
       </div>
     </main>
   </div>
   <script src="baseball-uniform-survey/config.js"></script>
   <script src="baseball-uniform-survey/survey.generated.js"></script>
+  <script src="baseball-uniform-survey/i18n.generated.js"></script>
   <script src="baseball-uniform-survey/app.js"></script>
 </body>
 </html>

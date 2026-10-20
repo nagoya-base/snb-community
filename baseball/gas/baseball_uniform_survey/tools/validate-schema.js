@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// survey.schema.json（design v2.17）の参照整合 validator。
+// survey.schema.json（design v2.18）の参照整合 validator。
 // Issue #378。schema は読み取り専用の正本で、このツールは何も生成・書き換えしない。
 // CLI: node tools/validate-schema.js [schema.json]  / library: validateSchema(schema)
 

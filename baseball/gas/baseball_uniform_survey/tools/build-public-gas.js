@@ -3,12 +3,14 @@
 
 // survey.schema.json（正本）+ survey.config.json（受付期間・最短回答時間・通知設定の正本）+ src/survey-core.js から
 // 生成物を作る。生成物は直接編集しない。
+// Frontend の表示辞書（i18n.generated.js）は i18n/*.json から生成し、辞書の完全性は tests/i18n.test.js が検証する（Issue #398）。
 // Public GAS（public/SurveyGenerated.gs）・Frontend（baseball/baseball-uniform-survey/survey.generated.js）・
 // Admin GAS（admin/SurveyGenerated.gs。schema + 専用 core + src/survey-aggregate.js。受付設定・通知設定は含めない）、
 // maintenance GAS（maintenance/SurveyGenerated.gs。schema + core + aggregate + src/maintenance-core.js + 受付期間 + retention.config.json。通知設定・salt/token は含めない）の4つを生成する。
 // `--check` は生成物との差分を検出して非0終了する（CIで実行）。
 const fs = require('fs');
 const path = require('path');
+const i18n = require('./i18n');
 
 const ROOT = path.join(__dirname, '..');
 const SCHEMA_PATH = path.join(ROOT, 'survey.schema.json');
@@ -22,6 +24,8 @@ const ADMIN_TARGET = path.join(ROOT, 'admin', 'SurveyGenerated.gs');
 const MAINTENANCE_TARGET = path.join(ROOT, 'maintenance', 'SurveyGenerated.gs');
 // Frontend 用生成物（schema + 専用 core。server 専用の config は含めない）。GitHub Pages から公開される。
 const FRONTEND_TARGET = path.join(ROOT, '..', '..', 'baseball-uniform-survey', 'survey.generated.js');
+// Frontend 専用の表示辞書（i18n/*.json から生成。Public/Admin/maintenance GAS には含めない。保存値は変わらない）。
+const FRONTEND_I18N_TARGET = path.join(ROOT, '..', '..', 'baseball-uniform-survey', 'i18n.generated.js');
 
 function renderAdmin() {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
@@ -86,6 +90,17 @@ function renderFrontend() {
   ].join('\n');
 }
 
+// 辞書に欠落・不明key・意味の上書きがあれば生成しない（翻訳漏れを fallback で隠さない）。
+function renderFrontendI18n() {
+  const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  const dicts = i18n.loadDicts();
+  const problems = i18n.validate(schema, dicts);
+  if (problems.length) {
+    throw new Error('i18n 辞書が不完全です（' + problems.length + '件）:\n' + problems.slice(0, 20).map((p) => '  ' + p.locale + ' ' + p.code + ' ' + p.key).join('\n'));
+  }
+  return i18n.renderFrontend(dicts);
+}
+
 function render() {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
@@ -109,6 +124,7 @@ function main(argv) {
   const targets = [
     { file: TARGET, content: render() },
     { file: FRONTEND_TARGET, content: renderFrontend() },
+    { file: FRONTEND_I18N_TARGET, content: renderFrontendI18n() },
     { file: ADMIN_TARGET, content: renderAdmin() },
     { file: MAINTENANCE_TARGET, content: renderMaintenance() }
   ];
@@ -136,7 +152,7 @@ function main(argv) {
 
 if (require.main === module) process.exitCode = main(process.argv.slice(2));
 module.exports = {
-  render, renderFrontend, renderAdmin, renderMaintenance,
-  TARGET, FRONTEND_TARGET, ADMIN_TARGET, MAINTENANCE_TARGET,
+  render, renderFrontend, renderFrontendI18n, renderAdmin, renderMaintenance,
+  TARGET, FRONTEND_TARGET, FRONTEND_I18N_TARGET, ADMIN_TARGET, MAINTENANCE_TARGET,
   SCHEMA_PATH, CONFIG_PATH, CORE_PATH, AGGREGATE_PATH, MAINTENANCE_CORE_PATH, RETENTION_PATH
 };

@@ -118,6 +118,22 @@ URL: `…/baseball-uniform-survey.html#test=submit_excluded&token=<TEST_TOKEN>&r
 
 E2E で作った test row は retention 対象です。launch 前に必要なら cleanup 手順で削除します。
 
+### 3A. 多言語（ja / en / ko / zh-Hans / zh-Hant）E2E（Issue #398）
+
+回答 Frontend の5言語対応を、実ブラウザ（PC と iPhone Safari）＋実 Google 環境で確認します。保存値は言語によらず stable ID、自由記述は入力原文です。`submit_excluded` の test URL（上と同じ）で行い、production には送りません。
+
+| # | 確認 | 期待 |
+|---|---|---|
+| 3A-1 | ja で回答開始 → 1 ページ目に回答 → `English` へ変更 | 回答・ページ位置が保持される。`<html lang>` が `en` |
+| 3A-2 | en → `한국어` → `简体中文` → `繁體中文` の順に、設問に答えながら切替 | そのつど回答・route・「その他」本文・自由記述が保持され、表示だけが切り替わる |
+| 3A-3 | 途中で言語を変えたまま確認画面 → 送信（`submit_excluded`） | test 完了表示が選択言語。送信成功 |
+| 3A-4 | responses シート | 選択肢は全て stable ID（label・翻訳文が無い）。自由記述・「その他」は入力原文。言語を示す列が無い（`response_locale` は保存しない） |
+| 3A-5 | 別言語で、同じ `test_run_id` + 同じ browser で再送 | 言語によらず重複として抑止され、重複表示が選択言語になる |
+| 3A-6 | test mode（`preview_no_submit` / `closed_view` / `submit_excluded`）で言語切替 | fragment token / sessionStorage / `test_run_id` / endpoint が壊れない |
+| 3A-7 | DevTools Network | test mode では GA4（`googletagmanager` / `collect`）への通信が無い。production でも言語・設問ID・route・回答を GA4 に送らない |
+| 3A-8 | Admin（日本語 UI） | 5言語分の回答が、選択肢ごとに 1 つの集計セルへ集まる（言語別に分裂しない）。自由記述は原文 |
+| 3A-9 | iPhone Safari / 韓国語・中国語での表示 | 言語選択が上部で操作でき、折り返し・横スクロールが無い。ラベル/入力の読み上げが選択言語 |
+
 ## 4. production fail closed
 
 | 確認 | 期待 |
@@ -179,6 +195,7 @@ DebugView / Network で、survey page が送るのは次だけであること。
 - [ ] **Owner が notification 有効 / 無効を明示確認**（`notification.enabled` の値は Owner 確認後に更新。それまで変更しない）
 - [ ] production launch PR で `config.js` の `endpoint` に公開 Web App URL を設定
 - [ ] `submit_excluded` E2E 成功
+- [ ] 多言語（5言語）E2E 成功（3A）
 - [ ] invalid test が production へ fallback しない
 - [ ] production fail closed 確認済み
 - [ ] Admin read-only 確認済み
@@ -201,6 +218,7 @@ DebugView / Network で、survey page が送るのは次だけであること。
 実施日 / 実施者:
 環境: Public/Admin/maintenance 別project = ○/×、新規Spreadsheet = ○/×
 - 3 submit_excluded E2E: 3-1〜3-7 = ○/×（×の内容）
+- 3A 多言語 E2E: 3A-1〜3A-9 = ○/×（×の内容）
 - 4 production fail closed: ○/×
 - 5 Frontend実機（iPhone Safari / PC）: ○/×
 - 6 GA4 privacy: ○/×

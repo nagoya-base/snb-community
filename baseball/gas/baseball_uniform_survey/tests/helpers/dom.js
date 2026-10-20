@@ -35,6 +35,9 @@ function defaultFetch(url, options) {
  * @param {string} [opts.endpoint] config.js の endpoint（'' で未設定）
  * @param {Function} [opts.fetch]  (url, options, calls) => body | Error
  * @param {Object} [opts.storage]  sessionStorage の初期値 {key: value}
+ * @param {Object} [opts.overrides] 読み込むファイルの差し替え {末尾一致するURL: 本文}（辞書の欠落テストなど）
+ * @param {Object} [opts.local]    localStorage の初期値 {key: value}
+ * @param {string[]} [opts.languages] navigator.languages（既定 ['ja-JP','ja']）
  */
 async function openPage(opts = {}) {
   const endpoint = opts.endpoint === undefined ? ENDPOINT : opts.endpoint;
@@ -45,13 +48,18 @@ async function openPage(opts = {}) {
   const dom = new JSDOM(fs.readFileSync(path.join(REPO, PAGE), 'utf8'), {
     url: SITE + PAGE + (opts.search || '') + (opts.hash || ''),
     runScripts: 'dangerously',
-    resources: new LocalLoader({ 'config.js': `window.BASEBALL_UNIFORM_SURVEY_CONFIG = { endpoint: ${JSON.stringify(endpoint)} };` }),
+    resources: new LocalLoader(Object.assign({ 'config.js': `window.BASEBALL_UNIFORM_SURVEY_CONFIG = { endpoint: ${JSON.stringify(endpoint)} };` }, opts.overrides || {})),
     pretendToBeVisual: true,
     virtualConsole,
     beforeParse(window) {
       window.scrollTo = () => {};
       window.Element.prototype.scrollIntoView = () => {};
       Object.entries(opts.storage || {}).forEach(([k, v]) => window.sessionStorage.setItem(k, v));
+      Object.entries(opts.local || {}).forEach(([k, v]) => window.localStorage.setItem(k, v));
+      // 既定は日本語ブラウザ（jsdom の既定 en-US だと初期言語が en になる）。言語判定のテストは opts.languages で指定する。
+      const languages = opts.languages || ['ja-JP', 'ja'];
+      Object.defineProperty(window.navigator, 'languages', { value: languages, configurable: true });
+      Object.defineProperty(window.navigator, 'language', { value: languages[0], configurable: true });
       window.fetch = (url, options) => {
         calls.push({ url, options: options || {} });
         const handler = opts.fetch || defaultFetch;
