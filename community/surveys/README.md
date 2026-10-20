@@ -10,6 +10,10 @@ URL: `/community/surveys/`（Issue #401）
 - `null` は「不明」。推測で補完しない。JS は null の項目を表示しない。
 - `status=unknown` は「公開状況確認中」と表示し、「回答受付中」と断定しない。
 - `link_policy: "none"` の調査は URL を持たせず、CTA を出さない（README の「緊縛事業（ataru-nagoya）へのリンクをこのサイト内に追加しない」ルールに従う）。
+- **例外（Issue #404）**: `ataru_rope_interest_2026`（緊縛・ロープへの関心アンケート）のカードに限り、公開済みの最終結果ページ `https://nagoya-base.github.io/ataru-nagoya/survey-results.html` への「結果を見る」CTA のみ掲載する。
+  - `link_policy: "results_only"` は「`results_url` の CTA だけ許可（`public_url` は参照せず『アンケートを見る』も出さない）」の意味。`public_url` は `null` のまま。
+  - Ataru のトップ・回答フォーム・その他ページへのリンクは追加しない。他の調査へ `results_only` を使う場合も、個別に明示的な指示が必要。
+  - 上記以外の「緊縛事業（ataru-nagoya）へのリンクを追加しない」ルールは変更なし。
 - 内部パス・運営用ダッシュボード・Admin/GAS・注記（note）・回答者単位データは含めない。
 - 独立アンケートとして掲載しないもの: prototype、イベント申込、初参加エントリー、運営用集計画面。
 - 調査同士の設問・回答は統合・変換しない。

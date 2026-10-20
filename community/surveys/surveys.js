@@ -3,6 +3,8 @@
  * - 値が null の項目は「0」や推定値を出さず、項目ごと省く。
  * - status=unknown を「回答受付中」と断定しない。
  * - link_policy=none の調査には CTA を出さない（URL 自体もデータに含めない）。
+ * - link_policy=results_only の調査は、公開済みの結果ページ（results_url）への CTA だけを出す。
+ *   public_url は参照せず、「アンケートを見る」は出さない（明示的な例外。community/surveys/README.md 参照）。
  * - 描画は textContent / createElement のみ（データ由来の文字列を HTML として解釈しない）。
  */
 (function () {
@@ -91,7 +93,7 @@
     }
     var wrap = el('div', 'survey-cta');
     var resultsUrl = survey.public_results && survey.public_results.available ? resolveUrl(survey.results_url) : null;
-    var openUrl = resolveUrl(survey.public_url);
+    var openUrl = survey.link_policy === 'results_only' ? null : resolveUrl(survey.public_url);
 
     function link(url, label, ctaName, primary) {
       var a = el('a', 'survey-cta__btn survey-cta__btn--' + (primary ? 'primary' : 'secondary'), label);

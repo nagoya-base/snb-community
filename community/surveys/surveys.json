@@ -4,44 +4,6 @@
   "description": "ポータル専用の公開用データ。運営提供の surveys.json から表示に必要な項目のみ抜粋（内部パス・運営用URL・注記・回答者単位データは含めない）。null は不明を表し、推測で補完しない。",
   "surveys": [
     {
-      "id": "snbc_september_project_202609",
-      "title": "9月企画アンケート",
-      "also_known_as": null,
-      "summary": "学校セット撮影会 着たい衣装・参加条件を教えてください",
-      "brand": "SNBコミュニティ",
-      "theme": [
-        "学校セット撮影会",
-        "着たい衣装",
-        "参加条件",
-        "参加可能日",
-        "開催スタイル"
-      ],
-      "target": null,
-      "estimated_minutes": null,
-      "status": "closed",
-      "survey_period": {
-        "start": null,
-        "end": null
-      },
-      "response_count": {
-        "value": null,
-        "state": "unknown"
-      },
-      "question_count": null,
-      "public_url": "https://nagoya-base.github.io/snb-community/community/enquete_202609.html",
-      "results_url": null,
-      "public_results": {
-        "available": false,
-        "final": null
-      },
-      "link_policy": "normal",
-      "portal": {
-        "include": true,
-        "section": "archive",
-        "sort_date": "2026-09-01"
-      }
-    },
-    {
       "id": "ataru_rope_interest_2026",
       "title": "緊縛・ロープへの関心アンケート",
       "also_known_as": null,
@@ -66,12 +28,12 @@
       },
       "question_count": 34,
       "public_url": null,
-      "results_url": null,
+      "results_url": "https://nagoya-base.github.io/ataru-nagoya/survey-results.html",
       "public_results": {
         "available": true,
         "final": true
       },
-      "link_policy": "none",
+      "link_policy": "results_only",
       "portal": {
         "include": true,
         "section": "archive",
