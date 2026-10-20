@@ -97,10 +97,10 @@
       ],
       "target": "18歳以上",
       "estimated_minutes": null,
-      "status": "unknown",
+      "status": "collecting",
       "survey_period": {
         "start": null,
-        "end": null
+        "end": "2026-10-31T23:59:59+09:00"
       },
       "response_count": {
         "value": null,
@@ -116,10 +116,11 @@
       "link_policy": "normal",
       "portal": {
         "include": true,
-        "section": "current_or_recent",
+        "section": "current",
         "sort_date": "2026-10-08"
       },
-      "question_count_label": "Q1〜Q30（条件分岐あり）"
+      "question_count_label": "Q1〜Q30（条件分岐あり）",
+      "survey_period_label": "2026年10月31日まで"
     },
     {
       "id": "studio_service_feedback_2026",
@@ -158,7 +159,8 @@
         "include": true,
         "section": "current_or_recent",
         "sort_date": "2026-10-01"
-      }
+      },
+      "survey_period_label": "期限なし"
     },
     {
       "id": "nagoya_baseball_uniform_club_2026",
@@ -182,7 +184,7 @@
       "status": "collecting",
       "survey_period": {
         "start": null,
-        "end": null
+        "end": "2026-11-30T23:59:59+09:00"
       },
       "response_count": {
         "value": null,
@@ -200,7 +202,8 @@
         "include": true,
         "section": "current",
         "sort_date": "2026-10-20"
-      }
+      },
+      "survey_period_label": "2026年11月30日まで"
     }
   ]
 }

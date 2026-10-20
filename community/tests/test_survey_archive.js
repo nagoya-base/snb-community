@@ -62,18 +62,61 @@ async function boot() {
   assert(ataruData.public_results.available === true && ataruData.public_results.final === true && ataruData.public_url === null && ataruData.results_url === ATARU_RESULTS, 'アタル: JSON状態（available/final=true, public_url=null, results_url）');
   assert(hrefsAll().filter((h) => /ataru-nagoya/.test(h)).join() === ATARU_RESULTS, 'ataru-nagoya へのリンクは結果ページ1件のみ（トップ・回答フォーム等なし）');
   assert(data.surveys.filter((s) => s.link_policy === 'results_only').map((s) => s.id).join() === 'ataru_rope_interest_2026', 'results_only はアタルのカードのみ');
-  assert(card('snbc_fetish_costume_2026').querySelectorAll('a').length === 2 && card('nagoya_baseball_uniform_club_2026').querySelectorAll('a').length === 2 && card('studio_service_feedback_2026').querySelectorAll('a').length === 1, '他カードのCTA数は変更なし');
+  assert(card('snbc_fetish_costume_2026').querySelectorAll('a').length === 1 && card('nagoya_baseball_uniform_club_2026').querySelectorAll('a').length === 2 && card('studio_service_feedback_2026').querySelectorAll('a').length === 1, 'CTA数: 過去調査は結果のみ(1)、実施中は結果+アンケート(2)、Studioはアンケートのみ(1)');
   assert(card('ataru_rope_interest_2026').textContent.includes('193件') && card('ataru_rope_interest_2026').textContent.includes('34問'), 'アタル: 回答数・設問数は掲載');
   assert(/2026年10月4日まで/.test(card('ataru_rope_interest_2026').textContent) && !/10月5日/.test(card('ataru_rope_interest_2026').textContent), 'アタル: 「2026年10月4日まで」と表示（正本のendは10/5 0:00のまま）');
   assert(/〜 2026年9月30日/.test(card('snbc_fetish_costume_2026').textContent) && !/23:59/.test(card('snbc_fetish_costume_2026').textContent), '衣装嗜好: 「〜 2026年9月30日」');
-  assert(!/20\d\d年\d+月/.test(card('nagoya_baseball_uniform_club_2026').textContent) && !/20\d\d年\d+月/.test(card('snbc_costume_portrait_2026').textContent), 'sort_date由来の年月を表示しない（期間不明なら日付なし）');
+  assert(!/2026年10月(8|20)日|2026年10月1日/.test(doc.getElementById('archive-root').textContent), 'sort_date由来の日付を表示しない');
   assert(!/設問数/.test(card('nagoya_baseball_uniform_club_2026').textContent), '野球ユニ部: 設問数の不一致があるため設問数を省く');
   assert(/設問数Q1〜Q30（条件分岐あり）/.test(card('snbc_costume_portrait_2026').textContent) && !/30問/.test(card('snbc_costume_portrait_2026').textContent), 'ポートレート意識調査: 「Q1〜Q30（条件分岐あり）」表記');
   assert(JSON.parse(jsonText).surveys.find((s) => s.id === 'ataru_rope_interest_2026').survey_period.end === '2026-10-05T00:00:00+09:00', '正本の締切値(end)は変更していない');
   assert(!/設問数/.test(card('studio_service_feedback_2026').textContent), 'Studio: 設問数不明は非表示');
   assert(/回答受付中（件数は非公開）/.test(card('nagoya_baseball_uniform_club_2026').textContent), '野球ユニ部: 少数秘匿は件数を出さない');
   assert(/公開状況確認中/.test(card('studio_service_feedback_2026').textContent) && !/回答受付中/.test(card('studio_service_feedback_2026').textContent), 'status=unknown を回答受付中と断定しない(Studio)');
-  assert(!/回答受付中/.test(card('snbc_costume_portrait_2026').textContent), 'status=unknown を回答受付中と断定しない(costume)');
+  assert(card('snbc_costume_portrait_2026').closest('[data-section]').getAttribute('data-section') === 'current' && /回答受付中/.test(card('snbc_costume_portrait_2026').textContent), 'ポートレート意識調査: 10/31まで受付中のため現在実施中');
+
+  // Issue #407: 期限表示
+  const periodOf = (id) => (card(id).querySelector('.timeline__date') || {}).textContent;
+  assert(periodOf('nagoya_baseball_uniform_club_2026') === '2026年11月30日まで', '野球ユニ部: 「2026年11月30日まで」');
+  assert(periodOf('snbc_costume_portrait_2026') === '2026年10月31日まで', 'ポートレート意識調査: 「2026年10月31日まで」');
+  assert(periodOf('studio_service_feedback_2026') === '期限なし', 'Studio: 「期限なし」');
+  assert(data.surveys.find((s) => s.id === 'studio_service_feedback_2026').survey_period.end === null, 'Studio: 募集期限は設定しない(end=null)');
+  assert(data.surveys.find((s) => s.id === 'nagoya_baseball_uniform_club_2026').survey_period.end.startsWith('2026-11-30') && data.surveys.find((s) => s.id === 'snbc_costume_portrait_2026').survey_period.end.startsWith('2026-10-31'), '正本のend: 11/30・10/31');
+
+  // Issue #407: CTA（過去調査は回答フォームCTAなし／配色は種別で固定）
+  data.surveys.filter((s) => s.status === 'closed').forEach((s) => {
+    assert(!ctas(s.id).includes('アンケートを見る'), '過去調査にアンケートを見るなし: ' + s.id);
+  });
+  assert(ctas('snbc_fetish_costume_2026').join() === '結果を見る', '衣装・ユニフォーム嗜好: 結果を見るのみ');
+  assert(ctas('ataru_rope_interest_2026').join() === '結果を見る', '緊縛・ロープ: 結果を見るのみ');
+  const allCtas = [...doc.querySelectorAll('.survey-cta__btn')];
+  assert(allCtas.length === 7, 'CTAは計7件（結果4＋アンケート3）');
+  allCtas.forEach((a) => {
+    const id = a.getAttribute('data-event-slug');
+    if (a.textContent === '結果を見る') assert(a.classList.contains('survey-cta__btn--results') && !a.classList.contains('survey-cta__btn--open'), '結果を見るは赤塗りクラス: ' + id);
+    else assert(a.textContent === 'アンケートを見る' && a.classList.contains('survey-cta__btn--open') && !a.classList.contains('survey-cta__btn--results'), 'アンケートを見るは白抜きクラス: ' + id);
+  });
+  const both = ['nagoya_baseball_uniform_club_2026', 'snbc_costume_portrait_2026'];
+  both.forEach((id) => assert(ctas(id).join() === '結果を見る,アンケートを見る', '両方あるカードは結果→アンケートの順: ' + id));
+  const css = read('style.css');
+  const rule = (sel) => (css.match(new RegExp(sel.replace(/[.]/g, '\\.') + '\\s*\\{([^}]*)\\}')) || [])[1] || '';
+  assert(/background:\s*var\(--accent\)/.test(rule('.survey-cta__btn--results')) && /color:\s*#fff/.test(rule('.survey-cta__btn--results')), 'CSS: 結果=赤背景・白文字');
+  assert(/background:\s*#fff/.test(rule('.survey-cta__btn--open')) && /color:\s*var\(--accent\)/.test(rule('.survey-cta__btn--open')), 'CSS: アンケート=白背景・赤文字');
+  assert(/\.survey-cta__btn\s*\{\s*border:\s*1px solid var\(--accent\)/.test(css), 'CSS: 両CTAとも赤枠');
+  assert(!/--primary|--secondary/.test(css + script), 'primary/secondary 依存が残っていない');
+
+  // Issue #407: OGP・ヒーローをCommunityトップと揃える
+  const topHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const meta = (h, attr, key) => (h.match(new RegExp('<meta ' + attr + '="' + key + '" content="([^"]*)"')) || [])[1];
+  ['og:image', 'og:image:width', 'og:image:height'].forEach((k) => assert(meta(html, 'property', k) === meta(topHtml, 'property', k), 'OGP一致: ' + k));
+  assert(meta(html, 'name', 'twitter:image') === meta(topHtml, 'name', 'twitter:image') && meta(html, 'name', 'twitter:card') === meta(topHtml, 'name', 'twitter:card'), 'Twitter Card画像・種別がCommunityトップと同じ');
+  assert(meta(html, 'property', 'og:image') === 'https://nagoya-base.github.io/snb-community/images/community/top/meta-ogp-main.jpg', 'OGP画像はmeta-ogp-main.jpg');
+  const heroImg = doc.querySelector('.hero-image img');
+  const heroSrc = doc.querySelector('.hero-image source');
+  assert(heroImg && heroImg.getAttribute('src') === '../../images/community/top/meta-ogp-main.jpg' && heroSrc && heroSrc.getAttribute('srcset') === '../../images/community/top/hero-photo-main.webp' && heroSrc.getAttribute('type') === 'image/webp', 'ヒーロー: webp+jpgをCommunityトップと同じ画像で表示（相対パス ../../）');
+  assert(heroImg.getAttribute('width') === '1731' && heroImg.getAttribute('height') === '909', 'ヒーロー: 画像サイズ属性がCommunityトップと同じ');
+  ['community/top/hero-photo-main.webp', 'community/top/meta-ogp-main.jpg'].forEach((f) => assert(fs.existsSync(path.join(__dirname, '..', '..', 'images', f)), '画像ファイルが存在: ' + f));
+  assert(doc.querySelector('.archive-hero h1').textContent === 'アンケート・調査アーカイブ', 'ポータル固有のH1は維持');
   assert(!ids.includes('nagoya_fetish_survey_internal'), '同一調査の別名は1件のみ');
   assert(/名古屋のフェチ・衣装交流に関するアンケート/.test(card('snbc_fetish_costume_2026').textContent), '衣装嗜好: 別名を補助説明に表示');
   const hrefs = [...doc.querySelectorAll('a[href]')].map((a) => a.getAttribute('href'));
