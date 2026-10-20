@@ -99,6 +99,8 @@ bootstrap 成功後は bootstrap workflow を再利用せず、通常 deploy wor
 ### Frontend の endpoint
 
 - **E2E 中**: `config.js` の `endpoint` は空のままにし、ローカル override（手元の未コミット変更など）で `/exec` URL を設定する。E2E 用の endpoint 値をこのブランチ・手順書 PR へ commit しない。
+- override は **ページ読み込み前**（未コミットの `config.js` 編集、または DevTools Local Overrides）に反映するのが基本。`app.js` は endpoint を使う時点（status 取得・送信）で読むため、読み込み後に設定した場合も送信できる。test mode は起動時に通信しないので、endpoint が空のまま送信すると「現在このアンケートは準備中のため、送信できません。」が出る（server の応答ではなく Frontend の endpoint 未設定）。
+- `submit_excluded` は production の受付状態（`not_configured` / `not_open` / `closed`）に依存しない。E2E のために `survey.config.json` の `opens_at` / `closes_at` を仮設定しない。
 - **production launch PR**: `config.js` に公開 Web App の `/exec` URL を設定する。この URL 自体は secret として扱わない（公開ページから参照される値のため）。ただし Script ID / Deployment ID 単体や clasp credentials は引き続き commit しない。
 
 

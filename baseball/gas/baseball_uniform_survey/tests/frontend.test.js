@@ -488,6 +488,26 @@ test('submit_excluded：fragment の token を sessionStorage 経由で POST bod
   assert.strictEqual(env.calls.filter((c) => c.options.method !== 'POST').length, 0);
 });
 
+test('submit_excluded：endpoint が読み込み後に設定されても（Local Override）送信でき、「準備中」で止まらない', async () => {
+  const env = await openPage({ endpoint: '', hash: `#test=submit_excluded&token=${SECRET}&run=run_override`, fetch: () => ({ ok: true, status: 'accepted_test', test: true }) });
+  assert.strictEqual(env.calls.length, 0, 'test mode は起動時に通信しない');
+  env.window.BASEBALL_UNIFORM_SURVEY_CONFIG.endpoint = D.ENDPOINT;
+  await walkToReview(env, ROUTES.interested);
+  click(env.document, 'bus-next');
+  await settle();
+  assert.strictEqual(posts(env).length, 1);
+  assert.strictEqual(posts(env)[0].url, D.ENDPOINT);
+  assert.match(pageTitle(env.document), /テスト送信を受け付けました（集計対象外）/);
+});
+
+test('submit_excluded：endpoint が未設定のままなら通信せず準備中の案内で止まる', async () => {
+  const env = await openPage({ endpoint: '', hash: `#test=submit_excluded&token=${SECRET}&run=run_none` });
+  await walkToReview(env, ROUTES.interested);
+  click(env.document, 'bus-next');
+  await settle();
+  assert.strictEqual(env.calls.length, 0);
+});
+
 test('submit_excluded：リロードしても sessionStorage から継続し、「テストを終了」で解除できる', async () => {
   const stored = JSON.stringify({ mode: 'submit_excluded', token: SECRET, run: 'run_x' });
   const env = await openPage({ storage: { snb_baseball_uniform_survey_test_v1: stored } });
