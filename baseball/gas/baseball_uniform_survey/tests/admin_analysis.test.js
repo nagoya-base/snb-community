@@ -362,8 +362,9 @@ test('Dashboard：需要ファネル分析と重要クロス集計を折りた�
     { ...NON, catchball_interest: 'very_interested', near_term_participation_intent: 'definitely', barriers: ['cost', 'schedule'], age: '25_29', favorite_uniforms: ['baseball'], top_uniform: 'baseball', top_uniform_sport_experience: 'continuous' },
     { club_awareness: 'attended', attendance_count: 'once', last_attended: 'over_1y', repeat_intent: 'definitely', attendance_lapse_reasons: ['schedule'], rejoin_conditions: ['more_dates'] }
   ]));
-  const box = document.getElementById('analysis');
-  assert.equal(box.hidden, false);
+  const box = document.getElementById('tab-funnel');
+  const crossBox = document.getElementById('tab-cross');
+  assert.equal(document.getElementById('analysis'), null, '常設の分析ラッパーは廃止');
   const funnels = document.querySelectorAll('#funnelBody > details');
   assert.equal(funnels.length, 5, '4 ファネル + 障壁の変化/比較');
   assert.match(funnels[0].querySelector('summary').textContent, /未参加者の転換（母集団 1 人）/);
@@ -372,27 +373,44 @@ test('Dashboard：需要ファネル分析と重要クロス集計を折りた�
   assert.match(funnels[4].querySelector('summary').textContent, /障壁の変化／比較/);
   const crosses = document.querySelectorAll('#crossBody > details');
   assert.equal(crosses.length, 9);
-  for (const d of [...funnels, ...crosses, document.getElementById('funnels'), document.getElementById('crosstabs')]) assert.equal(d.hasAttribute('open'), false, '各ブロックは折りたたみ');
+  for (const d of [...funnels, ...crosses]) assert.equal(d.hasAttribute('open'), false, '各ブロックは折りたたみ');
   assert.match(crosses[0].textContent, /行カテゴリの到達者数（その行を選んだ人）」が分母/);
   assert.match(crosses[4].textContent, /1 人が複数のセルに入り、行・列の合計は回答者数と一致しません/);
   assert.ok(!/複数のセルに入り/.test(crosses[0].textContent), '単一軸のクロスには multiple 注記を出さない');
-  assert.ok(!box.querySelector('table'), '横長 table を使わない');
+  assert.ok(!box.querySelector('table') && !crossBox.querySelector('table'), '横長 table を使わない');
   const css = html.match(/<style>([\s\S]*?)<\/style>/)[1];
   assert.ok(!/overflow-x/.test(css) && !/<table/.test(html));
   assert.ok(!/\bwidth\s*:\s*\d{3,}px|min-width\s*:\s*(?:[3-9]\d\d|\d{4,})px/.test(css), '320px を超える固定幅を使わない');
   assert.match(css, /\.stage\s*\{[^}]*min-width\s*:\s*0/);
   assert.match(css, /\.xrow\s*\{[^}]*min-width\s*:\s*0/);
   // 既存の表示（日別・集計結果・タブ）は維持。
-  assert.deepEqual([...document.querySelectorAll('[data-tab]')].map((b) => b.getAttribute('data-tab')), ['results', 'publication', 'semantic', 'snapshot', 'freetext']);
+  assert.deepEqual([...document.querySelectorAll('[data-tab]')].map((b) => b.getAttribute('data-tab')), ['results', 'publication', 'semantic', 'funnel', 'cross', 'snapshot', 'freetext']);
   assert.ok(document.querySelector('#results .card'));
   assert.ok(document.getElementById('daily').textContent.includes('日別回答数'));
   // 分析ブロックには question ID や hash を主表示しない。
-  assert.ok(!/\b(club_awareness|catchball_interest|near_term_participation_intent)\b/.test(box.textContent));
+  assert.ok(!/\b(club_awareness|catchball_interest|near_term_participation_intent)\b/.test(box.textContent + crossBox.textContent));
 });
 
-test('Dashboard：分析の取得に失敗しても既存の集計結果は表示され、分析ブロックだけが隠れる', () => {
+test('Dashboard：需要ファネル／クロス集計は選択中のタブでのみ表示し、既存5タブでは表示しない', () => {
+  const { document } = renderDashboard(rowsOf([{ ...NON, catchball_interest: 'very_interested' }]));
+  const tabs = ['results', 'publication', 'semantic', 'funnel', 'cross', 'snapshot', 'freetext'];
+  const visible = () => tabs.filter((t) => !document.getElementById('tab-' + t).hidden);
+  assert.deepEqual(visible(), ['results'], '初期表示は従来どおり集計結果');
+  assert.ok(document.getElementById('funnelBody').children.length > 0, '取得成功後も DOM はあるが非表示のまま');
+  for (const t of tabs) {
+    document.querySelector('[data-tab="' + t + '"]').click();
+    assert.deepEqual(visible(), [t]);
+    assert.equal(document.querySelector('[data-tab="' + t + '"]').getAttribute('aria-selected'), 'true');
+  }
+  assert.equal(document.querySelector('[data-tab="funnel"]').textContent, '需要ファネル');
+  assert.equal(document.querySelector('[data-tab="cross"]').textContent, 'クロス集計');
+  assert.ok(document.getElementById('tab-funnel').querySelector('#funnelBody') && !document.getElementById('tab-funnel').querySelector('#crossBody'));
+  assert.ok(document.getElementById('tab-cross').querySelector('#crossBody'));
+});
+
+test('Dashboard：分析の取得に失敗しても既存の集計結果は表示され、該当2タブの中だけで失敗を表示する', () => {
   const html = fs.readFileSync(path.join(ROOT, 'admin', 'Dashboard.html'), 'utf8');
   assert.match(html, /getAdminAnalysis\(\)/);
-  assert.match(html, /withFailureHandler\(function \(\) \{ \$\('analysis'\)\.hidden = true; \}\)\.getAdminAnalysis/);
+  assert.match(html, /withFailureHandler\(analysisFailed\)\.getAdminAnalysis/);
   assert.ok(!/innerHTML/.test(html), 'textContent で描画する');
 });
