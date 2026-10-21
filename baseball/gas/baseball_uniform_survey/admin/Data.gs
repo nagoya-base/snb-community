@@ -183,6 +183,20 @@ function diagnoseVersions_() {
   }
 }
 
+/**
+ * responses Spreadsheet の timeZone（読み取りのみ）。日付シリアル値・壁時計文字列は Spreadsheet の timeZone で保存されるため、
+ * 日別回答数はこれを使って明示的に Asia/Tokyo の日付へ変換する（Spreadsheet の設定は変更しない）。取得できなければ null（日付不明に倒す）。
+ */
+function readSpreadsheetTimeZone_() {
+  try {
+    var meta = Sheets.Spreadsheets.get(getResponsesSpreadsheetId_(), { fields: 'properties.timeZone' });
+    var zone = meta && meta.properties && meta.properties.timeZone;
+    return typeof zone === 'string' && zone !== '' ? zone : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function classifyResponses_() {
-  return SurveyAggregate.classifyRows(SURVEY_SCHEMA, readRows_());
+  return SurveyAggregate.classifyRows(SURVEY_SCHEMA, readRows_(), { spreadsheetTimeZone: readSpreadsheetTimeZone_() });
 }

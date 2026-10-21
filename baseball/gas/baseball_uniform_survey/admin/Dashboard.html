@@ -41,6 +41,11 @@
     details { margin: 4px 0; }
     summary { cursor: pointer; }
     ul { margin: 4px 0; padding-left: 1.2em; }
+    .daily { display: flex; align-items: flex-end; gap: 2px; height: 96px; margin: 8px 0 2px; padding: 0; list-style: none; }
+    .daily li { flex: 1 1 0; min-width: 0; height: 100%; display: flex; align-items: flex-end; }
+    .daily li > span { display: block; width: 100%; min-height: 1px; background: var(--accent); border-radius: 2px 2px 0 0; }
+    .daily li.zero > span { background: var(--line); }
+    .daily-axis { display: flex; justify-content: space-between; gap: 8px; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -55,6 +60,7 @@
   </div>
   <p id="status" class="note" role="status"></p>
   <div class="card" id="totals"></div>
+  <div class="card" id="daily"></div>
 
   <section id="tab-results">
     <p class="note">運営者向けの内部集計です。公開条件に届いていない設問も件数・割合を表示します（一般公開の可否とは別です）。割合は「その設問に回答した人」を分母にしています。</p>
@@ -194,6 +200,48 @@
         totals.appendChild(det);
       }
 
+      /* 日別回答数（production 有効回答のみ・Asia/Tokyo 基準）。件数だけで、個別 timestamp・hash・自由記述は扱わない。 */
+      function shortDate(ymd) { return Number(ymd.slice(5, 7)) + '/' + Number(ymd.slice(8, 10)); }
+      function renderDaily(s) {
+        var box = $('daily');
+        box.textContent = '';
+        var d = s.daily_responses;
+        if (!d) return;
+        box.appendChild(el('h2', '日別回答数'));
+        box.style.marginTop = '0';
+        box.firstChild.style.margin = '0 0 2px';
+        box.appendChild(el('p', 'production 有効回答のみ（日本時間）。合計 ' + d.total + ' 件', 'note'));
+        if (!d.days.length) {
+          box.appendChild(el('p', d.undated > 0 ? '日付を判定できた回答がありません（日付不明 ' + d.undated + ' 件）。' : 'まだ有効回答がありません。', 'note'));
+          return;
+        }
+        var max = d.days.reduce(function (m, x) { return Math.max(m, x.count); }, 0);
+        var chart = el('ul', undefined, 'daily');
+        chart.setAttribute('role', 'img');
+        chart.setAttribute('aria-label', '日別回答数の棒グラフ。' + shortDate(d.days[0].date) + ' から ' + shortDate(d.days[d.days.length - 1].date) + '、最大 ' + max + ' 件');
+        d.days.forEach(function (x) {
+          var li = el('li', undefined, x.count === 0 ? 'zero' : '');
+          li.title = shortDate(x.date) + ': ' + x.count + '件';
+          var bar = el('span');
+          bar.style.height = (max > 0 ? Math.max(1, Math.round(x.count * 100 / max)) : 1) + '%';
+          li.appendChild(bar);
+          chart.appendChild(li);
+        });
+        box.appendChild(chart);
+        var axis = el('div', undefined, 'daily-axis');
+        axis.appendChild(el('span', shortDate(d.days[0].date)));
+        axis.appendChild(el('span', '最大 ' + max + ' 件/日'));
+        axis.appendChild(el('span', shortDate(d.days[d.days.length - 1].date)));
+        box.appendChild(axis);
+        var det = el('details');
+        det.appendChild(el('summary', '日別の件数'));
+        var dl = el('dl', undefined, 'facts');
+        d.days.slice().reverse().forEach(function (x) { fact(dl, shortDate(x.date), x.count + ' 件'); });
+        if (d.undated > 0) fact(dl, '日付不明', d.undated + ' 件');
+        det.appendChild(dl);
+        box.appendChild(det);
+      }
+
       /* 設問ごとの縦カード。件数・割合が主役で、公開判定は 1 行の補助表示、詳細は折りたたみ。 */
       function renderResults(s) {
         var box = $('results');
@@ -313,6 +361,7 @@
 
       function renderSummary(s) {
         renderTotals(s);
+        renderDaily(s);
         renderResults(s);
         renderPublication(s);
         renderSemantic(s);

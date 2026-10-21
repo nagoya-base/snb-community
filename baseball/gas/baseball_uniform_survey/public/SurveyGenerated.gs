@@ -931,10 +931,12 @@ var SurveyAggregate = (function (core) {
    *   completion_status != complete      → incomplete
    *   survey/schema/design version 不一致 → version_mismatch
    *   18歳未満（termination）・schema 検証失敗・hash 欠損・hash 重複 → 除外
+   * options.spreadsheetTimeZone: responses Spreadsheet の timeZone（Admin の日別回答数の日付決定だけに使う）。
    * valid の各 record: {answers（text 設問を除く）, other_texts, free_text, respondent_hash}。
    * respondent_hash は重複除去のためだけに使い、public へは出さない。
    */
-  function classifyRows(schema, rows) {
+  function classifyRows(schema, rows, options) {
+    var spreadsheetTimeZone = options && options.spreadsheetTimeZone;
     var counts = { rows: 0, production_valid: 0, test_excluded: 0, excluded: emptyExcluded(), version_mismatch_fields: emptyVersionFieldCounts(), legacy_date_serial_accepted: 0 };
     var valid = [];
     var seen = {};
@@ -970,10 +972,106 @@ var SurveyAggregate = (function (core) {
         if (contains(textIds, id)) freeText[id] = validation.clean.answers[id];
         else answers[id] = validation.clean.answers[id];
       });
-      valid.push({ answers: answers, other_texts: validation.clean.other_texts, free_text: freeText, respondent_hash: hash });
+      valid.push({ answers: answers, other_texts: validation.clean.other_texts, free_text: freeText, respondent_hash: hash, day: jstDayOf(row.timestamp, spreadsheetTimeZone) });
       counts.production_valid++;
     });
     return { valid: valid, counts: counts };
+  }
+
+  /* ── 日別回答数（Admin 専用。Asia/Tokyo 基準。個別 timestamp は返さず日付ごとの件数だけにする） ── */
+
+  var JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+  /* Sheets の日付シリアル値 0 = 1899-12-30（その Spreadsheet の timeZone の壁時計）。 */
+  var SHEETS_EPOCH_UTC_MS = Date.UTC(1899, 11, 30);
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function ymdOfUtc(date) { return date.getUTCFullYear() + '-' + pad2(date.getUTCMonth() + 1) + '-' + pad2(date.getUTCDate()); }
+  function jstYmdOfInstant(ms) { return ymdOfUtc(new Date(ms + JST_OFFSET_MS)); }
+  function validYmd(y, m, d) {
+    var t = new Date(Date.UTC(y, m - 1, d));
+    return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+  }
+
+  /* IANA タイムゾーンの、ある瞬間（ms）での UTC からの差（ms）。タイムゾーンが不正・Intl が無ければ null。 */
+  function zoneOffsetMs(timeZone, instantMs) {
+    try {
+      var parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timeZone, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric'
+      }).formatToParts(new Date(instantMs));
+      var v = {};
+      parts.forEach(function (p) { v[p.type] = Number(p.value); });
+      return Date.UTC(v.year, v.month - 1, v.day, v.hour, v.minute, v.second) - Math.floor(instantMs / 1000) * 1000;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /* timeZone の壁時計（UTC として表した ms）→ 実際の瞬間（ms）。解決できなければ null。 */
+  function wallToInstantMs(wallMs, timeZone) {
+    if (typeof timeZone !== 'string' || timeZone === '') return null;
+    var first = zoneOffsetMs(timeZone, wallMs);
+    if (first === null) return null;
+    var second = zoneOffsetMs(timeZone, wallMs - first);
+    return wallMs - (second === null ? first : second);
+  }
+
+  /*
+   * timestamp セル値 → 'YYYY-MM-DD'（Asia/Tokyo の日付）。解釈できなければ null（日付不明）。
+   *  - Date / offset 付き ISO 文字列は瞬間そのもの → JST に変換
+   *  - 日付シリアル値（UNFORMATTED_VALUE）・'yyyy-MM-dd HH:mm' 風の文字列は Spreadsheet の timeZone の壁時計
+   *    → spreadsheetTimeZone で瞬間に直してから JST に変換する。spreadsheetTimeZone が不明なら null（推測しない）。
+   */
+  function jstDayOf(value, spreadsheetTimeZone) {
+    if (value instanceof Date) {
+      return isFinite(value.getTime()) ? jstYmdOfInstant(value.getTime()) : null;
+    }
+    var wallMs;
+    if (typeof value === 'number') {
+      if (!isFinite(value) || value < 1 || value > 73050) return null;
+      wallMs = SHEETS_EPOCH_UTC_MS + Math.round(value * DAY_MS);
+    } else {
+      var text = str(value);
+      if (text === '') return null;
+      if (/^\d{4}-\d{2}-\d{2}T/.test(text) && /(Z|[+-]\d{2}:?\d{2})$/.test(text)) {
+        var parsed = Date.parse(text);
+        return isFinite(parsed) ? jstYmdOfInstant(parsed) : null;
+      }
+      var m = /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?$/.exec(text);
+      if (!m) return null;
+      var y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+      var hh = m[4] === undefined ? 0 : Number(m[4]), mi = m[5] === undefined ? 0 : Number(m[5]), ss = m[6] === undefined ? 0 : Number(m[6]);
+      if (!validYmd(y, mo, d) || hh > 23 || mi > 59 || ss > 59) return null;
+      wallMs = Date.UTC(y, mo - 1, d, hh, mi, ss);
+    }
+    var instant = wallToInstantMs(wallMs, spreadsheetTimeZone);
+    return instant === null ? null : jstYmdOfInstant(instant);
+  }
+
+  /*
+   * production 有効回答の日別件数。records は classifyRows().valid（各 record.day が JST の日付 or null）。
+   * 最初の回答日〜最後の回答日を連続させ（0 件の日も含める）、日付不明は undated にまとめる。
+   * sum(days.count) + undated = total = valid.length。
+   */
+  function dailyResponses(records) {
+    var list = Array.isArray(records) ? records : [];
+    var perDay = {};
+    var undated = 0;
+    list.forEach(function (record) {
+      var day = record && record.day;
+      if (typeof day !== 'string') { undated++; return; }
+      perDay[day] = (perDay[day] || 0) + 1;
+    });
+    var keys = Object.keys(perDay).sort();
+    var days = [];
+    if (keys.length) {
+      var cursor = Date.parse(keys[0] + 'T00:00:00Z');
+      var end = Date.parse(keys[keys.length - 1] + 'T00:00:00Z');
+      for (; cursor <= end; cursor += DAY_MS) {
+        var key = ymdOfUtc(new Date(cursor));
+        days.push({ date: key, count: perDay[key] || 0 });
+      }
+    }
+    return { timezone: 'Asia/Tokyo', days: days, undated: undated, total: list.length };
   }
 
   /* ── 設問ごとの集計（exact。Admin 用。public へは suppress を通す） ── */
@@ -1729,6 +1827,8 @@ var SurveyAggregate = (function (core) {
       survey_version: schema.survey_version,
       design_version: schema.design_version,
       production_valid_total: total,
+      /* Admin 専用。publicPreview / snapshot には含めない。 */
+      daily_responses: dailyResponses(valid),
       test_excluded: classification.counts.test_excluded,
       excluded: classification.counts.excluded,
       version_mismatch_fields: classification.counts.version_mismatch_fields || emptyVersionFieldCounts(),
@@ -1769,6 +1869,8 @@ var SurveyAggregate = (function (core) {
     decodeMultiple: decodeMultiple,
     rowToAnswers: rowToAnswers,
     classifyRows: classifyRows,
+    jstDayOf: jstDayOf,
+    dailyResponses: dailyResponses,
     VERSION_FIELDS: VERSION_FIELDS,
     diagnoseVersions: diagnoseVersions,
     versionMatches: versionMatches,
