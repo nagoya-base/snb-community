@@ -18,6 +18,7 @@ const CONFIG_PATH = path.join(ROOT, 'survey.config.json');
 const CORE_PATH = path.join(ROOT, 'src', 'survey-core.js');
 const AGGREGATE_PATH = path.join(ROOT, 'src', 'survey-aggregate.js');
 const SNAPSHOT_STORE_PATH = path.join(ROOT, 'src', 'snapshot-store.js');
+const ANALYSIS_PATH = path.join(ROOT, 'src', 'survey-analysis.js');
 const MAINTENANCE_CORE_PATH = path.join(ROOT, 'src', 'maintenance-core.js');
 const RETENTION_PATH = path.join(ROOT, 'retention.config.json');
 const TARGET = path.join(ROOT, 'public', 'SurveyGenerated.gs');
@@ -36,10 +37,11 @@ function renderAdmin() {
   const core = fs.readFileSync(CORE_PATH, 'utf8');
   const aggregate = fs.readFileSync(AGGREGATE_PATH, 'utf8');
   const store = fs.readFileSync(SNAPSHOT_STORE_PATH, 'utf8');
+  const analysis = fs.readFileSync(ANALYSIS_PATH, 'utf8');
   return [
     '/*',
     ' * AUTO-GENERATED (Admin GAS) — DO NOT EDIT.',
-    ' * 正本: baseball/gas/baseball_uniform_survey/survey.schema.json, src/survey-core.js, src/survey-aggregate.js, src/snapshot-store.js',
+    ' * 正本: baseball/gas/baseball_uniform_survey/survey.schema.json, src/survey-core.js, src/survey-aggregate.js, src/snapshot-store.js, src/survey-analysis.js（Admin 専用）',
     ' * 再生成: (baseball/gas/baseball_uniform_survey で) npm run build',
     ' * CIは `npm run build:check` で生成物との差分を検出する。',
     ' */',
@@ -49,7 +51,9 @@ function renderAdmin() {
     '',
     aggregate,
     '',
-    store
+    store,
+    '',
+    analysis
   ].join('\n');
 }
 
@@ -178,5 +182,5 @@ if (require.main === module) process.exitCode = main(process.argv.slice(2));
 module.exports = {
   render, renderFrontend, renderFrontendI18n, renderResultsI18n, RESULTS_I18N_TARGET, renderAdmin, renderMaintenance,
   TARGET, FRONTEND_TARGET, FRONTEND_I18N_TARGET, ADMIN_TARGET, MAINTENANCE_TARGET,
-  SCHEMA_PATH, CONFIG_PATH, CORE_PATH, AGGREGATE_PATH, MAINTENANCE_CORE_PATH, RETENTION_PATH, SNAPSHOT_STORE_PATH
+  SCHEMA_PATH, CONFIG_PATH, CORE_PATH, AGGREGATE_PATH, ANALYSIS_PATH, MAINTENANCE_CORE_PATH, RETENTION_PATH, SNAPSHOT_STORE_PATH
 };

@@ -388,6 +388,63 @@ function validateSchema(schema) {
     }
   }
 
+  // ---- analysisFunnels / adminAnalysis（Issue #440。Admin 専用の分析定義。既存の設問・option ID だけを参照する） ----
+  const optionIdsOf = (question) => {
+    if (!question) return null;
+    const source = question.type === 'single_dynamic' ? byId.get(question.sourceQuestion) : question;
+    return source && Array.isArray(source.options) ? source.options.map((o) => o.id) : null;
+  };
+  const adminAnalysis = isObject(schema.adminAnalysis) ? schema.adminAnalysis : null;
+  const funnelDefs = isObject(schema.analysisFunnels) ? schema.analysisFunnels : {};
+  for (const [fid, funnel] of Object.entries(funnelDefs)) {
+    if (!isObject(funnel) || !Array.isArray(funnel.stages)) continue; // method だけの比較定義（past_to_current_barriers）は対象外
+    const checkIds = (where, qid, ids) => {
+      const ids0 = optionIdsOf(byId.get(qid));
+      if (!byId.has(qid)) { err('funnel_question_missing', `analysisFunnels.${fid} ${where}: 設問が存在しません: ${qid}`); return; }
+      for (const id of ids) if (ids0 && !ids0.includes(id)) err('funnel_option_missing', `analysisFunnels.${fid} ${where}: ${qid}.${id} が存在しません`);
+    };
+    if (isObject(funnel.population)) {
+      for (const [qid, ids] of Object.entries(funnel.population)) checkIds('population', qid, Array.isArray(ids) ? ids : []);
+    } else if (typeof funnel.population !== 'string') {
+      err('funnel_population_shape', `analysisFunnels.${fid}.population はオブジェクトまたは文字列が必要です`);
+    }
+    for (const stage of funnel.stages) {
+      if (!isObject(stage)) { err('funnel_stage_shape', `analysisFunnels.${fid} の stage がオブジェクトではありません`); continue; }
+      for (const [key, value] of Object.entries(stage)) {
+        if (Array.isArray(value)) checkIds(`stage.${key}`, stage.question, value);
+      }
+      if (!byId.has(stage.question)) err('funnel_question_missing', `analysisFunnels.${fid} stage の設問が存在しません: ${stage.question}`);
+    }
+    if (adminAnalysis) {
+      if (!(isObject(adminAnalysis.funnelLabels) && typeof adminAnalysis.funnelLabels[fid] === 'string')) {
+        err('admin_analysis_funnel_label', `adminAnalysis.funnelLabels.${fid} がありません`);
+      }
+      const denominator = typeof funnel.denominator === 'string' ? funnel.denominator : 'stage_reached'; // 未指定は stage_reached
+      if (!(isObject(adminAnalysis.denominatorLabels) && typeof adminAnalysis.denominatorLabels[denominator] === 'string')) {
+        err('admin_analysis_denominator_label', `adminAnalysis.denominatorLabels.${denominator} がありません（analysisFunnels.${fid}.denominator）`);
+      }
+      for (const stage of funnel.stages) {
+        if (isObject(stage) && typeof stage.role === 'string' && !(isObject(adminAnalysis.roleLabels) && typeof adminAnalysis.roleLabels[stage.role] === 'string')) {
+          err('admin_analysis_role_label', `adminAnalysis.roleLabels.${stage.role} がありません（analysisFunnels.${fid}）`);
+        }
+      }
+    }
+  }
+  if (adminAnalysis) {
+    const crossIds = new Set();
+    for (const [i, cross] of (Array.isArray(adminAnalysis.crossTabs) ? adminAnalysis.crossTabs : []).entries()) {
+      if (!isObject(cross) || typeof cross.id !== 'string' || !cross.id) { err('cross_tab_id', `adminAnalysis.crossTabs[${i}] に id がありません`); continue; }
+      if (crossIds.has(cross.id)) err('cross_tab_duplicate', `adminAnalysis.crossTabs の id が重複しています: ${cross.id}`);
+      crossIds.add(cross.id);
+      for (const axis of ['row', 'column']) {
+        const question = byId.get(cross[axis]);
+        if (!question) err('cross_tab_question_missing', `adminAnalysis.crossTabs.${cross.id}.${axis} の設問が存在しません: ${cross[axis]}`);
+        else if (!OPTION_TYPES.has(question.type)) err('cross_tab_question_type', `adminAnalysis.crossTabs.${cross.id}.${axis} は選択式設問が必要です: ${cross[axis]}`);
+      }
+      if (cross.row === cross.column) err('cross_tab_same_axis', `adminAnalysis.crossTabs.${cross.id} の行と列が同じ設問です`);
+    }
+  }
+
   // ---- routeUx ----
   const catchball = byId.get('catchball_interest');
   const catchballIds = catchball && Array.isArray(catchball.options) ? catchball.options.map((o) => o.id) : [];
