@@ -441,12 +441,12 @@ test('Dashboard：ためらう理由と安心条件タブ冒頭に「この画�
   assert.match(guide.textContent, /この画面の見方/);
   assert.equal(guide.querySelectorAll('li').length, 3);
   assert.match(guide.textContent, /ためらう理由」と.*参加しやすくなる条件」を見比べ/);
-  assert.match(guide.textContent, /両方とも多い.*改善優先度が高い/);
-  assert.match(guide.textContent, /ためらう理由だけ多ければ.*安心条件だけ多ければ/);
+  assert.match(guide.textContent, /両方の棒が長いテーマ.*改善候補/);
+  assert.match(guide.textContent, /ためらう理由の棒だけ長ければ.*参加しやすくなる条件の棒だけ長ければ/);
   assert.ok(guide.textContent.length < 300, '長い説明にしない');
 });
 
-test('Dashboard：テーマごとのカードに横棒（ためらう理由／参加しやすくなる条件）・件数・割合・状態を表示し、集計値は summary と一致する', () => {
+test('Dashboard：テーマごとのカードに横棒（ためらう理由／参加しやすくなる条件）・件数・割合を表示し、集計値は summary と一致する', () => {
   const rows = rowsOf([
     { ...NON, barriers: ['skill_anxiety'], participation_conditions: ['beginner_welcome'] },
     { ...NON, barriers: ['cost'] },
@@ -458,7 +458,7 @@ test('Dashboard：テーマごとのカードに横棒（ためらう理由／�
   const cards = [...document.querySelectorAll('#semantic .card')];
   assert.equal(cards.length, summary.semantic.comparison.filter((c) => [c.barrier, c.reassurance].some((m) => Object.values(m).some((n) => n > 0))).length, '表示テーマ数は既存集計と同じ');
   for (const card of cards) {
-    assert.ok(card.querySelector('.sem-status').textContent.length > 0, '状態表示');
+    assert.ok(!card.querySelector('.sem-status'), '自動判定の状態表示は出さない');
     assert.ok(card.querySelectorAll('.sem-track > span').length >= 1, '横棒');
     assert.ok(card.querySelector('.sem-group.barrier .sem-group-title').textContent === 'ためらう理由');
   }
@@ -475,17 +475,11 @@ test('Dashboard：テーマごとのカードに横棒（ためらう理由／�
   assert.ok(card.querySelector('.sem-group.reassurance'), '安心条件側の棒');
 });
 
-test('Dashboard：テーマの状態表示はルールベース（両方多い／障壁のみ多い／安心条件が中心）', () => {
-  const statusOf = (rows, pick) => {
-    const { document } = renderDashboard(rows);
-    return [...document.querySelectorAll('#semantic .card')].map((c) => c.querySelector('.sem-status').textContent);
-  };
-  const barrierOnly = statusOf(rowsOf([{ ...NON, barriers: ['cost'] }]));
-  assert.ok(barrierOnly.includes('障壁が多いが安心条件が少ない'));
-  const both = statusOf(rowsOf([{ ...NON, barriers: ['skill_anxiety'], participation_conditions: ['beginner_welcome'] }]));
-  assert.ok(both.includes('両方多い＝改善優先度が高い'));
-  const wantOnly = statusOf(rowsOf([{ ...NON, participation_conditions: ['beginner_welcome'] }]));
-  assert.ok(wantOnly.includes('安心条件の要望が中心'));
+test('Dashboard：棒の長さは割合そのもの（最小幅の底上げをしない）', () => {
+  const { document, html } = renderDashboard(rowsOf([{ ...NON, barriers: ['cost'] }, ...Array.from({ length: 59 }, () => ({ ...NON }))]));
+  assert.ok(!/Math\.max\(2,/.test(html));
+  const widths = [...document.querySelectorAll('#semantic .sem-track > span')].map((x) => parseFloat(x.style.width));
+  assert.ok(widths.some((w) => w > 0 && w < 2), '2% 未満の割合を底上げしない');
 });
 
 test('Dashboard：ためらう理由と安心条件タブは横スクロールを生まない CSS（折り返し・min-width:0・固定幅なし・狭幅でブロック化）', () => {
