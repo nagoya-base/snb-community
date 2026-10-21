@@ -43,8 +43,7 @@
     details { margin: 4px 0; }
     summary { cursor: pointer; }
     ul { margin: 4px 0; padding-left: 1.2em; }
-    details.analysis > summary { font-weight: 700; }
-    details.analysis details { margin: 6px 0; padding: 6px 0 0; border-top: 1px solid var(--line); }
+    #funnelBody > details, #crossBody > details { margin: 6px 0; padding: 6px 0 0; border-top: 1px solid var(--line); }
     .stage { margin: 8px 0 12px; padding-left: 10px; border-left: 3px solid var(--accent-soft); min-width: 0; }
     .stage h4, .xrow h4 { font-size: .95rem; margin: 0 0 2px; }
     .stage .sub { color: var(--muted); font-size: .82rem; }
@@ -60,18 +59,14 @@
     <button type="button" role="tab" data-tab="results" aria-selected="true">集計結果</button>
     <button type="button" role="tab" data-tab="publication" aria-selected="false">公開判定</button>
     <button type="button" role="tab" data-tab="semantic" aria-selected="false">障壁と安心条件</button>
+    <button type="button" role="tab" data-tab="funnel" aria-selected="false">需要ファネル</button>
+    <button type="button" role="tab" data-tab="cross" aria-selected="false">クロス集計</button>
     <button type="button" role="tab" data-tab="snapshot" aria-selected="false">snapshot</button>
     <button type="button" role="tab" data-tab="freetext" aria-selected="false">自由記述（運営者のみ）</button>
   </div>
   <p id="status" class="note" role="status"></p>
   <div class="card" id="totals"></div>
   <div class="card" id="daily"></div>
-  <div class="card" id="analysis" hidden>
-    <h2 style="margin-top:0">需要分析（Admin 専用）</h2>
-    <p class="note">運営者向けの exact 集計です（公開閾値・少数セル秘匿は適用しません）。件数と割合のみで、個票・自由記述は含みません。公開結果・snapshot にも出ません。</p>
-    <details class="analysis" id="funnels"><summary>需要ファネル分析</summary><div id="funnelBody"></div></details>
-    <details class="analysis" id="crosstabs"><summary>重要クロス集計</summary><div id="crossBody"></div></details>
-  </div>
 
   <section id="tab-results">
     <p class="note">運営者向けの内部集計です。公開条件に届いていない設問も件数・割合を表示します（一般公開の可否とは別です）。割合は「その設問に回答した人」を分母にしています。</p>
@@ -88,6 +83,18 @@
   <section id="tab-semantic" hidden>
     <p class="note">semantic code ごとに回答者単位で数えます（同じ回答者が同じ code に複数 option から該当しても 1 人）。自由記述の自動分類はしません。Admin 専用で、公開結果には出ません。</p>
     <div id="semantic"></div>
+  </section>
+
+  <section id="tab-funnel" hidden>
+    <h2 style="margin-top:0">需要ファネル分析（Admin 専用）</h2>
+    <p class="note">運営者向けの exact 集計です（公開閾値・少数セル秘匿は適用しません）。件数と割合のみで、個票・自由記述は含みません。公開結果・snapshot にも出ません。</p>
+    <div id="funnelBody"><p class="note">読み込み中…</p></div>
+  </section>
+
+  <section id="tab-cross" hidden>
+    <h2 style="margin-top:0">重要クロス集計（Admin 専用）</h2>
+    <p class="note">運営者向けの exact 集計です（公開閾値・少数セル秘匿は適用しません）。件数と割合のみで、個票・自由記述は含みません。公開結果・snapshot にも出ません。</p>
+    <div id="crossBody"><p class="note">読み込み中…</p></div>
   </section>
 
   <section id="tab-snapshot" hidden>
@@ -171,7 +178,7 @@
       document.querySelectorAll('[data-tab]').forEach(function (b) {
         b.addEventListener('click', function () {
           document.querySelectorAll('[data-tab]').forEach(function (o) { o.setAttribute('aria-selected', o === b ? 'true' : 'false'); });
-          ['results', 'publication', 'semantic', 'snapshot', 'freetext'].forEach(function (t) { $('tab-' + t).hidden = (t !== b.getAttribute('data-tab')); });
+          ['results', 'publication', 'semantic', 'funnel', 'cross', 'snapshot', 'freetext'].forEach(function (t) { $('tab-' + t).hidden = (t !== b.getAttribute('data-tab')); });
         });
       });
 
@@ -476,10 +483,18 @@
       }
 
       function renderAnalysis(a) {
-        if (!a || !Array.isArray(a.funnels) || !Array.isArray(a.crossTabs)) return;
-        $('analysis').hidden = false;
+        if (!a || !Array.isArray(a.funnels) || !Array.isArray(a.crossTabs)) { analysisFailed(); return; }
         renderFunnels(a);
         renderCrossTabs(a);
+      }
+
+      /* 分析の取得失敗は該当2タブの中だけで扱い、既存タブには影響させない。 */
+      function analysisFailed() {
+        ['funnelBody', 'crossBody'].forEach(function (id) {
+          var body = $(id);
+          body.textContent = '';
+          body.appendChild(el('p', '分析を読み込めませんでした。ほかのタブの集計には影響しません。', 'note err'));
+        });
       }
 
       function renderSummary(s) {
@@ -492,7 +507,7 @@
 
       setStatus('読み込み中…');
       google.script.run.withSuccessHandler(function (s) { setStatus(''); renderSummary(s); }).withFailureHandler(fail).getAdminSummary();
-      google.script.run.withSuccessHandler(renderAnalysis).withFailureHandler(function () { $('analysis').hidden = true; }).getAdminAnalysis();
+      google.script.run.withSuccessHandler(renderAnalysis).withFailureHandler(analysisFailed).getAdminAnalysis();
 
       $('loadPublic').addEventListener('click', function () {
         var box = $('publicState');

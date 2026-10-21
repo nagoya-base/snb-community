@@ -531,7 +531,7 @@ test('Dashboard（#426）：集計カードに自由記述本文・hash・Spread
   assert.ok(!JSON.stringify(summary).includes('ADMIN-ONLY-TEXT'));
   assert.equal(document.querySelector('[data-tab="freetext"]').textContent, '自由記述（運営者のみ）');
   assert.equal(document.getElementById('tab-freetext').hidden, true);
-  assert.deepEqual([...document.querySelectorAll('[data-tab]')].map((b) => b.getAttribute('data-tab')), ['results', 'publication', 'semantic', 'snapshot', 'freetext']);
+  assert.deepEqual([...document.querySelectorAll('[data-tab]')].map((b) => b.getAttribute('data-tab')), ['results', 'publication', 'semantic', 'funnel', 'cross', 'snapshot', 'freetext']);
   assert.ok(!/innerHTML|respondent_hash/.test(html));
 });
 
