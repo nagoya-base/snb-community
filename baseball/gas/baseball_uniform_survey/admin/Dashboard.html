@@ -33,6 +33,8 @@
     dl.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
     button { font: inherit; padding: 8px 12px; margin: 0 6px 6px 0; border: 1px solid var(--accent); background: #fff; color: var(--accent); border-radius: 6px; cursor: pointer; }
     button:disabled { opacity: .5; cursor: default; }
+    .other-list { margin: 4px 0 0; padding-left: 1.2em; font-size: .88rem; white-space: pre-wrap; min-width: 0; }
+    details.other-texts { margin: 6px 0; }
     textarea { width: 100%; min-height: 160px; font: 12px/1.5 monospace; }
     .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
     .tabs button { margin: 0; }
@@ -229,6 +231,30 @@
         if (d.undated > 0) box.appendChild(el('p', '日付不明 ' + d.undated + ' 件（棒グラフには含めません）', 'note'));
       }
 
+      /* 「その他」自由記述：該当が 1 件以上の設問だけ、折りたたみを初回展開した時に本文を取得する（以後は再利用）。本文は textContent で描画する。 */
+      function otherTextsDetails(q) {
+        var d = el('details', undefined, 'other-texts');
+        d.appendChild(el('summary', 'その他の自由記述 ' + q.otherTextCount + '件'));
+        var list = el('ul', undefined, 'other-list');
+        d.appendChild(list);
+        var loaded = false;
+        var loading = false;
+        d.addEventListener('toggle', function () {
+          if (!d.open || loaded || loading) return;
+          loading = true;
+          list.textContent = '';
+          list.appendChild(el('li', '読み込み中…'));
+          google.script.run.withSuccessHandler(function (r) {
+            loading = false;
+            loaded = true;
+            list.textContent = '';
+            (r.texts || []).forEach(function (t) { list.appendChild(el('li', t)); });
+            if (!(r.texts || []).length) list.appendChild(el('li', '自由記述はありません。'));
+          }).withFailureHandler(function (e) { loading = false; list.textContent = ''; fail(e); }).getOtherTexts(q.id);
+        });
+        return d;
+      }
+
       /* 設問ごとの縦カード。件数・割合が主役で、公開判定は 1 行の補助表示、詳細は折りたたみ。 */
       function renderResults(s) {
         var box = $('results');
@@ -257,6 +283,7 @@
             o.appendChild(bar);
             card.appendChild(o);
           });
+          if (q.otherTextCount > 0) card.appendChild(otherTextsDetails(q));
           if (q.type === 'multiple') card.appendChild(el('p', '複数選択のため合計100%にはなりません（割合は回答者数が分母）。', 'note'));
           if (internal) {
             var d = el('details');

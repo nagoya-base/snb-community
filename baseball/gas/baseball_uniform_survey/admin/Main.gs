@@ -13,6 +13,7 @@
  *   google.script.run.getPublicSnapshotStatus() : Public GAS が保持している公開 snapshot の状態（readonly）と手動 preview との差
  *   google.script.run.confirmSnapshotPublished(generatedAt, exactTotal) : 公開済み snapshot の記録（Script Property のみ）
  *   google.script.run.getFreeText()       : 自由記述（運営者のみ。個票・集計とは別の操作）
+ *   google.script.run.getOtherTexts(questionId) : 指定設問の「その他」自由記述（質問カード展開時のみ。本文以外の個票情報なし）
  * Logger / console に回答内容・hash を出さない。
  */
 function doGet() {
@@ -54,4 +55,8 @@ function confirmSnapshotPublished(generatedAt, exactTotal) {
 
 function getFreeText() {
   return listFreeText_();
+}
+
+function getOtherTexts(questionId) {
+  return listOtherTexts_(questionId);
 }

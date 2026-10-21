@@ -3236,6 +3236,7 @@
       "section": "profile",
       "label": "お住まいの都道府県を教えてください",
       "type": "single",
+      "adminTallySort": "count_desc",
       "required": true,
       "options": [
         {
@@ -3504,6 +3505,7 @@
     {
       "id": "support_message",
       "section": "closing",
+      "adminFreeTextAttributes": ["prefecture", "age"],
       "label": "名古屋野球ユニ部の運営への応援・激励メッセージがあればお願いします",
       "type": "text",
       "required": false,

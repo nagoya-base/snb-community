@@ -399,7 +399,13 @@ function renderDashboard(rows, options) {
           get(_, name) {
             if (name === 'withSuccessHandler') return (fn) => { handlers.ok = fn; return run; };
             if (name === 'withFailureHandler') return (fn) => { handlers.ng = fn; return run; };
-            return () => { if (name === 'getAdminSummary') handlers.ok(summary); else if (handlers.ok) handlers.ok(options && options[name] !== undefined ? options[name] : {}); };
+            return (...args) => {
+              if (name === 'getAdminSummary') handlers.ok(summary);
+              else if (handlers.ok) {
+                const value = options && options[name] !== undefined ? options[name] : {};
+                handlers.ok(typeof value === 'function' ? value(...args) : value);
+              }
+            };
           }
         });
         return run;
@@ -578,4 +584,143 @@ test('summary（#426 レビュー）：公開対象外設問は publicPreview / 
   const snapshot = JSON.parse(plain(createAdminEnv(rows).ctx.getSnapshot()).snapshotJson);
   summary.internalQuestions.forEach((q) => assert.ok(!JSON.stringify(snapshot).includes(`"${q.id}"`), q.id));
   assert.ok(!JSON.stringify(summary).includes('ADMIN-ONLY-TEXT'));
+});
+
+/* ── Issue #436：「その他」自由記述の展開・都道府県降順・応援メッセージ属性 ── */
+
+const otherRows = () => {
+  const withOther = (extra, others) => rowFor(answersFor(Object.assign({ favorite_uniforms: ['baseball', 'other'] }, INTERESTED, extra)), {}, others);
+  return [
+    withOther({}, { favorite_uniforms: 'OTHER-A <b>bold</b>' }),
+    withOther({}, { favorite_uniforms: 'OTHER-B' }),
+    rowFor(answersFor(Object.assign({ favorite_uniforms: ['baseball'] }, INTERESTED))),
+    rowFor(answersFor(Object.assign({ favorite_uniforms: ['baseball', 'other'], uniform_appeal: ['other'] }, INTERESTED)), {}, { favorite_uniforms: 'OTHER-C', uniform_appeal: 'OTHER-APPEAL' })
+  ];
+};
+
+test('#436：getAdminSummary は「その他」の件数だけ返し、本文を含めない（lazy-load 前）', () => {
+  const env = createAdminEnv(otherRows());
+  const summary = plain(env.ctx.getAdminSummary());
+  const all = summary.questions.concat(summary.internalQuestions);
+  assert.equal(all.find((q) => q.id === 'favorite_uniforms').otherTextCount, 3);
+  assert.ok(all.every((q) => Number.isInteger(q.otherTextCount)));
+  assert.ok(all.some((q) => q.otherTextCount === 0));
+  assert.ok(!JSON.stringify(summary).includes('OTHER-'));
+});
+
+test('#436：getOtherTexts(questionId) はその設問の「その他」本文だけを返し、個票の識別情報・他設問の本文を含めない', () => {
+  const env = createAdminEnv(otherRows());
+  const result = plain(env.ctx.getOtherTexts('favorite_uniforms'));
+  assert.deepEqual(Object.keys(result).sort(), ['questionId', 'texts']);
+  assert.deepEqual(result.texts, ['OTHER-A <b>bold</b>', 'OTHER-B', 'OTHER-C']);
+  const json = JSON.stringify(result);
+  assert.ok(!json.includes('OTHER-APPEAL'));
+  otherRows().forEach((r) => assert.ok(!json.includes(r.respondent_hash)));
+  assert.ok(!/timestamp|respondent_hash|test_run_id|source_channel|2026-11-10/.test(json));
+  assert.deepEqual(plain(env.ctx.getOtherTexts('uniform_appeal')).texts, ['OTHER-APPEAL']);
+  assert.deepEqual(plain(env.ctx.getOtherTexts('age')).texts, []);
+  assert.throws(() => env.ctx.getOtherTexts('no_such_question'), /invalid_request/);
+  assert.throws(() => env.ctx.getOtherTexts(undefined), /invalid_request/);
+  assert.deepEqual(env.writes, []);
+});
+
+test('#436：getOtherTexts は回答順で並ばない（本文の昇順）', () => {
+  const rows = ['Z', 'M', 'A'].map((t) => rowFor(answersFor(Object.assign({ favorite_uniforms: ['baseball', 'other'] }, INTERESTED)), {}, { favorite_uniforms: t }));
+  assert.deepEqual(plain(createAdminEnv(rows).ctx.getOtherTexts('favorite_uniforms')).texts, ['A', 'M', 'Z']);
+});
+
+test('#436 Dashboard：「その他」が 1 件以上の設問だけ折りたたみを出し、初回展開時のみ取得・以後は再利用・textContent で描画', () => {
+  const env = createAdminEnv(otherRows());
+  let calls = [];
+  const { document } = renderDashboard(otherRows(), { getOtherTexts: (id) => { calls.push(id); return plain(env.ctx.getOtherTexts(id)); } });
+  const cards = [...document.querySelectorAll('#results > .card')];
+  const withDetails = cards.filter((c) => c.querySelector('details.other-texts'));
+  assert.deepEqual(withDetails.map((c) => c.querySelector('details.other-texts summary').textContent).sort(), ['その他の自由記述 1件', 'その他の自由記述 3件']);
+  assert.ok(cards.length > withDetails.length, '0 件の設問には展開 UI を出さない');
+  assert.equal(calls.length, 0);
+  assert.ok(!document.getElementById('results').textContent.includes('OTHER-'));
+  const card = withDetails.find((c) => c.querySelector('summary').textContent === 'その他の自由記述 3件');
+  const details = card.querySelector('details.other-texts');
+  const open = () => { details.open = !details.open; details.dispatchEvent(new document.defaultView.Event('toggle')); };
+  open(); open(); open();
+  assert.deepEqual(calls, ['favorite_uniforms']);
+  assert.deepEqual([...details.querySelectorAll('li')].map((li) => li.textContent), ['OTHER-A <b>bold</b>', 'OTHER-B', 'OTHER-C']);
+  assert.equal(details.querySelector('b'), null, 'HTML として解釈しない');
+  assert.ok(!card.textContent.includes('OTHER-APPEAL'));
+});
+
+const prefSpecs = () => {
+  const row = (pref, n) => ({ count: n, overrides: Object.assign({ prefecture: pref, aichi_area: pref === 'pref_23' ? 'nagoya' : undefined, residence_country: pref === 'overseas' ? 'X' : undefined }, INTERESTED) });
+  return rowsFrom([row('pref_13', 2), row('pref_23', 3), row('pref_27', 2), row('overseas', 3), row('prefer_not_to_say', 1)]);
+};
+
+test('#436：Admin の都道府県 tally は件数降順（同数は schema 順・0 件も末尾に残す）。canonical な defs は並べ替えない', () => {
+  const env = createAdminEnv(prefSpecs());
+  const summary = plain(env.ctx.getAdminSummary());
+  const pref = summary.internalQuestions.find((q) => q.id === 'prefecture');
+  const ids = pref.tally.map((c) => c.id);
+  assert.deepEqual(ids.slice(0, 5), ['pref_23', 'overseas', 'pref_13', 'pref_27', 'prefer_not_to_say']);
+  const schemaOrder = schema.questions.find((q) => q.id === 'prefecture').options.map((o) => o.id);
+  assert.equal(ids.length, schemaOrder.length);
+  const zero = ids.slice(5);
+  assert.deepEqual(zero, schemaOrder.filter((id) => zero.includes(id)));
+  assert.ok(pref.tally.slice(5).every((c) => c.count === 0));
+  assert.equal(aggregate.tallyQuestion(schema, schema.questions.find((q) => q.id === 'prefecture'), []).defs[0].id, schemaOrder[0]);
+});
+
+test('#436：Public 側（snapshot の地域）は順序・内容が変わらない（Admin 降順の影響を受けない）', () => {
+  const env = createAdminEnv(prefSpecs());
+  const summary = plain(env.ctx.getAdminSummary());
+  const valid = aggregate.classifyRows(schema, prefSpecs()).valid;
+  assert.deepEqual(summary.publicPreview, plain(aggregate.buildSnapshot(schema, valid, { generatedAt: new Date(summary.publicPreview.generated_at) })));
+  assert.ok(!JSON.stringify(summary.publicPreview).includes('pref_'));
+});
+
+const supportRow = (overrides, text) => rowFor(answersFor(Object.assign({ support_message: text }, INTERESTED, overrides)));
+
+test('#436：応援・激励メッセージは本文の末尾に「 （都道府県・年代）」を表示ラベルで添える', () => {
+  const env = createAdminEnv([supportRow({ prefecture: 'pref_23', aichi_area: 'nagoya', age: '40_49' }, '応援しています')]);
+  const items = plain(env.ctx.getFreeText()).filter((i) => i.questionId === 'support_message');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].text, '応援しています （愛知県・40〜49歳）');
+  assert.ok(!items[0].text.includes('pref_23') && !items[0].text.includes('40_49') && !items[0].text.includes('nagoya') && !items[0].text.includes('名古屋'));
+  assert.deepEqual(Object.keys(items[0]).sort(), ['label', 'questionId', 'text']);
+});
+
+test('#436：都道府県・年代が「回答しない」ならそのラベル、値が無ければ「未回答」。推測で補わない。同一 row 内だけで紐付ける', () => {
+  const rows = [
+    supportRow({ prefecture: 'prefer_not_to_say', age: 'prefer_not_to_say' }, 'MSG-1'),
+    supportRow({ prefecture: 'overseas', residence_country: 'X', age: '30_39' }, 'MSG-2')
+  ];
+  const items = plain(createAdminEnv(rows).ctx.getFreeText()).filter((i) => i.questionId === 'support_message');
+  assert.deepEqual(items.map((i) => i.text), ['MSG-1 （回答しない・回答しない）', 'MSG-2 （海外・30〜39歳）']);
+  const valid = aggregate.classifyRows(schema, [supportRow({ prefecture: 'pref_23', aichi_area: 'nagoya', age: '40_49' }, 'MSG-3')]);
+  delete valid.valid[0].answers.age;
+  delete valid.valid[0].answers.prefecture;
+  assert.equal(aggregate.listFreeText(schema, valid)[0].text, 'MSG-3 （未回答・未回答）');
+  valid.valid[0].answers.age = 'bogus_id';
+  assert.equal(aggregate.listFreeText(schema, valid)[0].text, 'MSG-3 （未回答・未回答）');
+});
+
+test('#436：属性付与は support_message だけ。feedback 等・snapshot・summary には付かず、hash/timestamp も返さない', () => {
+  const rows = [rowFor(answersFor(Object.assign({ support_message: 'SUPPORT-X', feedback: 'FEEDBACK-X', prefecture: 'pref_23', aichi_area: 'nagoya', age: '40_49' }, INTERESTED)))];
+  const env = createAdminEnv(rows);
+  const items = plain(env.ctx.getFreeText());
+  assert.equal(items.find((i) => i.questionId === 'feedback').text, 'FEEDBACK-X');
+  const outputs = JSON.stringify(items) + JSON.stringify(env.ctx.getAdminSummary()) + JSON.stringify(env.ctx.getSnapshot());
+  assert.ok(!outputs.includes(rows[0].respondent_hash) && !JSON.stringify(items).includes('2026-11-10'));
+  assert.ok(!JSON.stringify(env.ctx.getAdminSummary()).includes('SUPPORT-X') && !JSON.stringify(env.ctx.getSnapshot()).includes('SUPPORT-X'));
+  assert.ok(!sources().find((s) => s.name === 'Snapshot.gs').code.includes('getOtherTexts'));
+});
+
+test('#436 Dashboard：応援メッセージは getFreeText の本文末尾の属性ごと textContent で表示し、カード内の自由記述 UI も横スクロールを生まない', () => {
+  const items = [{ questionId: 'support_message', label: 'L', text: '<i>応援</i> （愛知県・40〜49歳）' }];
+  const { document, html } = renderDashboard(fixtureRows(), { getFreeText: items });
+  document.getElementById('loadText').click();
+  const li = document.querySelector('#texts li');
+  assert.equal(li.textContent, 'L：<i>応援</i> （愛知県・40〜49歳）');
+  assert.equal(li.querySelector('i'), null);
+  const css = html.match(/<style>([\s\S]*?)<\/style>/)[1];
+  assert.match(css, /\.other-list\s*\{[^}]*white-space\s*:\s*pre-wrap/);
+  assert.ok(!/overflow-x/.test(css));
 });

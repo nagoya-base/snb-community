@@ -40,6 +40,8 @@ var SurveyAggregate = (function (core) {
   function hasOwn(obj, key) { return Object.prototype.hasOwnProperty.call(obj, key); }
   function isPlainObject(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
   function contains(list, item) { return list.indexOf(item) !== -1; }
+  var UNANSWERED_LABEL = '未回答';
+
   function str(value) { return value === undefined || value === null ? '' : String(value); }
 
   /* ── 行 → 有効回答 ── */
@@ -1066,6 +1068,7 @@ var SurveyAggregate = (function (core) {
     var valid = classification.valid;
     var answersList = valid.map(function (r) { return r.answers; });
     var total = valid.length;
+    var otherCounts = otherTextCounts(valid);
     var questions = publicEntries(schema).map(function (entry) {
       var table = entryTable(schema, entry, answersList);
       var evaluation = evaluatePublication(schema, entry.publication, total, table.targetCount);
@@ -1085,6 +1088,8 @@ var SurveyAggregate = (function (core) {
         targetMet: evaluation.targetMet,
         publicState: publicEntry.state,
         hasSuppressedCells: publicEntry.hasSuppressedCells,
+        /* 「その他」自由記述の件数のみ（本文は含めない。本文は getOtherTexts(questionId) で展開時に取得する）。 */
+        otherTextCount: entry.kind === 'region' ? 0 : (otherCounts[entry.id] || 0),
         /* Admin 内部の exact な集計。公開閾値・suppression とは無関係に常に返す（公開側は publicPreview / buildPublicEntry を通る）。 */
         tally: adminTally(table, entry.publication.ordinal !== true && entry.publication.sort === 'count_desc')
       };
@@ -1103,6 +1108,7 @@ var SurveyAggregate = (function (core) {
         targetCount: table.targetCount,
         answeredCount: table.answeredCount,
         publicState: 'not_public',
+        otherTextCount: otherCounts[q.id] || 0,
         tally: adminTally(table, q.adminTallySort === 'count_desc')
       };
     });
@@ -1128,19 +1134,67 @@ var SurveyAggregate = (function (core) {
     };
   }
 
+  /* 設問ごとの「その他」自由記述の件数（本文は返さない。Admin サマリー用）。 */
+  function otherTextCounts(valid) {
+    var counts = {};
+    valid.forEach(function (record) {
+      Object.keys(record.other_texts).forEach(function (id) {
+        if (str(record.other_texts[id]).trim() !== '') counts[id] = (counts[id] || 0) + 1;
+      });
+    });
+    return counts;
+  }
+
+  /* 同一 record の単一選択設問の表示ラベル。値が無い・option に無い場合は推測せず「未回答」。 */
+  function answerLabel(schema, record, questionId) {
+    var question = core.getQuestion(schema, questionId);
+    var ids = core.selectedIds(question, record.answers[questionId]);
+    if (ids.length !== 1) return UNANSWERED_LABEL;
+    var label = '';
+    core.getOptions(schema, question).forEach(function (o) { if (o.id === ids[0]) label = str(o.label); });
+    return label !== '' ? label : UNANSWERED_LABEL;
+  }
+
+  /*
+   * 設問の adminFreeTextAttributes（schema 指定。応援・激励メッセージ）があれば、本文の末尾に同一 record の
+   * 該当設問（都道府県・年代）の表示ラベルを「 （A・B）」で添える（Admin 表示のみ）。
+   */
+  function withAdminAttributes(schema, question, record, text) {
+    var ids = Array.isArray(question.adminFreeTextAttributes) ? question.adminFreeTextAttributes : [];
+    if (!ids.length) return text;
+    return text + ' （' + ids.map(function (id) { return answerLabel(schema, record, id); }).join('・') + '）';
+  }
+
   /* 自由記述（Admin のみ）。public snapshot の生成処理とは別関数・別ファイルで呼ぶ。個票の識別子は含めない。 */
   function listFreeText(schema, classification) {
     var textIds = core.getQuestions(schema).filter(function (q) { return q.type === 'text'; }).map(function (q) { return q.id; });
     var items = [];
     classification.valid.forEach(function (record) {
       textIds.forEach(function (id) {
-        if (hasOwn(record.free_text, id)) items.push({ questionId: id, label: core.getQuestion(schema, id).label, text: record.free_text[id] });
+        if (!hasOwn(record.free_text, id)) return;
+        var text = record.free_text[id];
+        items.push({ questionId: id, label: core.getQuestion(schema, id).label, text: withAdminAttributes(schema, core.getQuestion(schema, id), record, text) });
       });
       Object.keys(record.other_texts).forEach(function (id) {
         items.push({ questionId: id, label: core.getQuestion(schema, id).label, kind: 'other', text: record.other_texts[id] });
       });
     });
     return items;
+  }
+
+  /*
+   * 指定した設問の「その他」自由記述の本文だけ（Admin のみ・展開時の lazy-load 用）。
+   * 回答順から回答者を辿れないよう本文の昇順に並べ、timestamp・hash・行番号・他設問の本文は返さない。
+   */
+  function listOtherTexts(schema, classification, questionId) {
+    var question = core.getQuestion(schema, questionId);
+    if (!question) return null;
+    var texts = [];
+    classification.valid.forEach(function (record) {
+      if (hasOwn(record.other_texts, questionId) && str(record.other_texts[questionId]).trim() !== '') texts.push(str(record.other_texts[questionId]));
+    });
+    texts.sort();
+    return { questionId: questionId, texts: texts };
   }
 
   return {
@@ -1176,7 +1230,8 @@ var SurveyAggregate = (function (core) {
     validateSnapshot: validateSnapshot,
     analyzeSemanticCodes: analyzeSemanticCodes,
     buildAdminSummary: buildAdminSummary,
-    listFreeText: listFreeText
+    listFreeText: listFreeText,
+    listOtherTexts: listOtherTexts
   };
 })(typeof SurveyCore !== 'undefined' ? SurveyCore : require('./survey-core.js'));
 
