@@ -50,6 +50,15 @@
     .xrow { margin: 8px 0 12px; padding-left: 10px; border-left: 3px solid var(--accent-soft); min-width: 0; }
     .xrow.ref { border-left-color: var(--muted); }
     .xrow .zero { color: var(--muted); font-size: .85rem; }
+    #tab-semantic .card { overflow-wrap: anywhere; }
+    #tab-semantic .sem-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 12px; margin: 0 0 6px; font-size: .88rem; }
+    #tab-semantic .sem-label { flex: 1 1 14em; min-width: 0; color: var(--muted); }
+    #tab-semantic .sem-num { flex: 0 1 auto; font-variant-numeric: tabular-nums; }
+    @media (max-width: 30em) {
+      #tab-semantic .card { padding: 10px 12px; }
+      #tab-semantic .sem-row { display: block; }
+      #tab-semantic .sem-num { display: block; }
+    }
 </style>
 </head>
 <body>
@@ -58,7 +67,7 @@
   <div class="tabs" role="tablist">
     <button type="button" role="tab" data-tab="results" aria-selected="true">集計結果</button>
     <button type="button" role="tab" data-tab="publication" aria-selected="false">公開判定</button>
-    <button type="button" role="tab" data-tab="semantic" aria-selected="false">障壁と安心条件</button>
+    <button type="button" role="tab" data-tab="semantic" aria-selected="false">ためらう理由と安心条件</button>
     <button type="button" role="tab" data-tab="funnel" aria-selected="false">需要ファネル</button>
     <button type="button" role="tab" data-tab="cross" aria-selected="false">クロス集計</button>
     <button type="button" role="tab" data-tab="snapshot" aria-selected="false">snapshot</button>
@@ -81,7 +90,8 @@
   </section>
 
   <section id="tab-semantic" hidden>
-    <p class="note">semantic code ごとに回答者単位で数えます（同じ回答者が同じ code に複数 option から該当しても 1 人）。自由記述の自動分類はしません。Admin 専用で、公開結果には出ません。</p>
+    <h2 style="margin-top:0">ためらう理由と安心条件の比較</h2>
+    <p class="note">「参加をためらう理由」と「参加しやすくなる条件」を、同じテーマごとに並べて比べる画面です。人数は回答者単位で数えます（同じ人が複数の選択肢で同じテーマに該当しても 1 人）。自由記述の自動分類はしません。運営者専用で、公開結果には出ません。</p>
     <div id="semantic"></div>
   </section>
 
@@ -369,27 +379,31 @@
         });
       }
 
-      /* 障壁と安心条件：code ごとのカード。設問は内部 ID ではなく設問名で表示する。 */
+      /* ためらう理由と安心条件：テーマごとのカード。設問は内部 ID ではなく設問名で表示する。比較できる回答がなければカードは出さない。 */
       function renderSemantic(s) {
         var box = $('semantic');
         box.textContent = '';
         var labelOf = {};
         s.questions.forEach(function (q) { labelOf[q.id] = q.label; });
-        s.semantic.comparison.forEach(function (c) {
+        function hasAnswers(c) {
+          return [c.barrier, c.reassurance].some(function (map) {
+            return Object.keys(map).some(function (k) { return map[k] > 0; });
+          });
+        }
+        var rows = s.semantic.comparison.filter(hasAnswers);
+        if (!rows.length) { box.appendChild(el('p', 'まだ比較できる回答データがありません', 'note')); return; }
+        rows.forEach(function (c) {
           var card = el('div', undefined, 'card');
           card.appendChild(el('h3', c.label));
-          var dl = el('dl', undefined, 'facts');
           s.semantic.sources.forEach(function (x) {
             var map = x.role === 'barrier' ? c.barrier : c.reassurance;
             if (!Object.prototype.hasOwnProperty.call(map, x.questionId)) return;
-            fact(dl, (labelOf[x.questionId] || '設問') + (x.role === 'barrier' ? '（障壁）' : '（安心条件）'), map[x.questionId] + ' / ' + x.targetCount);
+            var row = el('div', undefined, 'sem-row');
+            row.appendChild(el('span', (labelOf[x.questionId] || '設問') + (x.role === 'barrier' ? '（ためらう理由）' : '（参加しやすくなる条件）'), 'sem-label'));
+            row.appendChild(el('span', map[x.questionId] + '人 / 対象 ' + x.targetCount + '人', 'sem-num'));
+            card.appendChild(row);
           });
-          fact(dl, '安心条件の定義', c.reassuranceDefined ? 'あり' : 'なし');
-          card.appendChild(dl);
-          var det = el('details');
-          det.appendChild(el('summary', '詳細'));
-          det.appendChild(el('p', 'code: ' + c.code, 'note'));
-          card.appendChild(det);
+          if (!c.reassuranceDefined) card.appendChild(el('p', 'このテーマに対応する「参加しやすくなる条件」の選択肢はまだありません。', 'note'));
           box.appendChild(card);
         });
       }
