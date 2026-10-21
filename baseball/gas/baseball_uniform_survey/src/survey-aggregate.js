@@ -1155,14 +1155,25 @@ var SurveyAggregate = (function (core) {
     return label !== '' ? label : UNANSWERED_LABEL;
   }
 
+  /* 同一 record の国。国内の都道府県は domesticLabel、海外は residence_country の保存原文。回答しない・未回答・原文なしは推測せず「未回答」。 */
+  function attributionCountry(schema, record, config) {
+    var ids = core.selectedIds(core.getQuestion(schema, config.prefecture), record.answers[config.prefecture]);
+    if (ids.length !== 1 || contains(config.noAnswerOptionIds || [], ids[0])) return UNANSWERED_LABEL;
+    if (ids[0] !== config.overseasOptionId) return str(config.domesticLabel) || UNANSWERED_LABEL;
+    var raw = hasOwn(record.free_text, config.country) ? str(record.free_text[config.country]) : '';
+    return raw.trim() !== '' ? raw : UNANSWERED_LABEL;
+  }
+
   /*
-   * 設問の adminFreeTextAttributes（schema 指定。応援・激励メッセージ）があれば、本文の末尾に同一 record の
-   * 該当設問（都道府県・年代）の表示ラベルを「 （A・B）」で添える（Admin 表示のみ）。
+   * Admin 自由記述一覧の全項目（text 設問・「その他」）に共通で、本文の末尾へ同一 record の
+   * 「 （都道府県・国・年代）」を添える（schema の adminFreeTextAttribution。Admin 表示のみ）。
+   * 返すのは表示ラベル・保存原文だけで、raw ID・詳細居住地・hash・timestamp は含めない。
    */
-  function withAdminAttributes(schema, question, record, text) {
-    var ids = Array.isArray(question.adminFreeTextAttributes) ? question.adminFreeTextAttributes : [];
-    if (!ids.length) return text;
-    return text + ' （' + ids.map(function (id) { return answerLabel(schema, record, id); }).join('・') + '）';
+  function withAdminAttributes(schema, record, text) {
+    var config = schema.adminFreeTextAttribution;
+    if (!isPlainObject(config)) return text;
+    var parts = [answerLabel(schema, record, config.prefecture), attributionCountry(schema, record, config), answerLabel(schema, record, config.age)];
+    return text + ' （' + parts.join('・') + '）';
   }
 
   /* 自由記述（Admin のみ）。public snapshot の生成処理とは別関数・別ファイルで呼ぶ。個票の識別子は含めない。 */
@@ -1173,10 +1184,10 @@ var SurveyAggregate = (function (core) {
       textIds.forEach(function (id) {
         if (!hasOwn(record.free_text, id)) return;
         var text = record.free_text[id];
-        items.push({ questionId: id, label: core.getQuestion(schema, id).label, text: withAdminAttributes(schema, core.getQuestion(schema, id), record, text) });
+        items.push({ questionId: id, label: core.getQuestion(schema, id).label, text: withAdminAttributes(schema, record, text) });
       });
       Object.keys(record.other_texts).forEach(function (id) {
-        items.push({ questionId: id, label: core.getQuestion(schema, id).label, kind: 'other', text: record.other_texts[id] });
+        items.push({ questionId: id, label: core.getQuestion(schema, id).label, kind: 'other', text: withAdminAttributes(schema, record, record.other_texts[id]) });
       });
     });
     return items;

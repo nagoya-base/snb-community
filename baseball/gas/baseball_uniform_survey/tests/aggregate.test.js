@@ -421,7 +421,7 @@ test('詳細都道府県・愛知県内の地域は snapshot のどこにも出�
 test('海外の国・地域名は Admin の自由記述一覧では確認でき、public snapshot には出ない', () => {
   const rows = [rowFor(answersFor(Object.assign({ prefecture: 'overseas', residence_country: 'COUNTRY-SECRET' }, INTERESTED)))];
   const items = aggregate.listFreeText(schema, aggregate.classifyRows(schema, rows));
-  assert.ok(items.some((i) => i.questionId === 'residence_country' && i.text === 'COUNTRY-SECRET'));
+  assert.ok(items.some((i) => i.questionId === 'residence_country' && i.text.startsWith('COUNTRY-SECRET')));
   assert.ok(!JSON.stringify(aggregate.buildSnapshot(schema, aggregate.classifyRows(schema, rows).valid, { generatedAt: NOW })).includes('COUNTRY-SECRET'));
 });
 
@@ -586,7 +586,7 @@ test('Admin summary は exact な件数と公開条件の達成/未達、抑止�
   const text = JSON.stringify(summary);
   rows.forEach((r) => assert.ok(!text.includes(r.respondent_hash)));
   assert.ok(!text.includes('SUMMARY-SECRET'));
-  assert.equal(aggregate.listFreeText(schema, classification).filter((i) => i.text === 'SUMMARY-SECRET').length, 35);
+  assert.equal(aggregate.listFreeText(schema, classification).filter((i) => i.text.startsWith('SUMMARY-SECRET ')).length, 35);
 });
 
 // ── version 比較の正規化と version_mismatch 診断（Issue #422） ──

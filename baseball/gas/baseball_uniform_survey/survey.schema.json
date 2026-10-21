@@ -3505,7 +3505,6 @@
     {
       "id": "support_message",
       "section": "closing",
-      "adminFreeTextAttributes": ["prefecture", "age"],
       "label": "名古屋野球ユニ部の運営への応援・激励メッセージがあればお願いします",
       "type": "text",
       "required": false,
@@ -3516,6 +3515,14 @@
       "helpText": "任意です。運営メンバーへの応援や励まし、今後も続けてほしいことなどがあれば自由にお書きください。"
     }
   ],
+  "adminFreeTextAttribution": {
+    "prefecture": "prefecture",
+    "country": "residence_country",
+    "age": "age",
+    "overseasOptionId": "overseas",
+    "noAnswerOptionIds": ["prefer_not_to_say"],
+    "domesticLabel": "日本"
+  },
   "uniformAppealGroups": {
     "visual": [
       "design_color",
