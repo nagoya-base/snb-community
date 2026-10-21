@@ -196,3 +196,70 @@ test('棒グラフ降順：受け取った元データ配列を破壊せず、�
   const ths = Array.from(page.d.querySelectorAll('#tab-cross table')[0].querySelectorAll('tr:first-child th')).slice(2).map((n) => n.textContent);
   assert.deepStrictEqual(ths, data.crosstabPresets[0].cols.map((c) => c.label));
 });
+
+// ---------- 需要ファネルの横棒表示（段階がひと目で追える形。表示のみで集計値は不変） ----------
+test('需要ファネル：各段階が「ラベル／横棒／件数 (全回答者比)」の1行で、先頭は有効回答者・以降は↓付き', async () => {
+  const { data } = sortFixture();
+  const page = await openAdminPage({ server: { getDashboardData: () => data } });
+  const cards = Array.from(page.d.querySelectorAll('#tab-demand .card')).filter((c) => c.querySelector('.demand-stage'));
+  const staged = data.demandFunnels.funnels.filter((f) => f.stages);
+  assert.strictEqual(cards.length, staged.length);
+  staged.forEach((f) => {
+    const card = cards.find((c) => c.querySelector('h2').textContent === f.label);
+    const rows = Array.from(card.querySelectorAll('.demand-stage'));
+    assert.strictEqual(rows.length, f.stages.length);
+    rows.forEach((row, i) => {
+      const st = f.stages[i];
+      const [label, bar, num] = [row.children[0], row.children[1], row.children[2]];
+      assert.strictEqual(label.textContent, (i ? '↓ ' : '') + st.label);
+      assert.ok(bar.classList.contains('bar') && bar.querySelector('i'));
+      assert.strictEqual(num.textContent, st.count + '人 (' + (st.allPct === null ? '-' : st.allPct + '%') + ')');
+      const top = f.stages[0].count;
+      assert.strictEqual(bar.querySelector('i').style.width, (top ? st.count / top * 100 : 0) + '%');
+      assert.strictEqual(!!row.querySelector('.stage-sub'), i > 0);
+    });
+    assert.ok(rows[0].textContent.startsWith(f.stages[0].label) && f.stages[0].label === '有効回答者');
+  });
+});
+
+test('需要ファネル：集計値は表示変更の前後で不変（Admin集計の返却値をそのまま描画する）', async () => {
+  const { server } = backend();
+  const data = server.getDashboardData();
+  const snapshot = JSON.stringify(data.demandFunnels);
+  const page = await openAdminPage({ server: { getDashboardData: () => data } });
+  assert.strictEqual(JSON.stringify(data.demandFunnels), snapshot);
+  const rows = Array.from(page.d.querySelectorAll('#tab-demand .demand-stage > .num')).map((n) => n.textContent);
+  const expected = data.demandFunnels.funnels.filter((f) => f.stages).flatMap((f) => f.stages.map((s) => s.count + '人 (' + (s.allPct === null ? '-' : s.allPct + '%') + ')'));
+  assert.deepStrictEqual(rows, expected);
+});
+
+test('需要ファネル：0件・1件・回答者0人でも崩れない（棒幅0%・NaN/Infinityなし、前段階比は「-」）', async () => {
+  const data = backend().server.getDashboardData();
+  const f = data.demandFunnels.funnels.find((x) => x.stages);
+  f.stages = [
+    { label: '有効回答者', count: 38, prevPct: null, allPct: 100 },
+    { label: '少数', count: 1, prevPct: 2.6, allPct: 2.6 },
+    { label: 'ゼロ', count: 0, prevPct: 0, allPct: 0 },
+    { label: '前段階0', count: 0, prevPct: null, allPct: 0 }
+  ];
+  const g = data.demandFunnels.funnels.filter((x) => x.stages)[1];
+  g.stages = g.stages.map((s) => Object.assign({}, s, { count: 0, prevPct: null, allPct: null })); // 回答者0人相当
+  g.stages[0].count = 0;
+  const page = await openAdminPage({ server: { getDashboardData: () => data } });
+  const card = (fn) => Array.from(page.d.querySelectorAll('#tab-demand .card')).find((c) => c.querySelector('h2').textContent === fn.label);
+  const widths = Array.from(card(f).querySelectorAll('.demand-stage .bar i')).map((i) => i.style.width);
+  assert.deepStrictEqual(widths, ['100%', String(1 / 38 * 100) + '%', '0%', '0%']);
+  const nums = Array.from(card(f).querySelectorAll('.demand-stage > .num')).map((n) => n.textContent);
+  assert.deepStrictEqual(nums, ['38人 (100%)', '1人 (2.6%)', '0人 (0%)', '0人 (0%)']);
+  assert.ok(Array.from(card(f).querySelectorAll('.stage-sub')).map((n) => n.textContent).includes('前段階比 -'));
+  assert.ok(Array.from(card(g).querySelectorAll('.demand-stage .bar i')).every((i) => i.style.width === '0%'));
+  assert.ok(!/NaN|Infinity|undefined|null/.test(page.text('tab-demand')));
+});
+
+test('需要ファネル：スマホ幅で横スクロールしないよう、行は縮められるgrid（minmax(0,…)・折返し）で、他タブのファネルCSSは据え置き', () => {
+  const css = fs.readFileSync(path.join(REPO, 'community/gas/costume_portrait_survey/admin/DashboardStyles.html'), 'utf8');
+  const rule = css.match(/\.demand-stage \{([^}]*)\}/)[1];
+  assert.ok(/grid-template-columns:\s*minmax\(0,/.test(rule) && /word-break:\s*break-word/.test(rule));
+  assert.ok(/@media \(max-width:\s*480px\)[^{]*\{\s*\.demand-stage/.test(css));
+  assert.ok(css.includes('.funnel-stage { display:grid; grid-template-columns:minmax(140px,40%) 1fr 110px;'), '「ファネル」タブの行スタイルは変更しない');
+});

@@ -37,7 +37,10 @@ select { font:inherit; padding:6px; max-width:100%; }
 .funnel-stage { display:grid; grid-template-columns:minmax(140px,40%) 1fr 110px; gap:8px; align-items:center; padding:4px 0; }
 .demand-cross { margin-top:10px; }
 .demand-cross h4 { margin:8px 0 2px; font-size:.92rem; }
-.demand-stage { grid-template-columns:minmax(140px,38%) 1fr minmax(150px,34%); }
+.demand-stage { grid-template-columns:minmax(0,40%) minmax(0,1fr) auto; font-size:.88rem; word-break:break-word; }
+.demand-stage .num { white-space:nowrap; }
+.demand-stage .stage-sub { grid-column:1 / -1; margin-top:-2px; color:var(--muted); font-size:.75rem; text-align:right; }
+@media (max-width:480px) { .demand-stage { grid-template-columns:minmax(0,38%) minmax(0,1fr) auto; gap:6px; font-size:.82rem; } }
 .card details { border-top:1px solid var(--line); padding:6px 0; }
 .card summary { cursor:pointer; font-weight:600; font-size:.9rem; }
 </style>

@@ -224,6 +224,7 @@
   // ---------- 需要ファネル（OWNERのみ。サーバーが返したときだけタブを作る） ----------
   function ratioText(value) { return value === null || value === undefined ? '-' : value + '%'; }
 
+  /* 1段 = 左:ラベル / 中央:横棒（全回答者比に比例。0件は幅0） / 右:件数 (全回答者比)。2段目以降は「↓」と前段階比の補足行つき。 */
   function demandStageRow(stage, i, top) {
     var row = el('div', 'funnel-stage demand-stage');
     row.appendChild(el('span', '', (i ? '↓ ' : '') + stage.label));
@@ -232,7 +233,8 @@
     fill.style.width = (top ? stage.count / top * 100 : 0) + '%';
     bar.appendChild(fill);
     row.appendChild(bar);
-    row.appendChild(el('span', 'num', stage.count + '人' + (i ? '（前段階比 ' + ratioText(stage.prevPct) + ' / 全回答者比 ' + ratioText(stage.allPct) + '）' : '')));
+    row.appendChild(el('span', 'num', stage.count + '人 (' + ratioText(stage.allPct) + ')'));
+    if (i) row.appendChild(el('small', 'stage-sub', '前段階比 ' + ratioText(stage.prevPct)));
     return row;
   }
 
@@ -276,8 +278,8 @@
 
   function renderDemand(root) {
     var d = data.demandFunnels;
-    root.appendChild(el('p', 'note', '内部マーケティング用（OWNERのみ）。有効回答 ' + d.base + '人を母数とし、「3か月以内」はQ27で「ぜひやりたい」「条件が合えばやりたい」。' +
-      '各段階は前の段階をすべて満たした人のみ（累積）。未回答・分岐対象外は「いいえ」として数えません。'));
+    root.appendChild(el('p', 'note', 'OWNER専用。母数は有効回答 ' + d.base + '人。各段階は前段階をすべて満たした人のみ（累積）で、棒と括弧内は全回答者比、小さな数値は前段階比です。' +
+      '「3か月以内」はQ27で「ぜひやりたい」「条件が合えばやりたい」。'));
     d.funnels.forEach(function (f) {
       var card = el('div', 'card');
       card.appendChild(el('h2', '', f.label));
