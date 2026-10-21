@@ -327,9 +327,10 @@ test('Admin GAS：getAdminAnalysis は read-only（Sheets 読み取りのみ）�
 });
 
 /* 実際の getAdminAnalysis() の返却値で Dashboard.html を描画する。 */
-function renderDashboard(rows) {
+function renderDashboard(rows, patchSummary) {
   const env = createAdminEnv(rows);
   const summary = plain(env.ctx.getAdminSummary());
+  if (patchSummary) patchSummary(summary);
   const analysisResult = plain(env.ctx.getAdminAnalysis());
   const html = fs.readFileSync(path.join(ROOT, 'admin', 'Dashboard.html'), 'utf8');
   const dom = new JSDOM(html, {
@@ -471,15 +472,53 @@ test('Dashboard：テーマごとのカードに横棒（ためらう理由／�
   const text = item.textContent;
   assert.ok(text.includes(theme.barrier[barrierSource.questionId] + '人 / 対象 ' + barrierSource.targetCount + '人（' + pct + '%）'), '件数と割合（分母は既存の対象者数）');
   const fill = item.querySelector('.sem-track > span');
-  assert.equal(parseFloat(fill.style.width), pct, '棒の長さは割合');
+  const allCounts = summary.semantic.comparison.flatMap((c) => [...Object.values(c.barrier), ...Object.values(c.reassurance)]);
+  assert.equal(parseFloat(fill.style.width), theme.barrier[barrierSource.questionId] / Math.max(...allCounts) * 100, '棒の長さは人数 / タブ内最大人数');
   assert.ok(card.querySelector('.sem-group.reassurance'), '安心条件側の棒');
 });
 
-test('Dashboard：棒の長さは割合そのもの（最小幅の底上げをしない）', () => {
+test('Dashboard：棒の長さは人数基準（タブ内最大人数が100%・0人は0%・最小幅の底上げなし）', () => {
   const { document, html } = renderDashboard(rowsOf([{ ...NON, barriers: ['cost'] }, ...Array.from({ length: 59 }, () => ({ ...NON }))]));
   assert.ok(!/Math\.max\(2,/.test(html));
-  const widths = [...document.querySelectorAll('#semantic .sem-track > span')].map((x) => parseFloat(x.style.width));
-  assert.ok(widths.some((w) => w > 0 && w < 2), '2% 未満の割合を底上げしない');
+  const items = [...document.querySelectorAll('#semantic .sem-item')];
+  const counts = items.map((x) => parseInt(x.querySelector('.sem-num').textContent, 10));
+  const widths = items.map((x) => parseFloat(x.querySelector('.sem-track > span').style.width));
+  const max = Math.max(...counts);
+  assert.ok(max > 0 && widths[counts.indexOf(max)] === 100, '最大 count の棒は 100%');
+  widths.forEach((w, i) => assert.equal(w, counts[i] / max * 100, '全棒が共通スケール（底上げなし・0人は 0%）'));
+});
+
+test('Dashboard：割合と人数の大小が逆転しても、10人の棒が2人の棒より長い（共通スケール・割合表示は維持）', () => {
+  // 設問 A: 2人 / 対象4人（50%）、設問 B: 10人 / 対象40人（25%）。異なる設問・テーマをまたぐ共通スケールで描く。
+  const { document } = renderDashboard(rowsOf([{ ...NON }]), (summary) => {
+    summary.questions = [...summary.questions, { ...summary.questions[0], id: 'qa', label: '設問A' }, { ...summary.questions[0], id: 'qb', label: '設問B' }];
+    summary.semantic = {
+      sources: [
+        { questionId: 'qa', role: 'barrier', targetCount: 4 },
+        { questionId: 'qb', role: 'barrier', targetCount: 40 },
+        { questionId: 'qb', role: 'reassurance', targetCount: 40 }
+      ],
+      comparison: [
+        { label: 'テーマ1', barrier: { qa: 2 }, reassurance: { qb: 0 }, reassuranceDefined: true },
+        { label: 'テーマ2', barrier: { qb: 10 }, reassurance: { qb: 5 }, reassuranceDefined: true }
+      ]
+    };
+  });
+  const items = [...document.querySelectorAll('#semantic .sem-item')];
+  const two = items.find((x) => /^2人 \/ 対象 4人（50%）$/.test(x.querySelector('.sem-num').textContent));
+  const ten = items.find((x) => /^10人 \/ 対象 40人（25%）$/.test(x.querySelector('.sem-num').textContent));
+  assert.ok(two && ten, 'N人 / 対象M人（x%）表示を維持');
+  const wd = (el) => parseFloat(el.querySelector('.sem-track > span').style.width);
+  assert.equal(wd(ten), 100);
+  assert.equal(wd(two), 20);
+  assert.ok(wd(ten) > wd(two));
+  assert.equal(items.filter((x) => /^0人/.test(x.querySelector('.sem-num').textContent)).map(wd)[0], 0, '0人は 0%');
+  assert.equal(wd(items.find((x) => /^5人/.test(x.querySelector('.sem-num').textContent))), 50);
+});
+
+test('Dashboard：「この画面の見方」は棒の長さが人数の多さを表すと説明する', () => {
+  const { document } = renderDashboard(rowsOf([{ ...NON, barriers: ['cost'] }]));
+  assert.match(document.querySelector('#tab-semantic .sem-guide').textContent, /棒の長さは人数の多さ/);
 });
 
 test('Dashboard：ためらう理由と安心条件タブは横スクロールを生まない CSS（折り返し・min-width:0・固定幅なし・狭幅でブロック化）', () => {
