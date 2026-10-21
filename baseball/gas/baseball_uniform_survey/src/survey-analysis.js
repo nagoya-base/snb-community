@@ -6,7 +6,7 @@
  *  - クロス集計の組は schema.adminAnalysis.crossTabs（row / column の設問ID）から読む。集計コードに組を直書きしない。
  *  - 設問の到達（分岐）は core.isVisible で判定する（countQuestionReached と同じ概念）。未到達の回答は分母へ入れない。
  *  - 副作用なし・read-only。Admin 専用で exact を返す（Public の公開閾値・small-cell suppression は適用しない）。
- *  - 返すのは件数・割合・schema 由来のラベル/IDだけ。respondent_hash / timestamp / test_run_id / source_channel / 行番号 / 自由記述本文は返さない。
+ *  - 返すのは件数・割合・schema 由来の表示ラベルだけ（設問ID・option ID・分析定義IDなどの stable ID は返さない）。respondent_hash / timestamp / test_run_id / source_channel / 行番号 / 自由記述本文は返さない。
  *  - Public GAS / Frontend / maintenance の bundle には含めない（Admin の SurveyGenerated.gs のみ）。
  *
  * ES5記法。Node.js では module.exports でも公開する（tests用）。
@@ -55,13 +55,13 @@ var SurveyAnalysis = (function (core, aggregate) {
       });
       var definition = keys.map(function (id) {
         var q = core.getQuestion(schema, id);
-        return { questionId: id, label: q ? q.label : id, optionLabels: q ? labelsOf(aggregate.cellDefinitions(schema, q), pop[id]) : [] };
+        return { label: q ? q.label : '', optionLabels: q ? labelsOf(aggregate.cellDefinitions(schema, q), pop[id]) : [] };
       });
-      return { members: members, basis: 'answer_in', key: null, definition: definition };
+      return { members: members, basis: 'answer_in', definition: definition };
     }
     var first = stages.length ? stages[0].question : null;
     var reached = first ? answersList.filter(function (answers) { return core.isVisible(schema, first, answers); }) : [];
-    return { members: reached, basis: 'first_stage_reached', key: typeof pop === 'string' ? pop : null, definition: first ? [{ questionId: first, label: (core.getQuestion(schema, first) || { label: first }).label, optionLabels: [] }] : [] };
+    return { members: reached, basis: 'first_stage_reached', definition: first && core.getQuestion(schema, first) ? [{ label: core.getQuestion(schema, first).label, optionLabels: [] }] : [] };
   }
 
   /* denominator 名の解釈：stage_reached / question_reached / *_population。未知は stage_reached に倒す。 */
@@ -105,10 +105,8 @@ var SurveyAnalysis = (function (core, aggregate) {
       });
 
       var out = {
-        questionId: q.id,
         label: q.label,
         type: q.type,
-        role: typeof stage.role === 'string' ? stage.role : null,
         roleLabel: typeof stage.role === 'string' && adminAnalysis.roleLabels && hasOwn(adminAnalysis.roleLabels, stage.role) ? adminAnalysis.roleLabels[stage.role] : null,
         n: n,
         answeredCount: answered,
@@ -116,7 +114,7 @@ var SurveyAnalysis = (function (core, aggregate) {
         rateFromPrevious: rate(n, carriedN),
         denominatorN: base,
         rateOfDenominator: rate(n, base),
-        options: defs.map(function (d) { return { id: d.id, label: d.label, count: counts[d.id], rate: rate(counts[d.id], base) }; }),
+        options: defs.map(function (d) { return { label: d.label, count: counts[d.id], rate: rate(counts[d.id], base) }; }),
         pass: null,
         groups: []
       };
@@ -127,7 +125,7 @@ var SurveyAnalysis = (function (core, aggregate) {
         var count = reached.filter(function (answers) {
           return pickedIds(q, answers, defIds).some(function (v) { return contains(stage[key], v); });
         }).length;
-        out.groups.push({ key: key, optionLabels: labelsOf(defs, stage[key]), count: count, rate: rate(count, n) });
+        out.groups.push({ optionLabels: labelsOf(defs, stage[key]), count: count, rate: rate(count, n) });
       });
 
       var next = reached;
@@ -143,11 +141,10 @@ var SurveyAnalysis = (function (core, aggregate) {
     });
 
     return {
-      id: id,
       label: adminAnalysis.funnelLabels && hasOwn(adminAnalysis.funnelLabels, id) ? adminAnalysis.funnelLabels[id] : id,
       denominator: denominator,
       denominatorLabel: adminAnalysis.denominatorLabels && hasOwn(adminAnalysis.denominatorLabels, denominator) ? adminAnalysis.denominatorLabels[denominator] : null,
-      population: { n: popN, basis: population.basis, key: population.key, definition: population.definition },
+      population: { n: popN, basis: population.basis, definition: population.definition },
       stages: stages,
       derivedMetrics: Array.isArray(funnel.derivedMetrics) ? funnel.derivedMetrics.slice() : [],
       note: typeof funnel.note === 'string' ? funnel.note : null
@@ -164,7 +161,7 @@ var SurveyAnalysis = (function (core, aggregate) {
       var funnel = defs[id];
       if (!isPlainObject(funnel)) return;
       if (Array.isArray(funnel.stages)) funnels.push(buildFunnel(schema, id, funnel, answersList, adminAnalysis));
-      else if (typeof funnel.method === 'string') comparisons.push({ id: id, method: funnel.method });
+      else if (typeof funnel.method === 'string') comparisons.push({ method: funnel.method });
     });
     return { funnels: funnels, comparisons: comparisons };
   }
@@ -226,24 +223,22 @@ var SurveyAnalysis = (function (core, aggregate) {
     var colOrder = orderedIndexes(colDefs, colN, isCountDesc(colQ));
     var rowOrder = orderedIndexes(rowDefs, rowN, isCountDesc(rowQ));
     return {
-      id: def.id,
       label: def.label,
       purpose: typeof def.purpose === 'string' ? def.purpose : null,
-      rowAxis: { questionId: rowQ.id, label: rowQ.label, multiple: rowQ.type === 'multiple' },
-      columnAxis: { questionId: colQ.id, label: colQ.label, multiple: colQ.type === 'multiple' },
+      rowAxis: { label: rowQ.label, multiple: rowQ.type === 'multiple' },
+      columnAxis: { label: colQ.label, multiple: colQ.type === 'multiple' },
       /* 両設問に到達した人 / そのうち両方に回答した人（= 母集団） */
       reachedCount: reachedBoth,
       population: population,
       unansweredCount: reachedBoth - population,
       /* 母集団全体の列分布（行で絞らない参考値。分母は母集団） */
-      overall: colOrder.map(function (i) { var c = colDefs[i]; return { id: c.id, label: c.label, count: colN[c.id], rate: rate(colN[c.id], population) }; }),
+      overall: colOrder.map(function (i) { var c = colDefs[i]; return { label: c.label, count: colN[c.id], rate: rate(colN[c.id], population) }; }),
       rowCategories: rowOrder.map(function (i) {
         var r = rowDefs[i];
         return {
-          id: r.id,
           label: r.label,
           n: rowN[r.id],
-          cells: colOrder.map(function (j) { var c = colDefs[j]; return { id: c.id, label: c.label, count: cell[r.id][c.id], rate: rate(cell[r.id][c.id], rowN[r.id]) }; })
+          cells: colOrder.map(function (j) { var c = colDefs[j]; return { label: c.label, count: cell[r.id][c.id], rate: rate(cell[r.id][c.id], rowN[r.id]) }; })
         };
       })
     };

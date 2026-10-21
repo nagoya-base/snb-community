@@ -15,10 +15,21 @@ const plain = (x) => JSON.parse(JSON.stringify(x));
 const NON = { club_awareness: 'aware_not_attended' };
 const rowsOf = (specs) => specs.map((overrides) => rowFor(answersFor(overrides)));
 const analyze = (specs, sch = schema) => analysis.buildAdminAnalysis(sch, aggregate.classifyRows(sch, rowsOf(specs)));
-const funnelOf = (result, id) => result.funnels.find((f) => f.id === id);
-const stageOf = (funnel, qid) => funnel.stages.find((s) => s.questionId === qid);
-const crossOf = (result, id) => result.crossTabs.find((c) => c.id === id);
-const countOf = (list, id) => list.find((x) => x.id === id).count;
+// 返却 payload は stable ID を含まない（表示ラベルのみ）。テストは schema 側のラベルへ引き直して検証する。
+const qByLabel = (label) => schema.questions.find((q) => q.label === label);
+const optLabel = (q, id) => {
+  const source = q.type === 'single_dynamic' ? schema.questions.find((x) => x.id === q.sourceQuestion) : q;
+  return source.options.find((o) => o.id === id).label;
+};
+const labelOfOption = (qid, id) => optLabel(schema.questions.find((q) => q.id === qid), id);
+const funnelOf = (result, id) => result.funnels.find((f) => f.label === schema.adminAnalysis.funnelLabels[id]);
+const stageOf = (funnel, qid) => funnel.stages.find((s) => s.label === schema.questions.find((q) => q.id === qid).label);
+const crossOf = (result, id) => result.crossTabs.find((c) => c.label === schema.adminAnalysis.crossTabs.find((d) => d.id === id).label);
+const countOf = (stage, id) => stage.options.find((x) => x.label === optLabel(qByLabel(stage.label), id)).count;
+const rateOf = (stage, id) => stage.options.find((x) => x.label === optLabel(qByLabel(stage.label), id)).rate;
+const rowOf = (tab, id) => tab.rowCategories.find((r) => r.label === optLabel(qByLabel(tab.rowAxis.label), id));
+const cellOf = (tab, row, id) => row.cells.find((c) => c.label === optLabel(qByLabel(tab.columnAxis.label), id));
+const overallOf = (tab, id) => tab.overall.find((c) => c.label === optLabel(qByLabel(tab.columnAxis.label), id));
 
 // 要件の9本（Issue #440）。schema の定義がこれと一致すること自体を確認する。
 const NINE = [
@@ -38,10 +49,10 @@ test('schema：クロス集計9本が adminAnalysis.crossTabs に定義済みで
   assert.deepEqual(defs.map((d) => [d.row, d.column]), NINE);
   assert.equal(new Set(defs.map((d) => d.id)).size, 9);
   const result = analyze([{ ...NON, catchball_interest: 'very_interested' }]);
-  assert.deepEqual(result.crossTabs.map((c) => c.id), defs.map((d) => d.id));
+  assert.deepEqual(result.crossTabs.map((c) => c.label), defs.map((d) => d.label));
   for (const tab of result.crossTabs) {
-    assert.ok(tab.rowCategories.length > 0 && tab.overall.length > 0, tab.id);
-    assert.ok(tab.rowAxis.questionId && tab.columnAxis.questionId);
+    assert.ok(tab.rowCategories.length > 0 && tab.overall.length > 0, tab.label);
+    assert.ok(tab.rowAxis.label && tab.columnAxis.label);
   }
   const code = fs.readFileSync(path.join(ROOT, 'src', 'survey-analysis.js'), 'utf8');
   for (const [row, column] of NINE) assert.ok(!code.includes("'" + row + "'") && !code.includes("'" + column + "'"), `${row}/${column} を直書きしない`);
@@ -61,12 +72,12 @@ test('schema：新しい分析定義は schema 検証を通り、存在しない
 
 test('ファネル：analysisFunnels の4本が schema の population / stage / denominator どおりに出る。past_to_current_barriers は比較ブロック', () => {
   const result = analyze([{ ...NON, catchball_interest: 'very_interested' }]);
-  assert.deepEqual(result.funnels.map((f) => f.id), ['nonattendee_conversion', 'attendee_retention', 'uniform_to_sport', 'participation_environment']);
-  for (const funnel of result.funnels) {
-    assert.deepEqual(funnel.stages.map((s) => s.questionId), schema.analysisFunnels[funnel.id].stages.map((s) => s.question));
-    assert.ok(funnel.label && funnel.label !== funnel.id, '表示ラベルは schema.adminAnalysis.funnelLabels');
-  }
-  assert.deepEqual(result.comparisons, [{ id: 'past_to_current_barriers', method: schema.analysisFunnels.past_to_current_barriers.method }]);
+  const funnelIds = ['nonattendee_conversion', 'attendee_retention', 'uniform_to_sport', 'participation_environment'];
+  assert.deepEqual(result.funnels.map((f) => f.label), funnelIds.map((id) => schema.adminAnalysis.funnelLabels[id]));
+  funnelIds.forEach((id, i) => {
+    assert.deepEqual(result.funnels[i].stages.map((s) => s.label), schema.analysisFunnels[id].stages.map((s) => schema.questions.find((q) => q.id === s.question).label));
+  });
+  assert.deepEqual(result.comparisons, [{ method: schema.analysisFunnels.past_to_current_barriers.method }]);
 });
 
 test('nonattendee_conversion：前段階未通過者は次段階の分母に入らず、分岐未到達（参加経験者）は母集団外', () => {
@@ -87,12 +98,12 @@ test('nonattendee_conversion：前段階未通過者は次段階の分母に入�
   // 3段階目以降は near_term_participation_intent の pass（definitely / if_conditions）者だけ。unsure の回答は入らない。
   const barriers = stageOf(f, 'barriers');
   assert.deepEqual([barriers.n, barriers.previousN, barriers.rateFromPrevious], [1, 1, 1]);
-  assert.equal(countOf(barriers.options, 'cost'), 1);
-  assert.equal(countOf(barriers.options, 'schedule'), 1);
-  assert.equal(countOf(barriers.options, 'location'), 0, '前段階未通過者の障壁は数えない');
-  assert.equal(barriers.options.find((o) => o.id === 'cost').rate, 1);
-  assert.equal(countOf(stageOf(f, 'participation_fee_tolerance').options, 'up_to_1000'), 0);
-  assert.equal(countOf(stageOf(f, 'participation_fee_tolerance').options, 'up_to_500'), 1);
+  assert.equal(countOf(barriers, 'cost'), 1);
+  assert.equal(countOf(barriers, 'schedule'), 1);
+  assert.equal(countOf(barriers, 'location'), 0, '前段階未通過者の障壁は数えない');
+  assert.equal(rateOf(barriers, 'cost'), 1);
+  assert.equal(countOf(stageOf(f, 'participation_fee_tolerance'), 'up_to_1000'), 0);
+  assert.equal(countOf(stageOf(f, 'participation_fee_tolerance'), 'up_to_500'), 1);
 });
 
 test('attendee_retention：denominator は attendee_population（割合の分母は参加経験者全体）。到達率は前段階比', () => {
@@ -111,10 +122,10 @@ test('attendee_retention：denominator は attendee_population（割合の分母
   const lapse = stageOf(f, 'attendance_lapse_reasons');
   assert.deepEqual([lapse.n, lapse.previousN, lapse.rateFromPrevious, lapse.denominatorN], [1, 2, 0.5, 3]);
   assert.equal(lapse.rateOfDenominator, 1 / 3);
-  assert.equal(countOf(lapse.options, 'schedule'), 1);
-  assert.equal(countOf(lapse.options, 'cost'), 0);
-  assert.equal(lapse.options.find((o) => o.id === 'schedule').rate, 1 / 3, '選択肢の割合も schema の denominator（参加経験者全体）');
-  assert.equal(countOf(stageOf(f, 'rejoin_conditions').options, 'no_change'), 0);
+  assert.equal(countOf(lapse, 'schedule'), 1);
+  assert.equal(countOf(lapse, 'cost'), 0);
+  assert.equal(rateOf(lapse, 'schedule'), 1 / 3, '選択肢の割合も schema の denominator（参加経験者全体）');
+  assert.equal(countOf(stageOf(f, 'rejoin_conditions'), 'no_change'), 0);
 });
 
 test('uniform_to_sport：population は top_uniform が競技ユニフォームの人。経験あり/なしを schema の experienced / no_experience で数える', () => {
@@ -128,10 +139,12 @@ test('uniform_to_sport：population は top_uniform が競技ユニフォーム�
   assert.equal(f.population.n, 3, 'training_wear は population 外');
   const experience = stageOf(f, 'top_uniform_sport_experience');
   assert.equal(experience.n, 3);
-  const group = (key) => experience.groups.find((g) => g.key === key);
+  const group = (key) => experience.groups[key === 'experienced' ? 0 : 1]; // schema の stage 定義順（experienced, no_experience）
+  assert.deepEqual(group('experienced').optionLabels, schema.analysisFunnels.uniform_to_sport.stages[2].experienced.map((id) => labelOfOption('top_uniform_sport_experience', id)));
+  assert.deepEqual(group('no_experience').optionLabels, schema.analysisFunnels.uniform_to_sport.stages[2].no_experience.map((id) => labelOfOption('top_uniform_sport_experience', id)));
   assert.deepEqual([group('experienced').count, group('experienced').rate], [2, 2 / 3]);
   assert.deepEqual([group('no_experience').count, group('no_experience').rate], [1, 1 / 3]);
-  assert.equal(countOf(experience.options, 'continuous'), 1);
+  assert.equal(countOf(experience, 'continuous'), 1);
   assert.deepEqual(f.derivedMetrics, schema.analysisFunnels.uniform_to_sport.derivedMetrics);
   // top_uniform_sport_experience に到達した人は population と一致する（schema の分岐と population が同じ集合）。
   assert.equal(experience.n, f.population.n);
@@ -162,10 +175,10 @@ test('クロス集計：multiple 軸は各選択肢へ重複計上し、割合�
   ]);
   const tab = crossOf(result, 'barriers_x_age');
   assert.deepEqual([tab.reachedCount, tab.population, tab.unansweredCount], [3, 3, 0]);
-  const row = (id) => tab.rowCategories.find((r) => r.id === id);
+  const row = (id) => rowOf(tab, id);
   assert.equal(row('cost').n, 3);
   assert.equal(row('schedule').n, 1);
-  const cell = (r, id) => row(r).cells.find((c) => c.id === id);
+  const cell = (r, id) => cellOf(tab, row(r), id);
   assert.deepEqual([cell('cost', '25_29').count, cell('cost', '25_29').rate], [2, 2 / 3]);
   assert.deepEqual([cell('cost', '30_39').count, cell('cost', '30_39').rate], [1, 1 / 3]);
   assert.equal(cell('schedule', '25_29').rate, 1);
@@ -176,11 +189,11 @@ test('クロス集計：multiple 軸は各選択肢へ重複計上し、割合�
   assert.equal(tab.rowAxis.multiple, true);
   assert.equal(tab.columnAxis.multiple, false);
   // 参考の全体分布は母集団（3 人）が分母。
-  assert.equal(tab.overall.find((c) => c.id === '25_29').rate, 2 / 3);
+  assert.equal(overallOf(tab, '25_29').rate, 2 / 3);
   // 名義尺度（barriers）は件数降順、同数は schema 順。ordinal な列（age）は schema 順のまま 0 件も残す。
-  assert.deepEqual(tab.rowCategories.slice(0, 2).map((r) => r.id), ['cost', 'schedule']);
-  assert.deepEqual(tab.rowCategories.filter((r) => r.n === 0).map((r) => r.id), schema.questions.find((q) => q.id === 'barriers').options.map((o) => o.id).filter((id) => !['cost', 'schedule'].includes(id)));
-  assert.deepEqual(tab.overall.map((c) => c.id), schema.questions.find((q) => q.id === 'age').options.map((o) => o.id));
+  assert.deepEqual(tab.rowCategories.slice(0, 2).map((r) => r.label), ['cost', 'schedule'].map((id) => labelOfOption('barriers', id)));
+  assert.deepEqual(tab.rowCategories.filter((r) => r.n === 0).map((r) => r.label), schema.questions.find((q) => q.id === 'barriers').options.filter((o) => !['cost', 'schedule'].includes(o.id)).map((o) => o.label));
+  assert.deepEqual(tab.overall.map((c) => c.label), schema.questions.find((q) => q.id === 'age').options.map((o) => o.label));
 });
 
 test('クロス集計：multiple の列軸（開催希望時間帯）も各選択肢へ重複計上し、単一軸の行は row-base 割合の合計が100%', () => {
@@ -191,14 +204,14 @@ test('クロス集計：multiple の列軸（開催希望時間帯）も各選�
     { ...interested, near_term_participation_intent: 'definitely', preferred_schedule: ['weekday_night'] }
   ]);
   const tab = crossOf(result, 'preferred_schedule_x_near_term_intent');
-  const sat = tab.rowCategories.find((r) => r.id === 'sat_morning');
+  const sat = rowOf(tab, 'sat_morning');
   assert.equal(sat.n, 2);
-  assert.equal(sat.cells.find((c) => c.id === 'definitely').rate, 0.5);
-  assert.equal(sat.cells.find((c) => c.id === 'unsure').rate, 0.5);
-  assert.equal(tab.rowCategories.find((r) => r.id === 'sun_morning').n, 1);
+  assert.equal(cellOf(tab, sat, 'definitely').rate, 0.5);
+  assert.equal(cellOf(tab, sat, 'unsure').rate, 0.5);
+  assert.equal(rowOf(tab, 'sun_morning').n, 1);
   // 単一選択の列（near_term_participation_intent）は、各行のセル割合の合計が 1。
   tab.rowCategories.filter((r) => r.n > 0).forEach((r) => assert.equal(r.cells.reduce((s, c) => s + c.count, 0), r.n));
-  assert.deepEqual(tab.overall.map((c) => c.id), ['definitely', 'if_conditions', 'unsure', 'not_now'], 'ordinal は schema 順');
+  assert.deepEqual(tab.overall.map((c) => c.label), ['definitely', 'if_conditions', 'unsure', 'not_now'].map((id) => labelOfOption('near_term_participation_intent', id)), 'ordinal は schema 順');
 });
 
 test('クロス集計：参加経験者branchだけの2本は未参加者を母集団に入れない。top_uniform は population 外の列未到達を含めない', () => {
@@ -213,12 +226,12 @@ test('クロス集計：参加経験者branchだけの2本は未参加者を母�
     assert.deepEqual([tab.reachedCount, tab.population], [2, 2], id);
   }
   const count = crossOf(result, 'attendance_count_x_repeat_intent');
-  assert.equal(count.rowCategories.find((r) => r.id === 'once').n, 2);
-  assert.equal(count.rowCategories.find((r) => r.id === 'once').cells.find((c) => c.id === 'definitely').rate, 0.5);
+  assert.equal(rowOf(count, 'once').n, 2);
+  assert.equal(cellOf(count, rowOf(count, 'once'), 'definitely').rate, 0.5);
   const uniform = crossOf(result, 'top_uniform_x_sport_experience');
   assert.deepEqual([uniform.reachedCount, uniform.population], [1, 1], 'training_wear は列設問に到達しないので母集団外');
-  assert.equal(uniform.rowCategories.find((r) => r.id === 'training_wear').n, 0);
-  assert.equal(uniform.rowCategories.find((r) => r.id === 'baseball').cells.find((c) => c.id === 'continuous').rate, 1);
+  assert.equal(rowOf(uniform, 'training_wear').n, 0);
+  assert.equal(cellOf(uniform, rowOf(uniform, 'baseball'), 'continuous').rate, 1);
 });
 
 test('test 回答・除外回答は分析に入らない。0件でも壊れない', () => {
@@ -249,6 +262,28 @@ test('privacy：hash / timestamp / test_run_id / source_channel / 行番号 / �
     assert.ok(!keys.has(forbidden), `key ${forbidden}`);
   }
   assert.deepEqual(plain(analysis.buildAdminAnalysis(schema, classification)), plain(result), '副作用なし（再計算で同じ結果）');
+});
+
+test('raw ID：返却 payload に question / option / funnel / cross / role などの stable ID を含めない（表示ラベルと件数のみ）', () => {
+  const result = analyze([
+    { ...NON, catchball_interest: 'very_interested', near_term_participation_intent: 'definitely', barriers: ['cost'], age: '25_29', favorite_uniforms: ['baseball'], top_uniform: 'baseball', top_uniform_sport_experience: 'continuous' },
+    { club_awareness: 'attended', attendance_count: 'once', last_attended: 'over_1y', repeat_intent: 'definitely', attendance_lapse_reasons: ['schedule'], rejoin_conditions: ['more_dates'] }
+  ]);
+  const stable = new Set();
+  schema.questions.forEach((q) => { stable.add(q.id); (q.options || []).forEach((o) => stable.add(o.id)); });
+  Object.keys(schema.analysisFunnels).forEach((id) => stable.add(id));
+  schema.adminAnalysis.crossTabs.forEach((d) => stable.add(d.id));
+  Object.keys(schema.adminAnalysis.roleLabels).forEach((id) => stable.add(id));
+  Object.keys(schema.adminAnalysis.denominatorLabels).forEach((id) => stable.add(id));
+  const ID_KEYS = new Set(['id', 'questionId', 'question', 'key', 'role', 'optionId', 'optionIds', 'row', 'column']);
+  const seen = [];
+  (function walk(v, key) {
+    if (Array.isArray(v)) v.forEach((x) => walk(x, key));
+    else if (v && typeof v === 'object') Object.keys(v).forEach((k) => { if (ID_KEYS.has(k)) seen.push('key:' + k); walk(v[k], k); });
+    else if (typeof v === 'string' && !['type', 'basis', 'denominator'].includes(key) && stable.has(v)) seen.push(key + '=' + v);
+  })(result, '');
+  assert.deepEqual(seen, []);
+  assert.ok(!('id' in result.funnels[0]) && !('id' in result.crossTabs[0]) && !('questionId' in result.funnels[0].stages[0]));
 });
 
 test('Public / snapshot / 既存 Admin summary は adminAnalysis の有無で変わらない（影響なし）', () => {
