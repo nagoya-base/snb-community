@@ -415,19 +415,82 @@ test('Dashboard：分析の取得に失敗しても既存の集計結果は表�
   assert.ok(!/innerHTML/.test(html), 'textContent で描画する');
 });
 
-test('Dashboard：ためらう理由と安心条件タブ（比較できる回答なしは空カードを出さず、技術用語・max-content を使わない）', () => {
+test('Dashboard：ためらう理由と安心条件タブ（空表示・技術用語なし・max-content なし）', () => {
   const empty = renderDashboard([]);
   const box = empty.document.getElementById('semantic');
-  assert.equal(box.querySelectorAll('.card').length, 0, '空カードを出さない');
-  assert.equal(box.textContent.trim(), 'まだ比較できる回答データがありません');
+  assert.equal(box.querySelectorAll('.card, .sem-track').length, 0, '空カード・棒グラフを出さない');
+  assert.match(box.textContent, /まだ比較できる回答がありません/);
+  assert.match(box.textContent, /どちらの回答もまだありません.*回答が集まると/, '何が足りないかを説明する');
+  const onlyBarrier = renderDashboard(rowsOf([{ ...NON, barriers: [] }]));
+  assert.equal(onlyBarrier.document.querySelectorAll('#semantic .sem-track').length, 0);
   const filled = renderDashboard(rowsOf([{ ...NON, barriers: ['cost'] }]));
   const cards = filled.document.querySelectorAll('#semantic .card');
   assert.ok(cards.length > 0);
   const tab = filled.document.getElementById('tab-semantic').textContent + filled.document.querySelector('[data-tab="semantic"]').textContent;
   assert.ok(!/semantic|code:|reassuranceFor/i.test(tab), '技術用語を通常画面に出さない');
-  assert.match(filled.document.getElementById('tab-semantic').textContent, /参加をためらう理由」と「参加しやすくなる条件」を.*比べる画面/);
   const css = filled.html.match(/<style>([\s\S]*?)<\/style>/)[1];
   const semCss = css.split('\n').filter((l) => /#tab-semantic/.test(l)).join('\n');
   assert.ok(semCss && !/max-content/.test(semCss));
   assert.match(css, /@media \(max-width: 30em\)\s*\{[^}]*#tab-semantic/);
+});
+
+test('Dashboard：ためらう理由と安心条件タブ冒頭に「この画面の見方」（短い 3 点）を表示する', () => {
+  const { document } = renderDashboard(rowsOf([{ ...NON, barriers: ['cost'] }]));
+  const guide = document.querySelector('#tab-semantic .sem-guide');
+  assert.ok(guide);
+  assert.match(guide.textContent, /この画面の見方/);
+  assert.equal(guide.querySelectorAll('li').length, 3);
+  assert.match(guide.textContent, /ためらう理由」と.*参加しやすくなる条件」を見比べ/);
+  assert.match(guide.textContent, /両方の棒が長いテーマ.*改善候補/);
+  assert.match(guide.textContent, /ためらう理由の棒だけ長ければ.*参加しやすくなる条件の棒だけ長ければ/);
+  assert.ok(guide.textContent.length < 300, '長い説明にしない');
+});
+
+test('Dashboard：テーマごとのカードに横棒（ためらう理由／参加しやすくなる条件）・件数・割合を表示し、集計値は summary と一致する', () => {
+  const rows = rowsOf([
+    { ...NON, barriers: ['skill_anxiety'], participation_conditions: ['beginner_welcome'] },
+    { ...NON, barriers: ['cost'] },
+    { ...NON, barriers: ['cost'] }
+  ]);
+  const { document } = renderDashboard(rows);
+  const env = createAdminEnv(rows);
+  const summary = plain(env.ctx.getAdminSummary());
+  const cards = [...document.querySelectorAll('#semantic .card')];
+  assert.equal(cards.length, summary.semantic.comparison.filter((c) => [c.barrier, c.reassurance].some((m) => Object.values(m).some((n) => n > 0))).length, '表示テーマ数は既存集計と同じ');
+  for (const card of cards) {
+    assert.ok(!card.querySelector('.sem-status'), '自動判定の状態表示は出さない');
+    assert.ok(card.querySelectorAll('.sem-track > span').length >= 1, '横棒');
+    assert.ok(card.querySelector('.sem-group.barrier .sem-group-title').textContent === 'ためらう理由');
+  }
+  const theme = summary.semantic.comparison.find((c) => (c.barrier.barriers || 0) >= 2);
+  const card = cards.find((x) => x.querySelector('h3').textContent === theme.label);
+  const barrierSource = summary.semantic.sources.find((x) => x.questionId === 'barriers');
+  const pct = Math.round(theme.barrier[barrierSource.questionId] / barrierSource.targetCount * 1000) / 10;
+  const qLabel = summary.questions.find((q) => q.id === barrierSource.questionId).label;
+  const item = [...card.querySelectorAll('.sem-group.barrier .sem-item')].find((x) => x.querySelector('.sem-label').textContent === qLabel);
+  const text = item.textContent;
+  assert.ok(text.includes(theme.barrier[barrierSource.questionId] + '人 / 対象 ' + barrierSource.targetCount + '人（' + pct + '%）'), '件数と割合（分母は既存の対象者数）');
+  const fill = item.querySelector('.sem-track > span');
+  assert.equal(parseFloat(fill.style.width), pct, '棒の長さは割合');
+  assert.ok(card.querySelector('.sem-group.reassurance'), '安心条件側の棒');
+});
+
+test('Dashboard：棒の長さは割合そのもの（最小幅の底上げをしない）', () => {
+  const { document, html } = renderDashboard(rowsOf([{ ...NON, barriers: ['cost'] }, ...Array.from({ length: 59 }, () => ({ ...NON }))]));
+  assert.ok(!/Math\.max\(2,/.test(html));
+  const widths = [...document.querySelectorAll('#semantic .sem-track > span')].map((x) => parseFloat(x.style.width));
+  assert.ok(widths.some((w) => w > 0 && w < 2), '2% 未満の割合を底上げしない');
+});
+
+test('Dashboard：ためらう理由と安心条件タブは横スクロールを生まない CSS（折り返し・min-width:0・固定幅なし・狭幅でブロック化）', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'admin', 'Dashboard.html'), 'utf8');
+  const css = html.match(/<style>([\s\S]*?)<\/style>/)[1];
+  const semCss = css.split('\n').filter((l) => /#tab-semantic/.test(l)).join('\n');
+  assert.ok(!/overflow-x|white-space\s*:\s*nowrap/.test(semCss), '横スクロール・折り返し禁止を使わない');
+  assert.ok(!/\bwidth\s*:\s*\d+px|min-width\s*:\s*[1-9]\d*(px|em|rem)/.test(semCss), '固定幅・最小幅を持たない（320〜430px）');
+  assert.match(semCss, /\.sem-row\s*\{[^}]*flex-wrap\s*:\s*wrap/);
+  assert.match(semCss, /\.sem-label\s*\{[^}]*min-width\s*:\s*0/);
+  assert.match(semCss, /\.sem-item\s*\{[^}]*min-width\s*:\s*0/);
+  assert.match(css, /@media \(max-width: 30em\)\s*\{[\s\S]*?#tab-semantic \.sem-row \{ display: block; \}/);
+  assert.match(css, /overflow-wrap\s*:\s*anywhere/);
 });

@@ -51,9 +51,21 @@
     .xrow.ref { border-left-color: var(--muted); }
     .xrow .zero { color: var(--muted); font-size: .85rem; }
     #tab-semantic .card { overflow-wrap: anywhere; }
-    #tab-semantic .sem-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 12px; margin: 0 0 6px; font-size: .88rem; }
-    #tab-semantic .sem-label { flex: 1 1 14em; min-width: 0; color: var(--muted); }
-    #tab-semantic .sem-num { flex: 0 1 auto; font-variant-numeric: tabular-nums; }
+    #tab-semantic .sem-guide { margin: 0 0 12px; padding: 8px 12px; background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; min-width: 0; }
+    #tab-semantic .sem-guide p { margin: 0 0 2px; font-weight: 700; font-size: .9rem; }
+    #tab-semantic .sem-guide ul { margin: 0; padding-left: 1.2em; font-size: .88rem; }
+    #tab-semantic .sem-group { margin: 6px 0 0; min-width: 0; }
+    #tab-semantic .sem-group-title { display: inline-block; margin: 0 0 4px; padding: 0 8px; border-radius: 10px; font-size: .8rem; font-weight: 700; color: #fff; background: var(--accent); }
+    #tab-semantic .sem-group.barrier .sem-group-title { background: var(--warn); }
+    #tab-semantic .sem-item { margin: 0 0 6px; min-width: 0; }
+    #tab-semantic .sem-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 12px; font-size: .85rem; }
+    #tab-semantic .sem-label { flex: 1 1 12em; min-width: 0; color: var(--muted); }
+    #tab-semantic .sem-num { flex: 0 1 auto; min-width: 0; font-variant-numeric: tabular-nums; }
+    #tab-semantic .sem-track { height: 10px; background: var(--paper); border-radius: 5px; overflow: hidden; margin-top: 2px; }
+    #tab-semantic .sem-track > span { display: block; height: 100%; background: var(--accent); }
+    #tab-semantic .sem-group.barrier .sem-track > span { background: var(--warn); }
+    #tab-semantic .sem-empty { margin: 0 0 12px; padding: 12px 14px; border: 1px dashed var(--line); border-radius: 10px; background: #fff; min-width: 0; }
+    #tab-semantic .sem-empty p { margin: 0 0 4px; }
     @media (max-width: 30em) {
       #tab-semantic .card { padding: 10px 12px; }
       #tab-semantic .sem-row { display: block; }
@@ -91,7 +103,15 @@
 
   <section id="tab-semantic" hidden>
     <h2 style="margin-top:0">ためらう理由と安心条件の比較</h2>
-    <p class="note">「参加をためらう理由」と「参加しやすくなる条件」を、同じテーマごとに並べて比べる画面です。人数は回答者単位で数えます（同じ人が複数の選択肢で同じテーマに該当しても 1 人）。自由記述の自動分類はしません。運営者専用で、公開結果には出ません。</p>
+    <div class="sem-guide">
+      <p>この画面の見方</p>
+      <ul>
+        <li>テーマごとに、上の棒（茶）＝「参加をためらう理由」と、下の棒（緑）＝「参加しやすくなる条件」を見比べます。</li>
+        <li>両方の棒が長いテーマは、悩む人も解決策の要望も多いので、改善候補として見ます。</li>
+        <li>ためらう理由の棒だけ長ければ障壁、参加しやすくなる条件の棒だけ長ければ前向きな要望が中心、と読めます。</li>
+      </ul>
+    </div>
+    <p class="note">人数は回答者単位（同じ人が複数の選択肢で同じテーマに該当しても 1 人）、割合は各設問の回答対象者に占める割合です。自由記述の自動分類はしません。運営者専用で、公開結果には出ません。</p>
     <div id="semantic"></div>
   </section>
 
@@ -379,7 +399,43 @@
         });
       }
 
-      /* ためらう理由と安心条件：テーマごとのカード。設問は内部 ID ではなく設問名で表示する。比較できる回答がなければカードは出さない。 */
+      /* ためらう理由と安心条件：テーマごとのカード（横棒で比較）。設問は内部 ID ではなく設問名で表示する。比較できる回答がなければカードは出さず、足りないものを説明する。 */
+      function semPct(n, target) { return target > 0 ? Math.round(n / target * 1000) / 10 : null; }
+      function semGroup(card, c, sources, labelOf, role) {
+        var map = role === 'barrier' ? c.barrier : c.reassurance;
+        var items = sources.filter(function (x) { return x.role === role && Object.prototype.hasOwnProperty.call(map, x.questionId); });
+        if (!items.length) return;
+        var g = el('div', undefined, 'sem-group ' + role);
+        g.appendChild(el('div', role === 'barrier' ? 'ためらう理由' : '参加しやすくなる条件', 'sem-group-title'));
+        items.forEach(function (x) {
+          var n = map[x.questionId], pct = semPct(n, x.targetCount);
+          var item = el('div', undefined, 'sem-item');
+          var row = el('div', undefined, 'sem-row');
+          row.appendChild(el('span', labelOf[x.questionId] || '設問', 'sem-label'));
+          row.appendChild(el('span', n + '人 / 対象 ' + x.targetCount + '人' + (pct === null ? '（対象なし）' : '（' + pct + '%）'), 'sem-num'));
+          item.appendChild(row);
+          var track = el('div', undefined, 'sem-track');
+          var fill = el('span');
+          fill.style.width = (pct === null ? 0 : Math.min(100, Math.max(0, pct))) + '%';
+          track.appendChild(fill);
+          item.appendChild(track);
+          g.appendChild(item);
+        });
+        card.appendChild(g);
+      }
+      function semEmpty(box, s) {
+        function targets(role) { return s.semantic.sources.filter(function (x) { return x.role === role; }).reduce(function (t, x) { return t + x.targetCount; }, 0); }
+        var b = targets('barrier'), r = targets('reassurance');
+        var lines;
+        if (!b && !r) lines = ['「ためらう理由」「参加しやすくなる条件」のどちらの回答もまだありません。', '回答が集まると、テーマごとに 2 つの棒で比べられます。'];
+        else if (!b) lines = ['「参加しやすくなる条件」の回答はありますが、「ためらう理由」の回答がまだありません。', '両方がそろうと比べられます。'];
+        else if (!r) lines = ['「ためらう理由」の回答はありますが、「参加しやすくなる条件」の回答がまだありません。', '両方がそろうと比べられます。'];
+        else lines = ['回答はありますが、テーマに結びつく選択がまだありません。', '該当する選択肢が選ばれると、ここに棒グラフが出ます。'];
+        var d = el('div', undefined, 'sem-empty');
+        d.appendChild(el('p', 'まだ比較できる回答がありません', 'ng'));
+        lines.forEach(function (t) { d.appendChild(el('p', t, 'note')); });
+        box.appendChild(d);
+      }
       function renderSemantic(s) {
         var box = $('semantic');
         box.textContent = '';
@@ -391,18 +447,12 @@
           });
         }
         var rows = s.semantic.comparison.filter(hasAnswers);
-        if (!rows.length) { box.appendChild(el('p', 'まだ比較できる回答データがありません', 'note')); return; }
+        if (!rows.length) { semEmpty(box, s); return; }
         rows.forEach(function (c) {
           var card = el('div', undefined, 'card');
           card.appendChild(el('h3', c.label));
-          s.semantic.sources.forEach(function (x) {
-            var map = x.role === 'barrier' ? c.barrier : c.reassurance;
-            if (!Object.prototype.hasOwnProperty.call(map, x.questionId)) return;
-            var row = el('div', undefined, 'sem-row');
-            row.appendChild(el('span', (labelOf[x.questionId] || '設問') + (x.role === 'barrier' ? '（ためらう理由）' : '（参加しやすくなる条件）'), 'sem-label'));
-            row.appendChild(el('span', map[x.questionId] + '人 / 対象 ' + x.targetCount + '人', 'sem-num'));
-            card.appendChild(row);
-          });
+          semGroup(card, c, s.semantic.sources, labelOf, 'barrier');
+          semGroup(card, c, s.semantic.sources, labelOf, 'reassurance');
           if (!c.reassuranceDefined) card.appendChild(el('p', 'このテーマに対応する「参加しやすくなる条件」の選択肢はまだありません。', 'note'));
           box.appendChild(card);
         });
