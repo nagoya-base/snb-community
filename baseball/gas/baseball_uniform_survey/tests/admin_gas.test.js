@@ -155,7 +155,7 @@ test('公開済み snapshot の記録後は、増分が足りない間は更新�
 test('自由記述は Admin のみ・別操作：snapshot 生成コードは自由記述を呼ばない', () => {
   const env = createAdminEnv(fixtureRows());
   const items = plain(env.ctx.getFreeText());
-  assert.equal(items.filter((i) => i.text === 'ADMIN-ONLY-TEXT').length, 32);
+  assert.equal(items.filter((i) => i.text.startsWith('ADMIN-ONLY-TEXT ')).length, 32);
   items.forEach((item) => assert.deepEqual(Object.keys(item).sort().filter((k) => k !== 'kind'), ['label', 'questionId', 'text']));
   const snapshotCode = sources().find((s) => s.name === 'Snapshot.gs').code;
   assert.ok(!/listFreeText|getFreeText|free_text|other_texts|respondent_hash/.test(snapshotCode));
@@ -678,39 +678,63 @@ test('#436：Public 側（snapshot の地域）は順序・内容が変わらな
 
 const supportRow = (overrides, text) => rowFor(answersFor(Object.assign({ support_message: text }, INTERESTED, overrides)));
 
-test('#436：応援・激励メッセージは本文の末尾に「 （都道府県・年代）」を表示ラベルで添える', () => {
-  const env = createAdminEnv([supportRow({ prefecture: 'pref_23', aichi_area: 'nagoya', age: '40_49' }, '応援しています')]);
-  const items = plain(env.ctx.getFreeText()).filter((i) => i.questionId === 'support_message');
-  assert.equal(items.length, 1);
-  assert.equal(items[0].text, '応援しています （愛知県・40〜49歳）');
-  assert.ok(!items[0].text.includes('pref_23') && !items[0].text.includes('40_49') && !items[0].text.includes('nagoya') && !items[0].text.includes('名古屋'));
-  assert.deepEqual(Object.keys(items[0]).sort(), ['label', 'questionId', 'text']);
+/* ── Issue #438：Admin 自由記述一覧の全項目に「 （都道府県・国・年代）」を付与 ── */
+
+const attrRow = (overrides, free, others) => rowFor(answersFor(Object.assign({ favorite_uniforms: others && others.favorite_uniforms ? ['baseball', 'other'] : ['baseball'] }, INTERESTED, free, overrides)), {}, others);
+const freeTextOf = (rows) => plain(createAdminEnv(rows).ctx.getFreeText());
+
+test('#438：feedback / support_message に本文末尾へ「 （都道府県・国・年代）」を表示ラベルで添える（raw ID・詳細居住地なし）', () => {
+  const items = freeTextOf([attrRow({ prefecture: 'pref_23', aichi_area: 'nagoya', age: '40_49' }, { feedback: 'FB', support_message: 'また参加したいです。' })]);
+  assert.equal(items.find((i) => i.questionId === 'support_message').text, 'また参加したいです。 （愛知県・日本・40〜49歳）');
+  assert.equal(items.find((i) => i.questionId === 'feedback').text, 'FB （愛知県・日本・40〜49歳）');
+  items.forEach((i) => {
+    assert.ok(!/pref_23|40_49|nagoya|名古屋市/.test(i.text), i.text);
+    assert.deepEqual(Object.keys(i).sort().filter((k) => k !== 'kind'), ['label', 'questionId', 'text']);
+  });
 });
 
-test('#436：都道府県・年代が「回答しない」ならそのラベル、値が無ければ「未回答」。推測で補わない。同一 row 内だけで紐付ける', () => {
+test('#438：「その他」の自由記述（other_texts）の全項目にも同形式で付く', () => {
+  const rows = [attrRow({ prefecture: 'pref_01', age: '25_29', uniform_appeal: ['other'] }, {}, { favorite_uniforms: 'OTHER-F', uniform_appeal: 'OTHER-A' })];
+  const others = freeTextOf(rows).filter((i) => i.kind === 'other');
+  assert.deepEqual(others.map((i) => i.text).sort(), ['OTHER-A （北海道・日本・25〜29歳）', 'OTHER-F （北海道・日本・25〜29歳）']);
+});
+
+test('#438：海外は residence_country の保存原文、回答しない・未回答は国を推測せず「未回答」。同一 row 内だけで紐付ける', () => {
   const rows = [
-    supportRow({ prefecture: 'prefer_not_to_say', age: 'prefer_not_to_say' }, 'MSG-1'),
-    supportRow({ prefecture: 'overseas', residence_country: 'X', age: '30_39' }, 'MSG-2')
+    attrRow({ prefecture: 'overseas', residence_country: '韓国', age: '30_39' }, { support_message: 'M1' }),
+    attrRow({ prefecture: 'prefer_not_to_say', age: 'prefer_not_to_say' }, { support_message: 'M2' }),
+    attrRow({ prefecture: 'pref_27', age: '18_24' }, { support_message: 'M3' })
   ];
-  const items = plain(createAdminEnv(rows).ctx.getFreeText()).filter((i) => i.questionId === 'support_message');
-  assert.deepEqual(items.map((i) => i.text), ['MSG-1 （回答しない・回答しない）', 'MSG-2 （海外・30〜39歳）']);
-  const valid = aggregate.classifyRows(schema, [supportRow({ prefecture: 'pref_23', aichi_area: 'nagoya', age: '40_49' }, 'MSG-3')]);
-  delete valid.valid[0].answers.age;
-  delete valid.valid[0].answers.prefecture;
-  assert.equal(aggregate.listFreeText(schema, valid)[0].text, 'MSG-3 （未回答・未回答）');
-  valid.valid[0].answers.age = 'bogus_id';
-  assert.equal(aggregate.listFreeText(schema, valid)[0].text, 'MSG-3 （未回答・未回答）');
+  const texts = freeTextOf(rows).filter((i) => i.questionId === 'support_message').map((i) => i.text);
+  assert.deepEqual(texts, ['M1 （海外・韓国・30〜39歳）', 'M2 （回答しない・未回答・回答しない）', 'M3 （大阪府・日本・18〜24歳）']);
+  const classified = aggregate.classifyRows(schema, [attrRow({ prefecture: 'overseas', residence_country: '韓国', age: '30_39' }, { support_message: 'M4' })]);
+  const record = classified.valid[0];
+  const text = () => aggregate.listFreeText(schema, classified).find((i) => i.questionId === 'support_message').text;
+  delete record.free_text.residence_country;
+  assert.equal(text(), 'M4 （海外・未回答・30〜39歳）');
+  record.free_text.residence_country = '  ';
+  assert.equal(text(), 'M4 （海外・未回答・30〜39歳）');
+  delete record.answers.prefecture;
+  delete record.answers.age;
+  assert.equal(text(), 'M4 （未回答・未回答・未回答）');
+  record.answers.age = 'bogus_id';
+  assert.equal(text(), 'M4 （未回答・未回答・未回答）');
 });
 
-test('#436：属性付与は support_message だけ。feedback 等・snapshot・summary には付かず、hash/timestamp も返さない', () => {
-  const rows = [rowFor(answersFor(Object.assign({ support_message: 'SUPPORT-X', feedback: 'FEEDBACK-X', prefecture: 'pref_23', aichi_area: 'nagoya', age: '40_49' }, INTERESTED)))];
+test('#438：属性は schema の adminFreeTextAttribution で決まり、無ければ付かない。getOtherTexts（lazy-load）・snapshot・summary には波及せず hash/timestamp も返さない', () => {
+  const rows = [attrRow({ prefecture: 'pref_23', aichi_area: 'nagoya', age: '40_49' }, { support_message: 'SUPPORT-X', feedback: 'FEEDBACK-X' }, { favorite_uniforms: 'OTHER-X' })];
   const env = createAdminEnv(rows);
   const items = plain(env.ctx.getFreeText());
-  assert.equal(items.find((i) => i.questionId === 'feedback').text, 'FEEDBACK-X');
+  assert.ok(items.length >= 3 && items.every((i) => i.text.endsWith(' （愛知県・日本・40〜49歳）')));
+  assert.deepEqual(plain(env.ctx.getOtherTexts('favorite_uniforms')).texts, ['OTHER-X']);
   const outputs = JSON.stringify(items) + JSON.stringify(env.ctx.getAdminSummary()) + JSON.stringify(env.ctx.getSnapshot());
   assert.ok(!outputs.includes(rows[0].respondent_hash) && !JSON.stringify(items).includes('2026-11-10'));
   assert.ok(!JSON.stringify(env.ctx.getAdminSummary()).includes('SUPPORT-X') && !JSON.stringify(env.ctx.getSnapshot()).includes('SUPPORT-X'));
+  assert.ok(!JSON.stringify(env.ctx.getSnapshot()).includes('日本'));
   assert.ok(!sources().find((s) => s.name === 'Snapshot.gs').code.includes('getOtherTexts'));
+  const bare = Object.assign({}, schema);
+  delete bare.adminFreeTextAttribution;
+  assert.equal(aggregate.listFreeText(bare, aggregate.classifyRows(schema, rows))[0].text.includes('（'), false);
 });
 
 test('#436 Dashboard：応援メッセージは getFreeText の本文末尾の属性ごと textContent で表示し、カード内の自由記述 UI も横スクロールを生まない', () => {
