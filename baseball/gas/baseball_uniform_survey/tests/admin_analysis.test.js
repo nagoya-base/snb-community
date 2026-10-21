@@ -145,7 +145,7 @@ test('uniform_to_sport：population は top_uniform が競技ユニフォーム�
   assert.deepEqual([group('experienced').count, group('experienced').rate], [2, 2 / 3]);
   assert.deepEqual([group('no_experience').count, group('no_experience').rate], [1, 1 / 3]);
   assert.equal(countOf(experience, 'continuous'), 1);
-  assert.deepEqual(f.derivedMetrics, schema.analysisFunnels.uniform_to_sport.derivedMetrics);
+  assert.ok(!('derivedMetrics' in f), '内部メトリックIDは返さない（経験あり/なし率は groups の表示ラベルと件数で返す）');
   // top_uniform_sport_experience に到達した人は population と一致する（schema の分岐と population が同じ集合）。
   assert.equal(experience.n, f.population.n);
 });
@@ -272,6 +272,8 @@ test('raw ID：返却 payload に question / option / funnel / cross / role な�
   const stable = new Set();
   schema.questions.forEach((q) => { stable.add(q.id); (q.options || []).forEach((o) => stable.add(o.id)); });
   Object.keys(schema.analysisFunnels).forEach((id) => stable.add(id));
+  Object.values(schema.analysisFunnels).forEach((f) => (f.derivedMetrics || []).forEach((m) => stable.add(m)));
+  stable.add(schema.survey_id);
   schema.adminAnalysis.crossTabs.forEach((d) => stable.add(d.id));
   Object.keys(schema.adminAnalysis.roleLabels).forEach((id) => stable.add(id));
   Object.keys(schema.adminAnalysis.denominatorLabels).forEach((id) => stable.add(id));
@@ -283,6 +285,7 @@ test('raw ID：返却 payload に question / option / funnel / cross / role な�
     else if (typeof v === 'string' && !['type', 'basis', 'denominator'].includes(key) && stable.has(v)) seen.push(key + '=' + v);
   })(result, '');
   assert.deepEqual(seen, []);
+  assert.ok(!('survey_id' in result) && !JSON.stringify(result).includes('experienced_rate') && !JSON.stringify(result).includes(schema.survey_id));
   assert.ok(!('id' in result.funnels[0]) && !('id' in result.crossTabs[0]) && !('questionId' in result.funnels[0].stages[0]));
 });
 

@@ -2253,7 +2253,6 @@ var SurveyAnalysis = (function (core, aggregate) {
       denominatorLabel: adminAnalysis.denominatorLabels && hasOwn(adminAnalysis.denominatorLabels, denominator) ? adminAnalysis.denominatorLabels[denominator] : null,
       population: { n: popN, basis: population.basis, definition: population.definition },
       stages: stages,
-      derivedMetrics: Array.isArray(funnel.derivedMetrics) ? funnel.derivedMetrics.slice() : [],
       note: typeof funnel.note === 'string' ? funnel.note : null
     };
   }
@@ -2368,7 +2367,6 @@ var SurveyAnalysis = (function (core, aggregate) {
     var answersList = classification.valid.map(function (record) { return record.answers; });
     var funnelResult = buildFunnels(schema, answersList);
     return {
-      survey_id: schema.survey_id,
       production_valid_total: answersList.length,
       funnels: funnelResult.funnels,
       comparisons: funnelResult.comparisons,
