@@ -414,3 +414,20 @@ test('Dashboard：分析の取得に失敗しても既存の集計結果は表�
   assert.match(html, /withFailureHandler\(analysisFailed\)\.getAdminAnalysis/);
   assert.ok(!/innerHTML/.test(html), 'textContent で描画する');
 });
+
+test('Dashboard：ためらう理由と安心条件タブ（比較できる回答なしは空カードを出さず、技術用語・max-content を使わない）', () => {
+  const empty = renderDashboard([]);
+  const box = empty.document.getElementById('semantic');
+  assert.equal(box.querySelectorAll('.card').length, 0, '空カードを出さない');
+  assert.equal(box.textContent.trim(), 'まだ比較できる回答データがありません');
+  const filled = renderDashboard(rowsOf([{ ...NON, barriers: ['cost'] }]));
+  const cards = filled.document.querySelectorAll('#semantic .card');
+  assert.ok(cards.length > 0);
+  const tab = filled.document.getElementById('tab-semantic').textContent + filled.document.querySelector('[data-tab="semantic"]').textContent;
+  assert.ok(!/semantic|code:|reassuranceFor/i.test(tab), '技術用語を通常画面に出さない');
+  assert.match(filled.document.getElementById('tab-semantic').textContent, /参加をためらう理由」と「参加しやすくなる条件」を.*比べる画面/);
+  const css = filled.html.match(/<style>([\s\S]*?)<\/style>/)[1];
+  const semCss = css.split('\n').filter((l) => /#tab-semantic/.test(l)).join('\n');
+  assert.ok(semCss && !/max-content/.test(semCss));
+  assert.match(css, /@media \(max-width: 30em\)\s*\{[^}]*#tab-semantic/);
+});

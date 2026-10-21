@@ -309,7 +309,7 @@ survey ページで送るのは `form_start` / `form_error`（error type のみ�
 - responses の読み取りは `SpreadsheetApp.open*`（フル `spreadsheets` scope が必要）ではなく Advanced Sheets サービス（`Sheets.Spreadsheets.Values.get`、Sheets API v4）で行い、scope は `spreadsheets.readonly` のまま動きます。manifest の `dependencies.enabledAdvancedServices`（`Sheets` / `v4`）に加え、deploy はリモート manifest の `dependencies` を保持するため、**初回 bootstrap で Apps Script エディタの「サービス」から Sheets API を追加**し、紐づく GCP project で Sheets API を有効にしてください。Admin には書き込み API（`values.update` 等）も `UrlFetchApp` も持たせません（`tests/admin_gas.test.js` が `SpreadsheetApp` の再混入を検査します）。
 - Script Property `RESPONSES_SPREADSHEET_ID`（#380 の responses Spreadsheet。値はリポジトリに置かない）を手動で設定します。`responses` シートのヘッダーが schema と完全一致しなければ読みません。
 - 回答の編集・削除・手動書き換えの UI / endpoint はありません。唯一の書き込みは自分自身の Script Property `SNAPSHOT_STATE`（最後に公開した snapshot の生成時刻と件数）です。
-- 画面: production valid total ／ test 除外件数と除外内訳 ／ 設問ごとの `targetCount` と `minTotal / minTarget / minCell` の達成・未達 ／ 抑止後の public preview ／ 障壁と安心条件の比較 ／ snapshot 生成。自由記述は別タブ「自由記述（運営者のみ）」で明示的に読み込んだときだけ取得します（`FreeText.gs`。`Snapshot.gs` と `buildSnapshot` は呼びません）。個票・`respondent_hash` は返しません。
+- 画面: production valid total ／ test 除外件数と除外内訳 ／ 設問ごとの `targetCount` と `minTotal / minTarget / minCell` の達成・未達 ／ 抑止後の public preview ／ ためらう理由と安心条件の比較（比較できる回答がなければ「まだ比較できる回答データがありません」のみ） ／ snapshot 生成。自由記述は別タブ「自由記述（運営者のみ）」で明示的に読み込んだときだけ取得します（`FreeText.gs`。`Snapshot.gs` と `buildSnapshot` は呼びません）。個票・`respondent_hash` は返しません。
 
 ### 集計対象（production 有効回答）
 
@@ -594,7 +594,7 @@ GitHub Pages は repository 全体を公開対象にします。このディレ�
 
 Admin は「結果閲覧が主役・公開判定は補助」の read-only 画面です（スマホ前提・横スクロールなし）。
 
-- タブ: **集計結果**（デフォルト）／公開判定／障壁と安心条件／snapshot／自由記述（運営者のみ）。
+- タブ: **集計結果**（デフォルト）／公開判定／ためらう理由と安心条件／snapshot／自由記述（運営者のみ）。
 - 集計結果は設問ごとの縦カード。選択肢別の件数・割合を表示し、公開閾値に届かない設問も内部集計は隠しません（割合の分母は「その設問に回答した人」。multiple は合計100%になりません）。
 - 一般公開の可否は 1 行の補助表示。`minTotal / minTarget / minCell / Tier / question_id` はカード内の折りたたみ、または公開判定タブ（definition list）にあります。
 - Public の公開判定・suppression・snapshot 仕様は変更していません（`getAdminSummary()` に `type` / `answeredCount` を追加しただけ）。
