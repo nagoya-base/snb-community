@@ -7,6 +7,7 @@
  *
  *   GET /exec                       : Dashboard.html
  *   google.script.run.getAdminSummary()   : production 件数・除外件数・設問別 targetCount と公開条件・public preview・障壁/安心条件の比較
+ *   google.script.run.getAdminAnalysis()  : 需要ファネル（schema.analysisFunnels）と重要クロス集計（schema.adminAnalysis.crossTabs）。件数・割合のみ（個票・自由記述なし）
  *   google.script.run.getResponsesDiagnostics() : responses 列構成の安全な診断（個別回答値なし）
  *   google.script.run.getVersionDiagnostics() : version_mismatch の原因診断（version の型・分類・件数のみ。回答値なし）
  *   google.script.run.getSnapshot()      : privacy-safe snapshot（JSON）と更新判定
@@ -26,6 +27,11 @@ function doGet() {
 function getAdminSummary() {
   var now = new Date();
   return SurveyAggregate.buildAdminSummary(SURVEY_SCHEMA, classifyResponses_(), { now: now, previousSnapshot: getSnapshotState_() });
+}
+
+/** 需要ファネル分析と重要クロス集計（Admin 専用・exact・read-only）。getAdminSummary / snapshot / Public には含めない。 */
+function getAdminAnalysis() {
+  return SurveyAnalysis.buildAdminAnalysis(SURVEY_SCHEMA, classifyResponses_());
 }
 
 /** responses の列構成診断（列数・不一致列番号・ヘッダー列名のみ。回答値は返さない）。 */

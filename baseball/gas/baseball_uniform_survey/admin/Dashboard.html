@@ -43,6 +43,14 @@
     details { margin: 4px 0; }
     summary { cursor: pointer; }
     ul { margin: 4px 0; padding-left: 1.2em; }
+    details.analysis > summary { font-weight: 700; }
+    details.analysis details { margin: 6px 0; padding: 6px 0 0; border-top: 1px solid var(--line); }
+    .stage { margin: 8px 0 12px; padding-left: 10px; border-left: 3px solid var(--accent-soft); min-width: 0; }
+    .stage h4, .xrow h4 { font-size: .95rem; margin: 0 0 2px; }
+    .stage .sub { color: var(--muted); font-size: .82rem; }
+    .xrow { margin: 8px 0 12px; padding-left: 10px; border-left: 3px solid var(--accent-soft); min-width: 0; }
+    .xrow.ref { border-left-color: var(--muted); }
+    .xrow .zero { color: var(--muted); font-size: .85rem; }
 </style>
 </head>
 <body>
@@ -58,6 +66,12 @@
   <p id="status" class="note" role="status"></p>
   <div class="card" id="totals"></div>
   <div class="card" id="daily"></div>
+  <div class="card" id="analysis" hidden>
+    <h2 style="margin-top:0">需要分析（Admin 専用）</h2>
+    <p class="note">運営者向けの exact 集計です（公開閾値・少数セル秘匿は適用しません）。件数と割合のみで、個票・自由記述は含みません。公開結果・snapshot にも出ません。</p>
+    <details class="analysis" id="funnels"><summary>需要ファネル分析</summary><div id="funnelBody"></div></details>
+    <details class="analysis" id="crosstabs"><summary>重要クロス集計</summary><div id="crossBody"></div></details>
+  </div>
 
   <section id="tab-results">
     <p class="note">運営者向けの内部集計です。公開条件に届いていない設問も件数・割合を表示します（一般公開の可否とは別です）。割合は「その設問に回答した人」を分母にしています。</p>
@@ -373,6 +387,101 @@
         });
       }
 
+
+      /* 需要ファネル分析と重要クロス集計（getAdminAnalysis。件数・割合のみ）。縦並びのバーで表示し、横長 table は使わない。 */
+      function ratePct(r) { return r === null || r === undefined ? '—' : (Math.round(r * 1000) / 10) + '%'; }
+      function barRow(label, countText, r) {
+        var o = el('div', undefined, 'opt');
+        var head = el('div', undefined, 'opt-head');
+        head.appendChild(el('span', label, 'opt-label'));
+        head.appendChild(el('span', countText, 'opt-num'));
+        o.appendChild(head);
+        var bar = el('div', undefined, 'bar');
+        var fill = el('span');
+        fill.style.width = Math.min(100, Math.max(0, Math.round((r || 0) * 100))) + '%';
+        bar.appendChild(fill);
+        o.appendChild(bar);
+        return o;
+      }
+
+      function funnelStage(f, st, index) {
+        var box = el('div', undefined, 'stage');
+        box.appendChild(el('h4', (index + 1) + '. ' + st.label + (st.roleLabel ? '（' + st.roleLabel + '）' : '')));
+        var sub = (index === 0 ? '母集団 ' : '前段階 ') + st.previousN + ' 人 → 到達 ' + st.n + ' 人（' + ratePct(st.rateFromPrevious) + '）';
+        sub += ' ／ 割合の分母: ' + st.denominatorN + ' 人（' + (f.denominatorLabel || f.denominator) + '）';
+        box.appendChild(el('div', sub, 'sub'));
+        box.appendChild(barRow('到達', st.n + '人 ' + ratePct(st.rateFromPrevious), st.rateFromPrevious));
+        if (st.pass) {
+          box.appendChild(barRow('通過（' + st.pass.optionLabels.join('・') + '）', st.pass.count + '人 ' + ratePct(st.pass.rate), st.pass.rate));
+        }
+        st.groups.forEach(function (g) {
+          box.appendChild(barRow(g.optionLabels.join('・'), g.count + '人 ' + ratePct(g.rate), g.rate));
+        });
+        var det = el('details');
+        det.appendChild(el('summary', '選択肢の内訳'));
+        st.options.forEach(function (o) { det.appendChild(barRow(o.label, o.count + '件 ' + ratePct(o.rate), o.rate)); });
+        if (st.type === 'multiple') det.appendChild(el('p', '複数選択のため合計100%にはなりません。', 'note'));
+        box.appendChild(det);
+        return box;
+      }
+
+      function renderFunnels(a) {
+        var body = $('funnelBody');
+        body.textContent = '';
+        a.funnels.forEach(function (f) {
+          var det = el('details');
+          det.appendChild(el('summary', f.label + '（母集団 ' + f.population.n + ' 人）'));
+          var pop = f.population.definition.map(function (d) { return d.label + (d.optionLabels.length ? '＝' + d.optionLabels.join('・') : ''); }).join(' かつ ');
+          det.appendChild(el('p', (f.population.basis === 'first_stage_reached' ? '母集団: 最初の段階の設問に到達した人（' + pop + '）' : '母集団: ' + pop) + '。前段階を通過しなかった人・分岐で未到達の人は次の段階に含めません。', 'note'));
+          f.stages.forEach(function (st, i) { det.appendChild(funnelStage(f, st, i)); });
+          if (f.note) det.appendChild(el('p', f.note, 'note'));
+          body.appendChild(det);
+        });
+        (a.comparisons || []).forEach(function (c) {
+          var det = el('details');
+          det.appendChild(el('summary', '障壁の変化／比較'));
+          det.appendChild(el('p', c.method, 'note'));
+          det.appendChild(el('p', '共通の障壁コードごとの件数は、タブ「障壁と安心条件」で確認できます。', 'note'));
+          body.appendChild(det);
+        });
+        if (!a.funnels.length) body.appendChild(el('p', 'ファネル定義がありません。', 'note'));
+      }
+
+      function renderCrossTabs(a) {
+        var body = $('crossBody');
+        body.textContent = '';
+        a.crossTabs.forEach(function (x) {
+          var det = el('details');
+          det.appendChild(el('summary', x.label + '（対象 ' + x.population + ' 人）'));
+          if (x.purpose) det.appendChild(el('p', x.purpose, 'note'));
+          var rule = '割合は「行カテゴリの到達者数（その行を選んだ人）」が分母です。両設問に到達して両方に回答した ' + x.population + ' 人が母集団（未到達・未回答 ' + x.unansweredCount + ' 人は含めません）。';
+          if (x.rowAxis.multiple || x.columnAxis.multiple) rule += ' 複数選択の軸があるため、1 人が複数のセルに入り、行・列の合計は回答者数と一致しません。';
+          det.appendChild(el('p', rule, 'note'));
+          var ref = el('div', undefined, 'xrow ref');
+          ref.appendChild(el('h4', '全体（参考）'));
+          ref.appendChild(el('div', x.columnAxis.label + '：母集団 ' + x.population + ' 人が分母', 'sub'));
+          x.overall.forEach(function (c) { ref.appendChild(barRow(c.label, c.count + '件 ' + ratePct(c.rate), c.rate)); });
+          det.appendChild(ref);
+          x.rowCategories.forEach(function (r) {
+            var row = el('div', undefined, 'xrow');
+            row.appendChild(el('h4', x.rowAxis.label + '：' + r.label + '（' + r.n + ' 人）'));
+            if (r.n === 0) { row.appendChild(el('div', '該当なし', 'zero')); det.appendChild(row); return; }
+            row.appendChild(el('div', x.columnAxis.label + '：この行の ' + r.n + ' 人が分母', 'sub'));
+            r.cells.forEach(function (c) { row.appendChild(barRow(c.label, c.count + '件 ' + ratePct(c.rate), c.rate)); });
+            det.appendChild(row);
+          });
+          body.appendChild(det);
+        });
+        if (!a.crossTabs.length) body.appendChild(el('p', 'クロス集計の定義がありません。', 'note'));
+      }
+
+      function renderAnalysis(a) {
+        if (!a || !Array.isArray(a.funnels) || !Array.isArray(a.crossTabs)) return;
+        $('analysis').hidden = false;
+        renderFunnels(a);
+        renderCrossTabs(a);
+      }
+
       function renderSummary(s) {
         renderTotals(s);
         renderDaily(s);
@@ -383,6 +492,7 @@
 
       setStatus('読み込み中…');
       google.script.run.withSuccessHandler(function (s) { setStatus(''); renderSummary(s); }).withFailureHandler(fail).getAdminSummary();
+      google.script.run.withSuccessHandler(renderAnalysis).withFailureHandler(function () { $('analysis').hidden = true; }).getAdminAnalysis();
 
       $('loadPublic').addEventListener('click', function () {
         var box = $('publicState');

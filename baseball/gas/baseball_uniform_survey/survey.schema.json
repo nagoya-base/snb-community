@@ -310,6 +310,46 @@
       "denominator": "question_reached"
     }
   },
+  "adminAnalysis": {
+    "purpose": "Admin専用の分析定義（Issue #440）。ファネルの条件は analysisFunnels を正本とし、ここには表示ラベルとクロス集計の組だけを置く。Public / snapshot / publication には使わない。",
+    "funnelLabels": {
+      "nonattendee_conversion": "未参加者の転換",
+      "attendee_retention": "参加経験者の継続",
+      "uniform_to_sport": "ユニフォーム好き → 競技経験",
+      "participation_environment": "参加環境（運営設問の到達者）"
+    },
+    "roleLabels": {
+      "barrier_breakdown": "障壁の内訳",
+      "conversion_conditions": "参加の条件",
+      "price_acceptance": "価格受容",
+      "participation_depth": "参加回数",
+      "recency": "最終参加時期",
+      "lapse_barriers": "参加が減った理由",
+      "return_conditions": "再参加の条件",
+      "uniform_interest": "好きなユニフォーム",
+      "primary_uniform": "最も好きなユニフォーム",
+      "direct_experience_match": "その競技の経験",
+      "engagement_style": "ユニフォームとの関わり方",
+      "group_size": "希望人数",
+      "age_restriction_effect": "年齢制限の影響"
+    },
+    "denominatorLabels": {
+      "stage_reached": "各段階に到達した人",
+      "attendee_population": "参加経験者全体",
+      "question_reached": "その設問に到達した人"
+    },
+    "crossTabs": [
+      {"id": "top_uniform_x_sport_experience", "label": "最も好きなユニフォーム × その競技の経験", "row": "top_uniform", "column": "top_uniform_sport_experience", "purpose": "好きなユニフォームと実際の競技経験の一致・不一致（主分析）"},
+      {"id": "baseball_experience_x_catchball_interest", "label": "野球経験 × キャッチボール関心", "row": "baseball_experience", "column": "catchball_interest", "purpose": "野球経験の有無・深さと現在のキャッチボール関心"},
+      {"id": "club_awareness_x_near_term_intent", "label": "認知・参加経験 × 短期参加意向", "row": "club_awareness", "column": "near_term_participation_intent", "purpose": "認知・参加経験段階と短期参加意向"},
+      {"id": "age_x_near_term_intent", "label": "年代 × 短期参加意向", "row": "age", "column": "near_term_participation_intent", "purpose": "年代別の短期需要"},
+      {"id": "barriers_x_age", "label": "参加障壁 × 年代", "row": "barriers", "column": "age", "purpose": "障壁ごとの年代内訳（複数選択のため障壁へ重複計上）"},
+      {"id": "fee_tolerance_x_near_term_intent", "label": "価格受容 × 短期参加意向", "row": "participation_fee_tolerance", "column": "near_term_participation_intent", "purpose": "価格受容と参加意向"},
+      {"id": "preferred_schedule_x_near_term_intent", "label": "開催希望時間帯 × 短期参加意向", "row": "preferred_schedule", "column": "near_term_participation_intent", "purpose": "開催希望時間帯と参加意向（複数選択のため時間帯へ重複計上）"},
+      {"id": "attendance_count_x_repeat_intent", "label": "参加回数 × 再参加意向", "row": "attendance_count", "column": "repeat_intent", "purpose": "参加経験者のみ。参加回数と再参加意向"},
+      {"id": "last_attended_x_repeat_intent", "label": "最終参加時期 × 再参加意向", "row": "last_attended", "column": "repeat_intent", "purpose": "参加経験者のみ。最終参加時期と再参加意向"}
+    ]
+  },
   "implementationNotes": [
     "公開設定の唯一の正本は各question.publication。tier別の設問ID重複リストを持たない。",
     "ordinal=trueの設問はschema順で公開し、0件optionも表示する。ordinal=falseの名義尺度のみ件数降順にできる。",
