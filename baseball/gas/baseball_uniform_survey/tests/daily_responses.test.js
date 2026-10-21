@@ -98,7 +98,7 @@ test('日別回答数：個別 timestamp・hash・自由記述を出さず、Pub
   aggregate.FORBIDDEN_KEYS.forEach((k) => assert.ok(!(k in withDaily.publicPreview)));
 });
 
-test('Dashboard：「日別回答数」を上部に棒グラフで表示し、横スクロールを作らない（textContent のみ）', () => {
+test('Dashboard：「日別回答数」を上部に横棒グラフで表示し、横スクロールを作らない（textContent のみ）', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'admin', 'Dashboard.html'), 'utf8');
   assert.ok(!/innerHTML/.test(html));
   assert.match(html, /id="daily"/);
@@ -118,10 +118,11 @@ test('Dashboard：「日別回答数」を上部に棒グラフで表示し、�
   const doc = dom.window.document;
   const card = doc.getElementById('daily');
   assert.match(card.querySelector('h2').textContent, /日別回答数/);
-  const bars = [...card.querySelectorAll('ul.daily > li')];
-  assert.equal(bars.length, 3); // 11/10, 11/11(0件), 11/12
-  assert.deepEqual(bars.map((b) => b.title), ['11/10: 2件', '11/11: 0件', '11/12: 1件']);
-  assert.equal(bars[0].firstChild.style.height, '100%');
+  assert.equal(card.querySelector('ul.daily, .daily-axis, details'), null);
+  const rowsEl = [...card.querySelectorAll('.daily-bars > .opt')];
+  assert.deepEqual(rowsEl.map((r) => r.querySelector('.opt-label').textContent), ['11/10', '11/11', '11/12']); // 古い→新しい
+  assert.deepEqual(rowsEl.map((r) => r.querySelector('.opt-num').textContent), ['2件', '0件', '1件']);
+  assert.deepEqual(rowsEl.map((r) => r.querySelector('.bar > span').style.width), ['100%', '0%', '50%']);
   assert.match(card.textContent, /合計 3 件/);
 });
 
