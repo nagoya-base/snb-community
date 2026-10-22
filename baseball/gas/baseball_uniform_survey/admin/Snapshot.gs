@@ -12,18 +12,23 @@ function sha256Hex_(text) {
   return SnapshotStore.bytesToHex(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8));
 }
 
-/** Public GAS が保持している snapshot（検証済みのときだけ ok:true）。読めない・無い場合は {ok:false, problem}。 */
+/**
+ * Public GAS が保持している snapshot（検証済みのときだけ ok:true）。読めない・無い場合は {ok:false, problem}。
+ * どちらの場合も refresh に、Public GAS が残した直近の refresh 診断（D1。allowlist で再正規化済み）か null を付ける。
+ */
 function readPublicSnapshot_() {
   var grid;
   try {
     grid = readPublicSnapshotGrid_();
   } catch (e) {
-    return { ok: false, problem: 'unavailable' };
+    return { ok: false, problem: 'unavailable', refresh: null };
   }
-  if (!grid) return { ok: false, problem: 'empty' };
+  if (!grid) return { ok: false, problem: 'empty', refresh: null };
+  var refresh = SnapshotStore.parseDiagnostics(grid[0] ? grid[0][SnapshotStore.DIAG_COLUMN - 1] : undefined);
   var stored = SnapshotStore.readGrid(grid, sha256Hex_);
-  if (!stored.ok) return stored;
-  if (SurveyAggregate.validateSnapshot(SURVEY_SCHEMA, stored.snapshot).length) return { ok: false, problem: 'snapshot_invalid' };
+  if (!stored.ok) return { ok: false, problem: stored.problem, refresh: refresh };
+  if (SurveyAggregate.validateSnapshot(SURVEY_SCHEMA, stored.snapshot).length) return { ok: false, problem: 'snapshot_invalid', refresh: refresh };
+  stored.refresh = refresh;
   return stored;
 }
 
@@ -93,10 +98,12 @@ function diffSnapshots_(preview, published) {
 /**
  * Public GAS が保持している snapshot の状態（Admin 表示用。readonly）。
  * generated_at / 公開仕様上の production_valid_total / 最終更新理由 / 次回更新の条件と現在の増分 / 手動 preview との差。
+ * refresh（Issue #450）: Public GAS の直近 refresh attempt の診断（時刻・result・stage・reason・previous exact / current valid / increment・
+ * classify の件数サマリ・validate 失敗の種別件数）。固定 allowlist の値だけで、無ければ null（診断を書く版の Public GAS がまだ動いていない）。
  */
 function getPublicSnapshotStatus_(now) {
   var published = readPublicSnapshot_();
-  if (!published.ok) return { status: published.problem };
+  if (!published.ok) return { status: published.problem, refresh: published.refresh };
   var classification = classifyResponses_();
   var total = classification.valid.length;
   var previous = { generated_at: published.meta.generated_at, production_valid_total: published.meta.exact_total };
@@ -113,6 +120,10 @@ function getPublicSnapshotStatus_(now) {
     current_production_valid_total: total,
     increment: decision.increment,
     would_update: decision.update,
+    refresh: published.refresh,
+    // Admin 自身の classifyRows の件数サマリと、現在の回答から作った preview の検証結果（種別件数）。Public の診断と並べて原因を切り分ける。
+    admin_classify: SnapshotStore.summarizeClassification(classification.counts),
+    preview_validation: SnapshotStore.summarizeValidation(SurveyAggregate.validateSnapshotDetailed(SURVEY_SCHEMA, preview), 0),
     decision_reason: decision.reason,
     conditions: {
       minimum_increment: decision.policy.minimumIncrement,

@@ -854,48 +854,78 @@ var SurveyAggregate = (function (core) {
 
   /*
    * snapshot が schema と整合し、private 情報を含まず、小セルを逆算できないことを検査する。
-   * 返り値: 問題の文字列配列（空なら OK）。
+   * validateSnapshotDetailed の戻り: [{category, question_id, message}]（空なら OK）。
+   *   category は固定 allowlist（VALIDATION_CATEGORIES）、question_id は schema 上の設問 ID か null。件数・セル内容は含めない。
+   * validateSnapshot の戻り: 問題の文字列配列（空なら OK）。
    */
-  function validateSnapshot(schema, snapshot) {
+  var VALIDATION_CATEGORIES = [
+    'structure', 'snapshot_version', 'version_mismatch', 'generated_at', 'response_status', 'live_count',
+    'private_value_detected', 'private_key_detected', 'question_order', 'invalid_state', 'target_count',
+    'cells_structure', 'small_cell_suppression', 'complementary_suppression', 'sort_order'
+  ];
+
+  /* 設問・セル定義から、その設問の公開セルが取りうる ID（option ID / scale point ID / 地方ブロック ID）。 */
+  function legitimateCellIds(schema, entry) {
+    var defs = entry.kind === 'region' ? (tallyRegion(schema, []) || { defs: [] }).defs : cellDefinitions(schema, entry.question);
+    return defs.map(function (d) { return d.id; });
+  }
+
+  function validateSnapshotDetailed(schema, snapshot) {
     var problems = [];
-    function bad(message) { problems.push(message); }
-    if (!isPlainObject(snapshot)) return ['snapshot が object ではありません'];
-    if (snapshot.snapshot_version !== SNAPSHOT_VERSION) bad('snapshot_version が不正です');
+    function bad(category, message, questionId) {
+      problems.push({ category: category, question_id: typeof questionId === 'string' ? questionId : null, message: message });
+    }
+    if (!isPlainObject(snapshot)) return [{ category: 'structure', question_id: null, message: 'snapshot が object ではありません' }];
+    if (snapshot.snapshot_version !== SNAPSHOT_VERSION) bad('snapshot_version', 'snapshot_version が不正です');
     ['survey_id', 'survey_version', 'schema_version', 'design_version'].forEach(function (k) {
-      if (snapshot[k] !== schema[k]) bad(k + ' が schema と一致しません（schema drift）');
+      if (snapshot[k] !== schema[k]) bad('version_mismatch', k + ' が schema と一致しません（schema drift）');
     });
-    if (isNaN(new Date(snapshot.generated_at).getTime())) bad('generated_at が不正です');
-    if (!isPlainObject(snapshot.response_status)) bad('response_status がありません');
+    if (isNaN(new Date(snapshot.generated_at).getTime())) bad('generated_at', 'generated_at が不正です');
+    if (!isPlainObject(snapshot.response_status)) bad('response_status', 'response_status がありません');
     var total = snapshot.production_valid_total;
     if (total !== null && (typeof total !== 'number' || total < LIVE_COUNT_MIN || total % LIVE_COUNT_STEP !== 0)) {
-      bad('production_valid_total は null か 10 件単位の切り下げ値でなければなりません');
+      bad('live_count', 'production_valid_total は null か 10 件単位の切り下げ値でなければなりません');
     }
     if (isPlainObject(snapshot.response_status)) {
-      if (total === null && snapshot.response_status.state !== 'collecting') bad('10件未満は collecting でなければなりません');
-      if (total !== null && snapshot.response_status.state !== 'counting') bad('10件以上は counting でなければなりません');
+      if (total === null && snapshot.response_status.state !== 'collecting') bad('response_status', '10件未満は collecting でなければなりません');
+      if (total !== null && snapshot.response_status.state !== 'counting') bad('response_status', '10件以上は counting でなければなりません');
     }
 
     var privateIds = core.questionIds(schema).filter(function (id) { return !core.isPublic(schema, id); });
     var prefectureIds = [];
     var cfg = regionConfig(schema);
     if (cfg) cfg.blocks.forEach(function (b) { prefectureIds = prefectureIds.concat(b.prefectureOptionIds); });
-    walkStrings(snapshot, function (text) {
-      if (HASH_LIKE.test(text) || UUID_LIKE.test(text)) bad('hash / UUID らしき値があります');
-      if (contains(prefectureIds, text)) bad('詳細都道府県の ID があります: ' + text);
-      if (contains(privateIds, text)) bad('非公開設問の ID があります: ' + text);
-    }, function (key) {
-      if (contains(FORBIDDEN_KEYS, key)) bad('公開してはいけないキーがあります: ' + key);
-      if (contains(privateIds, key)) bad('非公開設問のキーがあります: ' + key);
-    });
-
     var expected = [];
-    try { expected = publicEntries(schema); } catch (e) { bad(String(e.message || e)); }
-    var expectedIds = expected.map(function (e) { return e.id; });
-    var actualIds = Array.isArray(snapshot.questions) ? snapshot.questions.map(function (q) { return q && q.id; }) : [];
-    if (JSON.stringify(expectedIds) !== JSON.stringify(actualIds)) bad('questions の順序が publicResultsOrder と一致しません');
-
+    try { expected = publicEntries(schema); } catch (e) { bad('structure', String(e.message || e)); }
     var byId = {};
     expected.forEach(function (e) { byId[e.id] = e; });
+
+    /*
+     * 値の文字列検査では、公開設問が自分の cells[].id として持つ「その設問の option / scale point / 地方ブロック ID」を除く。
+     * これらは公開仕様上の ID で、非公開設問・詳細都道府県と同じ文字列でも別物（例: 障壁の選択肢 'age' は非公開設問 'age' とは別、
+     * 地方ブロック 'overseas' は都道府県 option 'overseas' とは別）。それ以外の位置・それ以外の値は従来どおり検査する。
+     */
+    var scanned = JSON.parse(JSON.stringify(snapshot));
+    (Array.isArray(scanned.questions) ? scanned.questions : []).forEach(function (q) {
+      var entry = isPlainObject(q) ? byId[q.id] : null;
+      if (!entry || !Array.isArray(q.cells)) return;
+      var allowed = legitimateCellIds(schema, entry);
+      q.cells.forEach(function (c) {
+        if (isPlainObject(c) && typeof c.id === 'string' && contains(allowed, c.id)) c.id = '';
+      });
+    });
+    walkStrings(scanned, function (text) {
+      if (HASH_LIKE.test(text) || UUID_LIKE.test(text)) bad('private_value_detected', 'hash / UUID らしき値があります');
+      if (contains(prefectureIds, text)) bad('private_value_detected', '詳細都道府県の ID があります: ' + text);
+      if (contains(privateIds, text)) bad('private_value_detected', '非公開設問の ID があります: ' + text);
+    }, function (key) {
+      if (contains(FORBIDDEN_KEYS, key)) bad('private_key_detected', '公開してはいけないキーがあります: ' + key);
+      if (contains(privateIds, key)) bad('private_key_detected', '非公開設問のキーがあります: ' + key);
+    });
+
+    var expectedIds = expected.map(function (e) { return e.id; });
+    var actualIds = Array.isArray(snapshot.questions) ? snapshot.questions.map(function (q) { return q && q.id; }) : [];
+    if (JSON.stringify(expectedIds) !== JSON.stringify(actualIds)) bad('question_order', 'questions の順序が publicResultsOrder と一致しません');
     (Array.isArray(snapshot.questions) ? snapshot.questions : []).forEach(function (q) {
       var entry = q && byId[q.id];
       if (!entry) return;
@@ -903,34 +933,34 @@ var SurveyAggregate = (function (core) {
       var t = evaluation.thresholds;
       var tag = q.id + ': ';
       if (q.state !== STATE_PUBLISHED) {
-        if (!contains([STATE_INSUFFICIENT, STATE_SENSITIVE_WITHHELD, STATE_SUPPRESSED_ALL], q.state)) bad(tag + 'state が不正です');
-        if (entry.publication.sensitiveBranch !== true && q.state === STATE_SENSITIVE_WITHHELD) bad(tag + 'sensitive 以外が sensitive_withheld です');
-        if (q.targetCount !== null || !Array.isArray(q.cells) || q.cells.length) bad(tag + '非公開の項目に件数・値があります');
+        if (!contains([STATE_INSUFFICIENT, STATE_SENSITIVE_WITHHELD, STATE_SUPPRESSED_ALL], q.state)) bad('invalid_state', tag + 'state が不正です', q.id);
+        if (entry.publication.sensitiveBranch !== true && q.state === STATE_SENSITIVE_WITHHELD) bad('invalid_state', tag + 'sensitive 以外が sensitive_withheld です', q.id);
+        if (q.targetCount !== null || !Array.isArray(q.cells) || q.cells.length) bad('invalid_state', tag + '非公開の項目に件数・値があります', q.id);
         return;
       }
-      if (!t || typeof q.targetCount !== 'number' || q.targetCount < t.minTarget) bad(tag + 'targetCount が minTarget 未満です');
-      if (!Array.isArray(q.cells) || q.cells.length === 0) { bad(tag + 'cells がありません'); return; }
+      if (!t || typeof q.targetCount !== 'number' || q.targetCount < t.minTarget) bad('target_count', tag + 'targetCount が minTarget 未満です', q.id);
+      if (!Array.isArray(q.cells) || q.cells.length === 0) { bad('cells_structure', tag + 'cells がありません', q.id); return; }
       var visibleSum = 0;
       var placeholders = 0;
       q.cells.forEach(function (c) {
         if (c.count === null) {
-          if (c.suppressed !== true) bad(tag + 'count:null は suppressed:true が必要です');
+          if (c.suppressed !== true) bad('cells_structure', tag + 'count:null は suppressed:true が必要です', q.id);
           placeholders++;
           return;
         }
-        if (typeof c.count !== 'number') { bad(tag + 'count が数値ではありません'); return; }
+        if (typeof c.count !== 'number') { bad('cells_structure', tag + 'count が数値ではありません', q.id); return; }
         visibleSum += c.count;
-        if (c.count > 0 && t && c.count < t.minCell) bad(tag + 'minCell 未満の値が公開されています');
-        if (c.count === 0 && entry.publication.showZeroCells !== true) bad(tag + 'showZeroCells=false なのにゼロが公開されています');
+        if (c.count > 0 && t && c.count < t.minCell) bad('small_cell_suppression', tag + 'minCell 未満の値が公開されています', q.id);
+        if (c.count === 0 && entry.publication.showZeroCells !== true) bad('small_cell_suppression', tag + 'showZeroCells=false なのにゼロが公開されています', q.id);
       });
       // 隠した分（targetCount − 公開セルの合計）。単一セルとして逆算できてはならない。
       var partition = entry.kind === 'region' || (entry.question && isSingleValued(entry.question));
       if (partition && t) {
         var hidden = q.targetCount - visibleSum;
-        if (hidden < 0) bad(tag + '公開セルの合計が targetCount を超えています');
-        if (hidden > 0 && hidden < t.minCell) bad(tag + '隠したセルの合計が minCell 未満で、小セルを逆算できます');
+        if (hidden < 0) bad('target_count', tag + '公開セルの合計が targetCount を超えています', q.id);
+        if (hidden > 0 && hidden < t.minCell) bad('complementary_suppression', tag + '隠したセルの合計が minCell 未満で、小セルを逆算できます', q.id);
         if (entry.kind === 'question' && entry.publication.ordinal === true && hidden > 0 && placeholders < 2) {
-          bad(tag + 'ordinal で隠したセルが 1 つだけで、小セルを逆算できます');
+          bad('complementary_suppression', tag + 'ordinal で隠したセルが 1 つだけで、小セルを逆算できます', q.id);
         }
       }
       // 公開出力だけから、隠したセルの元値が一意に決まらないこと（合計だけでなく取りうる世界の数で確認する）。
@@ -951,12 +981,12 @@ var SurveyAggregate = (function (core) {
         });
         var hiddenTotal = q.targetCount - visibleSum;
         if (hiddenTotal > 0 && (vmin === null || !ambiguityHolds(unknown, hiddenTotal, t.minCell, vmin, maxTied, ordered))) {
-          bad(tag + '公開された出力から、隠した小セルの元値を一意に逆算できます');
+          bad('complementary_suppression', tag + '公開された出力から、隠した小セルの元値を一意に逆算できます', q.id);
         }
       }
       if (entry.kind === 'question' && entry.publication.ordinal !== true && entry.publication.sort === 'count_desc') {
         for (var i = 1; i < q.cells.length; i++) {
-          if (q.cells[i].count > q.cells[i - 1].count) bad(tag + 'nominal が件数降順になっていません');
+          if (q.cells[i].count > q.cells[i - 1].count) bad('sort_order', tag + 'nominal が件数降順になっていません', q.id);
         }
       }
       if (entry.kind === 'question' && entry.publication.ordinal === true) {
@@ -964,11 +994,15 @@ var SurveyAggregate = (function (core) {
         var actual = q.cells.map(function (c) { return c.id; });
         if (order) {
           var sorted = order.orderedIds.concat(order.independentIds).filter(function (id) { return contains(actual, id); });
-          if (JSON.stringify(sorted) !== JSON.stringify(actual)) bad(tag + 'ordinal が schema の順序になっていません');
+          if (JSON.stringify(sorted) !== JSON.stringify(actual)) bad('sort_order', tag + 'ordinal が schema の順序になっていません', q.id);
         }
       }
     });
     return problems;
+  }
+
+  function validateSnapshot(schema, snapshot) {
+    return validateSnapshotDetailed(schema, snapshot).map(function (p) { return p.message; });
   }
 
   /* ── semantic code 集計（Admin 分析用。public には出さない） ── */
@@ -1239,6 +1273,8 @@ var SurveyAggregate = (function (core) {
     snapshotPolicy: snapshotPolicy,
     decideSnapshotUpdate: decideSnapshotUpdate,
     validateSnapshot: validateSnapshot,
+    validateSnapshotDetailed: validateSnapshotDetailed,
+    VALIDATION_CATEGORIES: VALIDATION_CATEGORIES,
     analyzeSemanticCodes: analyzeSemanticCodes,
     buildAdminSummary: buildAdminSummary,
     listFreeText: listFreeText,

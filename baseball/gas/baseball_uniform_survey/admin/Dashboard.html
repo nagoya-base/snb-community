@@ -579,6 +579,27 @@
       google.script.run.withSuccessHandler(function (s) { setStatus(''); renderSummary(s); }).withFailureHandler(fail).getAdminSummary();
       google.script.run.withSuccessHandler(renderAnalysis).withFailureHandler(analysisFailed).getAdminAnalysis();
 
+      /* Public GAS の直近 refresh 診断（Issue #450）。件数・分類コードだけで、回答値・hash・自由記述は含まれない。 */
+      function nz(v) { return v === null || v === undefined ? '—' : v; }
+      function countList(map) {
+        var parts = [];
+        Object.keys(map || {}).forEach(function (k) { if (map[k]) parts.push(k + ' ' + map[k]); });
+        return parts.length ? parts.join(' ／ ') : 'なし';
+      }
+      function renderRefresh(box, refresh) {
+        box.appendChild(el('h3', '直近の更新試行（Public GAS）'));
+        if (!refresh) { box.appendChild(el('p', '記録がありません（診断を書く版の Public GAS がまだ試行していません）。', 'note')); return; }
+        box.appendChild(el('p', '試行時刻: ' + refresh.attempted_at + ' ／ 結果: ' + refresh.result + ' ／ 段階: ' + refresh.stage + ' ／ 理由: ' + refresh.reason + (refresh.error_class ? ' ／ 例外分類: ' + refresh.error_class : '')));
+        box.appendChild(el('p', '前回 exact: ' + nz(refresh.previous_exact_total) + ' ／ 現在の有効回答: ' + nz(refresh.current_valid_total) + ' ／ 増分: ' + nz(refresh.increment)));
+        var c = refresh.classify;
+        if (c) {
+          box.appendChild(el('p', 'classify: 行 ' + c.rows + ' ／ production 有効 ' + c.production_valid + ' ／ test 除外 ' + c.test_excluded + ' ／ その他除外 ' + c.excluded_total + '（' + countList(c.excluded) + '）'));
+          box.appendChild(el('p', 'version 不一致の field 別: ' + countList(c.version_mismatch_fields)));
+        }
+        var v = refresh.validate;
+        if (v) box.appendChild(el('p', 'validate 失敗: ' + v.problem_total + ' 件（' + countList(v.categories) + '）' + (v.question_ids.length ? ' ／ 設問: ' + v.question_ids.join(', ') : ''), 'err'));
+      }
+
       $('loadPublic').addEventListener('click', function () {
         var box = $('publicState');
         box.textContent = '読み込み中…';
@@ -586,7 +607,11 @@
         google.script.run.withSuccessHandler(function (r) {
           $('loadPublic').disabled = false;
           box.textContent = '';
-          if (r.status !== 'ok') { box.appendChild(el('p', 'Public GAS の snapshot を読めません（' + r.status + '）。初回の更新判定を通るまでは、結果ページは全項目非公開の初期 snapshot を表示します。')); return; }
+          if (r.status !== 'ok') {
+            box.appendChild(el('p', 'Public GAS の snapshot を読めません（' + r.status + '）。初回の更新判定を通るまでは、結果ページは全項目非公開の初期 snapshot を表示します。'));
+            renderRefresh(box, r.refresh);
+            return;
+          }
           box.appendChild(el('p', '公開中 snapshot の generated_at: ' + r.generated_at + '（最終更新 ' + r.updated_at + '）'));
           box.appendChild(el('p', 'production_valid_total（公開仕様上の値）: ' + r.production_valid_total + ' ／ 生成時の exact: ' + r.exact_total_at_generation + ' ／ 現在の exact: ' + r.current_production_valid_total));
           box.appendChild(el('p', '最終更新の理由: ' + r.last_update_reason));
@@ -596,6 +621,9 @@
           var ul = el('ul');
           d.changed_questions.forEach(function (q) { ul.appendChild(el('li', q.label + ' [' + q.id + ']: ' + q.public_state + ' → ' + q.preview_state)); });
           box.appendChild(ul);
+          if (r.admin_classify) box.appendChild(el('p', 'Admin の classify: production 有効 ' + r.admin_classify.production_valid + ' ／ 行 ' + r.admin_classify.rows + ' ／ test 除外 ' + r.admin_classify.test_excluded + ' ／ その他除外 ' + r.admin_classify.excluded_total));
+          if (r.preview_validation && r.preview_validation.problem_total) box.appendChild(el('p', '現在の回答から作った preview の検証: 失敗 ' + r.preview_validation.problem_total + ' 件（' + countList(r.preview_validation.categories) + '）' + (r.preview_validation.question_ids.length ? ' ／ 設問: ' + r.preview_validation.question_ids.join(', ') : ''), 'err'));
+          renderRefresh(box, r.refresh);
         }).withFailureHandler(function (e) { $('loadPublic').disabled = false; box.textContent = ''; fail(e); }).getPublicSnapshotStatus();
       });
 
