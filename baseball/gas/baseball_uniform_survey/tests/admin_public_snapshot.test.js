@@ -61,7 +61,7 @@ test('公開済み snapshot と同じ内容なら差は無く、増分が足り�
 
 test('store が無い・壊れている場合は status だけ返し、手動の SNAPSHOT_STATE に fallback する', () => {
   const env = createAdminEnv(rowsFrom(specs(45, 20)));
-  assert.deepEqual(plain(env.ctx.getPublicSnapshotStatus_(NOW)), { status: 'empty' });
+  assert.deepEqual(plain(env.ctx.getPublicSnapshotStatus_(NOW)), { status: 'empty', refresh: null });
   env.props.set('SNAPSHOT_STATE', JSON.stringify({ generated_at: NOW.toISOString(), production_valid_total: 10 }));
   assert.deepEqual(plain(env.ctx.getSnapshotState_()), { generated_at: NOW.toISOString(), production_valid_total: 10 });
 

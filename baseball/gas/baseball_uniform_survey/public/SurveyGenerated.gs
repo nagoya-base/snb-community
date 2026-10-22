@@ -1568,48 +1568,78 @@ var SurveyAggregate = (function (core) {
 
   /*
    * snapshot が schema と整合し、private 情報を含まず、小セルを逆算できないことを検査する。
-   * 返り値: 問題の文字列配列（空なら OK）。
+   * validateSnapshotDetailed の戻り: [{category, question_id, message}]（空なら OK）。
+   *   category は固定 allowlist（VALIDATION_CATEGORIES）、question_id は schema 上の設問 ID か null。件数・セル内容は含めない。
+   * validateSnapshot の戻り: 問題の文字列配列（空なら OK）。
    */
-  function validateSnapshot(schema, snapshot) {
+  var VALIDATION_CATEGORIES = [
+    'structure', 'snapshot_version', 'version_mismatch', 'generated_at', 'response_status', 'live_count',
+    'private_value_detected', 'private_key_detected', 'question_order', 'invalid_state', 'target_count',
+    'cells_structure', 'small_cell_suppression', 'complementary_suppression', 'sort_order'
+  ];
+
+  /* 設問・セル定義から、その設問の公開セルが取りうる ID（option ID / scale point ID / 地方ブロック ID）。 */
+  function legitimateCellIds(schema, entry) {
+    var defs = entry.kind === 'region' ? (tallyRegion(schema, []) || { defs: [] }).defs : cellDefinitions(schema, entry.question);
+    return defs.map(function (d) { return d.id; });
+  }
+
+  function validateSnapshotDetailed(schema, snapshot) {
     var problems = [];
-    function bad(message) { problems.push(message); }
-    if (!isPlainObject(snapshot)) return ['snapshot が object ではありません'];
-    if (snapshot.snapshot_version !== SNAPSHOT_VERSION) bad('snapshot_version が不正です');
+    function bad(category, message, questionId) {
+      problems.push({ category: category, question_id: typeof questionId === 'string' ? questionId : null, message: message });
+    }
+    if (!isPlainObject(snapshot)) return [{ category: 'structure', question_id: null, message: 'snapshot が object ではありません' }];
+    if (snapshot.snapshot_version !== SNAPSHOT_VERSION) bad('snapshot_version', 'snapshot_version が不正です');
     ['survey_id', 'survey_version', 'schema_version', 'design_version'].forEach(function (k) {
-      if (snapshot[k] !== schema[k]) bad(k + ' が schema と一致しません（schema drift）');
+      if (snapshot[k] !== schema[k]) bad('version_mismatch', k + ' が schema と一致しません（schema drift）');
     });
-    if (isNaN(new Date(snapshot.generated_at).getTime())) bad('generated_at が不正です');
-    if (!isPlainObject(snapshot.response_status)) bad('response_status がありません');
+    if (isNaN(new Date(snapshot.generated_at).getTime())) bad('generated_at', 'generated_at が不正です');
+    if (!isPlainObject(snapshot.response_status)) bad('response_status', 'response_status がありません');
     var total = snapshot.production_valid_total;
     if (total !== null && (typeof total !== 'number' || total < LIVE_COUNT_MIN || total % LIVE_COUNT_STEP !== 0)) {
-      bad('production_valid_total は null か 10 件単位の切り下げ値でなければなりません');
+      bad('live_count', 'production_valid_total は null か 10 件単位の切り下げ値でなければなりません');
     }
     if (isPlainObject(snapshot.response_status)) {
-      if (total === null && snapshot.response_status.state !== 'collecting') bad('10件未満は collecting でなければなりません');
-      if (total !== null && snapshot.response_status.state !== 'counting') bad('10件以上は counting でなければなりません');
+      if (total === null && snapshot.response_status.state !== 'collecting') bad('response_status', '10件未満は collecting でなければなりません');
+      if (total !== null && snapshot.response_status.state !== 'counting') bad('response_status', '10件以上は counting でなければなりません');
     }
 
     var privateIds = core.questionIds(schema).filter(function (id) { return !core.isPublic(schema, id); });
     var prefectureIds = [];
     var cfg = regionConfig(schema);
     if (cfg) cfg.blocks.forEach(function (b) { prefectureIds = prefectureIds.concat(b.prefectureOptionIds); });
-    walkStrings(snapshot, function (text) {
-      if (HASH_LIKE.test(text) || UUID_LIKE.test(text)) bad('hash / UUID らしき値があります');
-      if (contains(prefectureIds, text)) bad('詳細都道府県の ID があります: ' + text);
-      if (contains(privateIds, text)) bad('非公開設問の ID があります: ' + text);
-    }, function (key) {
-      if (contains(FORBIDDEN_KEYS, key)) bad('公開してはいけないキーがあります: ' + key);
-      if (contains(privateIds, key)) bad('非公開設問のキーがあります: ' + key);
-    });
-
     var expected = [];
-    try { expected = publicEntries(schema); } catch (e) { bad(String(e.message || e)); }
-    var expectedIds = expected.map(function (e) { return e.id; });
-    var actualIds = Array.isArray(snapshot.questions) ? snapshot.questions.map(function (q) { return q && q.id; }) : [];
-    if (JSON.stringify(expectedIds) !== JSON.stringify(actualIds)) bad('questions の順序が publicResultsOrder と一致しません');
-
+    try { expected = publicEntries(schema); } catch (e) { bad('structure', String(e.message || e)); }
     var byId = {};
     expected.forEach(function (e) { byId[e.id] = e; });
+
+    /*
+     * 値の文字列検査では、公開設問が自分の cells[].id として持つ「その設問の option / scale point / 地方ブロック ID」を除く。
+     * これらは公開仕様上の ID で、非公開設問・詳細都道府県と同じ文字列でも別物（例: 障壁の選択肢 'age' は非公開設問 'age' とは別、
+     * 地方ブロック 'overseas' は都道府県 option 'overseas' とは別）。それ以外の位置・それ以外の値は従来どおり検査する。
+     */
+    var scanned = JSON.parse(JSON.stringify(snapshot));
+    (Array.isArray(scanned.questions) ? scanned.questions : []).forEach(function (q) {
+      var entry = isPlainObject(q) ? byId[q.id] : null;
+      if (!entry || !Array.isArray(q.cells)) return;
+      var allowed = legitimateCellIds(schema, entry);
+      q.cells.forEach(function (c) {
+        if (isPlainObject(c) && typeof c.id === 'string' && contains(allowed, c.id)) c.id = '';
+      });
+    });
+    walkStrings(scanned, function (text) {
+      if (HASH_LIKE.test(text) || UUID_LIKE.test(text)) bad('private_value_detected', 'hash / UUID らしき値があります');
+      if (contains(prefectureIds, text)) bad('private_value_detected', '詳細都道府県の ID があります: ' + text);
+      if (contains(privateIds, text)) bad('private_value_detected', '非公開設問の ID があります: ' + text);
+    }, function (key) {
+      if (contains(FORBIDDEN_KEYS, key)) bad('private_key_detected', '公開してはいけないキーがあります: ' + key);
+      if (contains(privateIds, key)) bad('private_key_detected', '非公開設問のキーがあります: ' + key);
+    });
+
+    var expectedIds = expected.map(function (e) { return e.id; });
+    var actualIds = Array.isArray(snapshot.questions) ? snapshot.questions.map(function (q) { return q && q.id; }) : [];
+    if (JSON.stringify(expectedIds) !== JSON.stringify(actualIds)) bad('question_order', 'questions の順序が publicResultsOrder と一致しません');
     (Array.isArray(snapshot.questions) ? snapshot.questions : []).forEach(function (q) {
       var entry = q && byId[q.id];
       if (!entry) return;
@@ -1617,34 +1647,34 @@ var SurveyAggregate = (function (core) {
       var t = evaluation.thresholds;
       var tag = q.id + ': ';
       if (q.state !== STATE_PUBLISHED) {
-        if (!contains([STATE_INSUFFICIENT, STATE_SENSITIVE_WITHHELD, STATE_SUPPRESSED_ALL], q.state)) bad(tag + 'state が不正です');
-        if (entry.publication.sensitiveBranch !== true && q.state === STATE_SENSITIVE_WITHHELD) bad(tag + 'sensitive 以外が sensitive_withheld です');
-        if (q.targetCount !== null || !Array.isArray(q.cells) || q.cells.length) bad(tag + '非公開の項目に件数・値があります');
+        if (!contains([STATE_INSUFFICIENT, STATE_SENSITIVE_WITHHELD, STATE_SUPPRESSED_ALL], q.state)) bad('invalid_state', tag + 'state が不正です', q.id);
+        if (entry.publication.sensitiveBranch !== true && q.state === STATE_SENSITIVE_WITHHELD) bad('invalid_state', tag + 'sensitive 以外が sensitive_withheld です', q.id);
+        if (q.targetCount !== null || !Array.isArray(q.cells) || q.cells.length) bad('invalid_state', tag + '非公開の項目に件数・値があります', q.id);
         return;
       }
-      if (!t || typeof q.targetCount !== 'number' || q.targetCount < t.minTarget) bad(tag + 'targetCount が minTarget 未満です');
-      if (!Array.isArray(q.cells) || q.cells.length === 0) { bad(tag + 'cells がありません'); return; }
+      if (!t || typeof q.targetCount !== 'number' || q.targetCount < t.minTarget) bad('target_count', tag + 'targetCount が minTarget 未満です', q.id);
+      if (!Array.isArray(q.cells) || q.cells.length === 0) { bad('cells_structure', tag + 'cells がありません', q.id); return; }
       var visibleSum = 0;
       var placeholders = 0;
       q.cells.forEach(function (c) {
         if (c.count === null) {
-          if (c.suppressed !== true) bad(tag + 'count:null は suppressed:true が必要です');
+          if (c.suppressed !== true) bad('cells_structure', tag + 'count:null は suppressed:true が必要です', q.id);
           placeholders++;
           return;
         }
-        if (typeof c.count !== 'number') { bad(tag + 'count が数値ではありません'); return; }
+        if (typeof c.count !== 'number') { bad('cells_structure', tag + 'count が数値ではありません', q.id); return; }
         visibleSum += c.count;
-        if (c.count > 0 && t && c.count < t.minCell) bad(tag + 'minCell 未満の値が公開されています');
-        if (c.count === 0 && entry.publication.showZeroCells !== true) bad(tag + 'showZeroCells=false なのにゼロが公開されています');
+        if (c.count > 0 && t && c.count < t.minCell) bad('small_cell_suppression', tag + 'minCell 未満の値が公開されています', q.id);
+        if (c.count === 0 && entry.publication.showZeroCells !== true) bad('small_cell_suppression', tag + 'showZeroCells=false なのにゼロが公開されています', q.id);
       });
       // 隠した分（targetCount − 公開セルの合計）。単一セルとして逆算できてはならない。
       var partition = entry.kind === 'region' || (entry.question && isSingleValued(entry.question));
       if (partition && t) {
         var hidden = q.targetCount - visibleSum;
-        if (hidden < 0) bad(tag + '公開セルの合計が targetCount を超えています');
-        if (hidden > 0 && hidden < t.minCell) bad(tag + '隠したセルの合計が minCell 未満で、小セルを逆算できます');
+        if (hidden < 0) bad('target_count', tag + '公開セルの合計が targetCount を超えています', q.id);
+        if (hidden > 0 && hidden < t.minCell) bad('complementary_suppression', tag + '隠したセルの合計が minCell 未満で、小セルを逆算できます', q.id);
         if (entry.kind === 'question' && entry.publication.ordinal === true && hidden > 0 && placeholders < 2) {
-          bad(tag + 'ordinal で隠したセルが 1 つだけで、小セルを逆算できます');
+          bad('complementary_suppression', tag + 'ordinal で隠したセルが 1 つだけで、小セルを逆算できます', q.id);
         }
       }
       // 公開出力だけから、隠したセルの元値が一意に決まらないこと（合計だけでなく取りうる世界の数で確認する）。
@@ -1665,12 +1695,12 @@ var SurveyAggregate = (function (core) {
         });
         var hiddenTotal = q.targetCount - visibleSum;
         if (hiddenTotal > 0 && (vmin === null || !ambiguityHolds(unknown, hiddenTotal, t.minCell, vmin, maxTied, ordered))) {
-          bad(tag + '公開された出力から、隠した小セルの元値を一意に逆算できます');
+          bad('complementary_suppression', tag + '公開された出力から、隠した小セルの元値を一意に逆算できます', q.id);
         }
       }
       if (entry.kind === 'question' && entry.publication.ordinal !== true && entry.publication.sort === 'count_desc') {
         for (var i = 1; i < q.cells.length; i++) {
-          if (q.cells[i].count > q.cells[i - 1].count) bad(tag + 'nominal が件数降順になっていません');
+          if (q.cells[i].count > q.cells[i - 1].count) bad('sort_order', tag + 'nominal が件数降順になっていません', q.id);
         }
       }
       if (entry.kind === 'question' && entry.publication.ordinal === true) {
@@ -1678,11 +1708,15 @@ var SurveyAggregate = (function (core) {
         var actual = q.cells.map(function (c) { return c.id; });
         if (order) {
           var sorted = order.orderedIds.concat(order.independentIds).filter(function (id) { return contains(actual, id); });
-          if (JSON.stringify(sorted) !== JSON.stringify(actual)) bad(tag + 'ordinal が schema の順序になっていません');
+          if (JSON.stringify(sorted) !== JSON.stringify(actual)) bad('sort_order', tag + 'ordinal が schema の順序になっていません', q.id);
         }
       }
     });
     return problems;
+  }
+
+  function validateSnapshot(schema, snapshot) {
+    return validateSnapshotDetailed(schema, snapshot).map(function (p) { return p.message; });
   }
 
   /* ── semantic code 集計（Admin 分析用。public には出さない） ── */
@@ -1953,6 +1987,8 @@ var SurveyAggregate = (function (core) {
     snapshotPolicy: snapshotPolicy,
     decideSnapshotUpdate: decideSnapshotUpdate,
     validateSnapshot: validateSnapshot,
+    validateSnapshotDetailed: validateSnapshotDetailed,
+    VALIDATION_CATEGORIES: VALIDATION_CATEGORIES,
     analyzeSemanticCodes: analyzeSemanticCodes,
     buildAdminSummary: buildAdminSummary,
     listFreeText: listFreeText,
@@ -1977,6 +2013,9 @@ if (typeof module !== 'undefined' && module.exports) {
  * 2 つの slot を交互に使うので、書き込み途中で失敗しても直前の last-known-good（もう一方の slot）は壊れない。
  * `c:` / `m:` の接頭辞は、Sheets が数式・数値・日付として解釈するのを避ける。1 セル 50,000 文字の上限にも収まる。
  *
+ *   D1            : 直近の refresh 診断（先頭 `g:` + JSON。Issue #450）。snapshot の有効性とは無関係（meta が指す chunk には影響しない）。
+ *                   固定 allowlist に正規化した値（段階・結果・理由・件数・分類サマリ）だけを持ち、回答値・hash・ID・例外 message は持たない。
+ *
  * 読み戻し時は meta・chunk 数・総文字数・SHA-256 を照合し、1 つでも合わなければ「無い」ものとして扱う（fail closed）。
  * snapshot 自体の privacy / suppression / version の検証は SurveyAggregate.validateSnapshot が行う。
  *
@@ -1994,6 +2033,135 @@ var SnapshotStore = (function () {
   // meta に許可するキー（これ以外を含む meta は不正。個票・hash などが紛れ込む余地を作らない）。
   var STRING_KEYS = ['digest', 'generated_at', 'updated_at', 'reason', 'survey_version', 'schema_version', 'design_version'];
   var COUNT_KEYS = ['slot', 'chunks', 'length', 'exact_total'];
+
+  // ── refresh 診断（Issue #450）：書き込み側・読み出し側の両方が同じ allowlist で正規化する（fail closed）。 ──
+  var DIAG_VERSION = 1;
+  var DIAG_PREFIX = 'g:';
+  var DIAG_COLUMN = SLOT_COUNT + 2; // 1 始まりの列番号（D 列）。行は 1。
+  var DIAG_STAGES = ['lock', 'load', 'classify', 'build', 'validate', 'plan', 'write', 'verify'];
+  var DIAG_RESULTS = ['success', 'skipped', 'failed'];
+  var DIAG_REASONS = ['initial', 'invalid_previous', 'daily', 'count_increment', 'insufficient_increment', 'not_due', 'busy',
+    'snapshot_invalid', 'verify_failed', 'exception'];
+  var DIAG_ERROR_CLASSES = ['not_configured', 'responses_sheet_missing', 'header_mismatch', 'service_quota', 'timeout', 'permission',
+    'service_unavailable', 'sheet_limit', 'programming_error', 'unknown'];
+  var DIAG_EXCLUDED_KEYS = ['unknown_response_mode', 'incomplete', 'version_mismatch', 'malformed', 'ineligible', 'schema_invalid', 'missing_hash', 'duplicate'];
+  var DIAG_VERSION_FIELDS = ['survey_version', 'schema_version', 'design_version'];
+  // SurveyAggregate.VALIDATION_CATEGORIES と同一（tests/refresh_diagnostics.test.js が一致を検証する）。
+  var DIAG_VALIDATION_CATEGORIES = ['structure', 'snapshot_version', 'version_mismatch', 'generated_at', 'response_status', 'live_count',
+    'private_value_detected', 'private_key_detected', 'question_order', 'invalid_state', 'target_count', 'cells_structure',
+    'small_cell_suppression', 'complementary_suppression', 'sort_order'];
+  var DIAG_MAX_QUESTION_IDS = 40;
+  var QUESTION_ID_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
+
+  function isInt(value) { return typeof value === 'number' && isFinite(value) && value === Math.floor(value); }
+  function countOrNull(value) { return isCount(value) ? value : null; }
+  function intOrNull(value) { return isInt(value) ? value : null; }
+  function pick(list, value) { return typeof value === 'string' && list.indexOf(value) !== -1 ? value : null; }
+
+  /** keys の各キーを件数（非負整数）へ。無い・不正は 0。 */
+  function countMap(keys, source) {
+    var out = {};
+    for (var i = 0; i < keys.length; i++) out[keys[i]] = isPlainObject(source) && isCount(source[keys[i]]) ? source[keys[i]] : 0;
+    return out;
+  }
+
+  function sanitizeClassify(input) {
+    if (!isPlainObject(input)) return null;
+    var excluded = countMap(DIAG_EXCLUDED_KEYS, input.excluded);
+    var excludedTotal = 0;
+    for (var i = 0; i < DIAG_EXCLUDED_KEYS.length; i++) excludedTotal += excluded[DIAG_EXCLUDED_KEYS[i]];
+    return {
+      rows: countOrNull(input.rows) || 0,
+      production_valid: countOrNull(input.production_valid) || 0,
+      test_excluded: countOrNull(input.test_excluded) || 0,
+      excluded_total: excludedTotal,
+      excluded: excluded,
+      version_mismatch_fields: countMap(DIAG_VERSION_FIELDS, input.version_mismatch_fields),
+      legacy_date_serial_accepted: countOrNull(input.legacy_date_serial_accepted) || 0
+    };
+  }
+
+  function sanitizeValidate(input) {
+    if (!isPlainObject(input)) return null;
+    var ids = [];
+    if (Array.isArray(input.question_ids)) {
+      for (var i = 0; i < input.question_ids.length && ids.length < DIAG_MAX_QUESTION_IDS; i++) {
+        var id = input.question_ids[i];
+        if (typeof id === 'string' && QUESTION_ID_PATTERN.test(id) && ids.indexOf(id) === -1) ids.push(id);
+      }
+    }
+    return { problem_total: countOrNull(input.problem_total) || 0, categories: countMap(DIAG_VALIDATION_CATEGORIES, input.categories), question_ids: ids };
+  }
+
+  /**
+   * 診断 → allowlist 済みの診断。result / stage / reason / attempted_at のどれかが不正なら null（保存・表示しない）。
+   * 未知のキー・allowlist 外の文字列は捨てる。
+   */
+  function sanitizeDiagnostics(input) {
+    if (!isPlainObject(input)) return null;
+    var result = pick(DIAG_RESULTS, input.result);
+    var stage = pick(DIAG_STAGES, input.stage);
+    var reason = pick(DIAG_REASONS, input.reason);
+    var attempted = typeof input.attempted_at === 'string' ? new Date(input.attempted_at) : null;
+    if (!result || !stage || !reason || !attempted || isNaN(attempted.getTime())) return null;
+    return {
+      v: DIAG_VERSION,
+      attempted_at: attempted.toISOString(),
+      result: result,
+      stage: stage,
+      reason: reason,
+      error_class: pick(DIAG_ERROR_CLASSES, input.error_class),
+      previous_exact_total: countOrNull(input.previous_exact_total),
+      current_valid_total: countOrNull(input.current_valid_total),
+      increment: intOrNull(input.increment),
+      classify: sanitizeClassify(input.classify),
+      validate: sanitizeValidate(input.validate)
+    };
+  }
+
+  /** 保存するセル文字列。不正な診断は null。 */
+  function encodeDiagnostics(input) {
+    var clean = sanitizeDiagnostics(input);
+    return clean ? DIAG_PREFIX + JSON.stringify(clean) : null;
+  }
+
+  /** セル値 → allowlist 済みの診断 or null（空・形式違い・不正は null）。 */
+  function parseDiagnostics(cell) {
+    if (typeof cell !== 'string' || cell.indexOf(DIAG_PREFIX) !== 0) return null;
+    var parsed;
+    try { parsed = JSON.parse(cell.substr(DIAG_PREFIX.length)); } catch (e) { return null; }
+    return sanitizeDiagnostics(parsed);
+  }
+
+  /** validateSnapshotDetailed の戻り（[{category, question_id}]）→ 件数サマリ。fallbackTotal は詳細が空のときの問題件数。 */
+  function summarizeValidation(problems, fallbackTotal) {
+    var list = Array.isArray(problems) ? problems : [];
+    var categories = {};
+    var ids = [];
+    for (var i = 0; i < list.length; i++) {
+      var category = isPlainObject(list[i]) ? pick(DIAG_VALIDATION_CATEGORIES, list[i].category) : null;
+      if (category) categories[category] = (categories[category] || 0) + 1;
+      if (isPlainObject(list[i]) && typeof list[i].question_id === 'string') ids.push(list[i].question_id);
+    }
+    return sanitizeValidate({ problem_total: list.length || fallbackTotal || 0, categories: categories, question_ids: ids });
+  }
+
+  /**
+   * 例外 → 固定 allowlist の分類（error_class）。message / stack は保存せず、ここで分類コードへ落とすだけ。
+   * 完全一致する内部コードか、既知の Apps Script 障害パターンだけを分類する。それ以外は 'unknown'。
+   */
+  function classifyError(error) {
+    var message = error && typeof error.message === 'string' ? error.message : '';
+    var name = error && typeof error.name === 'string' ? error.name : '';
+    if (message === 'not_configured' || message === 'responses_sheet_missing' || message === 'header_mismatch') return message;
+    if (/too many times|quota|rate limit|limit exceeded/i.test(message)) return 'service_quota';
+    if (/time(d)? ?out|exceeded maximum execution/i.test(message)) return 'timeout';
+    if (/permission|not authorized|authorization|access denied/i.test(message)) return 'permission';
+    if (/service (is )?unavailable|temporarily|internal error|server error/i.test(message)) return 'service_unavailable';
+    if (/grid limits|outside the dimensions|above the limit|10000000 cells/i.test(message)) return 'sheet_limit';
+    if (name === 'TypeError' || name === 'ReferenceError' || name === 'RangeError' || name === 'SyntaxError') return 'programming_error';
+    return 'unknown';
+  }
 
   function isPlainObject(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
   function isCount(value) { return typeof value === 'number' && isFinite(value) && value >= 0 && value === Math.floor(value); }
@@ -2087,6 +2255,19 @@ var SnapshotStore = (function () {
 
   var api = {
     STORE_VERSION: STORE_VERSION,
+    DIAG_PREFIX: DIAG_PREFIX,
+    DIAG_COLUMN: DIAG_COLUMN,
+    DIAG_STAGES: DIAG_STAGES,
+    DIAG_RESULTS: DIAG_RESULTS,
+    DIAG_REASONS: DIAG_REASONS,
+    DIAG_ERROR_CLASSES: DIAG_ERROR_CLASSES,
+    DIAG_VALIDATION_CATEGORIES: DIAG_VALIDATION_CATEGORIES,
+    sanitizeDiagnostics: sanitizeDiagnostics,
+    summarizeClassification: sanitizeClassify,
+    encodeDiagnostics: encodeDiagnostics,
+    parseDiagnostics: parseDiagnostics,
+    summarizeValidation: summarizeValidation,
+    classifyError: classifyError,
     SLOT_COUNT: SLOT_COUNT,
     CHUNK_SIZE: CHUNK_SIZE,
     CHUNK_PREFIX: CHUNK_PREFIX,
