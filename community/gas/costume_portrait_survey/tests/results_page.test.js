@@ -40,6 +40,8 @@ test('確定後は「最終結果」と明示する', async () => {
   const { document } = await openPage({ page: PAGE, fetch: () => sample('final') });
   assert.ok(body(document).includes('最終結果'));
   assert.ok(!body(document).includes('途中集計'));
+  assert.ok(body(document).includes('このアンケートは終了しました。以下は受付終了時点の最終集計結果です。'));
+  assert.ok(!body(document).includes('受付中'));
 });
 
 test('不正なレスポンスは読み込みエラーにし、30件未満とは表示しない', async () => {
@@ -147,7 +149,7 @@ test('回答CTA：HTMLに「アンケートに回答する」リンクがあり�
 test('final では回答CTAを表示しない（募集CTAと誤認させない）。受付終了・確定待ちも同様', async () => {
   const final30 = await openPage({ page: PAGE, fetch: () => sample('final') });
   assert.strictEqual(cta(final30.document).hidden, true);
-  assert.ok(body(final30.document).includes('アンケートの受付は終了し'));
+  assert.ok(body(final30.document).includes('このアンケートは終了しました'));
   const finalBasic = await openPage({ page: PAGE, fetch: () => ({ ok: true, results: { status: 'final', total: 25, min_total: 30, threshold_reached: false, items: basicItems } }) });
   assert.strictEqual(cta(finalBasic.document).hidden, true);
   assert.ok(body(finalBasic.document).includes('最終結果'));
