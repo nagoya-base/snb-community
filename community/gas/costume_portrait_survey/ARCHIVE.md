@@ -1,7 +1,7 @@
 # アーカイブ記録：男性の衣装・ポートレート意識調査（Issue #452）
 
 終了時点の状態を後から確認・再現するための記録。**秘密情報（Spreadsheet ID・token・salt・認証情報・`CLASPRC_JSON`）は書かない。**
-`確定時に記入` の欄は、`finalizeSurvey()` 実行後・本番デプロイ後に埋めて追記コミットする（値は Public GAS の `meta` シート／実行結果／デプロイ履歴から転記）。
+確定値は 2026-11-02 の `finalizeSurvey()` 実行・本番デプロイ後に反映済み（出典：Issue #452 のコメント）。retention 期限のみ未確定。
 
 | 項目 | 値 |
 |---|---|
@@ -9,15 +9,15 @@
 | survey_id | `costume_portrait_2026` |
 | survey_version / schema_version | `2026-10` / `3`（`survey.schema.json`） |
 | design version | schema_version 3 の画面構成（衣装カテゴリ拡張後）。`git log -- survey.schema.json` で追跡 |
-| close 日時（`SURVEY_CLOSES_AT`） | 確定時に記入（タイムゾーン付きISO 8601） |
-| 最終 production 有効回答数 | 確定時に記入（`finalize_validRows` = `finalize_publicTotal`） |
-| 内訳（response / late / unparseable） | 確定時に記入（`finalize_responseRows` / `finalize_lateRows` / `finalize_unparseableRows`） |
-| 最終 snapshot 生成日時（`finalized_at`） | 確定時に記入 |
-| final public data の識別 | Script Property `FINAL_RESULTS_META`（chunks 数・stats）／`status:"final"`。`GET ?action=results` が `status:"final"` を返すこと |
-| 最終 deploy の commit SHA | 確定時に記入（Actions *Costume portrait survey Public GAS* / *Admin GAS* の実行ログの `github.sha`） |
+| close 日時（`SURVEY_CLOSES_AT`） | `2026-10-31T23:59:59+09:00` |
+| 最終 production 有効回答数 | 40（`finalize_validRows` = `finalize_publicTotal` = 40） |
+| 内訳（response / late / unparseable） | 40 / 0 / 0（`finalize_responseRows` / `finalize_lateRows` / `finalize_unparseableRows`）。`duplicate_rejects` = 0 |
+| 最終 snapshot 生成日時（`finalized_at`） | `2026-11-02T10:28:06.774Z`（JST 2026-11-02 19:28:06.774） |
+| final public data の識別 | Script Property `FINAL_RESULTS_META`（chunks 数・stats）／`status:"final"`。`GET ?action=results` が `status:"final"`・`total:40` を返すことを確認済み（`finalize_status` = `final`） |
+| 最終 deploy の commit SHA | `09b337bcadb69f11f82e29f4d5ee955a15c8ca77`（PR #453 の merge commit。Public GAS / Admin GAS を本番デプロイ済み） |
 | 使用中 Deployment ID の対応 | Public: Environment `costume-portrait-public-production` の `COSTUME_PORTRAIT_DEPLOYMENT_ID` ／ Admin: `costume-portrait-admin-production`（値は GitHub Secrets 参照。このファイルには書かない） |
 | retention policy | `closes_at` を起算点とする。`SURVEY_CLOSES_AT` を正式な起算点として扱う |
-| retention 期限 | `SURVEY_CLOSES_AT` + 既存 retention 運用の保持期間（確定時に算出して記入） |
+| retention 期限 | **未確定**。本調査の保持日数はリポジトリ上で確定値を確認できていない（別調査の365日設定は流用しない）。保持期間の確定後に `SURVEY_CLOSES_AT`（2026-10-31T23:59:59+09:00）+ 保持日数で算出して追記する |
 
 ## 終了手順（人手。順序を変えない）
 
