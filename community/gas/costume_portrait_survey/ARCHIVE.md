@@ -1,7 +1,7 @@
 # アーカイブ記録：男性の衣装・ポートレート意識調査（Issue #452）
 
 終了時点の状態を後から確認・再現するための記録。**秘密情報（Spreadsheet ID・token・salt・認証情報・`CLASPRC_JSON`）は書かない。**
-確定値は 2026-11-02 の `finalizeSurvey()` 実行・本番デプロイ後に反映済み（出典：Issue #452 のコメント）。retention 期限のみ未確定。
+確定値は 2026-11-02 の `finalizeSurvey()` 実行・本番デプロイ後に反映済み（出典：Issue #452 のコメント）。retention（終了後365日）は Owner 判断で確定済み。
 
 | 項目 | 値 |
 |---|---|
@@ -16,8 +16,8 @@
 | final public data の識別 | Script Property `FINAL_RESULTS_META`（chunks 数・stats）／`status:"final"`。`GET ?action=results` が `status:"final"`・`total:40` を返すことを確認済み（`finalize_status` = `final`） |
 | 最終 deploy の commit SHA | `09b337bcadb69f11f82e29f4d5ee955a15c8ca77`（PR #453 の merge commit。Public GAS / Admin GAS を本番デプロイ済み） |
 | 使用中 Deployment ID の対応 | Public: Environment `costume-portrait-public-production` の `COSTUME_PORTRAIT_DEPLOYMENT_ID` ／ Admin: `costume-portrait-admin-production`（値は GitHub Secrets 参照。このファイルには書かない） |
-| retention policy | `closes_at` を起算点とする。`SURVEY_CLOSES_AT` を正式な起算点として扱う |
-| retention 期限 | **未確定**。本調査の保持日数はリポジトリ上で確定値を確認できていない（別調査の365日設定は流用しない）。保持期間の確定後に `SURVEY_CLOSES_AT`（2026-10-31T23:59:59+09:00）+ 保持日数で算出して追記する |
+| retention policy | `closes_at` 起算・**終了後365日**。本調査のOwner判断として確定（2026-11-02）。別調査（野球ユニ部）の設定の流用ではない。`SURVEY_CLOSES_AT` を正式な起算点として扱う |
+| retention 期限 | `2027-10-31T23:59:59+09:00`（`SURVEY_CLOSES_AT` `2026-10-31T23:59:59+09:00` + 365日）。期限到来時も raw 回答は自動削除せず、下記手順 6 の `dry-run → confirmation → execute → rescan / audit` で処理する |
 
 ## 終了手順（人手。順序を変えない）
 
