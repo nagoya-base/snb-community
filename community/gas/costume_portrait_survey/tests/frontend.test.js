@@ -378,6 +378,9 @@ test('invalid_request（設問以外のfield）：専用文言を出し、内部
 test('status=closed：入力画面を出さず受付終了（締切はFrontendでハードコードしない）', async () => {
   const { document, calls } = await openPage({ fetch: () => ({ ok: true, status: 'closed', answered: false, schema_version: SV }) });
   assert.ok(text(document).includes('アンケートの受付は終了しました'));
+  assert.ok(text(document).includes('ご協力ありがとうございました'));
+  assert.ok(text(document).includes('最終結果のページへ'));
+  assert.ok(!text(document).includes('途中集計'));
   assert.strictEqual(document.getElementById('cp-form'), null);
   assert.strictEqual(postCalls(calls).length, 0);
   const html = require('fs').readFileSync(require('path').join(require('./helpers/dom').REPO, 'community/costume-portrait-survey/app.js'), 'utf8');
@@ -461,11 +464,11 @@ test('スマホ向け：viewport・ナビ固定・タップ領域（min-height�
   assert.ok(visibleFieldsets);
 });
 
-test('回答ページのヒーロー直下に「現在の結果を見る」リンクがあり、結果ページへ遷移する（Issue #367）', async () => {
+test('回答ページのヒーロー直下に「最終結果を見る」リンクがあり、結果ページへ遷移する（Issue #367）', async () => {
   const { document } = await openPage();
   const link = document.querySelector('a[href="./costume-portrait-survey-results.html"]');
   assert.ok(link);
-  assert.strictEqual(link.textContent, '現在の結果を見る');
+  assert.strictEqual(link.textContent, '最終結果を見る');
   // ヒーロー直下・アンケート本体（#cp-app）の前にある
   const hero = document.querySelector('.cp-hero');
   const app = document.getElementById('cp-app');
@@ -474,7 +477,7 @@ test('回答ページのヒーロー直下に「現在の結果を見る」リ�
   assert.ok(!app.contains(link));
 });
 
-test('受付終了表示でも「現在の結果を見る」リンクは残る', async () => {
+test('受付終了表示でも「最終結果を見る」リンクは残る', async () => {
   const { document } = await openPage({ search: '?test=closed' });
   assert.ok(document.querySelector('a[href="./costume-portrait-survey-results.html"]'));
 });

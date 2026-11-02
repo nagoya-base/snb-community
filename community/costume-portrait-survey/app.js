@@ -715,8 +715,8 @@
   }
   function showClosed() {
     showMessage('warn', 'アンケートの受付は終了しました',
-      ['たくさんのご回答ありがとうございました。有効回答が30件以上集まっている場合は途中集計を公開しています。最終結果は確定後に公開します。'],
-      { text: '公開結果のページへ', href: RESULTS_URL });
+      ['ご協力ありがとうございました。たくさんのご回答をいただきました。受付終了時点の最終集計結果は、結果ページで公開しています。'],
+      { text: '最終結果のページへ', href: RESULTS_URL });
   }
   function showUpdateNeeded() {
     showMessage('warn', 'ページが古くなっています',

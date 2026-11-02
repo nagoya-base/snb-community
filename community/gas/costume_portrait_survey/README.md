@@ -294,3 +294,4 @@ python3 -m unittest scripts.tests.test_costume_portrait_deploy -v   # リポジ�
   `schema_version` を上げ、`responses` のヘッダーと整合させる（ヘッダー不一致時は保存を拒否する）。
 - **受付中**: 有効回答30件以上で途中集計が公開される（運用操作は不要）。
 - **締切後**: Public で `finalizeSurvey()` を実行 → `?action=results` と公開結果ページで「最終結果」表示を確認（30件以上のときのみ表示）。
+- **終了・アーカイブ（Issue #452）**: 手順と記録欄は [`ARCHIVE.md`](./ARCHIVE.md)。終了済みの本 survey / Spreadsheet / GAS は次回調査へ流用しない。
