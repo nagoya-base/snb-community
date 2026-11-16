@@ -14,17 +14,17 @@
       date: null,
       /* 複数日開催のため単一date運用（自動finished判定）は使わず、sessions（日付別）で管理する。
          開催日（date）を過ぎた回は自動で「過去の日程」へ移り、全回が過ぎるとfinishedになる。
-         session.status: "recruiting"=募集中 / "upcoming"=開催予定（募集・詳細は未確定）。
+         session.status: "recruiting"=募集中 / "upcoming"=開催予定（募集開始前）。
            申込CTAは、予定が残っていて募集中の回が1つ以上あるときだけ有効になる。
          session.time: 表示用の文字列。null は「時間未定」。
-         session.result: "held"=開催済み / "cancelled"=中止 / null=実施未確認（「開催済み」とは書かない）。
+         session.result: "held"=開催済み / "cancelled"=中止 / null=結果未記録（「日程終了」と表示し、「開催済み」とは書かない）。
          dateが不正な回は予定にも過去にも出さない。Issue #247・#349・#455 */
       sessions: [
-        { date: "2026-10-31", label: "2026年10月31日（土）", time: "13:00〜15:00", status: "recruiting", result: null },
-        { date: "2026-11-14", label: "2026年11月14日（土）", time: "13:00〜15:00", status: "recruiting", result: null },
+        { date: "2026-10-31", label: "2026年10月31日（土）", time: "13:00〜15:00", status: "recruiting", result: "held" },
+        { date: "2026-11-14", label: "2026年11月14日（土）", time: "13:00〜15:00", status: "recruiting", result: "held" },
         { date: "2026-11-28", label: "2026年11月28日（土）", time: "13:00〜15:00", status: "recruiting", result: null },
-        { date: "2026-12-19", label: "2026年12月19日（土）", time: "13:00〜15:00", status: "upcoming", result: null },
-        { date: "2027-01-09", label: "2027年1月9日（土）", time: "13:00〜15:00", status: "upcoming", result: null }
+        { date: "2026-12-19", label: "2026年12月19日（土）", time: "13:00〜15:00", status: "recruiting", result: null },
+        { date: "2027-01-09", label: "2027年1月9日（土）", time: "13:00〜15:00", status: "recruiting", result: null }
       ],
       dateLabel: null,
       timeLabel: null,
@@ -241,13 +241,13 @@
       var li = document.createElement("li");
       var text = s.label + " " + (s.time || "時間未定");
       if (isPast) {
-        text += "（" + (s.result === "held" ? "開催済み" : s.result === "cancelled" ? "中止" : "実施未確認") + "）";
+        text += "（" + (s.result === "held" ? "開催済み" : s.result === "cancelled" ? "中止" : "日程終了") + "）";
       } else {
         // full/closedなどイベント全体の上書き中は、回ごとの「募集中」を表示しない。
         if (eventStatus === "full") text += "（満席）";
         else if (eventStatus === "closed") text += "（受付終了）";
         else if (eventStatus === "paused") text += "（開催予定）";
-        else text += s.status === "recruiting" ? "（募集中）" : "（開催予定・募集は未定）";
+        else text += s.status === "recruiting" ? "（募集中）" : "（開催予定）";
       }
       li.textContent = text;
       el.appendChild(li);
