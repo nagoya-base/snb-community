@@ -293,7 +293,7 @@
       } else if (field === "form-fallback-text") {
         el.textContent = meta.formMessage || "";
       } else if (field === "upcoming-list") {
-        renderSessionList(el, split.upcoming, false, status);
+        renderSessionList(el, status === "finished" ? [] : split.upcoming, false, status);
       } else if (field === "past-list") {
         renderSessionList(el, split.past, true);
       } else if (field === "upcoming-block") {
