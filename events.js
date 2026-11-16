@@ -230,7 +230,7 @@
   }
 
   // 日付別リストを描画する。DOM生成はtextContentのみ（データ由来の文字列をHTMLとして解釈しない）。
-  function renderSessionList(el, sessions, isPast) {
+  function renderSessionList(el, sessions, isPast, eventStatus) {
     while (el.firstChild) el.removeChild(el.firstChild);
     for (var i = 0; i < sessions.length; i++) {
       var s = sessions[i];
@@ -239,7 +239,11 @@
       if (isPast) {
         text += "（" + (s.result === "held" ? "開催済み" : s.result === "cancelled" ? "中止" : "実施未確認") + "）";
       } else {
-        text += s.status === "recruiting" ? "（募集中）" : "（開催予定・募集は未定）";
+        // full/closedなどイベント全体の上書き中は、回ごとの「募集中」を表示しない。
+        if (eventStatus === "full") text += "（満席）";
+        else if (eventStatus === "closed") text += "（受付終了）";
+        else if (eventStatus === "paused") text += "（開催予定）";
+        else text += s.status === "recruiting" ? "（募集中）" : "（開催予定・募集は未定）";
       }
       li.textContent = text;
       el.appendChild(li);
@@ -285,7 +289,7 @@
       } else if (field === "form-fallback-text") {
         el.textContent = meta.formMessage || "";
       } else if (field === "upcoming-list") {
-        renderSessionList(el, split.upcoming, false);
+        renderSessionList(el, split.upcoming, false, status);
       } else if (field === "past-list") {
         renderSessionList(el, split.past, true);
       } else if (field === "upcoming-block") {

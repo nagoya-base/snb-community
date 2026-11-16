@@ -47,6 +47,7 @@ assert(items(w, 'past-list').length === 3, '11/28が過去へ移る');
 // full：予定一覧は表示のまま、CTAだけ止まる
 w = load('2026-11-16', (ev) => { ev.status = 'full'; });
 assert(items(w, 'upcoming-list').length === 3 && q(w, 'form-gate').hidden, '満席でも予定一覧は残りCTAだけ停止');
+assert(items(w, 'upcoming-list').every((t) => !/募集中/.test(t) && /満席/.test(t)), '満席時は回ごとの「募集中」を表示しない');
 
 // 最終回の翌日：予定ブロックもCTAも消える
 w = load('2027-01-10');
