@@ -56,6 +56,14 @@ assert(q(w, 'upcoming-block').hidden && q(w, 'form-gate').hidden && items(w, 'pa
 // 不正日付：予定にも過去にも混入しない（今日が取得できない場合も予定に出さない）
 w = load('2026-11-16', (ev) => { ev.sessions.push({ date: '2026-13-45x', label: '不正', time: null, status: 'recruiting', result: null }, { label: '日付なし', time: null, status: 'recruiting' }); });
 assert(!items(w, 'upcoming-list').concat(items(w, 'past-list')).some((t) => /不正|日付なし/.test(t)), '不正な日付の回は予定にも過去にも出さない');
+// 形式は正しいが実在しない日付（2026-13-45 / 2026-02-31 / 平年の2/29）は除外、うるう年の2/29は有効
+w = load('2026-11-16', (ev) => { ev.sessions.push({ date: '2026-13-45', label: '月不正', time: null, status: 'recruiting', result: null }, { date: '2026-02-31', label: '日不正', time: null, status: 'recruiting', result: null }, { date: '2027-02-29', label: '平年29日', time: null, status: 'recruiting', result: null }, { date: '2028-02-29', label: 'うるう年29日', time: null, status: 'upcoming', result: null }); });
+const all = items(w, 'upcoming-list').concat(items(w, 'past-list')).join('|');
+assert(!/月不正|日不正|平年29日/.test(all), '形式は正しいが実在しない日付は予定にも過去にも出さない');
+assert(/うるう年29日/.test(all), 'うるう年の2/29は有効な日付として扱う');
+// イベント全体をfinishedにした場合は全体状態を優先（未来の回があっても「募集中」を出さない）
+w = load('2026-11-16', (ev) => { ev.status = 'finished'; });
+assert(q(w, 'upcoming-block').hidden && q(w, 'form-gate').hidden && !/募集中/.test(q(w, 'upcoming-block').textContent), '全体finishedなら予定一覧・CTAを出さない');
 const E = w.SNBEventStatus;
 assert(E.splitSessions({ sessions: [{ date: '2026-12-19' }] }, null).upcoming.length === 0, '今日の日付が取れない場合は予定を出さない');
 assert(E.computeEffectiveStatus({ status: 'recruiting', sessions: [{ date: 'bad', status: 'recruiting' }] }, '2026-11-16') === 'finished', '有効な日付の回が無ければ募集中にしない');

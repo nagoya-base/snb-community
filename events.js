@@ -82,7 +82,11 @@
   }
 
   function isValidISODate(value) {
-    return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    // 形式だけでなく、年月日として実在すること（うるう年を含む）を検証する。
+    var y = +value.slice(0, 4), m = +value.slice(5, 7), d = +value.slice(8, 10);
+    var dt = new Date(Date.UTC(y, m - 1, d));
+    return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
   }
 
   // 開催日を過ぎたら自動でfinishedへ切り替える（明示的なpaused/finishedは上書きしない）。
@@ -293,7 +297,8 @@
       } else if (field === "past-list") {
         renderSessionList(el, split.past, true);
       } else if (field === "upcoming-block") {
-        el.hidden = split.upcoming.length === 0;
+        // イベント全体を明示的にfinishedにした場合は全体状態を優先し、予定一覧は出さない。
+        el.hidden = split.upcoming.length === 0 || status === "finished";
       } else if (field === "past-block") {
         el.hidden = split.past.length === 0;
       } else if (field === "dot") {
