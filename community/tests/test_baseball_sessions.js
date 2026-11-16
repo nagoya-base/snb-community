@@ -27,22 +27,29 @@ function load(todayISO, mutate) {
 const q = (w, f) => w.document.querySelector('[data-event-field="' + f + '"]');
 const items = (w, f) => Array.from(q(w, f).querySelectorAll('li')).map((li) => li.textContent);
 
-// 11/16：予定3件（11/28募集中・12/19・1/9は募集未定）、過去2件は実施未確認
+// 11/16：予定3件はすべて募集中、過去2件は開催済み
 let w = load('2026-11-16');
 let up = items(w, 'upcoming-list');
-assert(up.length === 3 && /11月28日.*13:00〜15:00（募集中）/.test(up[0]), '11/28は時間付きで募集中のまま');
-assert(/12月19日（土） 13:00〜15:00（開催予定・募集は未定）/.test(up[1]) && /2027年1月9日（土） 13:00〜15:00（開催予定・募集は未定）/.test(up[2]), '12/19・2027/1/9は13:00〜15:00で、募集中とは書かない');
+assert(up.length === 3 && /11月28日（土） 13:00〜15:00（募集中）/.test(up[0]), '11/28は13:00〜15:00で募集中');
+assert(/2026年12月19日（土） 13:00〜15:00（募集中）/.test(up[1]) && /2027年1月9日（土） 13:00〜15:00（募集中）/.test(up[2]), '12/19・2027/1/9は13:00〜15:00で募集中');
 let past = items(w, 'past-list');
-assert(past.length === 2 && past.every((t) => /実施未確認/.test(t) && !/開催済み/.test(t)), '実施未確認の回を「開催済み」と書かない');
+assert(past.length === 2 && /10月31日（土） 13:00〜15:00（開催済み）/.test(past[0]) && /11月14日（土） 13:00〜15:00（開催済み）/.test(past[1]), '10/31・11/14は開催済み');
+const pageText = w.document.body.textContent;
+assert(!/実施未確認|募集は未定/.test(pageText), '「実施未確認」「募集は未定」が残っていない');
+assert(/集合場所は、参加される方にDMで個別にご案内します。/.test(pageText), '集合場所はDMで個別案内と明示');
+assert(!/集合場所[^。]*X(で|に)(お知らせ|公開|告知|掲載)|X(で|に)[^。]*集合場所/.test(pageText), 'Xで集合場所を公開する誤表現がない');
+assert(/Xで次回開催を確認する/.test(pageText), '開催日のX告知リンクは残す');
 assert(/過去の日程/.test(q(w, 'past-block').textContent) && !q(w, 'past-block').hidden, '見出しは「過去の日程」');
 assert(!q(w, 'form-gate').hidden, '募集中の回があるので申込CTAは表示');
 assert(!/enquete_202609/.test(w.document.body.innerHTML), '終了済みアンケートへ誘導しない');
 
-// 11/29：募集中の回が無い → 予定一覧は残り、申込CTAだけ消える
+// 11/29以降：11/28が過去へ移り、12/19・1/9は募集中のまま申込CTAも表示
 w = load('2026-11-29');
-assert(items(w, 'upcoming-list').length === 2 && !q(w, 'upcoming-block').hidden, '予定一覧は募集中の回が無くても表示');
-assert(q(w, 'form-gate').hidden, '募集中の回が無ければ申込CTAは非表示');
+up = items(w, 'upcoming-list');
+assert(up.length === 2 && up.every((x) => /13:00〜15:00（募集中）/.test(x)) && !q(w, 'upcoming-block').hidden, '11/29以降も12/19・1/9が募集中で表示');
+assert(!q(w, 'form-gate').hidden, '11/29以降も申込CTAは表示');
 assert(items(w, 'past-list').length === 3, '11/28が過去へ移る');
+assert(/11月28日（土） 13:00〜15:00（日程終了）/.test(items(w, 'past-list')[2]) && !/開催済み.*11月28日|11月28日.*開催済み/.test(items(w, 'past-list')[2]), '結果未記録の11/28は「開催済み」と書かない');
 
 // full：予定一覧は表示のまま、CTAだけ止まる
 w = load('2026-11-16', (ev) => { ev.status = 'full'; });
