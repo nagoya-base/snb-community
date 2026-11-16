@@ -288,6 +288,7 @@
       border-radius: 12px;
     }
     .survey-cta__title { font-size: 1rem; font-weight: 800; color: var(--accent-lt); margin-bottom: 0.3rem; }
+    .survey-cta[hidden] { display: none; }
     .survey-cta__note { font-size: 0.84rem; color: var(--text-muted); margin-bottom: 0.9rem; }
     .session-list { list-style: none; margin: 0 0 0.8rem; padding: 0; font-size: 0.9rem; font-weight: 700; }
     .session-list li { padding: 0.2rem 0; }
@@ -395,14 +396,16 @@
         現在、屋外活動を休止しています。<br>
         次回開催はXでお知らせします。
       </p>
-      <div class="survey-cta" data-event-id="baseball-next-activity" data-event-field="form-gate">
-        <p class="survey-cta__title">🎉 キャッチボール会 今後の開催予定</p>
+      <div class="survey-cta" data-event-id="baseball-next-activity" data-event-field="upcoming-block" hidden>
+        <p class="survey-cta__title">⚾ キャッチボール会 今後の開催予定</p>
         <ul class="session-list" data-event-id="baseball-next-activity" data-event-field="upcoming-list"></ul>
         <p class="survey-cta__note">
           時間未定の回は、決まり次第Xでお知らせします。集合場所・時間の詳細は個別にご案内します。<br>
           初参加の方も歓迎です。
         </p>
-        <a href="../contact/?category=baseball" class="btn btn-primary" data-cta-name="baseball_entry" data-cta-location="schedule">参加希望を送る</a>
+        <div data-event-id="baseball-next-activity" data-event-field="form-gate">
+          <a href="../contact/?category=baseball" class="btn btn-primary" data-cta-name="baseball_entry" data-cta-location="schedule">参加希望を送る</a>
+        </div>
       </div>
       <p style="margin-top: 1.5rem;">
         <a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" class="btn btn-outline" data-outbound-channel="x" data-cta-location="schedule">Xで次回開催を確認する</a>
@@ -412,9 +415,9 @@
         このフォームは初参加の方向けです。以前参加したことがある方は、これまでの連絡方法から参加希望をご連絡ください。
       </p>
       <div class="past-sessions" data-event-id="baseball-next-activity" data-event-field="past-block" hidden>
-        <h3 class="past-sessions__title">過去の開催</h3>
+        <h3 class="past-sessions__title">過去の日程</h3>
         <ul class="session-list session-list--past" data-event-id="baseball-next-activity" data-event-field="past-list"></ul>
-        <p class="schedule-note" style="font-size: 0.8rem;">実施結果や当日の様子は<a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" data-outbound-channel="x" data-cta-location="schedule_past">X</a>をご確認ください。</p>
+        <p class="schedule-note" style="font-size: 0.8rem;">「実施未確認」の回の実施結果や当日の様子は<a href="https://x.com/baseballuni_ngo" target="_blank" rel="noopener noreferrer" data-outbound-channel="x" data-cta-location="schedule_past">X</a>をご確認ください。</p>
       </div>
     </div>
     <!-- ▲ 次回開催情報は events.js の "baseball-next-activity" エントリを編集してください ▲ -->

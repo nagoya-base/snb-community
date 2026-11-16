@@ -13,15 +13,18 @@
       title: "キャッチボール会",
       date: null,
       /* 複数日開催のため単一date運用（自動finished判定）は使わず、sessions（日付別）で管理する。
-         開催日（date）を過ぎた回は自動で「過去の開催」へ移り、全回が過ぎるとfinishedになる。
-         time: null は「時間未定」。result: "held"=開催済み / "cancelled"=中止 / null=実施結果未確認
-         （nullの回は「開催済み」と書かず「日程終了」と表示する）。Issue #247・#349・#455 */
+         開催日（date）を過ぎた回は自動で「過去の日程」へ移り、全回が過ぎるとfinishedになる。
+         session.status: "recruiting"=募集中 / "upcoming"=開催予定（募集・詳細は未確定）。
+           申込CTAは、予定が残っていて募集中の回が1つ以上あるときだけ有効になる。
+         session.time: null は「時間未定」。
+         session.result: "held"=開催済み / "cancelled"=中止 / null=実施未確認（「開催済み」とは書かない）。
+         dateが不正な回は予定にも過去にも出さない。Issue #247・#349・#455 */
       sessions: [
-        { date: "2026-10-31", label: "2026年10月31日（土）", time: "13:00〜15:00", result: null },
-        { date: "2026-11-14", label: "2026年11月14日（土）", time: "13:00〜15:00", result: null },
-        { date: "2026-11-28", label: "2026年11月28日（土）", time: "13:00〜15:00", result: null },
-        { date: "2026-12-19", label: "2026年12月19日（土）", time: null, result: null },
-        { date: "2027-01-09", label: "2027年1月9日（土）", time: null, result: null }
+        { date: "2026-10-31", label: "2026年10月31日（土）", time: "13:00〜15:00", status: "recruiting", result: null },
+        { date: "2026-11-14", label: "2026年11月14日（土）", time: "13:00〜15:00", status: "recruiting", result: null },
+        { date: "2026-11-28", label: "2026年11月28日（土）", time: "13:00〜15:00", status: "recruiting", result: null },
+        { date: "2026-12-19", label: "2026年12月19日（土）", time: null, status: "upcoming", result: null },
+        { date: "2027-01-09", label: "2027年1月9日（土）", time: null, status: "upcoming", result: null }
       ],
       dateLabel: null,
       timeLabel: null,
@@ -86,13 +89,16 @@
   // closedは「新規受付は終了だが開催はする」状態のため、開催日を過ぎたらfinished（終了済み）へ
   // 移行させる。日付が無い/不正な場合はclosedのまま据え置く（申込不可のため誤認のリスクはない）。
   // 判定に失敗した場合は「申込可能」と誤認させない安全側（finishedまたはclosed）に倒す。
-  // sessions（日付別）を持つイベントの、開催日を過ぎていない回と過ぎた回を分ける。
+  // sessions（日付別）を持つイベントを、予定・過去に分ける。日付が不正な回はどちらにも入れない。
+  // todayISOが取れない場合も、予定を「募集中」と誤認させないよう両方空にする。
   function splitSessions(ev, todayISO) {
     var upcoming = [], past = [];
     var list = ev.sessions || [];
+    if (!todayISO) return { upcoming: upcoming, past: past };
     for (var i = 0; i < list.length; i++) {
       var s = list[i];
-      if (isValidISODate(s.date) && todayISO && todayISO > s.date) past.push(s);
+      if (!s || !isValidISODate(s.date)) continue;
+      if (todayISO > s.date) past.push(s);
       else upcoming.push(s);
     }
     return { upcoming: upcoming, past: past };
@@ -100,10 +106,14 @@
 
   function computeEffectiveStatus(ev, todayISO) {
     if (ev.sessions && ev.sessions.length && ev.status !== "paused" && ev.status !== "finished") {
-      // 日付判定に失敗した場合は「募集中」と誤認させない安全側（finished）に倒す。
-      if (!todayISO) return "finished";
-      if (splitSessions(ev, todayISO).upcoming.length === 0) return "finished";
-      return ev.status || "upcoming";
+      var up = splitSessions(ev, todayISO).upcoming;
+      if (up.length === 0) return "finished";
+      // full/closedはイベント全体の明示的な上書き。それ以外は日付別の募集状態から導く。
+      if (ev.status === "full" || ev.status === "closed") return ev.status;
+      for (var k = 0; k < up.length; k++) {
+        if (up[k].status === "recruiting") return "recruiting";
+      }
+      return "upcoming";
     }
     if (ev.status === "paused" || ev.status === "finished") {
       return ev.status;
@@ -177,7 +187,8 @@
   function buildScheduleNote(ev, status) {
     if (status === "recruiting") {
       var lines = ["次回の活動を募集中です。"];
-      var next = splitSessions(ev, getTodayJST()).upcoming[0];
+      var ups = splitSessions(ev, getTodayJST()).upcoming, next = null;
+      for (var n = 0; n < ups.length && !next; n++) if (ups[n].status === "recruiting") next = ups[n];
       var when = next ? [next.label, next.time || "時間未定"].join(" ") : [ev.dateLabel, ev.timeLabel].filter(Boolean).join(" ");
       if (when) lines.push("直近の開催：" + when);
       if (ev.venue) lines.push(ev.venue);
@@ -226,7 +237,9 @@
       var li = document.createElement("li");
       var text = s.label + " " + (s.time || "時間未定");
       if (isPast) {
-        text += "（" + (s.result === "held" ? "開催済み" : s.result === "cancelled" ? "中止" : "日程終了") + "）";
+        text += "（" + (s.result === "held" ? "開催済み" : s.result === "cancelled" ? "中止" : "実施未確認") + "）";
+      } else {
+        text += s.status === "recruiting" ? "（募集中）" : "（開催予定・募集は未定）";
       }
       li.textContent = text;
       el.appendChild(li);
@@ -275,6 +288,8 @@
         renderSessionList(el, split.upcoming, false);
       } else if (field === "past-list") {
         renderSessionList(el, split.past, true);
+      } else if (field === "upcoming-block") {
+        el.hidden = split.upcoming.length === 0;
       } else if (field === "past-block") {
         el.hidden = split.past.length === 0;
       } else if (field === "dot") {
