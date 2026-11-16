@@ -12,17 +12,26 @@
       id: "baseball-next-activity",
       title: "キャッチボール会",
       date: null,
-      /* 10/31・11/14・11/28の複数日開催のため、単一date運用（自動finished判定）は使わない。
-         最後の11/28開催終了後、statusを手動で"finished"へ切り替えること（Issue #247・#349）。 */
-      dateLabel: "10/31（土）・11/14（土）・11/28（土）",
-      timeLabel: "13:00〜15:00",
+      /* 複数日開催のため単一date運用（自動finished判定）は使わず、sessions（日付別）で管理する。
+         開催日（date）を過ぎた回は自動で「過去の開催」へ移り、全回が過ぎるとfinishedになる。
+         time: null は「時間未定」。result: "held"=開催済み / "cancelled"=中止 / null=実施結果未確認
+         （nullの回は「開催済み」と書かず「日程終了」と表示する）。Issue #247・#349・#455 */
+      sessions: [
+        { date: "2026-10-31", label: "2026年10月31日（土）", time: "13:00〜15:00", result: null },
+        { date: "2026-11-14", label: "2026年11月14日（土）", time: "13:00〜15:00", result: null },
+        { date: "2026-11-28", label: "2026年11月28日（土）", time: "13:00〜15:00", result: null },
+        { date: "2026-12-19", label: "2026年12月19日（土）", time: null, result: null },
+        { date: "2027-01-09", label: "2027年1月9日（土）", time: null, result: null }
+      ],
+      dateLabel: null,
+      timeLabel: null,
       venue: "名古屋市内（公園・グラウンド）",
       fee: "基本無料",
       capacity: null,
       minimum: null,
       condition: "グローブ必須・ユニフォーム推奨",
       status: "recruiting",
-      url: "baseball/enquete_202609.html"
+      url: "contact/?category=baseball"
     }
   ];
 
@@ -77,7 +86,25 @@
   // closedは「新規受付は終了だが開催はする」状態のため、開催日を過ぎたらfinished（終了済み）へ
   // 移行させる。日付が無い/不正な場合はclosedのまま据え置く（申込不可のため誤認のリスクはない）。
   // 判定に失敗した場合は「申込可能」と誤認させない安全側（finishedまたはclosed）に倒す。
+  // sessions（日付別）を持つイベントの、開催日を過ぎていない回と過ぎた回を分ける。
+  function splitSessions(ev, todayISO) {
+    var upcoming = [], past = [];
+    var list = ev.sessions || [];
+    for (var i = 0; i < list.length; i++) {
+      var s = list[i];
+      if (isValidISODate(s.date) && todayISO && todayISO > s.date) past.push(s);
+      else upcoming.push(s);
+    }
+    return { upcoming: upcoming, past: past };
+  }
+
   function computeEffectiveStatus(ev, todayISO) {
+    if (ev.sessions && ev.sessions.length && ev.status !== "paused" && ev.status !== "finished") {
+      // 日付判定に失敗した場合は「募集中」と誤認させない安全側（finished）に倒す。
+      if (!todayISO) return "finished";
+      if (splitSessions(ev, todayISO).upcoming.length === 0) return "finished";
+      return ev.status || "upcoming";
+    }
     if (ev.status === "paused" || ev.status === "finished") {
       return ev.status;
     }
@@ -150,8 +177,9 @@
   function buildScheduleNote(ev, status) {
     if (status === "recruiting") {
       var lines = ["次回の活動を募集中です。"];
-      var when = [ev.dateLabel, ev.timeLabel].filter(Boolean).join(" ");
-      if (when) lines.push(when);
+      var next = splitSessions(ev, getTodayJST()).upcoming[0];
+      var when = next ? [next.label, next.time || "時間未定"].join(" ") : [ev.dateLabel, ev.timeLabel].filter(Boolean).join(" ");
+      if (when) lines.push("直近の開催：" + when);
       if (ev.venue) lines.push(ev.venue);
       lines.push("参加を検討している方は、事前に<a href=\"../contact/?category=baseball\">問い合わせフォーム</a>でご連絡ください。");
       return lines.join("<br>");
@@ -190,6 +218,21 @@
     }
   }
 
+  // 日付別リストを描画する。DOM生成はtextContentのみ（データ由来の文字列をHTMLとして解釈しない）。
+  function renderSessionList(el, sessions, isPast) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+    for (var i = 0; i < sessions.length; i++) {
+      var s = sessions[i];
+      var li = document.createElement("li");
+      var text = s.label + " " + (s.time || "時間未定");
+      if (isPast) {
+        text += "（" + (s.result === "held" ? "開催済み" : s.result === "cancelled" ? "中止" : "日程終了") + "）";
+      }
+      li.textContent = text;
+      el.appendChild(li);
+    }
+  }
+
   // eventIdに対応するDOM要素（[data-event-id][data-event-field]）をまとめて更新する。
   function render(eventId) {
     var ev = findEvent(eventId);
@@ -198,6 +241,7 @@
     var status = computeEffectiveStatus(ev, getTodayJST());
     var meta = STATUS_META[status] || STATUS_META.finished;
 
+    var split = splitSessions(ev, getTodayJST());
     var nodes = document.querySelectorAll('[data-event-id="' + eventId + '"]');
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
@@ -227,6 +271,12 @@
         el.textContent = meta.formHeading || "";
       } else if (field === "form-fallback-text") {
         el.textContent = meta.formMessage || "";
+      } else if (field === "upcoming-list") {
+        renderSessionList(el, split.upcoming, false);
+      } else if (field === "past-list") {
+        renderSessionList(el, split.past, true);
+      } else if (field === "past-block") {
+        el.hidden = split.past.length === 0;
       } else if (field === "dot") {
         el.classList.toggle("active", status === "recruiting" || status === "upcoming");
       } else {
@@ -238,6 +288,7 @@
   window.SNBEventStatus = {
     STATUS_META: STATUS_META,
     computeEffectiveStatus: computeEffectiveStatus,
+    splitSessions: splitSessions,
     getTodayJST: getTodayJST,
     findEvent: findEvent,
     render: render
