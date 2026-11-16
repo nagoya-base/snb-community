@@ -31,7 +31,7 @@ const items = (w, f) => Array.from(q(w, f).querySelectorAll('li')).map((li) => l
 let w = load('2026-11-16');
 let up = items(w, 'upcoming-list');
 assert(up.length === 3 && /11月28日.*13:00〜15:00（募集中）/.test(up[0]), '11/28は時間付きで募集中のまま');
-assert(/12月19日.*時間未定（開催予定・募集は未定）/.test(up[1]) && /2027年1月9日.*時間未定（開催予定・募集は未定）/.test(up[2]), '12/19・2027/1/9は時間未定で募集中と書かない');
+assert(/12月19日（土） 13:00開始（開催予定・募集は未定）/.test(up[1]) && /2027年1月9日（土） 13:00開始（開催予定・募集は未定）/.test(up[2]) && !/15:00/.test(up[1] + up[2]), '12/19・2027/1/9は13:00開始（終了時刻を推定せず）で募集中と書かない');
 let past = items(w, 'past-list');
 assert(past.length === 2 && past.every((t) => /実施未確認/.test(t) && !/開催済み/.test(t)), '実施未確認の回を「開催済み」と書かない');
 assert(/過去の日程/.test(q(w, 'past-block').textContent) && !q(w, 'past-block').hidden, '見出しは「過去の日程」');

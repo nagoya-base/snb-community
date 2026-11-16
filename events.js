@@ -16,15 +16,15 @@
          開催日（date）を過ぎた回は自動で「過去の日程」へ移り、全回が過ぎるとfinishedになる。
          session.status: "recruiting"=募集中 / "upcoming"=開催予定（募集・詳細は未確定）。
            申込CTAは、予定が残っていて募集中の回が1つ以上あるときだけ有効になる。
-         session.time: null は「時間未定」。
+         session.time: 表示用の文字列。終了時刻が未確定の回は「13:00開始」とし、終了時刻を推定しない。null は「時間未定」。
          session.result: "held"=開催済み / "cancelled"=中止 / null=実施未確認（「開催済み」とは書かない）。
          dateが不正な回は予定にも過去にも出さない。Issue #247・#349・#455 */
       sessions: [
         { date: "2026-10-31", label: "2026年10月31日（土）", time: "13:00〜15:00", status: "recruiting", result: null },
         { date: "2026-11-14", label: "2026年11月14日（土）", time: "13:00〜15:00", status: "recruiting", result: null },
         { date: "2026-11-28", label: "2026年11月28日（土）", time: "13:00〜15:00", status: "recruiting", result: null },
-        { date: "2026-12-19", label: "2026年12月19日（土）", time: null, status: "upcoming", result: null },
-        { date: "2027-01-09", label: "2027年1月9日（土）", time: null, status: "upcoming", result: null }
+        { date: "2026-12-19", label: "2026年12月19日（土）", time: "13:00開始", status: "upcoming", result: null },
+        { date: "2027-01-09", label: "2027年1月9日（土）", time: "13:00開始", status: "upcoming", result: null }
       ],
       dateLabel: null,
       timeLabel: null,
