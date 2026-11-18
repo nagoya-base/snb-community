@@ -15,7 +15,14 @@ const top = read('community/index.html');
 // ── 静的内容（広告向けの簡潔なLP） ──
 const text = new JSDOM(page.replace(/<script[\s\S]*?<\/script>/g, '')).window.document.body.textContent;
 assert(/2026年12月26日（土）/.test(text) && /17:00 開場／18:00〜21:00/.test(text), '日付・開場17:00／開催18:00〜21:00が表示される');
-assert(/Studio Nagoya Base（SNB）/.test(text) && /3,000円（固定）/.test(text) && /当日、現金またはPayPay/.test(text) && /定員7人|定員<\/dt>|7人/.test(text), '会場SNB・参加費3,000円固定（当日現金/PayPay）・定員7人を概要に表示');
+assert(/Studio Nagoya Base（SNB）/.test(text) && /<dt>参加費<\/dt><dd>3,000円<\/dd>/.test(page) && /<dt>定員<\/dt><dd>7人<\/dd>/.test(page), '会場SNB・「参加費 3,000円」・「定員7人」を概要に表示（注記なし）');
+// 料金表記は「3,000円」だけ（／人・税込・固定・当日現金/PayPay・事前決済なし等を広告・概要に付けない）
+const specs = page.slice(page.indexOf('class="ye-specs"'), page.indexOf('</dl>', page.indexOf('class="ye-specs"')));
+const cardTxt = top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500);
+const metas = (page.match(/<meta[^>]*(?:description|og:title|twitter:title)[^>]*>/g) || []).join('');
+assert(!/／人|税込|固定|当日|PayPay|現金|事前決済|値上げ/.test(specs + cardTxt.replace(/<a[^>]*>[^<]*<\/a>/g, '') + metas), '概要・トップのカード・OGP/メタ説明の料金に注記（／人・税込・固定・当日・PayPay・事前決済・値上げ）を付けない');
+assert(/参加費3,000円／定員7人/.test(cardTxt), 'トップのカードは「参加費3,000円／定員7人」');
+assert(!/参加費.{0,10}3,000円.{0,3}（/.test(metas), 'メタ説明の参加費は「参加費3,000円」のみ');
 assert(/<dt>定員<\/dt><dd>7人<\/dd>/.test(page), '定員表記は「7人」のみ');
 assert(!/主催者(を)?含/.test(page) && !/主催者(を)?含/.test(top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500)), '公開ページ・OGP・フォーム・トップのカードに「主催者含む」の注記を出さない');
 assert(/18歳以上/.test(text) && /ユニフォームを着用/.test(text), '参加条件（18歳以上・ユニフォーム着用）を簡潔に表示');
