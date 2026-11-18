@@ -158,6 +158,7 @@ function fill(w) {
   g.sheets.applications.rows[1][C.indexOf('status')] = 'キャンセル';
   assert(g.get('status').status === 'open' && g.ctx.canApprove(rows(), 7) === true, 'GAS：キャンセルで枠が戻り、満員が解除される');
   assert(g.post(base(1, { submission_id: 'sub-new00001' })).ok === true, 'GAS：キャンセル済みの連絡先は再応募できる');
+  assert(g.post(base(1)).duplicate === true && rows().length === 9, 'GAS：キャンセル後に同一submission_idを再送しても新規応募にならない');
 
   // 受付切替
   assert(makeGas('closed').post(base(1)).error === 'closed', 'GAS：受付終了中は拒否');

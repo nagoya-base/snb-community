@@ -120,8 +120,9 @@ function findDuplicate(rows, data) {
   var x = normalizeX(data.contact_x);
   for (var i = 0; i < rows.length; i++) {
     var r = rows[i];
-    if (r.status === STATUS_CANCELED) continue;
+    /* submission_idの一致は状態に関係なく判定する（キャンセル後の古い画面からの再送で復活させない）。 */
     if (r.submission_id === data.submission_id) return { type: 'same_submission', index: i };
+    if (r.status === STATUS_CANCELED) continue;
     if (email && normalizeEmail(r.contact_email) === email) return { type: 'same_contact', index: i };
     if (x && normalizeX(r.contact_x) === x) return { type: 'same_contact', index: i };
   }
