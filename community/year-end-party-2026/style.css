@@ -1,0 +1,66 @@
+/* 12/26 名古屋ユニ忘年会 特設ページ。common.css → contact/style.css（フォーム部品）→ 本ファイルの順に読み込む。 */
+:root { --accent: #1B2A4A; --accent-lt: #2E4373; --gold: #B8902F; --bg: #F6F0E6; }
+.container { max-width: 720px; }
+.ye-hero { padding: 3rem 0 1.5rem; }
+.ye-hero h1 { font-size: clamp(1.5rem, 6vw, 2.1rem); font-weight: 800; line-height: 1.4; }
+.ye-lead { margin-top: 1rem; font-size: 0.95rem; color: var(--text-muted); line-height: 1.95; }
+.ye-specs { margin: 1.5rem 0; background: var(--bg-card); border: 2px solid var(--accent); border-radius: 12px; padding: 1.25rem; }
+.ye-specs dl { display: grid; grid-template-columns: 7em 1fr; gap: 0.5rem 1rem; }
+.ye-specs dt { font-weight: 800; color: var(--accent); }
+.ye-specs dd { font-weight: 700; }
+.ye-specs small { display: block; font-weight: 400; color: var(--text-muted); font-size: 0.8rem; }
+.ye-cta { margin: 1.25rem 0 0; }
+.ye-status { margin: 1rem 0; padding: 0.9rem 1.1rem; border-radius: 8px; background: var(--bg-tint); font-weight: 700; font-size: 0.9rem; }
+.ye-status[data-state="open"] { background: #e6f4ea; color: #1e4620; }
+.ye-status[data-state="full"], .ye-status[data-state="closed"], .ye-status[data-state="cancelled"] { background: #fde7e7; color: #7a1f17; }
+.ye-section { padding: 2rem 0; border-top: 1px solid var(--border); }
+.ye-section h2 { font-size: 1.2rem; font-weight: 800; margin-bottom: 0.8rem; }
+.ye-section ul, .ye-section ol { padding-left: 1.3em; font-size: 0.92rem; }
+.ye-section li { margin-bottom: 0.4rem; }
+.ye-flow { list-style: none; padding: 0; }
+.ye-flow li { padding: 0.6rem 0; border-bottom: 1px solid var(--divider); }
+.ye-flow strong { display: inline-block; min-width: 5.5em; color: var(--accent); }
+.ye-faq dt { font-weight: 800; margin-top: 1rem; }
+.ye-faq dd { font-size: 0.9rem; color: var(--text-muted); }
+.contact-form__submit:disabled { opacity: 0.55; cursor: not-allowed; }
+.ye-form-disabled { opacity: 0.55; pointer-events: none; }
+@media (max-width: 480px) { .ye-specs dl { grid-template-columns: 1fr; gap: 0.1rem; } .ye-specs dd { margin-bottom: 0.6rem; } }
+
+/* ── キービジュアル（文字入り画像）。画像全体を常に表示し、cover での切り取りはしない ── */
+.ye-hero-image { background: #1c1612; }
+.ye-hero-image img { display: block; width: 100%; max-width: 1600px; height: auto; margin: 0 auto; aspect-ratio: 16 / 9; }
+.ye-h1 { /* 画像内に同じ文字があるため視覚的には隠す（見出し構造・SEO・スクリーンリーダー用に残す） */
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.ye-hero { padding-top: 1.5rem; }
+.ye-specs { border-color: var(--gold); }
+.ye-specs dt { color: var(--gold); }
+.ye-section h2 { border-left: 4px solid var(--gold); padding-left: 0.6rem; }
+.ye-flow strong { color: var(--gold); }
+.ye-thumb { display: block; width: 100%; max-width: 480px; height: auto; border-radius: 8px; margin-bottom: 0.75rem; }
+
+/* ── 応募方法の2択 ── */
+.ye-apply-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1rem 0; }
+.ye-choice { text-align: center; padding: 1rem 0.75rem; }
+.btn-outline { background: transparent; color: var(--accent); border-color: var(--accent); }
+.btn-outline:hover { background: var(--accent); color: #fff; }
+.ye-choice--disabled { opacity: 0.5; pointer-events: none; }
+.ye-dm-guide { margin: 1.25rem 0 2rem; padding: 1rem 1.1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; }
+.ye-dm-guide h3, #apply-form { font-size: 1rem; font-weight: 800; margin-bottom: 0.5rem; }
+#apply-form { margin-top: 1.5rem; }
+.ye-dm-guide p { margin-bottom: 0.6rem; }
+@media (max-width: 480px) { .ye-apply-choices { grid-template-columns: 1fr; } }
+
+/* ── 広告向けLP：簡潔なコピーに合わせた調整 ── */
+.ye-lead { font-size: 1rem; color: var(--text); margin-top: 0; }
+.ye-specs { margin: 1.25rem 0; }
+.ye-specs dl { grid-template-columns: 4em 1fr; }
+.ye-specs dd { font-size: 1.02rem; }
+.ye-choice small { display: block; font-size: 0.78rem; font-weight: 600; opacity: 0.85; margin-top: 0.1rem; }
+.ye-after { font-size: 0.85rem; color: var(--text-muted); margin: 0.25rem 0 0; }
+.ye-terms { padding: 1.25rem 0; }
+.ye-status { margin: 0 0 0.75rem; padding: 0.6rem 0.9rem; font-size: 0.88rem; }
+.ye-dm-guide { margin: 0 0 1.75rem; }
+#apply-form { font-size: 1.1rem; margin-top: 0; scroll-margin-top: 70px; }
+.ye-section h2#apply-form { margin-bottom: 0.8rem; }
+.ye-dm-guide h3 { font-size: 1rem; }
