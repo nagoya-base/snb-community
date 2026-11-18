@@ -26,7 +26,9 @@ assert(!/参加費.{0,10}3,000円.{0,3}（/.test(metas), 'メタ説明の参加�
 assert(/<dt>定員<\/dt><dd>7人<\/dd>/.test(page), '定員表記は「7人」のみ');
 assert(!/主催者(を)?含/.test(page) && !/主催者(を)?含/.test(top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500)), '公開ページ・OGP・フォーム・トップのカードに「主催者含む」の注記を出さない');
 assert(/18歳以上/.test(text) && /ユニフォームを着用/.test(text), '参加条件（18歳以上・ユニフォーム着用）を簡潔に表示');
-assert(/community-rules\.html#cancellation/.test(page) && /参加費は人数が変わっても3,000円のまま/.test(text) && /キャンセルは.*SNB規約に従います/.test(text), 'キャンセルはSNB規約に従い、参加費は人数が変わっても3,000円（1か所に集約）');
+assert(/community-rules\.html#cancellation/.test(page) && /キャンセルは.*SNB規約に従います/.test(text), 'キャンセルはSNB規約に従う（参加条件の1か所のみ）');
+assert(!/人数が変わっても|人数が減っても|値上げ|3,000円のまま|固定/.test(text + (page.match(/(?:alt|placeholder|content)="[^"]*"/g) || []).join('') + top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500).replace(/<[^>]+>/g, '')), '「参加費は人数が変わっても3,000円のまま」等の固定・値上げ説明を特設ページ・フォーム・トップのカードに出さない');
+assert((text.match(/3,000円/g) || []).length === 1, '料金表示は「参加費 3,000円」の1回のみ');
 assert(/id="ye-age18"[^>]*required/.test(page), '18歳以上の確認が必須');
 assert(/今年の締めくくりに、野球ユニで集まろう。好きなユニフォームで、気軽に楽しむ忘年会。/.test(text) && /野球好きもユニフォーム好きも歓迎/.test(text), '短い誘い文と「野球好きもユニフォーム好きも歓迎」');
 assert(/12\/26（土）名古屋ユニ忘年会⚾/.test(page) && !/🍻/.test(page), '見出しに🍻を使わない');
