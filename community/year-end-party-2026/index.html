@@ -73,7 +73,8 @@
       </dl>
     </div>
 
-    <p id="ye-status" class="ye-status" data-state="loading" role="status">受付状況を確認しています…</p>
+    <p id="ye-status" class="ye-status" data-state="open" role="status">受付状況を確認しています…</p>
+    <p class="form-hint">受付状況（募集中／満員／受付終了）は、主催者が手動で更新しています。リアルタイムの自動集計ではありません。</p>
     <p class="ye-cta"><a href="#apply" class="btn btn-primary" data-cta-name="year_end_apply" data-cta-location="hero">応募フォームへ進む</a></p>
   </header>
 
@@ -121,24 +122,31 @@
     <div class="form-notice"><p><strong>送信時点では参加は確定しません。</strong>主催者が内容を確認し、参加可否を個別にご連絡します。</p></div>
 
     <form id="ye-form" class="contact-form" novalidate>
-      <input type="text" name="website" class="contact-form__honey" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <!-- FormSubmit設定用（既存 contact/index.html と同じ送信方式・同じ運営宛て） -->
+      <input type="hidden" name="_subject" value="【SNB Community】12/26 名古屋ユニ忘年会 応募">
+      <input type="hidden" name="_template" value="table">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="イベント名" value="12/26（土）名古屋ユニ忘年会">
+      <input type="hidden" name="開催日時" value="2026年12月26日（土）17:00開場／18:00開始〜21:00終了">
+      <input type="hidden" name="イベントID" value="year-end-party-2026">
+      <input type="text" name="_honey" class="contact-form__honey" tabindex="-1" autocomplete="off" aria-hidden="true">
 
       <fieldset class="consult-form__fieldset" id="ye-fieldset">
         <legend>応募内容</legend>
 
         <div class="form-field">
-          <span class="form-field__label">イベント</span>
+          <span class="form-field__label">イベント（自動設定）</span>
           <p>12/26（土）名古屋ユニ忘年会（17:00開場／18:00〜21:00）</p>
         </div>
 
         <div class="form-field">
           <label for="ye-name">お名前またはハンドルネーム <span class="required-mark">必須</span></label>
-          <input type="text" id="ye-name" name="display_name" required maxlength="30" autocomplete="name">
+          <input type="text" id="ye-name" name="お名前" required maxlength="30" autocomplete="name">
         </div>
 
         <div class="form-field">
           <label for="ye-age">年代 <span class="required-mark">必須</span></label>
-          <select id="ye-age" name="age_group" required>
+          <select id="ye-age" name="年代" required>
             <option value="" selected disabled>選択してください</option>
             <option>10代</option><option>20代</option><option>30代</option>
             <option>40代</option><option>50代</option><option>60代以上</option>
@@ -149,7 +157,7 @@
 
         <div class="form-field">
           <label for="ye-email">メールアドレス <span class="optional-mark">任意</span></label>
-          <input type="email" id="ye-email" name="contact_email" maxlength="200" autocomplete="email">
+          <input type="email" id="ye-email" name="メールアドレス" maxlength="200" autocomplete="email">
         </div>
 
         <div class="form-field form-field--carrier-notice" id="ye-carrier-field" hidden>
@@ -163,15 +171,15 @@
 
         <div class="form-field">
           <label for="ye-x">Xアカウント <span class="optional-mark">任意</span></label>
-          <input type="text" id="ye-x" name="contact_x" maxlength="200" placeholder="@baseballuni2022" autocomplete="off">
+          <input type="text" id="ye-x" name="Xアカウント" maxlength="200" placeholder="@baseballuni2022" autocomplete="off">
         </div>
 
         <div class="form-field">
           <span class="form-field__label">希望する返信方法 <span class="required-mark">必須</span></span>
           <div class="radio-group">
-            <label class="radio-option"><input type="radio" name="preferred_contact" value="メール" required> メール</label>
-            <label class="radio-option"><input type="radio" name="preferred_contact" value="XのDM" required> XのDM</label>
-            <label class="radio-option"><input type="radio" name="preferred_contact" value="どちらでもよい" required> どちらでもよい</label>
+            <label class="radio-option"><input type="radio" name="希望する返信方法" value="メール" required> メール</label>
+            <label class="radio-option"><input type="radio" name="希望する返信方法" value="XのDM" required> XのDM</label>
+            <label class="radio-option"><input type="radio" name="希望する返信方法" value="どちらでもよい" required> どちらでもよい</label>
           </div>
           <p class="form-hint">XのDMを希望する場合は、Xアカウントを入力してください。</p>
         </div>
@@ -179,19 +187,19 @@
         <div class="form-field">
           <span class="form-field__label">野球ユニフォームの持参 <span class="required-mark">必須</span></span>
           <div class="radio-group">
-            <label class="radio-option"><input type="radio" name="has_uniform" value="持参できる" required> 持参できる</label>
-            <label class="radio-option"><input type="radio" name="has_uniform" value="持参できない・相談したい" required> 持参できない・相談したい</label>
+            <label class="radio-option"><input type="radio" name="野球ユニフォームの持参" value="持参できる" required> 持参できる</label>
+            <label class="radio-option"><input type="radio" name="野球ユニフォームの持参" value="持参できない・相談したい" required> 持参できない・相談したい</label>
           </div>
         </div>
 
         <div class="form-field">
           <label for="ye-message">好きな野球ユニフォーム・参加動機・ご連絡事項 <span class="required-mark">必須</span></label>
-          <textarea id="ye-message" name="message" rows="5" required maxlength="500" placeholder="好きなチームやユニフォーム、参加したい理由などをご記入ください（500字まで）。"></textarea>
+          <textarea id="ye-message" name="好きな野球ユニフォーム・参加動機・ご連絡事項" rows="5" required maxlength="500" placeholder="好きなチームやユニフォーム、参加したい理由などをご記入ください（500字まで）。"></textarea>
         </div>
 
         <div class="form-field">
           <label class="checkbox-option checkbox-option--agree">
-            <input type="checkbox" id="ye-agree" name="agree_terms" required>
+            <input type="checkbox" id="ye-agree" name="同意事項" value="同意する" required>
             <span><a href="../../legal/community-rules.html" target="_blank" rel="noopener noreferrer">イベント参加の心得</a>を確認し、参加費3,000円を当日現金またはPayPayで支払うこと、応募内容が参加確定の連絡のために使われることに同意します。 <span class="required-mark">必須</span></span>
           </label>
         </div>
@@ -199,7 +207,7 @@
 
       <button type="submit" class="btn btn-primary contact-form__submit" id="ye-submit">応募する</button>
       <p class="form-error" id="ye-submit-error" hidden role="alert" tabindex="-1"></p>
-      <p class="form-privacy-note">入力された情報は、参加可否の判断と参加確定の連絡のためにのみ使用し、第三者へ提供しません。イベント終了後、運営が定めた期間内に削除します。</p>
+      <p class="form-privacy-note">入力された情報は、参加可否の判断と参加確定の連絡のためにのみ使用し、本人の同意なく第三者へ提供しません。</p>
     </form>
 
     <div class="form-result form-result--success" id="ye-success" hidden tabindex="-1" aria-live="polite">
@@ -231,28 +239,22 @@
 (function () {
   'use strict';
 
-  var EVENT_ID = 'year-end-party-2026';
-  /* デプロイ後に専用GASの /exec URL へ置き換える。プレースホルダーのままの間は「準備中」表示で送信不可。 */
-  var GAS_ENDPOINT_URL = 'PLACEHOLDER_REPLACE_WITH_YEAR_END_PARTY_GAS_EXEC_URL';
+  /* ── 受付状況（主催者が手動で切り替える） ──
+     'open'（募集中）／'full'（満員）／'closed'（受付終了）／'cancelled'（開催中止）のいずれかに書き換えてコミットする。
+     自動で人数を数える仕組みはない。満員・受付終了・開催中止のときはフォームを送信できない。 */
+  var ENTRY_STATUS = 'open';
+
+  /* 既存の問い合わせフォーム（contact/index.html）と同じFormSubmit送信先。新しい宛先は追加しない。 */
+  var FORM_ENDPOINT = 'https://formsubmit.co/ajax/bbuni.ngo@gmail.com';
   var FORM_NAME = 'year_end_party_2026';
 
   var STATUS_TEXT = {
-    preparing: '応募受付は準備中です。受付開始までしばらくお待ちください。',
-    open: '応募受付中（定員7人・主催者承認制）',
+    open: '募集中（定員7人・主催者が確認のうえ個別にご連絡します）',
     full: '満員のため、応募受付を終了しました。',
     closed: '応募受付は終了しました。',
-    cancelled: '開催中止となりました。',
-    unknown: '受付状況を確認できませんでした。時間をおいて再読み込みしてください。'
-  };
-  var ERROR_TEXT = {
-    full: '満員のため受け付けできませんでした。',
-    closed: '応募受付は終了しています。',
-    cancelled: '開催中止のため受け付けできません。',
-    already_applied: 'この連絡先では既に応募を受け付けています。主催者からの連絡をお待ちください。',
-    busy: '混み合っています。少し時間をおいて、もう一度お試しください。'
+    cancelled: '開催中止となりました。'
   };
 
-  var configured = GAS_ENDPOINT_URL.indexOf('PLACEHOLDER_REPLACE_WITH') === -1;
   var form = document.getElementById('ye-form');
   var statusEl = document.getElementById('ye-status');
   var submitBtn = document.getElementById('ye-submit');
@@ -263,37 +265,18 @@
   var xField = document.getElementById('ye-x');
   var carrierField = document.getElementById('ye-carrier-field');
   var carrierCheckbox = document.getElementById('ye-carrier-ack');
-  var methodRadios = form.querySelectorAll('input[name="preferred_contact"]');
+  var methodRadios = form.querySelectorAll('input[name="希望する返信方法"]');
   var analytics = window.SNBAnalytics;
-  var openedAt = Date.now();
   var inFlight = false;
-  var currentState = 'unknown';
+  var submitted = false;
 
-  function makeSubmissionId() {
-    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
-    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
-  }
-  /* ページ表示ごとに1つ。再送（通信エラー後の再試行）でも同じIDなので、サーバー側で二重保存されない。 */
-  var submissionId = makeSubmissionId();
-
-  function applyState(state) {
-    currentState = state;
-    statusEl.textContent = STATUS_TEXT[state] || STATUS_TEXT.unknown;
-    statusEl.setAttribute('data-state', state);
-    var accepting = state === 'open';
-    submitBtn.disabled = !accepting || inFlight;
-    fieldset.disabled = !accepting;
-    form.classList.toggle('ye-form-disabled', !accepting);
-  }
-
-  if (!configured) {
-    applyState('preparing');
-  } else {
-    applyState('unknown');
-    fetch(GAS_ENDPOINT_URL + '?action=status')
-      .then(function (r) { return r.json(); })
-      .then(function (j) { applyState(j && j.ok && STATUS_TEXT[j.status] ? j.status : 'unknown'); })
-      .catch(function () { applyState('unknown'); });
+  var state = STATUS_TEXT.hasOwnProperty(ENTRY_STATUS) ? ENTRY_STATUS : 'closed'; /* 不正値は安全側 */
+  statusEl.textContent = STATUS_TEXT[state];
+  statusEl.setAttribute('data-state', state);
+  if (state !== 'open') {
+    submitBtn.disabled = true;
+    fieldset.disabled = true;
+    form.classList.add('ye-form-disabled');
   }
 
   function methodValue() {
@@ -310,7 +293,7 @@
     if (hasEmail) carrierCheckbox.setAttribute('required', 'required');
     else { carrierCheckbox.removeAttribute('required'); carrierCheckbox.checked = false; }
     if (!hasEmail && !hasX) { emailField.setCustomValidity('メールアドレスまたはXアカウントのどちらかを入力してください。'); return; }
-    if (xField.value.trim() !== '' && !/^@?[A-Za-z0-9_]{1,15}$/.test(xField.value.trim())) xField.setCustomValidity('Xアカウントは英数字とアンダースコアで入力してください（例：@baseballuni2022）。');
+    if (hasX && !/^@?[A-Za-z0-9_]{1,15}$/.test(xField.value.trim())) xField.setCustomValidity('Xアカウントは英数字とアンダースコアで入力してください（例：@baseballuni2022）。');
     if (preferred === 'メール' && !hasEmail) emailField.setCustomValidity('メールでの返信を希望する場合は、メールアドレスを入力してください。');
     if (preferred === 'XのDM' && !hasX) xField.setCustomValidity('XのDMでの返信を希望する場合は、Xアカウントを入力してください。');
   }
@@ -323,67 +306,43 @@
     if (!startFired) { startFired = true; if (analytics) analytics.trackFormStart(FORM_NAME); }
   });
 
-  function checked(name) {
-    var el = form.querySelector('input[name="' + name + '"]:checked');
-    return el ? el.value : '';
-  }
-  function showError(msg) {
-    errorEl.textContent = msg;
-    errorEl.hidden = false;
-    errorEl.focus();
+  function setSubmitting(on) {
+    submitBtn.disabled = on || state !== 'open';
+    submitBtn.textContent = on ? '送信中…' : '応募する';
   }
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    if (inFlight || currentState !== 'open') return;
+    if (inFlight || submitted || state !== 'open') return; /* 二重送信防止 */
     errorEl.hidden = true;
     updateContactValidity();
     if (!form.reportValidity()) { if (analytics) analytics.trackFormError(FORM_NAME, 'required'); return; }
 
     inFlight = true;
-    submitBtn.disabled = true;
-    submitBtn.textContent = '送信中…';
+    setSubmitting(true);
+    var token = Date.now() + '-' + Math.random().toString(36).slice(2);
 
-    var payload = {
-      event_id: EVENT_ID,
-      submission_id: submissionId,
-      display_name: form.elements.display_name.value.trim(),
-      age_group: form.elements.age_group.value,
-      contact_email: emailField.value.trim(),
-      contact_x: xField.value.trim(),
-      preferred_contact: checked('preferred_contact'),
-      has_uniform: checked('has_uniform'),
-      message: form.elements.message.value.trim(),
-      agree_terms: form.elements.agree_terms.checked === true,
-      website: form.elements.website.value,
-      elapsed_ms: Date.now() - openedAt
-    };
-
-    fetch(GAS_ENDPOINT_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-    })
+    fetch(FORM_ENDPOINT, { method: 'POST', body: new FormData(form), headers: { Accept: 'application/json' } })
       .then(function (r) {
         if (!r.ok) { var err = new Error('server'); err.kind = 'server'; throw err; }
         return r.json();
       })
-      .then(function (res) {
-        if (!res || res.ok !== true) { var err = new Error('rejected'); err.kind = (res && res.error) || 'unknown'; throw err; }
+      .then(function () {
+        submitted = true;
+        inFlight = false;
+        if (analytics) analytics.trackGenerateLead(token, { lead_type: FORM_NAME, form_name: FORM_NAME });
         form.hidden = true;
         successEl.hidden = false;
         successEl.focus();
         successEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        if (analytics && res.duplicate !== true) analytics.trackGenerateLead(submissionId, { lead_type: FORM_NAME, form_name: FORM_NAME });
       })
       .catch(function (err) {
         inFlight = false;
-        var kind = (err && err.kind) || 'network';
-        if (analytics) analytics.trackFormError(FORM_NAME, kind);
-        if (kind === 'full' || kind === 'closed' || kind === 'cancelled') applyState(kind);
-        submitBtn.textContent = '応募する';
-        submitBtn.disabled = currentState !== 'open';
-        showError(ERROR_TEXT[kind] || '送信に失敗しました。通信環境をご確認のうえ、もう一度お試しください。改善しない場合はお問い合わせフォームからご連絡ください。');
+        if (analytics) analytics.trackFormError(FORM_NAME, (err && err.kind) || 'network');
+        setSubmitting(false);
+        errorEl.textContent = '送信中にエラーが発生しました。通信環境をご確認のうえ、時間をおいて再度お試しください。改善しない場合は、お問い合わせフォームまたはXのプロフィールからご連絡ください。';
+        errorEl.hidden = false;
+        errorEl.focus();
       });
   });
 })();
