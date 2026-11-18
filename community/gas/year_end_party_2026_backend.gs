@@ -23,7 +23,8 @@
  * ══ 初回デプロイ手順 ══
  * 1. 新規のGoogleスプレッドシートを作成（このイベント専用。他シートとは別）。
  * 2. 「拡張機能」→「Apps Script」にこのファイルの内容を貼り付ける。
- * 3. 関数 setupSheets() を1回実行（applications / config シートと状態のプルダウンを作成）。
+ * 3. 関数 setupSheets() を1回実行（applications / config シートと状態のプルダウンを作成し、スプレッドシートIDを
+   Script Properties の SPREADSHEET_ID に保存する。IDはリポジトリに書かない。未設定の間、公開ハンドラは not_configured を返し受付不可）。
  * 4. トリガー設定で installable トリガーを追加：関数 onEditGuard を「スプレッドシートから」「編集時」。
  *    （直接セル編集による定員超過承認を防ぐ。承認はメニュー経由を推奨）
  * 5. 「デプロイ」→「新しいデプロイ」→ウェブアプリ（実行ユーザー：自分／アクセス：全員）。
@@ -32,6 +33,18 @@
  *    （設定されるまで、フォームは「準備中」表示で送信できない）。
  * 7. /exec?action=status を開き {"ok":true,"status":"open"} を確認 → 実際に1件送信して applications を確認。
  *
+ * ══ 実GAS E2E チェックリスト（デプロイ後・マージ前に運営が実施） ══
+ *  □ /exec?action=status が {"ok":true,"status":"open"}（ID未設定なら not_configured になること）
+ *  □ ページから1件POST → applications に「応募受付」で保存／完了画面に「参加確定は個別連絡」と表示
+ *  □ 同じ連絡先で再応募 → 拒否される／同じ画面から二重送信しても1行のまま
+ *  □ メニュー「承認（参加確定）」で状態が承認済みになる
+ *  □ 承認済み7人で /exec?action=status が full、フォームが満員表示・送信不可
+ *  □ 8人目の承認がメニュー・セル直接編集・複数行貼り付けのいずれでも拒否される
+ *  □ 1人をキャンセル → status が open に戻り、キャンセル待ちから承認できる
+ *  □ config を closed / cancelled に変更 → フォームが受付終了／開催中止表示
+ *  □ ログアウト状態・別Googleアカウント・iPhone Safariで、ページ表示・送信・完了表示が動く
+ *  □ 開催後に全件削除を実施し、個人情報列が空になる
+ *
  * ══ 運営手順 ══
  * ・確認：applications シートの新着行（状態「応募受付」）を確認し、メニュー「忘年会管理」→「確認中にする」。
  * ・参加確定：行を選択 →「承認（参加確定）」。承認後、主催者が指定連絡方法（メール／XのDM）で個別通知する。
@@ -39,8 +52,10 @@
  * ・見送り／キャンセル／キャンセル待ち：同メニューから。キャンセルで枠が空いたら、キャンセル待ちから承認する。
  * ・受付切替：config シートの entry_status を open / closed / cancelled に変更
  *   （closed＝受付終了、cancelled＝開催中止）。承認済みが定員に達すると自動で「満員」表示になる。
- * ・削除：メニュー「個人情報を削除」で選択行の氏名・連絡先・メッセージを消去（状態・日時のみ残す）。
- *   保持期間の運用案：開催日（2026-12-26）の翌日から30日以内に全行を消去する（運営確認の上で確定）。
+ * ・削除：メニュー「選択行の個人情報を削除」「全件の個人情報を削除（開催後）」。消去列は PURGE_COLUMNS
+ *   （submission_id・氏名・年代・連絡先・返信方法・ユニ持参・メッセージ・同意・運営メモ）。残すのは受付日時・
+ *   event_id・状態・状態更新日時のみ。全件削除は entry_status を closed/cancelled にした後、確認ダイアログで DELETE 入力が必要。
+ *   保持期限（案）：開催日（2026-12-26）の翌日から30日以内＝2027-01-25まで。確定は運営確認。
  *
  * ══ スパム・重複対策 ══
  * ・honeypot（website）が埋まっている送信は保存せず成功を装う。
@@ -147,6 +162,14 @@ function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
+/* Webアプリ実行時は紐づくスプレッドシートを暗黙取得せず、Script Properties の SPREADSHEET_ID で明示的に開く
+   （IDはsetupSheets()が保存する。リポジトリにはIDをハードコードしない）。未設定・取得不可なら null＝受付不可。 */
+function getSpreadsheet() {
+  var id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  if (!id) return null;
+  try { return SpreadsheetApp.openById(id); } catch (err) { return null; }
+}
+
 function readRows(sheet) {
   var values = sheet.getDataRange().getValues();
   var rows = [];
@@ -178,7 +201,8 @@ function hasExpectedHeader(sheet) {
 function doGet(e) {
   var action = e && e.parameter && e.parameter.action;
   if (action === 'status') {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getSpreadsheet();
+    if (!ss) return jsonResponse({ ok: false, error: 'not_configured' });
     var sheet = ss.getSheetByName(APPLICATIONS_SHEET);
     var approved = sheet && hasExpectedHeader(sheet) ? countApproved(readRows(sheet)) : 0;
     return jsonResponse({ ok: true, status: resolvePublicStatus(readConfigStatus(ss), approved) });
@@ -196,7 +220,8 @@ function doPost(e) {
   var lock = LockService.getScriptLock();
   try { lock.waitLock(20000); } catch (err) { return jsonResponse({ ok: false, error: 'busy' }); }
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getSpreadsheet();
+    if (!ss) return jsonResponse({ ok: false, error: 'not_configured' });
     var sheet = ss.getSheetByName(APPLICATIONS_SHEET);
     if (!sheet || !hasExpectedHeader(sheet)) return jsonResponse({ ok: false, error: 'header_mismatch' });
     var rows = readRows(sheet);
@@ -233,7 +258,8 @@ function onOpen() {
     .addItem('キャンセル待ちにする', 'markWaitlist')
     .addItem('キャンセルにする', 'markCanceled')
     .addSeparator()
-    .addItem('個人情報を削除', 'purgeSelected')
+    .addItem('選択行の個人情報を削除', 'purgeSelected')
+    .addItem('全件の個人情報を削除（開催後）', 'purgeAll')
     .addToUi();
 }
 
@@ -316,15 +342,52 @@ function onEditGuard(e) {
   }
 }
 
+/* 削除時に消去する列。残すのは timestamp / event_id / status / status_updated_at のみ。
+   age_group・has_uniform・preferred_contact・submission_id は、少人数（最大約10行）では個人の特定や
+   再送の突合に使えるため、個人情報と同様に消去する。 */
+var PURGE_COLUMNS = [
+  'submission_id', 'display_name', 'age_group', 'contact_email', 'contact_x',
+  'preferred_contact', 'has_uniform', 'message', 'agree_terms', 'organizer_note'
+];
+
+function purgeRowValues(row) {
+  return row.map(function (v, c) { return PURGE_COLUMNS.indexOf(COLUMNS[c]) !== -1 ? '' : v; });
+}
+
 function purgeSelected() {
   var sel = selectedRowOrAlert();
   if (!sel) return;
-  var cols = ['display_name', 'contact_email', 'contact_x', 'message', 'organizer_note'];
-  cols.forEach(function (k) { sel.sheet.getRange(sel.row, COLUMNS.indexOf(k) + 1).setValue(''); });
+  var range = sel.sheet.getRange(sel.row, 1, 1, COLUMNS.length);
+  range.setValues([purgeRowValues(range.getValues()[0])]);
+}
+
+/* 開催後の全件削除。実施前に config の entry_status を closed/cancelled にしておくこと（削除後の再送を受け付けないため）。
+   運用期限（案）：開催日2026-12-26の翌日から30日以内＝2027-01-25まで。確定は運営確認。
+   誤操作防止のため、確認ダイアログで「DELETE」と入力した場合のみ実行する。 */
+function purgeAll() {
+  var ui = SpreadsheetApp.getUi();
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(APPLICATIONS_SHEET);
+  if (!sheet || sheet.getLastRow() < 2) { ui.alert('削除対象の行がありません。'); return; }
+  if (resolvePublicStatus(readConfigStatus(ss), 0) === 'open') { ui.alert('先に config の entry_status を closed または cancelled にしてください。'); return; }
+  var n = sheet.getLastRow() - 1;
+  var res = ui.prompt('全' + n + '件の個人情報（氏名・連絡先・年代・メッセージ等）を削除します。元に戻せません。実行するなら DELETE と入力してください。');
+  if (res.getResponseText() !== 'DELETE') { ui.alert('キャンセルしました。'); return; }
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var range = sheet.getRange(2, 1, n, COLUMNS.length);
+    range.setValues(range.getValues().map(purgeRowValues));
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
+  ui.alert(n + '件の個人情報を削除しました。残るのは受付日時・状態のみです。');
 }
 
 function setupSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', ss.getId());
   var sheet = ss.getSheetByName(APPLICATIONS_SHEET) || ss.insertSheet(APPLICATIONS_SHEET);
   if (sheet.getLastRow() > 0 && !hasExpectedHeader(sheet)) throw new Error('applications に既存データがあり、ヘッダーが一致しません。');
   sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);

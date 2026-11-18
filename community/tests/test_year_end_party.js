@@ -114,12 +114,15 @@ function fill(w) {
   assert(ids.length === 2 && ids[0] === ids[1], '再試行でも同一submission_id（サーバー側で二重保存されない）');
 
   // ── GASバックエンド ──
-  function makeGas(configStatus) {
+  function makeGas(configStatus, propId) {
+    const props = { id: propId === undefined ? 'SHEET_ID_FOR_TEST' : propId };
+    const opened = [];
     const sheets = {};
     const flushes = { n: 0 };
     const mk = (rows) => ({ rows, getLastRow() { return this.rows.length; }, getDataRange() { return { getValues: () => this.rows.map((r) => r.slice()) }; }, getRange(r, c, nr, nc) { const self = this; return { getValues: () => [self.rows[r - 1].slice(c - 1, c - 1 + nc)] }; }, appendRow(a) { this.rows.push(a); } });
     const ctx = {
-      SpreadsheetApp: { flush() { flushes.n++; }, getActiveSpreadsheet: () => ({ getSheetByName: (n) => sheets[n] || null }) },
+      SpreadsheetApp: { flush() { flushes.n++; }, openById(id) { opened.push(id); if (id !== 'SHEET_ID_FOR_TEST') throw new Error('not found'); return { getSheetByName: (n) => sheets[n] || null }; } },
+      PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => (k === 'SPREADSHEET_ID' ? props.id : null) }) },
       LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
       ContentService: { MimeType: { JSON: 'json' }, createTextOutput: (s) => ({ s, setMimeType() { return this; }, getContent() { return this.s; } }) }
     };
@@ -128,7 +131,7 @@ function fill(w) {
     sheets.config = mk([['entry_status', configStatus || 'open']]);
     const post = (o) => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(o) } }).getContent());
     const get = (a) => JSON.parse(ctx.doGet({ parameter: { action: a } }).getContent());
-    return { ctx, sheets, post, get, flushes };
+    return { ctx, sheets, post, get, flushes, opened };
   }
   const base = (i, extra) => Object.assign({ event_id: 'year-end-party-2026', submission_id: 'sub-0000000' + i, display_name: '太郎' + i, age_group: '30代', contact_email: 'u' + i + '@example.com', contact_x: '', preferred_contact: 'メール', has_uniform: '持参できる', message: 'よろしく', agree_terms: true, website: '' }, extra || {});
 
@@ -168,6 +171,20 @@ function fill(w) {
   const mixed = mk(['承認済み', '承認済み', '承認済み', '承認済み', '承認済み', '応募受付', '承認済み', '承認済み']);
   assert(JSON.stringify(g.ctx.overCapacityIndexes(mixed, 5, 7)) === '[]' && g.ctx.countApproved(mixed) === 7, 'GAS：既存5人＋貼り付け2人（計7人）は許可');
   assert(JSON.stringify(g.ctx.overCapacityIndexes(mk(['承認済み', '承認済み', '承認済み', '承認済み', '承認済み', '承認済み', '承認済み', '承認済み']), 7, 7)) === '[7]', 'GAS：既存7人に1人追加は取り消す');
+
+  // Webアプリはシートを明示的に openById で開く（ID未設定・不正なら受付不可）
+  assert(g.opened.length > 0 && g.opened.every((id) => id === 'SHEET_ID_FOR_TEST'), 'GAS：Script PropertiesのIDで openById する');
+  assert(!/getActiveSpreadsheet/.test(gasSrc.slice(gasSrc.indexOf('function doGet'), gasSrc.indexOf('/* ── 主催者操作'))), 'GAS：公開ハンドラ（doGet/doPost）が getActiveSpreadsheet を使わない');
+  assert(!/SHEET_ID_FOR_TEST|docs\.google\.com\/spreadsheets\/d\//.test(gasSrc), 'GAS：スプレッドシートIDをソースにハードコードしない');
+  let un = makeGas('open', null);
+  assert(un.post(base(1)).error === 'not_configured' && un.sheets.applications.rows.length === 1, 'GAS：ID未設定ではPOSTを保存せず not_configured');
+  assert(un.get('status').ok === false && un.get('status').error === 'not_configured', 'GAS：ID未設定ではstatusも not_configured（公開側は受付不可表示）');
+  assert(makeGas('open', 'WRONG_ID').post(base(1)).error === 'not_configured', 'GAS：不正なIDでも受付不可（安全側）');
+
+  // 削除：個人情報列をすべて消し、受付日時・状態のみ残す
+  const pr = g.ctx.purgeRowValues(g.sheets.applications.rows[1]);
+  const kept = g.ctx.COLUMNS.filter((c, i) => pr[i] !== '');
+  assert(JSON.stringify(kept.sort()) === JSON.stringify(['event_id', 'status', 'status_updated_at', 'timestamp'].sort()), 'GAS：削除後に残る列は受付日時・event_id・状態・状態更新日時のみ（' + kept.join(',') + '）');
 
   // 受付切替
   assert(makeGas('closed').post(base(1)).error === 'closed', 'GAS：受付終了中は拒否');
