@@ -52,6 +52,33 @@ assert(!/飲食|飲み物|食べ物|持ち寄り|ビール/.test(top.slice(top.i
 assert(/community\/year-end-party-2026\//.test(read('sitemap.xml')), 'sitemapに特設ページがある');
 assert(/year_end_party_2026/.test(read('contact/index.html')), 'contactのevent labelに追加（既存mapは維持）');
 
+// 参加費は固定（人数変動による再計算は本イベントに適用しない）。一般規約ファイルは変更しない
+assert(/3,000円固定/.test(text) && /値上げしません/.test(text), '参加費3,000円固定・人数が減っても値上げしないことを明記');
+assert(/人数変動による残参加者の参加費の再計算」は本イベントには適用せず/.test(text), 'FAQで規約の人数再計算を本イベントに適用しない旨を明記');
+assert(/人数変動による参加費の再計算は本イベントに適用されず、参加費は3,000円固定/.test(text), 'フォーム同意文に3,000円固定の例外を明記');
+assert(/community-rules\.html#cancellation/.test(page) && /キャンセル料の条件はSNB規約に従います/.test(text), 'キャンセル料の条件はSNB規約に従う（人数再計算のみ除外）');
+assert(/3,000円／人・固定/.test(top), 'トップのカードも3,000円固定');
+assert(!/PayPay.{0,20}(ID|QR)/.test(page), 'PayPay受取情報を載せない');
+
+// ── 画像（Hero=WebP / OGP=JPEG、正本は images/community/year-end-party-2026/） ──
+const imgDir = path.join(root, 'images', 'community', 'year-end-party-2026');
+const heroBuf = fs.readFileSync(path.join(imgDir, 'hero.webp'));
+const ogpBuf = fs.readFileSync(path.join(imgDir, 'ogp.jpg'));
+assert(heroBuf.slice(0, 4).toString() === 'RIFF' && heroBuf.slice(8, 12).toString() === 'WEBP', 'hero.webp は実ファイルとしてWebP');
+assert(ogpBuf[0] === 0xff && ogpBuf[1] === 0xd8, 'ogp.jpg は実ファイルとしてJPEG');
+function jpegSize(b) { let i = 2; while (i < b.length) { if (b[i] !== 0xff) { i++; continue; } const m = b[i + 1]; if (m >= 0xc0 && m <= 0xc3) return [b.readUInt16BE(i + 7), b.readUInt16BE(i + 5)]; i += 2 + b.readUInt16BE(i + 2); } }
+assert(JSON.stringify(jpegSize(ogpBuf)) === '[1200,630]', 'ogp.jpg は1200x630');
+assert(heroBuf.toString('latin1', 12, 16) === 'VP8 ' || heroBuf.toString('latin1', 12, 16) === 'VP8X' || heroBuf.toString('latin1', 12, 16) === 'VP8L', 'hero.webp のフォーマットが有効');
+assert(!fs.existsSync(path.join(root, 'images', 'community', 'nagoya-uniform-yearend-2026-hero.jpg')) && !fs.existsSync(path.join(root, 'images', 'community', 'nagoya-uniform-yearend-2026-ogp.jpg')), '旧パスの重複画像を残さない');
+const OGP_URL = 'https://nagoya-base.github.io/snb-community/images/community/year-end-party-2026/ogp.jpg';
+assert(page.includes('property="og:image" content="' + OGP_URL + '"') && page.includes('name="twitter:image" content="' + OGP_URL + '"'), 'og:image / twitter:image がogp.jpgの公開絶対URL');
+assert(/og:image:width" content="1200"/.test(page) && /og:image:height" content="630"/.test(page) && /og:image:alt/.test(page), 'og:image のwidth/height/altがある');
+assert(/<img src="\.\.\/\.\.\/images\/community\/year-end-party-2026\/hero\.webp"[^>]*width="1600" height="900"[^>]*fetchpriority="high"/.test(page), 'Heroはhero.webp・寸法指定・高優先度');
+assert(/class="ye-h1"/.test(page) && /\.ye-h1[^}]*clip/.test(read('community/year-end-party-2026/style.css')), '画像内の文字と重複するh1は視覚的に隠す（構造は維持）');
+assert(!/object-fit:\s*cover/.test(read('community/year-end-party-2026/style.css')), 'Heroにobject-fit: coverを使わない（スマホで顔・文字が切れない）');
+assert(/images\/community\/year-end-party-2026\/hero\.webp/.test(top) && /loading="lazy"/.test(top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 900)), 'トップのカードは同じ正本を遅延読込で参照');
+assert(!/飲食|飲み物|食べ物|持ち寄り|ビール|ソフトドリンク/.test(page.match(/<img[^>]*alt="[^"]*"/g).join('')), '画像altに飲食を書かない');
+
 // 方針訂正：GAS・スプレッドシート等の管理基盤は作らない
 assert(!fs.existsSync(path.join(root, 'community', 'gas', 'year_end_party_2026_backend.gs')), 'GASバックエンドが存在しない');
 assert(!/script\.google\.com|PropertiesService|spreadsheet/i.test(page), 'ページがGAS・スプレッドシートを参照しない');

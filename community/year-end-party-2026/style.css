@@ -1,5 +1,5 @@
 /* 12/26 名古屋ユニ忘年会 特設ページ。common.css → contact/style.css（フォーム部品）→ 本ファイルの順に読み込む。 */
-:root { --accent: #C62828; --accent-lt: #E53935; }
+:root { --accent: #1B2A4A; --accent-lt: #2E4373; --gold: #B8902F; --bg: #F6F0E6; }
 .container { max-width: 720px; }
 .ye-hero { padding: 3rem 0 1.5rem; }
 .ye-hero h1 { font-size: clamp(1.5rem, 6vw, 2.1rem); font-weight: 800; line-height: 1.4; }
@@ -25,3 +25,16 @@
 .contact-form__submit:disabled { opacity: 0.55; cursor: not-allowed; }
 .ye-form-disabled { opacity: 0.55; pointer-events: none; }
 @media (max-width: 480px) { .ye-specs dl { grid-template-columns: 1fr; gap: 0.1rem; } .ye-specs dd { margin-bottom: 0.6rem; } }
+
+/* ── キービジュアル（文字入り画像）。画像全体を常に表示し、cover での切り取りはしない ── */
+.ye-hero-image { background: #1c1612; }
+.ye-hero-image img { display: block; width: 100%; max-width: 1600px; height: auto; margin: 0 auto; aspect-ratio: 16 / 9; }
+.ye-h1 { /* 画像内に同じ文字があるため視覚的には隠す（見出し構造・SEO・スクリーンリーダー用に残す） */
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.ye-hero { padding-top: 1.5rem; }
+.ye-specs { border-color: var(--gold); }
+.ye-specs dt { color: var(--gold); }
+.ye-section h2 { border-left: 4px solid var(--gold); padding-left: 0.6rem; }
+.ye-flow strong { color: var(--gold); }
+.ye-thumb { display: block; width: 100%; max-width: 480px; height: auto; border-radius: 8px; margin-bottom: 0.75rem; }
