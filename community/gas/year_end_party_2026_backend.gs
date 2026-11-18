@@ -218,6 +218,7 @@ function doPost(e) {
     sheet.appendRow(COLUMNS.map(function (k) { return record[k]; }));
     return jsonResponse({ ok: true });
   } finally {
+    SpreadsheetApp.flush(); // ロック解放前に書き込みを確定させる（次の実行が最新の承認数を読めるように）
     lock.releaseLock();
   }
 }
@@ -268,6 +269,7 @@ function changeSelectedStatus(newStatus) {
     sel.sheet.getRange(sel.row, statusCol).setValue(newStatus);
     sel.sheet.getRange(sel.row, statusCol + 1).setValue(new Date());
   } finally {
+    SpreadsheetApp.flush(); // ロック解放前に書き込みを確定させる（次の実行が最新の承認数を読めるように）
     lock.releaseLock();
   }
 }
@@ -309,6 +311,7 @@ function onEditGuard(e) {
     });
     SpreadsheetApp.getActiveSpreadsheet().toast('定員' + CAPACITY + '人に達しているため、超過分の承認を取り消しました。', '忘年会管理', 8);
   } finally {
+    SpreadsheetApp.flush(); // ロック解放前に書き込みを確定させる（次の実行が最新の承認数を読めるように）
     lock.releaseLock();
   }
 }

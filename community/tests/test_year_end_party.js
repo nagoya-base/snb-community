@@ -116,9 +116,10 @@ function fill(w) {
   // ── GASバックエンド ──
   function makeGas(configStatus) {
     const sheets = {};
+    const flushes = { n: 0 };
     const mk = (rows) => ({ rows, getLastRow() { return this.rows.length; }, getDataRange() { return { getValues: () => this.rows.map((r) => r.slice()) }; }, getRange(r, c, nr, nc) { const self = this; return { getValues: () => [self.rows[r - 1].slice(c - 1, c - 1 + nc)] }; }, appendRow(a) { this.rows.push(a); } });
     const ctx = {
-      SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: (n) => sheets[n] || null }) },
+      SpreadsheetApp: { flush() { flushes.n++; }, getActiveSpreadsheet: () => ({ getSheetByName: (n) => sheets[n] || null }) },
       LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
       ContentService: { MimeType: { JSON: 'json' }, createTextOutput: (s) => ({ s, setMimeType() { return this; }, getContent() { return this.s; } }) }
     };
@@ -127,12 +128,12 @@ function fill(w) {
     sheets.config = mk([['entry_status', configStatus || 'open']]);
     const post = (o) => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(o) } }).getContent());
     const get = (a) => JSON.parse(ctx.doGet({ parameter: { action: a } }).getContent());
-    return { ctx, sheets, post, get };
+    return { ctx, sheets, post, get, flushes };
   }
   const base = (i, extra) => Object.assign({ event_id: 'year-end-party-2026', submission_id: 'sub-0000000' + i, display_name: '太郎' + i, age_group: '30代', contact_email: 'u' + i + '@example.com', contact_x: '', preferred_contact: 'メール', has_uniform: '持参できる', message: 'よろしく', agree_terms: true, website: '' }, extra || {});
 
   let g = makeGas('open');
-  assert(g.post(base(1)).ok === true, 'GAS：正常な応募を保存');
+  assert(g.post(base(1)).ok === true && g.flushes.n === 1, 'GAS：正常な応募を保存し、ロック解放前にflushする');
   const col = (name) => g.ctx.COLUMNS.indexOf(name);
   assert(g.sheets.applications.rows[1][col('status')] === '応募受付', 'GAS：保存直後の状態は「応募受付」（自動承認しない）');
   assert(g.post(base(1)).duplicate === true && g.sheets.applications.rows.length === 2, 'GAS：同一submission_idの再送は保存しない');
