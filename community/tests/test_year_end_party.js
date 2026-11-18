@@ -15,7 +15,10 @@ const top = read('community/index.html');
 // ── 静的内容 ──
 const text = new JSDOM(page).window.document.body.textContent;
 assert(/2026年12月26日（土）/.test(text) && /17:00 開場／18:00 開始〜21:00 終了/.test(text), '日付・開場17:00／開始18:00／終了21:00が表示される');
-assert(/Studio Nagoya Base（SNB）/.test(text) && /3,000円／人/.test(text) && /定員[\s\S]{0,4}7人/.test(text), '会場SNB・参加費3,000円・定員7人が表示される');
+assert(/Studio Nagoya Base（SNB）/.test(text) && /3,000円／人/.test(text) && /定員[\s\S]{0,4}7人（主催者含む）/.test(text), '会場SNB・参加費3,000円・定員7人（主催者含む）が表示される');
+assert(/18歳以上/.test(text) && /ユニフォーム着用/.test(text), '参加資格18歳以上・ユニフォーム着用のドレスコードを表示');
+assert(/community-rules\.html#cancellation/.test(page) && /SNB規約/.test(text), 'キャンセルはSNB規約に従う旨とリンクがある');
+assert(/id="ye-age18"[^>]*required/.test(page), '18歳以上の確認が必須');
 assert(/当日、現金またはPayPay/.test(text) && /事前決済はありません/.test(text), '当日現金またはPayPay払い・事前決済なしの表記');
 assert(/野球好きもユニフォーム好きも歓迎/.test(text), '「野球好きもユニフォーム好きも歓迎」を明記');
 assert(/12\/26（土）名古屋ユニ忘年会⚾/.test(text) && !/🍻/.test(page), '見出しに🍻を使わない');
@@ -78,6 +81,7 @@ function fill(w, over) {
   d.querySelector('input[name="野球ユニフォームの持参"][value="持参できる"]').checked = true;
   d.getElementById('ye-message').value = '好きなチームはドラゴンズです';
   d.getElementById('ye-agree').checked = true;
+  d.getElementById('ye-age18').checked = true;
   d.getElementById('ye-email').dispatchEvent(new w.Event('input'));
   d.getElementById('ye-carrier-ack').checked = true;
   if (over) over(d);
@@ -111,13 +115,30 @@ const submit = (w) => w.document.getElementById('ye-form').dispatchEvent(new w.E
   submit(w); await tick();
   assert(c2 === 0, '返信方法がメールなのにメール未入力なら送信されない');
 
-  // 満員／受付終了／開催中止／不正値：フォーム送信不可
-  [['full', /満員/], ['closed', /受付は終了/], ['cancelled', /開催中止/], ['bogus', /受付は終了/]].forEach(([st, re]) => {
+  // 定員到達（full）：キャンセル待ちとして受け付ける。受付終了／開催中止／不正値は送信不可
+  {
+    let fc = [];
+    const wf = loadPage('full', (u, o) => { fc.push(o); return Promise.resolve({ ok: true, json: () => Promise.resolve({}) }); });
+    assert(!wf.document.getElementById('ye-submit').disabled && /キャンセル待ち/.test(wf.document.getElementById('ye-status').textContent) && /キャンセル待ちで応募/.test(wf.document.getElementById('ye-submit').textContent), 'full：キャンセル待ちとして応募可能な表示');
+    fill(wf); submit(wf); await tick();
+    assert(fc.length === 1 && fc[0].body.get('応募区分') === 'キャンセル待ち', 'full：応募区分「キャンセル待ち」がメールに載る');
+  }
+  assert(calls[0].opt.body.get('応募区分') === '通常応募' && calls[0].opt.body.get('18歳以上の確認') === '18歳以上です', 'open：応募区分は通常応募・18歳以上の確認も送信');
+  [['closed', /受付は終了/], ['cancelled', /開催中止/], ['bogus', /受付は終了/]].forEach(([st, re]) => {
     let n = 0;
     const ww = loadPage(st, () => { n++; return Promise.resolve({ ok: true, json: () => Promise.resolve({}) }); });
     fill(ww); submit(ww);
-    assert(ww.document.getElementById('ye-submit').disabled && re.test(ww.document.getElementById('ye-status').textContent), st + '：フォーム無効・状態表示');
+    assert(ww.document.getElementById('ye-submit').disabled && re.test(ww.document.getElementById('ye-status').textContent) && n === 0, st + '：フォーム無効・状態表示・送信されない');
   });
+
+  // 18歳以上の確認が無ければ送信されない
+  {
+    let n18 = 0;
+    const w18 = loadPage(null, () => { n18++; return Promise.resolve({ ok: true, json: () => Promise.resolve({}) }); });
+    fill(w18, (d) => { d.getElementById('ye-age18').checked = false; });
+    submit(w18); await tick();
+    assert(n18 === 0, '18歳以上の確認が無ければ送信されない');
+  }
 
   // 通信エラー：エラー表示、再送可能
   let n = 0;
