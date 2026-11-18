@@ -88,7 +88,7 @@
 
     <p id="ye-status" class="ye-status" data-state="open" role="status">受付状況を確認しています…</p>
     <p class="form-hint">受付状況（募集中／キャンセル待ち／受付終了）は、主催者が手動で更新しています。リアルタイムの自動集計ではありません。</p>
-    <p class="ye-cta"><a href="#apply" class="btn btn-primary" data-cta-name="year_end_apply" data-cta-location="hero">応募フォームへ進む</a></p>
+    <p class="ye-cta"><a href="#apply" class="btn btn-primary" data-cta-name="year_end_apply" data-cta-location="hero">応募方法を見る</a></p>
   </header>
 
   <section class="ye-section" id="about" data-section-view="about">
@@ -133,8 +133,30 @@
     </ul>
   </section>
 
-  <section class="ye-section" id="apply" data-section-view="apply_form">
-    <h2>応募フォーム</h2>
+  <section class="ye-section" id="apply" data-section-view="apply">
+    <h2>応募方法（2通り）</h2>
+    <p class="form-hint">どちらの方法でも、主催者が内容を確認して参加可否を個別にご連絡します。<strong>フォームやDMを送っただけでは参加確定ではありません。</strong>定員（7人・主催者含む）はフォームとDMの合計で主催者が管理します。</p>
+    <div class="ye-apply-choices">
+      <a href="#apply-form" class="btn btn-primary ye-choice" id="ye-cta-form" data-cta-name="year_end_apply_form" data-cta-location="apply_choice">フォームから応募</a>
+      <a href="https://x.com/baseballuni2022" class="btn btn-outline ye-choice" id="ye-cta-dm" target="_blank" rel="noopener noreferrer" data-cta-name="year_end_apply_x_dm" data-cta-location="apply_choice">XのDMで応募</a>
+    </div>
+    <p class="ye-status ye-dm-status" id="ye-dm-status" data-state="open" role="status"></p>
+
+    <div class="ye-dm-guide" id="ye-dm-guide">
+      <h3>XのDMで応募する場合</h3>
+      <p>上のボタンで <a href="https://x.com/baseballuni2022" target="_blank" rel="noopener noreferrer">@baseballuni2022</a> のプロフィールを開き、DMを送ってください。<strong>リンクを押しただけでは応募になりません。</strong>DMを送信して初めて応募として受け付けます（DMを送れない設定の場合は、フォームからご応募ください）。</p>
+      <p>DMには次の内容を書いてください。フォームへの再入力は不要です。</p>
+      <ul>
+        <li>「12/26 名古屋ユニ忘年会に応募します」</li>
+        <li>お名前またはハンドルネーム</li>
+        <li>年代（参加は18歳以上の方に限ります）</li>
+        <li>野球ユニフォームの持参可否（持参が難しい場合はご相談ください）</li>
+        <li>好きな野球ユニフォーム・参加動機・ご連絡事項</li>
+        <li><a href="../../legal/community-rules.html" target="_blank" rel="noopener noreferrer">イベント参加の心得</a>を確認し、キャンセル料はSNB規約に従い（参加費は3,000円固定）、参加費を当日現金またはPayPayで支払うことへの同意</li>
+      </ul>
+    </div>
+
+    <h3 id="apply-form">フォームから応募する場合</h3>
     <div class="form-notice"><p><strong>送信時点では参加は確定しません。</strong>主催者が内容を確認し、参加可否を個別にご連絡します。</p></div>
 
     <form id="ye-form" class="contact-form" novalidate>
@@ -298,6 +320,28 @@
   var state = STATUS_TEXT.hasOwnProperty(ENTRY_STATUS) ? ENTRY_STATUS : 'closed'; /* 不正値は安全側 */
   statusEl.textContent = STATUS_TEXT[state];
   statusEl.setAttribute('data-state', state);
+
+  /* XのDM応募もフォームと同じ ENTRY_STATUS に従う（DMだけ常に受付中、という誤解を防ぐ）。 */
+  var DM_STATUS_TEXT = {
+    open: 'DMでの応募も受付中です（フォームと同じ定員7人・主催者含む。主催者が確認のうえ個別にご連絡します）。',
+    full: '定員に達したため、DMでの応募もキャンセル待ちとしての受付になります。',
+    closed: '応募受付は終了しました。DMでの応募も受け付けていません。',
+    cancelled: '開催中止となりました。DMでの応募も受け付けていません。'
+  };
+  var dmStatusEl = document.getElementById('ye-dm-status');
+  var dmCta = document.getElementById('ye-cta-dm');
+  var dmGuide = document.getElementById('ye-dm-guide');
+  dmStatusEl.textContent = DM_STATUS_TEXT[state];
+  dmStatusEl.setAttribute('data-state', state);
+  if (state === 'full') dmCta.textContent = 'XのDMでキャンセル待ち応募';
+  if (state === 'closed' || state === 'cancelled') {
+    dmCta.removeAttribute('href');
+    dmCta.setAttribute('aria-disabled', 'true');
+    dmCta.classList.add('ye-choice--disabled');
+    dmGuide.hidden = true;
+    document.getElementById('ye-cta-form').classList.add('ye-choice--disabled');
+    document.getElementById('ye-cta-form').setAttribute('aria-disabled', 'true');
+  }
   var acceptsEntries = state === 'open' || state === 'full';
   if (state === 'full') {
     document.getElementById('ye-entry-type').value = 'キャンセル待ち';

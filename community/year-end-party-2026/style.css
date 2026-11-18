@@ -38,3 +38,15 @@
 .ye-section h2 { border-left: 4px solid var(--gold); padding-left: 0.6rem; }
 .ye-flow strong { color: var(--gold); }
 .ye-thumb { display: block; width: 100%; max-width: 480px; height: auto; border-radius: 8px; margin-bottom: 0.75rem; }
+
+/* ── 応募方法の2択 ── */
+.ye-apply-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1rem 0; }
+.ye-choice { text-align: center; padding: 1rem 0.75rem; }
+.btn-outline { background: transparent; color: var(--accent); border-color: var(--accent); }
+.btn-outline:hover { background: var(--accent); color: #fff; }
+.ye-choice--disabled { opacity: 0.5; pointer-events: none; }
+.ye-dm-guide { margin: 1.25rem 0 2rem; padding: 1rem 1.1rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; }
+.ye-dm-guide h3, #apply-form { font-size: 1rem; font-weight: 800; margin-bottom: 0.5rem; }
+#apply-form { margin-top: 1.5rem; }
+.ye-dm-guide p { margin-bottom: 0.6rem; }
+@media (max-width: 480px) { .ye-apply-choices { grid-template-columns: 1fr; } }

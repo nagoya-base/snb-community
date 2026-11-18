@@ -131,6 +131,33 @@ const submit = (w) => w.document.getElementById('ye-form').dispatchEvent(new w.E
   submit(w); await tick();
   assert(calls.length === 1, '成功後の再送信は行われない');
 
+  // 応募窓口は2通り：フォーム／XのDM（どちらも主催者承認・定員は合算・受付状態に連動）
+  {
+    const d = new JSDOM(page).window.document;
+    const f = d.getElementById('ye-cta-form'); const x = d.getElementById('ye-cta-dm');
+    assert(f && x && /フォームから応募/.test(f.textContent) && /XのDMで応募/.test(x.textContent) && f.parentNode === x.parentNode, '「フォームから応募」「XのDMで応募」が並列のCTAとして並ぶ');
+    assert(f.getAttribute('href') === '#apply-form' && d.getElementById('apply-form'), 'フォームCTAはフォーム見出しへ誘導');
+    assert(x.getAttribute('href') === 'https://x.com/baseballuni2022' && x.getAttribute('target') === '_blank' && /noopener/.test(x.getAttribute('rel')), 'DM CTAはXプロフィール（https://x.com/baseballuni2022）を新規タブで開く');
+    assert(!/intent\/|messages\/compose/.test(page), 'DMのディープリンクは使わない（プロフィールへ確実に遷移）');
+    const guide = d.getElementById('ye-dm-guide').textContent;
+    assert(/リンクを押しただけでは応募になりません/.test(guide) && /DMを送信して初めて/.test(guide), 'リンクを押しただけで送信済みと誤認させない');
+    ['お名前またはハンドルネーム', '年代', '18歳以上', '野球ユニフォームの持参可否', '参加動機'].forEach((k) => assert(guide.indexOf(k) !== -1, 'DM案内に審査項目：' + k));
+    assert(/フォームへの再入力は不要/.test(guide), 'DM応募者にフォーム再入力を強制しない');
+    const apply = d.getElementById('apply').textContent;
+    assert(/どちらの方法でも、主催者が内容を確認して参加可否を個別にご連絡/.test(apply) && /フォームやDMを送っただけでは参加確定ではありません/.test(apply), '両経路とも主催者承認・送信だけでは確定しない');
+    assert(/フォームとDMの合計で主催者が管理/.test(apply), '定員7人（主催者含む）は両経路の合算で管理');
+    assert(!/飲食|飲み物|食べ物|持ち寄り|ビール/.test(guide), 'DM案内にも飲食を書かない');
+    assert(/@baseballuni2022/.test(top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500)), 'トップのカードにもDM窓口を表示');
+  }
+  for (const [st, formRe, dmRe, dmOpen] of [['open', /募集中/, /DMでの応募も受付中/, true], ['full', /キャンセル待ち/, /DMでの応募もキャンセル待ち/, true], ['closed', /受付は終了/, /DMでの応募も受け付けていません/, false], ['cancelled', /開催中止/, /DMでの応募も受け付けていません/, false], ['bogus', /受付は終了/, /DMでの応募も受け付けていません/, false]]) {
+    const ww = loadPage(st);
+    const d = ww.document;
+    const dm = d.getElementById('ye-cta-dm');
+    assert(formRe.test(d.getElementById('ye-status').textContent) && dmRe.test(d.getElementById('ye-dm-status').textContent), st + '：フォームとDMの公開案内が矛盾しない');
+    assert(dmOpen ? (dm.getAttribute('href') === 'https://x.com/baseballuni2022' && !d.getElementById('ye-dm-guide').hidden) : (!dm.hasAttribute('href') && dm.getAttribute('aria-disabled') === 'true' && d.getElementById('ye-dm-guide').hidden), st + '：DM導線の有効/無効がフォームと一致');
+  }
+  assert(/キャンセル待ち応募/.test(loadPage('full').document.getElementById('ye-cta-dm').textContent), 'full：DM CTAも「キャンセル待ち応募」表示');
+
   // バリデーション：連絡先なし／返信方法と連絡先の矛盾は送信されない
   let c2 = 0;
   w = loadPage(null, () => { c2++; return Promise.resolve({ ok: true, json: () => Promise.resolve({}) }); });
