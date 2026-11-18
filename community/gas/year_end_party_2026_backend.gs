@@ -272,21 +272,42 @@ function changeSelectedStatus(newStatus) {
   }
 }
 
-/* 直接セル編集で承認済みにされた場合も、定員超過なら元の値へ戻す（installableトリガー）。 */
+/* 編集範囲（rows配列のindex first〜last）内の承認済みのうち、定員を超える行のindexを返す（先頭から定員内まで残す）。 */
+function overCapacityIndexes(rows, first, last) {
+  var kept = 0;
+  for (var i = 0; i < rows.length; i++) {
+    if ((i < first || i > last) && rows[i].status === STATUS_APPROVED) kept++;
+  }
+  var revert = [];
+  for (var k = first; k <= last && k < rows.length; k++) {
+    if (rows[k].status !== STATUS_APPROVED) continue;
+    if (kept < CAPACITY) kept++; else revert.push(k);
+  }
+  return revert;
+}
+
+/* 直接セル編集・貼り付けで承認済みにされた場合も、定員超過分は元へ戻す（installableトリガー）。
+   編集範囲がstatus列と交差すれば対象（複数列・複数行の貼り付けを含む）。 */
 function onEditGuard(e) {
   var range = e && e.range;
   if (!range || range.getSheet().getName() !== APPLICATIONS_SHEET) return;
-  if (range.getColumn() !== COLUMNS.indexOf('status') + 1 || range.getRow() < 2) return;
+  var statusCol = COLUMNS.indexOf('status') + 1;
+  if (range.getColumn() > statusCol || range.getColumn() + range.getNumColumns() - 1 < statusCol) return;
+  var firstRow = Math.max(range.getRow(), 2);
+  var lastRow = range.getRow() + range.getNumRows() - 1;
+  if (lastRow < firstRow) return;
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
     var sheet = range.getSheet();
     var rows = readRows(sheet);
-    var idx = range.getRow() - 2;
-    if (rows[idx].status === STATUS_APPROVED && !canApprove(rows, idx)) {
-      range.setValue(e.oldValue || STATUS_RECEIVED);
-      SpreadsheetApp.getActiveSpreadsheet().toast('定員' + CAPACITY + '人に達しているため承認できません。', '忘年会管理', 8);
-    }
+    var revert = overCapacityIndexes(rows, firstRow - 2, lastRow - 2);
+    if (!revert.length) return;
+    var single = range.getNumRows() === 1 && range.getNumColumns() === 1;
+    revert.forEach(function (idx) {
+      sheet.getRange(idx + 2, statusCol).setValue(single && e.oldValue ? e.oldValue : STATUS_RECEIVED);
+    });
+    SpreadsheetApp.getActiveSpreadsheet().toast('定員' + CAPACITY + '人に達しているため、超過分の承認を取り消しました。', '忘年会管理', 8);
   } finally {
     lock.releaseLock();
   }

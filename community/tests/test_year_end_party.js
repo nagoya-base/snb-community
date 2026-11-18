@@ -160,6 +160,14 @@ function fill(w) {
   assert(g.post(base(1, { submission_id: 'sub-new00001' })).ok === true, 'GAS：キャンセル済みの連絡先は再応募できる');
   assert(g.post(base(1)).duplicate === true && rows().length === 9, 'GAS：キャンセル後に同一submission_idを再送しても新規応募にならない');
 
+  // 貼り付け（複数行）で定員超過：先頭から7人だけ残し、超過分を戻す
+  const mk = (st) => st.map((x) => ({ status: x }));
+  const all8 = mk(Array(10).fill('承認済み'));
+  assert(JSON.stringify(g.ctx.overCapacityIndexes(all8, 0, 9)) === '[7,8,9]', 'GAS：10行貼り付けで承認済み8〜10行目を取り消す');
+  const mixed = mk(['承認済み', '承認済み', '承認済み', '承認済み', '承認済み', '応募受付', '承認済み', '承認済み']);
+  assert(JSON.stringify(g.ctx.overCapacityIndexes(mixed, 5, 7)) === '[]' && g.ctx.countApproved(mixed) === 7, 'GAS：既存5人＋貼り付け2人（計7人）は許可');
+  assert(JSON.stringify(g.ctx.overCapacityIndexes(mk(['承認済み', '承認済み', '承認済み', '承認済み', '承認済み', '承認済み', '承認済み', '承認済み']), 7, 7)) === '[7]', 'GAS：既存7人に1人追加は取り消す');
+
   // 受付切替
   assert(makeGas('closed').post(base(1)).error === 'closed', 'GAS：受付終了中は拒否');
   assert(makeGas('cancelled').post(base(1)).error === 'cancelled', 'GAS：開催中止中は拒否');
