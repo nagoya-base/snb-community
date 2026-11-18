@@ -15,7 +15,9 @@ const top = read('community/index.html');
 // ── 静的内容（広告向けの簡潔なLP） ──
 const text = new JSDOM(page.replace(/<script[\s\S]*?<\/script>/g, '')).window.document.body.textContent;
 assert(/2026年12月26日（土）/.test(text) && /17:00 開場／18:00〜21:00/.test(text), '日付・開場17:00／開催18:00〜21:00が表示される');
-assert(/Studio Nagoya Base（SNB）/.test(text) && /3,000円（固定）/.test(text) && /当日、現金またはPayPay/.test(text) && /7人（主催者含む）/.test(text), '会場SNB・参加費3,000円固定（当日現金/PayPay）・定員7人（主催者含む）を概要に表示');
+assert(/Studio Nagoya Base（SNB）/.test(text) && /3,000円（固定）/.test(text) && /当日、現金またはPayPay/.test(text) && /定員7人|定員<\/dt>|7人/.test(text), '会場SNB・参加費3,000円固定（当日現金/PayPay）・定員7人を概要に表示');
+assert(/<dt>定員<\/dt><dd>7人<\/dd>/.test(page), '定員表記は「7人」のみ');
+assert(!/主催者(を)?含/.test(page) && !/主催者(を)?含/.test(top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500)), '公開ページ・OGP・フォーム・トップのカードに「主催者含む」の注記を出さない');
 assert(/18歳以上/.test(text) && /ユニフォームを着用/.test(text), '参加条件（18歳以上・ユニフォーム着用）を簡潔に表示');
 assert(/community-rules\.html#cancellation/.test(page) && /参加費は人数が変わっても3,000円のまま/.test(text) && /キャンセルは.*SNB規約に従います/.test(text), 'キャンセルはSNB規約に従い、参加費は人数が変わっても3,000円（1か所に集約）');
 assert(/id="ye-age18"[^>]*required/.test(page), '18歳以上の確認が必須');
