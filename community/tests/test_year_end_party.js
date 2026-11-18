@@ -12,25 +12,32 @@ function assert(cond, msg) { if (!cond) { console.error('FAIL:', msg); failures+
 const page = read('community/year-end-party-2026/index.html');
 const top = read('community/index.html');
 
-// ── 静的内容 ──
-const text = new JSDOM(page).window.document.body.textContent;
-assert(/2026年12月26日（土）/.test(text) && /17:00 開場／18:00 開始〜21:00 終了/.test(text), '日付・開場17:00／開始18:00／終了21:00が表示される');
-assert(/Studio Nagoya Base（SNB）/.test(text) && /3,000円／人/.test(text) && /定員[\s\S]{0,4}7人（主催者含む）/.test(text), '会場SNB・参加費3,000円・定員7人（主催者含む）が表示される');
-assert(/18歳以上/.test(text) && /ユニフォーム着用/.test(text), '参加資格18歳以上・ユニフォーム着用のドレスコードを表示');
-assert(/community-rules\.html#cancellation/.test(page) && /SNB規約/.test(text), 'キャンセルはSNB規約に従う旨とリンクがある');
+// ── 静的内容（広告向けの簡潔なLP） ──
+const text = new JSDOM(page.replace(/<script[\s\S]*?<\/script>/g, '')).window.document.body.textContent;
+assert(/2026年12月26日（土）/.test(text) && /17:00 開場／18:00〜21:00/.test(text), '日付・開場17:00／開催18:00〜21:00が表示される');
+assert(/Studio Nagoya Base（SNB）/.test(text) && /3,000円（固定）/.test(text) && /当日、現金またはPayPay/.test(text) && /7人（主催者含む）/.test(text), '会場SNB・参加費3,000円固定（当日現金/PayPay）・定員7人（主催者含む）を概要に表示');
+assert(/18歳以上/.test(text) && /ユニフォームを着用/.test(text), '参加条件（18歳以上・ユニフォーム着用）を簡潔に表示');
+assert(/community-rules\.html#cancellation/.test(page) && /参加費は人数が変わっても3,000円のまま/.test(text) && /キャンセルは.*SNB規約に従います/.test(text), 'キャンセルはSNB規約に従い、参加費は人数が変わっても3,000円（1か所に集約）');
 assert(/id="ye-age18"[^>]*required/.test(page), '18歳以上の確認が必須');
-assert(/当日、現金またはPayPay/.test(text) && /事前決済はありません/.test(text), '当日現金またはPayPay払い・事前決済なしの表記');
-assert(/野球好きもユニフォーム好きも歓迎/.test(text), '「野球好きもユニフォーム好きも歓迎」を明記');
-assert(/12\/26（土）名古屋ユニ忘年会⚾/.test(text) && !/🍻/.test(page), '見出しに🍻を使わない');
+assert(/今年の締めくくりに、野球ユニで集まろう。好きなユニフォームで、気軽に楽しむ忘年会。/.test(text) && /野球好きもユニフォーム好きも歓迎/.test(text), '短い誘い文と「野球好きもユニフォーム好きも歓迎」');
+assert(/12\/26（土）名古屋ユニ忘年会⚾/.test(page) && !/🍻/.test(page), '見出しに🍻を使わない');
 assert(!/飲食|飲み物|食べ物|持ち寄り|ビール|ソフトドリンク|アルコール|お酒|酒類/.test(page), '公開ページに飲食・持ち寄りの記載がない（運営者の最優先指示）');
 assert(!/カード決済|クレジット/.test(page), 'カード決済を要求しない');
-assert(/応募を受け付けました。参加確定は主催者からの個別連絡をもってお知らせします/.test(page), '受付完了文言が正本どおり');
+assert(/お申し込み後、参加のご案内を個別にお送りします。/.test(text) && (text.match(/参加のご案内を個別にお送りします/g) || []).length === 1, 'CTA付近に「お申し込み後、参加のご案内を個別にお送りします」を一度だけ明記');
+assert(/お申し込みを受け付けました。/.test(page) && /まだ参加確定ではありません/.test(page), '送信完了は「受け付けました」で、参加確定ではないと示す');
 assert(!/参加が確定しました|自動承認|自動で参加確定/.test(page), '自動確定を示す文言がない');
+// 対外コピーに強い表現・実装都合・内部運用を出さない
+const publicText = text + (page.match(/(?:alt|placeholder|content)="[^"]*"/g) || []).join('');
+assert(!/審査|選考|選別|承認|参加可否|判断/.test(publicText), '「審査・選考・選別・承認・参加可否の判断」など選別を連想させる表現を対外コピーに使わない');
+assert(!/手動で更新|リアルタイム|自動集計|主催者が管理|合計で/.test(publicText), '実装都合・内部の定員管理の説明をLPに載せない');
+assert(!/<details|ye-faq|id="flow"|id="faq"|id="notes"|id="about"/.test(page), '長いFAQ・当日の流れ・注意事項・イベント紹介セクションを置かない');
+assert(text.length < 2600, 'LP本文が簡潔（' + text.length + '字）');
+assert((text.match(/定員/g) || []).length <= 1 && (text.match(/3,000円/g) || []).length <= 3, '定員・参加費の同じ注意を何度も繰り返さない');
 assert(/rel="canonical" href="https:\/\/nagoya-base\.github\.io\/snb-community\/community\/year-end-party-2026\/"/.test(page), 'canonicalが特設URL');
 assert(/og:title/.test(page) && /og:image/.test(page) && /twitter:card/.test(page), 'OGP/Xカードがある');
 assert(!/^---/.test(page), 'front matterが混入していない');
 assert(!/paypay\.ne\.jp|PayPay ID|qr/i.test(page.replace(/PayPayでお支払い|現金またはPayPay/g, '')), 'PayPay受取情報・QRを公開リポジトリに含めない');
-['年代', 'メールアドレス', 'Xアカウント', '希望する返信方法', '野球ユニフォームの持参', '参加動機'].forEach((k) => assert(page.indexOf(k) !== -1, 'フォーム項目：' + k));
+['年代', 'メールアドレス', 'Xアカウント', '希望する返信方法', 'ユニフォームの持参'].forEach((k) => assert(page.indexOf(k) !== -1, 'フォーム項目：' + k));
 assert(!/運動経験/.test(page), '運動経験を必須項目にしていない');
 
 // ローカル相対リンクの実在確認
@@ -47,18 +54,13 @@ doc.querySelectorAll('a[href], link[href], script[src]').forEach((el) => {
 assert(broken.length === 0, 'リンク切れなし' + (broken.length ? '：' + broken.join(', ') : ''));
 
 // トップ・sitemap・contact
-assert(/year-end-party-2026\//.test(top) && /3,000円／人/.test(top) && /vol2_0725_baseball\.html/.test(top), 'community/ に忘年会カードがあり、過去アーカイブも維持');
-assert(!/飲食|飲み物|食べ物|持ち寄り|ビール/.test(top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1200)), 'トップのカードにも飲食記載なし');
+const card = top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500);
+assert(/year-end-party-2026\//.test(top) && /3,000円/.test(card) && /vol2_0725_baseball\.html/.test(top), 'community/ に忘年会カードがあり、過去アーカイブも維持');
+assert(!/飲食|飲み物|食べ物|持ち寄り|ビール/.test(card) && !/承認|審査|選考/.test(card), 'トップのカードに飲食・選別を連想させる表現なし');
+assert(/@baseballuni2022/.test(card), 'トップのカードにもDM窓口を表示');
 assert(/community\/year-end-party-2026\//.test(read('sitemap.xml')), 'sitemapに特設ページがある');
 assert(/year_end_party_2026/.test(read('contact/index.html')), 'contactのevent labelに追加（既存mapは維持）');
-
-// 参加費は固定（人数変動による再計算は本イベントに適用しない）。一般規約ファイルは変更しない
-assert(/3,000円固定/.test(text) && /値上げしません/.test(text), '参加費3,000円固定・人数が減っても値上げしないことを明記');
-assert(/人数変動による残参加者の参加費の再計算」は本イベントには適用せず/.test(text), 'FAQで規約の人数再計算を本イベントに適用しない旨を明記');
-assert(/人数変動による参加費の再計算は本イベントに適用されず、参加費は3,000円固定/.test(text), 'フォーム同意文に3,000円固定の例外を明記');
-assert(/community-rules\.html#cancellation/.test(page) && /キャンセル料の条件はSNB規約に従います/.test(text), 'キャンセル料の条件はSNB規約に従う（人数再計算のみ除外）');
-assert(/3,000円／人・固定/.test(top), 'トップのカードも3,000円固定');
-assert(!/PayPay.{0,20}(ID|QR)/.test(page), 'PayPay受取情報を載せない');
+assert(!/community-rules/.test(read('community/index.html').slice(0, 0)) && fs.readFileSync(path.join(root, 'legal', 'community-rules.html'), 'utf8').indexOf('キャンセルによる参加費の再計算') !== -1, '一般規約ファイルは変更しない（再計算の条文が残っている）');
 
 // ── 画像（Hero=WebP / OGP=JPEG、正本は images/community/year-end-party-2026/） ──
 const imgDir = path.join(root, 'images', 'community', 'year-end-party-2026');
@@ -87,9 +89,7 @@ const pageEndpoint = page.match(/FORM_ENDPOINT = '([^']+)'/)[1];
 assert(contactEndpoint === pageEndpoint && /^https:\/\/formsubmit\.co\/ajax\//.test(pageEndpoint), '既存contactフォームと同じFormSubmit送信先を再利用（新しい宛先を作らない）');
 assert(/name="イベント名" value="12\/26（土）名古屋ユニ忘年会"/.test(page) && /name="開催日時" value="2026年12月26日（土）17:00開場／18:00開始〜21:00終了"/.test(page) && /name="イベントID" value="year-end-party-2026"/.test(page), 'イベント名・日時・IDが固定のhiddenで送信される（手入力不要）');
 assert(/name="_honey"/.test(page) && /name="_captcha" value="false"/.test(page) && /name="_template" value="table"/.test(page), 'FormSubmit設定（honeypot・template）が既存と同じ');
-assert(/ENTRY_STATUS = 'open'/.test(page) && /主催者が手動で更新/.test(text), '受付状況は主催者の手動切替であることを明示');
-const visible = page.replace(/<script[\s\S]*?<\/script>/g, '');
-assert(!/リアルタイム|自動で(?:人数|受付)/.test(visible.replace(/リアルタイムの自動集計ではありません/, '')), '自動人数管理を実装済みと誤認させない');
+assert(/var ENTRY_STATUS = 'open';/.test(page), '受付状況はENTRY_STATUSで手動切替（コード上の運用）');
 
 // ── ブラウザ挙動（jsdom） ──
 function loadPage(status, fetchImpl) {
@@ -119,7 +119,7 @@ const submit = (w) => w.document.getElementById('ye-form').dispatchEvent(new w.E
   // 受付中→送信成功→受付完了表示（参加確定とは表示しない）／二重送信は1回だけ
   const calls = [];
   let w = loadPage(null, (url, opt) => { calls.push({ url, opt }); return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: 'true' }) }); });
-  assert(!w.document.getElementById('ye-submit').disabled && /募集中/.test(w.document.getElementById('ye-status').textContent), 'ENTRY_STATUS=open で応募可能表示');
+  assert(!w.document.getElementById('ye-submit').disabled && /受付中/.test(w.document.getElementById('ye-status').textContent), 'ENTRY_STATUS=open で申し込み可能表示');
   fill(w);
   submit(w); submit(w);
   await tick();
@@ -127,36 +127,32 @@ const submit = (w) => w.document.getElementById('ye-form').dispatchEvent(new w.E
   const fd = calls[0].opt.body;
   assert(fd.get('イベント名') === '12/26（土）名古屋ユニ忘年会' && fd.get('開催日時').indexOf('17:00開場') !== -1 && fd.get('イベントID') === 'year-end-party-2026', '送信内容にイベント名・日時・IDが含まれる');
   assert(fd.get('お名前') === 'テスト太郎' && fd.get('年代') === '30代' && fd.get('メールアドレス') === 'a@example.com' && fd.get('希望する返信方法') === 'メール' && fd.get('野球ユニフォームの持参') === '持参できる' && fd.get('同意事項') === '同意する', '入力項目が日本語ラベルでメールに載る');
-  assert(!w.document.getElementById('ye-success').hidden && /参加確定は主催者からの個別連絡/.test(w.document.getElementById('ye-success').textContent), '送信後は受付完了（参加確定ではない）を表示');
+  assert(!w.document.getElementById('ye-success').hidden && /参加のご案内は、主催者から個別にお送りします/.test(w.document.getElementById('ye-success').textContent), '送信後は受付完了（個別にご案内・参加確定ではない）を表示');
   submit(w); await tick();
   assert(calls.length === 1, '成功後の再送信は行われない');
 
-  // 応募窓口は2通り：フォーム／XのDM（どちらも主催者承認・定員は合算・受付状態に連動）
+  // 申し込み窓口は2つ：フォーム／XのDM（受付状態に連動）
   {
     const d = new JSDOM(page).window.document;
     const f = d.getElementById('ye-cta-form'); const x = d.getElementById('ye-cta-dm');
-    assert(f && x && /フォームから応募/.test(f.textContent) && /XのDMで応募/.test(x.textContent) && f.parentNode === x.parentNode, '「フォームから応募」「XのDMで応募」が並列のCTAとして並ぶ');
+    assert(f && x && /フォームで申し込む/.test(f.textContent) && /XのDMで申し込む/.test(x.textContent) && /@baseballuni2022/.test(x.textContent) && f.parentNode === x.parentNode, '「フォームで申し込む」「XのDMで申し込む（@baseballuni2022）」が並列のCTAとして並ぶ');
     assert(f.getAttribute('href') === '#apply-form' && d.getElementById('apply-form'), 'フォームCTAはフォーム見出しへ誘導');
     assert(x.getAttribute('href') === 'https://x.com/baseballuni2022' && x.getAttribute('target') === '_blank' && /noopener/.test(x.getAttribute('rel')), 'DM CTAはXプロフィール（https://x.com/baseballuni2022）を新規タブで開く');
     assert(!/intent\/|messages\/compose/.test(page), 'DMのディープリンクは使わない（プロフィールへ確実に遷移）');
     const guide = d.getElementById('ye-dm-guide').textContent;
-    assert(/リンクを押しただけでは応募になりません/.test(guide) && /DMを送信して初めて/.test(guide), 'リンクを押しただけで送信済みと誤認させない');
-    ['お名前またはハンドルネーム', '年代', '18歳以上', '野球ユニフォームの持参可否', '参加動機'].forEach((k) => assert(guide.indexOf(k) !== -1, 'DM案内に審査項目：' + k));
-    assert(/フォームへの再入力は不要/.test(guide), 'DM応募者にフォーム再入力を強制しない');
-    const apply = d.getElementById('apply').textContent;
-    assert(/どちらの方法でも、主催者が内容を確認して参加可否を個別にご連絡/.test(apply) && /フォームやDMを送っただけでは参加確定ではありません/.test(apply), '両経路とも主催者承認・送信だけでは確定しない');
-    assert(/フォームとDMの合計で主催者が管理/.test(apply), '定員7人（主催者含む）は両経路の合算で管理');
-    assert(!/飲食|飲み物|食べ物|持ち寄り|ビール/.test(guide), 'DM案内にも飲食を書かない');
-    assert(/@baseballuni2022/.test(top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500)), 'トップのカードにもDM窓口を表示');
+    assert(/DMを送信すると申し込み完了/.test(guide), 'DMを送信して初めて申し込み完了（リンクを押しただけでは完了しない）');
+    ['お名前', '年代', 'ユニフォームの有無', 'ひとこと'].forEach((k) => assert(guide.indexOf(k) !== -1, 'DM案内に必要項目：' + k));
+    assert(!/フォーム.{0,6}(入力|再入力)/.test(guide), 'DM申し込みにフォーム入力を強制しない');
+    assert(guide.length < 160, 'DM案内は短い（' + guide.length + '字）');
   }
-  for (const [st, formRe, dmRe, dmOpen] of [['open', /募集中/, /DMでの応募も受付中/, true], ['full', /キャンセル待ち/, /DMでの応募もキャンセル待ち/, true], ['closed', /受付は終了/, /DMでの応募も受け付けていません/, false], ['cancelled', /開催中止/, /DMでの応募も受け付けていません/, false], ['bogus', /受付は終了/, /DMでの応募も受け付けていません/, false]]) {
+  for (const [st, statusRe, ctaOpen, formLabel, dmLabel] of [['open', /^受付中$/, true, /フォームで申し込む/, /XのDMで申し込む/], ['full', /キャンセル待ち.*フォーム・DM共通/, true, /フォームでキャンセル待ち/, /XのDMでキャンセル待ち/], ['closed', /受付は終了.*フォーム・DM共通/, false, null, null], ['cancelled', /開催中止/, false, null, null], ['bogus', /受付は終了/, false, null, null]]) {
     const ww = loadPage(st);
     const d = ww.document;
-    const dm = d.getElementById('ye-cta-dm');
-    assert(formRe.test(d.getElementById('ye-status').textContent) && dmRe.test(d.getElementById('ye-dm-status').textContent), st + '：フォームとDMの公開案内が矛盾しない');
-    assert(dmOpen ? (dm.getAttribute('href') === 'https://x.com/baseballuni2022' && !d.getElementById('ye-dm-guide').hidden) : (!dm.hasAttribute('href') && dm.getAttribute('aria-disabled') === 'true' && d.getElementById('ye-dm-guide').hidden), st + '：DM導線の有効/無効がフォームと一致');
+    const dm = d.getElementById('ye-cta-dm'); const fm = d.getElementById('ye-cta-form');
+    assert(statusRe.test(d.getElementById('ye-status').textContent.trim()), st + '：受付状況の表示（フォーム・DM共通の1か所）');
+    if (ctaOpen) assert(dm.getAttribute('href') === 'https://x.com/baseballuni2022' && fm.getAttribute('href') === '#apply-form' && formLabel.test(fm.textContent) && dmLabel.test(dm.textContent) && !d.getElementById('ye-dm-guide').hidden, st + '：フォームとDMの導線が有効で文言が一致');
+    else assert(!dm.hasAttribute('href') && !fm.hasAttribute('href') && dm.getAttribute('aria-disabled') === 'true' && fm.getAttribute('aria-disabled') === 'true' && d.getElementById('ye-dm-guide').hidden, st + '：フォームとDMの導線がともに無効（矛盾なし）');
   }
-  assert(/キャンセル待ち応募/.test(loadPage('full').document.getElementById('ye-cta-dm').textContent), 'full：DM CTAも「キャンセル待ち応募」表示');
 
   // バリデーション：連絡先なし／返信方法と連絡先の矛盾は送信されない
   let c2 = 0;
@@ -173,7 +169,7 @@ const submit = (w) => w.document.getElementById('ye-form').dispatchEvent(new w.E
   {
     let fc = [];
     const wf = loadPage('full', (u, o) => { fc.push(o); return Promise.resolve({ ok: true, json: () => Promise.resolve({}) }); });
-    assert(!wf.document.getElementById('ye-submit').disabled && /キャンセル待ち/.test(wf.document.getElementById('ye-status').textContent) && /キャンセル待ちで応募/.test(wf.document.getElementById('ye-submit').textContent), 'full：キャンセル待ちとして応募可能な表示');
+    assert(!wf.document.getElementById('ye-submit').disabled && /キャンセル待ち/.test(wf.document.getElementById('ye-status').textContent) && /キャンセル待ちで申し込む/.test(wf.document.getElementById('ye-submit').textContent), 'full：キャンセル待ちとして応募可能な表示');
     fill(wf); submit(wf); await tick();
     assert(fc.length === 1 && fc[0].body.get('応募区分') === 'キャンセル待ち', 'full：応募区分「キャンセル待ち」がメールに載る');
   }

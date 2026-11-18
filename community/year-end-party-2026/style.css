@@ -50,3 +50,17 @@
 #apply-form { margin-top: 1.5rem; }
 .ye-dm-guide p { margin-bottom: 0.6rem; }
 @media (max-width: 480px) { .ye-apply-choices { grid-template-columns: 1fr; } }
+
+/* ── 広告向けLP：簡潔なコピーに合わせた調整 ── */
+.ye-lead { font-size: 1rem; color: var(--text); margin-top: 0; }
+.ye-specs { margin: 1.25rem 0; }
+.ye-specs dl { grid-template-columns: 4em 1fr; }
+.ye-specs dd { font-size: 1.02rem; }
+.ye-choice small { display: block; font-size: 0.78rem; font-weight: 600; opacity: 0.85; margin-top: 0.1rem; }
+.ye-after { font-size: 0.85rem; color: var(--text-muted); margin: 0.25rem 0 0; }
+.ye-terms { padding: 1.25rem 0; }
+.ye-status { margin: 0 0 0.75rem; padding: 0.6rem 0.9rem; font-size: 0.88rem; }
+.ye-dm-guide { margin: 0 0 1.75rem; }
+#apply-form { font-size: 1.1rem; margin-top: 0; scroll-margin-top: 70px; }
+.ye-section h2#apply-form { margin-bottom: 0.8rem; }
+.ye-dm-guide h3 { font-size: 1rem; }
