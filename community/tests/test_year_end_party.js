@@ -100,12 +100,14 @@ const pageEndpoint = page.match(/FORM_ENDPOINT = '([^']+)'/)[1];
 assert(contactEndpoint === pageEndpoint && /^https:\/\/formsubmit\.co\/ajax\//.test(pageEndpoint), '既存contactフォームと同じFormSubmit送信先を再利用（新しい宛先を作らない）');
 assert(/name="イベント名" value="12\/26（土）名古屋ユニ忘年会"/.test(page) && /name="開催日時" value="2026年12月26日（土）17:00開場／18:00開始〜21:00終了"/.test(page) && /name="イベントID" value="year-end-party-2026"/.test(page), 'イベント名・日時・IDが固定のhiddenで送信される（手入力不要）');
 assert(/name="_honey"/.test(page) && /name="_captcha" value="false"/.test(page) && /name="_template" value="table"/.test(page), 'FormSubmit設定（honeypot・template）が既存と同じ');
-assert(/var ENTRY_STATUS = 'open';/.test(page), '受付状況はENTRY_STATUSで手動切替（コード上の運用）');
+assert(/var ENTRY_STATUS = 'full';/.test(page), '受付状況はENTRY_STATUSで手動切替（現在はfull＝キャンセル待ち受付中／Issue #461）');
 
 // ── ブラウザ挙動（jsdom） ──
 function loadPage(status, fetchImpl) {
   let html = page.replace(/<script async src="https:\/\/www\.googletagmanager[^>]*><\/script>/, '').replace(/<script src="\.\.\/\.\.\/analytics\.js"><\/script>/, '');
-  if (status) html = html.replace("var ENTRY_STATUS = 'open';", "var ENTRY_STATUS = '" + status + "';");
+  /* status: 省略(null)=open（従来の通常受付の挙動検証）／'prod'=公開中の実コードのまま／それ以外=指定値に差し替え */
+  const st = status === null || status === undefined ? 'open' : status;
+  if (st !== 'prod') html = html.replace(/var ENTRY_STATUS = '[^']*';/, "var ENTRY_STATUS = '" + st + "';");
   const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, beforeParse(w) { w.fetch = fetchImpl || (() => Promise.reject(new Error('no fetch'))); w.HTMLElement.prototype.scrollIntoView = function () {}; w.HTMLFormElement.prototype.reportValidity = function () { return this.checkValidity(); }; } });
   return dom.window;
 }
@@ -156,7 +158,7 @@ const submit = (w) => w.document.getElementById('ye-form').dispatchEvent(new w.E
     assert(!/フォーム.{0,6}(入力|再入力)/.test(guide), 'DM申し込みにフォーム入力を強制しない');
     assert(guide.length < 160, 'DM案内は短い（' + guide.length + '字）');
   }
-  for (const [st, statusRe, ctaOpen, formLabel, dmLabel] of [['open', /^受付中$/, true, /フォームで申し込む/, /XのDMで申し込む/], ['full', /キャンセル待ち.*フォーム・DM共通/, true, /フォームでキャンセル待ち/, /XのDMでキャンセル待ち/], ['closed', /受付は終了.*フォーム・DM共通/, false, null, null], ['cancelled', /開催中止/, false, null, null], ['bogus', /受付は終了/, false, null, null]]) {
+  for (const [st, statusRe, ctaOpen, formLabel, dmLabel] of [['open', /^受付中$/, true, /フォームで申し込む/, /XのDMで申し込む/], ['full', /^キャンセル待ち受付中（フォーム・DM共通）$/, true, /フォームでキャンセル待ち/, /XのDMでキャンセル待ち/], ['closed', /受付は終了.*フォーム・DM共通/, false, null, null], ['cancelled', /開催中止/, false, null, null], ['bogus', /受付は終了/, false, null, null]]) {
     const ww = loadPage(st);
     const d = ww.document;
     const dm = d.getElementById('ye-cta-dm'); const fm = d.getElementById('ye-cta-form');
@@ -175,6 +177,24 @@ const submit = (w) => w.document.getElementById('ye-form').dispatchEvent(new w.E
   w.document.getElementById('ye-x').dispatchEvent(new w.Event('input'));
   submit(w); await tick();
   assert(c2 === 0, '返信方法がメールなのにメール未入力なら送信されない');
+
+  // 公開中の実コード（Issue #461：受付中→キャンセル待ち受付中）
+  {
+    const prodCalls = [];
+    const wp = loadPage('prod', (u, o) => { prodCalls.push(o); return Promise.resolve({ ok: true, json: () => Promise.resolve({}) }); });
+    const dp = wp.document;
+    const st = dp.getElementById('ye-status').textContent;
+    assert(/キャンセル待ち受付中/.test(st) && !/受付中$/.test(st.replace('キャンセル待ち受付中', '')) && !/^受付中/.test(st) && st.length < 40, '公開状態：「キャンセル待ち受付中」と簡潔に表示（単独の「受付中」ではない）');
+    assert(!/定員に達しました/.test(dp.body.textContent), '公開状態：長い定員説明を出さない');
+    assert(/フォームでキャンセル待ち/.test(dp.getElementById('ye-cta-form').textContent) && /XのDMでキャンセル待ち/.test(dp.getElementById('ye-cta-dm').textContent) && dp.getElementById('ye-cta-dm').getAttribute('href') === 'https://x.com/baseballuni2022' && dp.getElementById('ye-cta-form').getAttribute('href') === '#apply-form', '公開状態：フォーム・X DM（@baseballuni2022）ともキャンセル待ちのCTAで有効');
+    assert(!dp.getElementById('ye-submit').disabled && /キャンセル待ちで申し込む/.test(dp.getElementById('ye-submit').textContent), '公開状態：フォームは閉鎖されず送信可能');
+    fill(wp); submit(wp); await tick();
+    assert(prodCalls.length === 1 && prodCalls[0].body.get('応募区分') === 'キャンセル待ち', '公開状態：送信すると応募区分が「キャンセル待ち」になる');
+    assert(dp.getElementById('ye-status').getAttribute('data-state') === 'full' && /data-state="full"/.test(page), '公開状態：data-state=full');
+    const tcard = top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500).replace(/<[^>]+>/g, '');
+    assert(/キャンセル待ち受付中/.test(tcard) && !/(^|[^待ち])受付中/.test(tcard.replace(/キャンセル待ち受付中/g, '')) && /@baseballuni2022/.test(tcard), 'community/ のカードもキャンセル待ち受付中で整合（「受付中」単独表記なし）');
+    assert(!/(^|[^ち])受付中/.test(text.replace(/キャンセル待ち受付中/g, '')), '特設ページ本文に単独の「受付中」がない');
+  }
 
   // 定員到達（full）：キャンセル待ちとして受け付ける。受付終了／開催中止／不正値は送信不可
   {
