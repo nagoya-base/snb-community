@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>12/26（土）名古屋ユニ忘年会｜SNB Community</title>
-  <meta name="description" content="2026年12月26日（土）、名古屋・上前津のStudio Nagoya Baseで開催する野球ユニフォームの忘年会。野球好きもユニフォーム好きも歓迎。定員7人・参加費3,000円。フォームまたはXのDMで申し込めます。">
+  <meta name="description" content="2026年12月26日（土）、名古屋・上前津のStudio Nagoya Baseで開催する野球ユニフォームの忘年会。野球好きもユニフォーム好きも歓迎。定員7人・参加費3,000円。現在はキャンセル待ちを受付中。フォームまたはXのDMで申し込めます。">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://nagoya-base.github.io/snb-community/community/year-end-party-2026/">
 
@@ -82,7 +82,7 @@
       </dl>
     </div>
 
-    <p id="ye-status" class="ye-status" data-state="open" role="status"></p>
+    <p id="ye-status" class="ye-status" data-state="full" role="status"></p>
 
     <div class="ye-apply-choices" id="apply" data-section-view="apply">
       <a href="#apply-form" class="btn btn-primary ye-choice" id="ye-cta-form" data-cta-name="year_end_apply_form" data-cta-location="apply_choice">フォームで申し込む</a>
@@ -226,7 +226,7 @@
      'open'（募集中）／'full'（定員到達＝キャンセル待ち受付）／'closed'（受付終了）／'cancelled'（開催中止）のいずれかに書き換えてコミットする。
      自動で人数を数える仕組みはない。定員（7人）に達したら主催者が 'full' に切り替え、以後の応募は
      「応募区分：キャンセル待ち」としてメールに載る。受付終了・開催中止のときはフォームを送信できない。 */
-  var ENTRY_STATUS = 'open';
+  var ENTRY_STATUS = 'full';
 
   /* 既存の問い合わせフォーム（contact/index.html）と同じFormSubmit送信先。新しい宛先は追加しない。 */
   var FORM_ENDPOINT = 'https://formsubmit.co/ajax/bbuni.ngo@gmail.com';
@@ -234,7 +234,7 @@
 
   var STATUS_TEXT = {
     open: '受付中',
-    full: '定員に達しました。キャンセル待ちで受け付けています（フォーム・DM共通）',
+    full: 'キャンセル待ち受付中（フォーム・DM共通）',
     closed: '受付は終了しました（フォーム・DM共通）',
     cancelled: '開催中止となりました'
   };
