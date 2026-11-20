@@ -15,24 +15,25 @@ const top = read('community/index.html');
 // ── 静的内容（広告向けの簡潔なLP） ──
 const text = new JSDOM(page.replace(/<script[\s\S]*?<\/script>/g, '')).window.document.body.textContent;
 assert(/2026年12月26日（土）/.test(text) && /17:00 開場／18:00〜21:00/.test(text), '日付・開場17:00／開催18:00〜21:00が表示される');
-assert(/Studio Nagoya Base（SNB）/.test(text) && /<dt>参加費<\/dt><dd>3,000円<\/dd>/.test(page) && /<dt>定員<\/dt><dd>7人<\/dd>/.test(page), '会場SNB・「参加費 3,000円」・「定員7人」を概要に表示（注記なし）');
-// 料金表記は「3,000円」だけ（／人・税込・固定・当日現金/PayPay・事前決済なし等を広告・概要に付けない）
+assert(/Studio Nagoya Base（SNB）/.test(text) && /<dt>会費<\/dt><dd>4,000円／人<br>飲み物・軽食をご用意しています。<\/dd>/.test(page) && /<dt>定員<\/dt><dd>7人<\/dd>/.test(page), '会場SNB・「会費 4,000円／人」・「飲み物・軽食をご用意しています。」・「定員7人」を概要に表示');
+// Issue #463：会費は「4,000円／人」。税込・固定・当日現金/PayPay・事前決済なし等の注記は付けない
 const specs = page.slice(page.indexOf('class="ye-specs"'), page.indexOf('</dl>', page.indexOf('class="ye-specs"')));
 const cardTxt = top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500);
 const metas = (page.match(/<meta[^>]*(?:description|og:title|twitter:title)[^>]*>/g) || []).join('');
-assert(!/／人|税込|固定|当日|PayPay|現金|事前決済|値上げ/.test(specs + cardTxt.replace(/<a[^>]*>[^<]*<\/a>/g, '') + metas), '概要・トップのカード・OGP/メタ説明の料金に注記（／人・税込・固定・当日・PayPay・事前決済・値上げ）を付けない');
-assert(/参加費3,000円／定員7人/.test(cardTxt), 'トップのカードは「参加費3,000円／定員7人」');
-assert(!/参加費.{0,10}3,000円.{0,3}（/.test(metas), 'メタ説明の参加費は「参加費3,000円」のみ');
+assert(!/税込|固定|当日|PayPay|現金|事前決済|値上げ/.test(specs + cardTxt.replace(/<a[^>]*>[^<]*<\/a>/g, '') + metas), '概要・トップのカード・OGP/メタ説明の料金に注記（税込・固定・当日・PayPay・事前決済・値上げ）を付けない');
+assert(/会費4,000円／人・定員7人/.test(cardTxt), 'トップのカードは「会費4,000円／人・定員7人」');
+assert(!/3,000円/.test(page + top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500)) && /会費4,000円／人/.test(metas) && !/"price": "3000"/.test(page) && /"price": "4000"/.test(page), '旧会費3,000円が残らず、メタ/OGP/Xカード/構造化データも4,000円で整合');
 assert(/<dt>定員<\/dt><dd>7人<\/dd>/.test(page), '定員表記は「7人」のみ');
 assert(!/主催者(を)?含/.test(page) && !/主催者(を)?含/.test(top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500)), '公開ページ・OGP・フォーム・トップのカードに「主催者含む」の注記を出さない');
 assert(/18歳以上/.test(text) && /ユニフォームを着用/.test(text), '参加条件（18歳以上・ユニフォーム着用）を簡潔に表示');
 assert(/community-rules\.html#cancellation/.test(page) && /キャンセルは.*SNB規約に従います/.test(text), 'キャンセルはSNB規約に従う（参加条件の1か所のみ）');
-assert(!/人数が変わっても|人数が減っても|値上げ|3,000円のまま|固定/.test(text + (page.match(/(?:alt|placeholder|content)="[^"]*"/g) || []).join('') + top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500).replace(/<[^>]+>/g, '')), '「参加費は人数が変わっても3,000円のまま」等の固定・値上げ説明を特設ページ・フォーム・トップのカードに出さない');
-assert((text.match(/3,000円/g) || []).length === 1, '料金表示は「参加費 3,000円」の1回のみ');
+assert(!/人数が変わっても|人数が減っても|値上げ|固定/.test(text + (page.match(/(?:alt|placeholder|content)="[^"]*"/g) || []).join('') + top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500).replace(/<[^>]+>/g, '')), '「参加費は人数が変わっても3,000円のまま」等の固定・値上げ説明を特設ページ・フォーム・トップのカードに出さない');
+assert((text.match(/4,000円/g) || []).length === 1 && !/3,000円/.test(text), '料金表示は「会費 4,000円／人」の1回のみ（旧3,000円なし）');
+assert((text.match(/飲み物・軽食をご用意しています。/g) || []).length === 1, '「飲み物・軽食をご用意しています。」を本文に1回だけ表示（Issue #463）');
 assert(/id="ye-age18"[^>]*required/.test(page), '18歳以上の確認が必須');
 assert(/今年の締めくくりに、野球ユニで集まろう。好きなユニフォームで、気軽に楽しむ忘年会。/.test(text) && /野球好きもユニフォーム好きも歓迎/.test(text), '短い誘い文と「野球好きもユニフォーム好きも歓迎」');
 assert(/12\/26（土）名古屋ユニ忘年会⚾/.test(page) && !/🍻/.test(page), '見出しに🍻を使わない');
-assert(!/飲食|飲み物|食べ物|持ち寄り|ビール|ソフトドリンク|アルコール|お酒|酒類/.test(page), '公開ページに飲食・持ち寄りの記載がない（運営者の最優先指示）');
+assert(!/お酒付き|アルコール|酒類|飲み放題|飲食サービス|料理付き|食べ放題|ビール|ソフトドリンク|持ち寄り|ドリンク代/.test(page), '飲食営業を連想させる強い訴求（お酒付き・アルコール・酒類・飲み放題・飲食サービス・料理付き等）を追加しない（Issue #463）');
 assert(!/カード決済|クレジット/.test(page), 'カード決済を要求しない');
 assert(/お申し込み後、参加のご案内を個別にお送りします。/.test(text) && (text.match(/参加のご案内を個別にお送りします/g) || []).length === 1, 'CTA付近に「お申し込み後、参加のご案内を個別にお送りします」を一度だけ明記');
 assert(/お申し込みを受け付けました。/.test(page) && /まだ参加確定ではありません/.test(page), '送信完了は「受け付けました」で、参加確定ではないと示す');
@@ -43,7 +44,7 @@ assert(!/審査|選考|選別|承認|参加可否|判断/.test(publicText), '「
 assert(!/手動で更新|リアルタイム|自動集計|主催者が管理|合計で/.test(publicText), '実装都合・内部の定員管理の説明をLPに載せない');
 assert(!/<details|ye-faq|id="flow"|id="faq"|id="notes"|id="about"/.test(page), '長いFAQ・当日の流れ・注意事項・イベント紹介セクションを置かない');
 assert(text.length < 2600, 'LP本文が簡潔（' + text.length + '字）');
-assert((text.match(/定員/g) || []).length <= 1 && (text.match(/3,000円/g) || []).length <= 3, '定員・参加費の同じ注意を何度も繰り返さない');
+assert((text.match(/定員/g) || []).length <= 1 && (text.match(/4,000円/g) || []).length <= 3, '定員・参加費の同じ注意を何度も繰り返さない');
 assert(/rel="canonical" href="https:\/\/nagoya-base\.github\.io\/snb-community\/community\/year-end-party-2026\/"/.test(page), 'canonicalが特設URL');
 assert(/og:title/.test(page) && /og:image/.test(page) && /twitter:card/.test(page), 'OGP/Xカードがある');
 assert(!/^---/.test(page), 'front matterが混入していない');
@@ -66,8 +67,8 @@ assert(broken.length === 0, 'リンク切れなし' + (broken.length ? '：' + b
 
 // トップ・sitemap・contact
 const card = top.slice(top.indexOf('year-end-party-banner'), top.indexOf('year-end-party-banner') + 1500);
-assert(/year-end-party-2026\//.test(top) && /3,000円/.test(card) && /vol2_0725_baseball\.html/.test(top), 'community/ に忘年会カードがあり、過去アーカイブも維持');
-assert(!/飲食|飲み物|食べ物|持ち寄り|ビール/.test(card) && !/承認|審査|選考/.test(card), 'トップのカードに飲食・選別を連想させる表現なし');
+assert(/year-end-party-2026\//.test(top) && /4,000円／人/.test(card) && /vol2_0725_baseball\.html/.test(top), 'community/ に忘年会カードがあり、過去アーカイブも維持');
+assert((card.replace(/<[^>]+>/g, '').match(/飲み物・軽食をご用意しています。/g) || []).length === 1 && !/お酒付き|アルコール|酒類|飲み放題|飲食サービス|料理付き|ビール|持ち寄り/.test(card) && !/承認|審査|選考/.test(card), 'トップのカードに「飲み物・軽食をご用意しています。」を1回掲載し、強い飲食訴求・選別を連想させる表現なし');
 assert(/@baseballuni2022/.test(card), 'トップのカードにもDM窓口を表示');
 assert(/community\/year-end-party-2026\//.test(read('sitemap.xml')), 'sitemapに特設ページがある');
 assert(/year_end_party_2026/.test(read('contact/index.html')), 'contactのevent labelに追加（既存mapは維持）');
